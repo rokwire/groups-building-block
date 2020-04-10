@@ -110,8 +110,13 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&
 
 GET /groups/types
 Response: ["RSO", "College", "Department", "Class", "Study Group", "Other"]
-Description: Returns tyoes that fill Types Combobox
+Description: Returns types that fill Types Combobox
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
+
+GET /groups/tags
+Response: [String, ...]
+Description: Returns all tags among groups
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904203&cot=3
 
 
 
