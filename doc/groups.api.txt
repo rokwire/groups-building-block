@@ -57,6 +57,7 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&
 GET /groups/membership/{userUIN}
 Response: Map<groupId: GroupMember>
 Description: Returns GroupMember objects for all groups the user belongs to.
+Note: This API should maybe belong to Members section above but I am not sure it should look like there.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
 
 POST /groups/membership/request/{groupId}/{userUIN}
@@ -83,14 +84,8 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349054696&
 POST /groups/events/{groupId}
 Body: [eventId, ...]
 Response: [GroupEvent, ...]
-Description: Links events to a group.
+Description: Updates group events. This might include removing existing and adding new <group:event> links.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&cot=3
-
-DELETE /groups/events/{groupId}/{eventId}
-Response: Success or failure.
-Description: Unlinks event from a group.
-Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348992681&cot=3
-
 
 // Event Comments
 
