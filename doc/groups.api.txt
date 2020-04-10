@@ -54,6 +54,11 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&
 
 // Membership
 
+GET /groups/membership/{userUIN}
+Response: Map<groupId: GroupMember>
+Description: Returns GroupMember objects for all groups the user belongs to.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
+
 POST /groups/membership/request/{groupId}/{userUIN}
 Body: {MembershipRequest}
 Response: Success or failure.
