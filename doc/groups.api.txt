@@ -1,0 +1,216 @@
+////////////////////////////////
+// API
+
+
+// Groups
+
+GET /groups
+Parameters: category (filter by category), type (filter by type)
+Reponse: [{Group}, {Group}, ...]
+Description: Returns list of groups presented in Group Listing Page. Brief group details.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348503229&cot=1
+
+POST /groups
+Body: {GroupDetail}
+Reponse: {GroupDetail}
+Description: Creates a new group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348772206&cot=3
+
+GET /groups/{groupId}
+Reponse: {GroupDetail}
+Description: Retrieves extended group details by group id.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349054605&cot=3
+
+POST /groups/{groupId}
+Reponse: {GroupDetail}
+Description: Updates group details by id.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904203&cot=3
+
+
+// Members
+
+GET /groups/members/{groupId}
+Parameters: status (filter by MemberStatus).
+Response: [GroupMember, ...]
+Description: Retrieves all members in a group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904284&cot=3
+
+GET /groups/members/pending/{groupId}
+Response: [PendingMember, ...]
+Description: Retrieves all pending members for a group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904284&cot=3
+
+GET /groups/members/{groupId}/{userUIN}
+Response: {GroupMember}
+Description: Retrieves group member details by user UIN.
+Link: -
+
+POST /groups/members/{groupId}/{userUIN}
+Body: {GroupMember}
+Response: {GroupMember}
+Description: Updates group member details.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&cot=3
+
+
+// Membership
+
+GET /groups/membership/quest/{groupId}
+Response: {MembershipQuest}
+Description: Retrieves membership quest for this group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348993598&cot=3
+
+POST /groups/membership/request/{groupId}/{userUIN}
+Body: {MembershipRequest}
+Response: Success or failure.
+Description: Apply for membership.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348992736&cot=3
+
+POST /groups/membership/decision/{groupId}/{userUIN}
+Parameters: boolean approve
+Response: {GroupMember} or null
+Description: Accept or deny pending membership request.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904330&cot=3
+
+
+// Events
+
+GET /groups/events/{groupId}
+Parameters: limit (number of events in response)
+Reponse: [GroupEvent, ...]
+Description: Retrieves all events linked to a group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349054696&cot=3
+
+POST /groups/events/{groupId}
+Body: [eventId, ...]
+Response: [GroupEvent, ...]
+Description: Links events to a group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&cot=3
+
+DELETE /groups/events/{groupId}/{eventId}
+Response: Success or failure.
+Description: Unlinks event from a group.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348992681&cot=3
+
+
+// Event Comments
+
+GET /groups/comments/{groupId}/{eventId}
+Response: [EventComment, ...]
+Description: Retrieves comments for event.
+Link: -
+
+POST /groups/comments/{groupId}/{eventId}
+Body: {EventComment}
+Response: {EventComment}
+Description: Adds comment for event.
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348992705&cot=3
+
+
+// Enumerates
+
+GET /groups/categories
+Reponse: ["Academic/Pre-Professional", "Athletic/Recreation", "Club Sports", "Creative/Media/Performing Arts", "Cultural/Ethnic", "Graduate", "Honorary", "International", "Other Social", "Political", "Religious", "Residence Hall", "Rights/Freedom Issues", "ROTC", "Service/Philanthropy", "Social Fraternity/Sorority", "University Student Governance/Council/Committee"]
+Description: Returns categories that fill Categories Combobox
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
+
+GET /groups/types
+Reponse: ["RSO", "College", "Department", "Class", "Study Group", "Other"]
+Description: Returns tyoes that fill Types Combobox
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
+
+
+
+////////////////////////////////
+// Model
+
+Group {
+	String       id;
+	String       category;       // Academic/Pre-Professional, Athletic/Recreation, Club Sports, ...
+	String       type;           // RSO, College, Department, Class, Study Group, Other
+	String       title;
+	String       creatorUin;
+};
+
+GroupDetail : Group {
+	GroupPrivacy privacy;        // private, public
+	String       description;
+	String       imageURL;
+	String       webURL;
+	int          membersCount;
+	List<String> tags;
+}
+
+GroupPrivacy { private, public };
+
+Member {
+	String       uin;
+	String       name;
+	String       email;
+	String       photoURL;
+};
+
+GroupMember : Member {
+	MemberStatus status;         // current, inactive, officer
+	bool         admin;
+	String       officerTitle;
+	Date         dateAdded;
+}
+
+PendingMember  : Member {
+	MembershipRequest membershipRequest;
+}
+
+MemberStatus { current, inactive, officer };
+
+MembershipQuest {
+	List<MembershipStep>     steps;
+	List<MembershipQuestion> questions;
+};
+
+MembershipStep {
+  String       description;
+  List<String> eventIds;
+};
+
+MembershipRequest {
+	List<MembershipAnswer> answers;
+}
+
+MembershipQuestion {
+  String       question;
+};
+
+MembershipAnswer {
+  String       answer;
+};
+
+Event {
+<as comes from events building block>
+}
+
+GroupEvent : Event {
+  List<EventComment> comments;
+}
+
+EventComment {
+  GroupMember member;
+  Date        dateCreated;
+  String      text;
+}
+
+////////////////////////////////
+// Questions and comments
+
+https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904125&cot=3
+Where should we go on "Create group"? Back to list view, or in group detail view?
+
+https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
+We might not be able to implement section index in Flutter.
+https://stackoverflow.com/a/54037387/3759472
+
+https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348963119&cot=3
+How do we determine whether to show 'X' or '...' per event card?
+
+https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348963119&cot=3
+What UI is presented on "Find existing"?
+
