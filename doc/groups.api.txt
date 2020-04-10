@@ -6,23 +6,23 @@
 
 GET /groups
 Parameters: category (filter by category), type (filter by type)
-Reponse: [{Group}, {Group}, ...]
+Response: [{Group}, {Group}, ...]
 Description: Returns list of groups presented in Group Listing Page. Brief group details.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348503229&cot=1
 
 POST /groups
 Body: {GroupDetail}
-Reponse: {GroupDetail}
+Response: {GroupDetail}
 Description: Creates a new group.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348772206&cot=3
 
 GET /groups/{groupId}
-Reponse: {GroupDetail}
+Response: {GroupDetail}
 Description: Retrieves extended group details by group id.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349054605&cot=3
 
 POST /groups/{groupId}
-Reponse: {GroupDetail}
+Response: {GroupDetail}
 Description: Updates group details by id.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904203&cot=3
 
@@ -54,11 +54,6 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&
 
 // Membership
 
-GET /groups/membership/quest/{groupId}
-Response: {MembershipQuest}
-Description: Retrieves membership quest for this group.
-Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348993598&cot=3
-
 POST /groups/membership/request/{groupId}/{userUIN}
 Body: {MembershipRequest}
 Response: Success or failure.
@@ -76,7 +71,7 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904330&
 
 GET /groups/events/{groupId}
 Parameters: limit (number of events in response)
-Reponse: [GroupEvent, ...]
+Response: [GroupEvent, ...]
 Description: Retrieves all events linked to a group.
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349054696&cot=3
 
@@ -109,12 +104,12 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348992705&
 // Enumerates
 
 GET /groups/categories
-Reponse: ["Academic/Pre-Professional", "Athletic/Recreation", "Club Sports", "Creative/Media/Performing Arts", "Cultural/Ethnic", "Graduate", "Honorary", "International", "Other Social", "Political", "Religious", "Residence Hall", "Rights/Freedom Issues", "ROTC", "Service/Philanthropy", "Social Fraternity/Sorority", "University Student Governance/Council/Committee"]
+Response: ["Academic/Pre-Professional", "Athletic/Recreation", "Club Sports", "Creative/Media/Performing Arts", "Cultural/Ethnic", "Graduate", "Honorary", "International", "Other Social", "Political", "Religious", "Residence Hall", "Rights/Freedom Issues", "ROTC", "Service/Philanthropy", "Social Fraternity/Sorority", "University Student Governance/Council/Committee"]
 Description: Returns categories that fill Categories Combobox
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
 
 GET /groups/types
-Reponse: ["RSO", "College", "Department", "Class", "Study Group", "Other"]
+Response: ["RSO", "College", "Department", "Class", "Study Group", "Other"]
 Description: Returns tyoes that fill Types Combobox
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&cot=3
 
@@ -124,36 +119,37 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347349055292&
 // Model
 
 Group {
-	String       id;
-	String       category;       // Academic/Pre-Professional, Athletic/Recreation, Club Sports, ...
-	String       type;           // RSO, College, Department, Class, Study Group, Other
-	String       title;
-	String       creatorUin;
+	String          id;
+	String          category;       // Academic/Pre-Professional, Athletic/Recreation, Club Sports, ...
+	String          type;           // RSO, College, Department, Class, Study Group, Other
+	String          title;
+	String          creatorUin;
 };
 
 GroupDetail : Group {
-	GroupPrivacy privacy;        // private, public
-	String       description;
-	String       imageURL;
-	String       webURL;
-	int          membersCount;
-	List<String> tags;
+	GroupPrivacy    privacy;        // private, public
+	String          description;
+	String          imageURL;
+	String          webURL;
+	int             membersCount;
+	List<String>    tags;
+	MembershipQuest membershipQuest;
 }
 
 GroupPrivacy { private, public };
 
 Member {
-	String       uin;
-	String       name;
-	String       email;
-	String       photoURL;
+	String          uin;
+	String          name;
+	String          email;
+	String          photoURL;
 };
 
 GroupMember : Member {
-	MemberStatus status;         // current, inactive, officer
-	bool         admin;
-	String       officerTitle;
-	Date         dateAdded;
+	MemberStatus    status;         // current, inactive, officer
+	bool            admin;
+	String          officerTitle;
+	Date            dateAdded;
 }
 
 PendingMember  : Member {
