@@ -122,6 +122,10 @@ Response: [String, ...]
 Description: Returns all tags among groups
 Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904203&cot=3
 
+GET /groups/officer_titles
+Response: [String, ...]
+Description: Returns officer titles that fill Officer Title Combobox
+Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904373&cot=3
 
 
 ////////////////////////////////
