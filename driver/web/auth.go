@@ -89,8 +89,7 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 
 //IDTokenAuth entity
 type IDTokenAuth struct {
-	oidcProvider string
-	oidcClientID string
+	idTokenVerifier *oidc.IDTokenVerifier
 }
 
 func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
@@ -101,15 +100,8 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 
 	log.Println(rawIDToken)
 
-	provider, err := oidc.NewProvider(context.Background(), auth.oidcProvider)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	var verifier = provider.Verifier(&oidc.Config{ClientID: auth.oidcClientID})
-
 	// Parse and verify ID Token payload.
-	idToken, err := verifier.Verify(context.Background(), rawIDToken)
+	idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)
 	if err != nil {
 		// handle error
 		log.Println(err)
@@ -137,6 +129,12 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 
 //newIDTokenAuth creates new id token auth
 func newIDTokenAuth(oidcProvider string, oidcClientID string) *IDTokenAuth {
-	auth := IDTokenAuth{oidcProvider: oidcProvider, oidcClientID: oidcClientID}
+	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
+
+	auth := IDTokenAuth{idTokenVerifier: idTokenVerifier}
 	return &auth
 }
