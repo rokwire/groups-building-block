@@ -128,48 +128,48 @@ Link: https://miro.com/app/board/o9J_kvR9L9s=/?moveToWidget=3074457347348904203&
 // Model
 
 Group {
-	String          id;
-	String          category;       // Academic/Pre-Professional, Athletic/Recreation, Club Sports, ...
-	String          type;           // RSO, College, Department, Class, Study Group, Other
-	String          title;
-	bool            certified;
+  String          id;
+  String          category;       // Academic/Pre-Professional, Athletic/Recreation, Club Sports, ...
+  String          type;           // RSO, College, Department, Class, Study Group, Other
+  String          title;
+  bool            certified;
 };
 
 GroupDetail : Group {
-	GroupPrivacy    privacy;        // private, public
-	String          description;
-	String          imageURL;
-	String          webURL;
-	int             membersCount;
-	List<String>    tags;
-	MembershipQuest membershipQuest;
+  GroupPrivacy    privacy;        // private, public
+  String          description;
+  String          imageURL;
+  String          webURL;
+  int             membersCount;
+  List<String>    tags;
+  MembershipQuest membershipQuest;
 }
 
 GroupPrivacy { private, public };
 
 Member {
-	String          uin;
-	String          name;
-	String          email;
-	String          photoURL;
+  String          uin;
+  String          name;
+  String          email;
+  String          photoURL;
 };
 
 GroupMember : Member {
-	MemberStatus    status;         // current, inactive, officer
-	bool            admin;
-	String          officerTitle;
-	Date            dateAdded;
+  MemberStatus    status;         // current, inactive, officer
+  bool            admin;
+  String          officerTitle;
+  Date            dateAdded;
 }
 
 PendingMember  : Member {
-	MembershipRequest membershipRequest;
+  MembershipRequest membershipRequest;
 }
 
 MemberStatus { current, inactive, officer };
 
 MembershipQuest {
-	List<MembershipStep>     steps;
-	List<MembershipQuestion> questions;
+  List<MembershipStep>     steps;
+  List<MembershipQuestion> questions;
 };
 
 MembershipStep {
@@ -178,7 +178,8 @@ MembershipStep {
 };
 
 MembershipRequest {
-	List<MembershipAnswer> answers;
+  Date        dateCreated;
+  List<MembershipAnswer> answers;
 }
 
 MembershipQuestion {
