@@ -128,7 +128,7 @@ Group {
 	String          category;       // Academic/Pre-Professional, Athletic/Recreation, Club Sports, ...
 	String          type;           // RSO, College, Department, Class, Study Group, Other
 	String          title;
-	String          creatorUin;
+	bool            certified;
 };
 
 GroupDetail : Group {
