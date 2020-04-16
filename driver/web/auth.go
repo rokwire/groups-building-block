@@ -1,9 +1,12 @@
 package web
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+
+	"gopkg.in/ericchiang/go-oidc.v2"
 )
 
 //Auth handler
@@ -29,9 +32,9 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) bool {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(appKeys []string) *Auth {
+func NewAuth(appKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
-	idTokenAuth := newIDTokenAuth()
+	idTokenAuth := newIDTokenAuth(oidcProvider, oidcClientID)
 
 	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth}
 	return &auth
@@ -86,17 +89,54 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 
 //IDTokenAuth entity
 type IDTokenAuth struct {
+	oidcProvider string
+	oidcClientID string
 }
 
 func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 	//TODO
 	log.Println("Make ID Token check")
 
+	rawIDToken := "12345"
+
+	log.Println(rawIDToken)
+
+	provider, err := oidc.NewProvider(context.Background(), auth.oidcProvider)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	var verifier = provider.Verifier(&oidc.Config{ClientID: auth.oidcClientID})
+
+	// Parse and verify ID Token payload.
+	idToken, err := verifier.Verify(context.Background(), rawIDToken)
+	if err != nil {
+		// handle error
+		log.Println(err)
+	}
+
+	// Extract custom claims
+	var claims struct {
+		UIuceduUIN        *string   `json:"uiucedu_uin"`
+		Sub               *string   `json:"sub"`
+		Email             *string   `json:"email"`
+		UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
+	}
+	if err := idToken.Claims(&claims); err != nil {
+		// handle error
+		log.Println(err)
+	}
+	log.Println(claims)
+
+	for _, item := range *claims.UIuceduIsMemberOf {
+		log.Println(item)
+	}
+
 	return true
 }
 
 //newIDTokenAuth creates new id token auth
-func newIDTokenAuth() *IDTokenAuth {
-	auth := IDTokenAuth{}
+func newIDTokenAuth(oidcProvider string, oidcClientID string) *IDTokenAuth {
+	auth := IDTokenAuth{oidcProvider: oidcProvider, oidcClientID: oidcClientID}
 	return &auth
 }

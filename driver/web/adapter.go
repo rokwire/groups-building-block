@@ -68,8 +68,8 @@ func (we Adapter) idTokenAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 }
 
 //NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(appKeys []string) *Adapter {
-	auth := NewAuth(appKeys)
+func NewWebAdapter(appKeys []string, oidcProvider string, oidcClientID string) *Adapter {
+	auth := NewAuth(appKeys, oidcProvider, oidcClientID)
 	apisHandler := rest.NewApisHandler()
 	return &Adapter{auth: auth, apisHandler: apisHandler}
 }

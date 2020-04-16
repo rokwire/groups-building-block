@@ -21,7 +21,9 @@ func main() {
 
 	//APIkeys
 	apiKeys := getAPIKeys()
-	webAdapter := web.NewWebAdapter(apiKeys)
+	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
+	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
+	webAdapter := web.NewWebAdapter(apiKeys, oidcProvider, oidcClientID)
 	webAdapter.Start()
 }
 
