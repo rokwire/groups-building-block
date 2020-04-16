@@ -28,7 +28,7 @@ func (we *Adapter) Start() {
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/groups/api").Subrouter()
-	restSubrouter.HandleFunc("/test", we.apiKeysAuthWrapFunc(we.apisHandler.Test)).Methods("GET")
+	restSubrouter.HandleFunc("/test", we.idTokenAuthWrapFunc(we.apisHandler.Test)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))
 }
@@ -46,6 +46,19 @@ func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 		utils.LogRequest(req)
 
 		authenticated := we.auth.apiKeyCheck(w, req)
+		if !authenticated {
+			return
+		}
+
+		handler(w, req)
+	}
+}
+
+func (we Adapter) idTokenAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		authenticated := we.auth.idTokenCheck(w, req)
 		if !authenticated {
 			return
 		}

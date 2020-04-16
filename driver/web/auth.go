@@ -9,6 +9,7 @@ import (
 //Auth handler
 type Auth struct {
 	apiKeysAuth *APIKeysAuth
+	idTokenAuth *IDTokenAuth
 }
 
 //Start starts the auth module
@@ -23,10 +24,16 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
 	return auth.apiKeysAuth.check(w, r)
 }
 
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) bool {
+	return auth.idTokenAuth.check(w, r)
+}
+
 //NewAuth creates new auth handler
 func NewAuth(appKeys []string) *Auth {
-	auth := Auth{
-		apiKeysAuth: newAPIKeysAuth(appKeys)}
+	apiKeysAuth := newAPIKeysAuth(appKeys)
+	idTokenAuth := newIDTokenAuth()
+
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth}
 	return &auth
 }
 
@@ -72,5 +79,24 @@ func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) bool {
 //NewAPIKeysAuth creates new api keys auth
 func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 	auth := APIKeysAuth{appKeys}
+	return &auth
+}
+
+////////////////////////////////////
+
+//IDTokenAuth entity
+type IDTokenAuth struct {
+}
+
+func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
+	//TODO
+	log.Println("Make ID Token check")
+
+	return true
+}
+
+//newIDTokenAuth creates new id token auth
+func newIDTokenAuth() *IDTokenAuth {
+	auth := IDTokenAuth{}
 	return &auth
 }
