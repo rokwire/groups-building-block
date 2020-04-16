@@ -1,6 +1,10 @@
 ////////////////////////////////
 // API
 
+Authentication:
+Not necessary to send UIN as new header field as we discussed, what you need to send is ID token. 
+You already pass ID token for some of the building blocks apis. 
+
 
 // Groups
 
