@@ -11,16 +11,24 @@ import (
 
 //Adapter entity
 type Adapter struct {
+	auth *Auth
+
 	apisHandler *rest.ApisHandler
 }
 
 //Start starts the web server
 func (we *Adapter) Start() {
+	//start the auth module
+	err := we.auth.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	router := mux.NewRouter().StrictSlash(true)
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/groups/api").Subrouter()
-	restSubrouter.HandleFunc("/test", we.wrapFunc(we.apisHandler.Test)).Methods("GET")
+	restSubrouter.HandleFunc("/test", we.apiKeysAuthWrapFunc(we.apisHandler.Test)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))
 }
@@ -33,8 +41,22 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		authenticated := we.auth.apiKeyCheck(w, req)
+		if !authenticated {
+			return
+		}
+
+		handler(w, req)
+	}
+}
+
 //NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter() *Adapter {
+func NewWebAdapter(appKeys []string) *Adapter {
+	auth := NewAuth(appKeys)
 	apisHandler := rest.NewApisHandler()
-	return &Adapter{apisHandler: apisHandler}
+	return &Adapter{auth: auth, apisHandler: apisHandler}
 }
