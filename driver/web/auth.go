@@ -7,6 +7,7 @@ import (
 	"groups/core/model"
 	"log"
 	"net/http"
+	"strings"
 
 	"gopkg.in/ericchiang/go-oidc.v2"
 )
@@ -97,10 +98,26 @@ type IDTokenAuth struct {
 }
 
 func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.User {
+	//1. Get the token from the request
+	authorizationHeader := r.Header.Get("Authorization")
+	if len(authorizationHeader) <= 0 {
+		auth.responseBadRequest(w)
+		return nil
+	}
+	splitAuthorization := strings.Fields(authorizationHeader)
+	if len(splitAuthorization) != 2 {
+		auth.responseBadRequest(w)
+		return nil
+	}
+	// expected - Bearer 1234
+	if splitAuthorization[0] != "Bearer" {
+		auth.responseBadRequest(w)
+		return nil
+	}
+	rawIDToken := splitAuthorization[1]
+
 	//TODO
 	log.Println("Make ID Token check")
-
-	rawIDToken := "12345"
 
 	//TODO
 	user, _ := auth.app.GetUser()
@@ -136,6 +153,13 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 
 	//TODO
 	return &model.User{ID: "123456789"}
+}
+
+func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
+	log.Println(fmt.Sprintf("400 - Bad Request"))
+
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte("Bad Request"))
 }
 
 //newIDTokenAuth creates new id token auth
