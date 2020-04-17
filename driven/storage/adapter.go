@@ -1,6 +1,11 @@
 package storage
 
-import "groups/core"
+import (
+	"groups/core"
+	"log"
+	"strconv"
+	"time"
+)
 
 //Adapter implements the Storage interface
 type Adapter struct {
@@ -16,4 +21,17 @@ func (sa *Adapter) Start() error {
 //SetStorageListener sets listener for the storage
 func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
 	sa.db.listener = storageListener
+}
+
+//NewStorageAdapter creates a new storage adapter instance
+func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
+	timeout, err := strconv.Atoi(mongoTimeout)
+	if err != nil {
+		log.Println("Set default timeout - 500")
+		timeout = 500
+	}
+	timeoutMS := time.Millisecond * time.Duration(timeout)
+
+	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
+	return &Adapter{db: db}
 }

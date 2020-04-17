@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"fmt"
+	"groups/core"
 	"log"
 	"net/http"
 
@@ -32,9 +33,9 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) bool {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(appKeys []string, oidcProvider string, oidcClientID string) *Auth {
+func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
-	idTokenAuth := newIDTokenAuth(oidcProvider, oidcClientID)
+	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
 
 	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth}
 	return &auth
@@ -89,6 +90,8 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 
 //IDTokenAuth entity
 type IDTokenAuth struct {
+	app *core.Application
+
 	idTokenVerifier *oidc.IDTokenVerifier
 }
 
@@ -128,13 +131,13 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 }
 
 //newIDTokenAuth creates new id token auth
-func newIDTokenAuth(oidcProvider string, oidcClientID string) *IDTokenAuth {
+func newIDTokenAuth(app *core.Application, oidcProvider string, oidcClientID string) *IDTokenAuth {
 	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
 
-	auth := IDTokenAuth{idTokenVerifier: idTokenVerifier}
+	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier}
 	return &auth
 }

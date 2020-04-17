@@ -1,8 +1,9 @@
 package main
 
 import (
-	"groups/core"
-	"groups/driver/web"
+	core "groups/core"
+	storage "groups/driven/storage"
+	web "groups/driver/web"
 	"log"
 	"os"
 	"strings"
@@ -20,8 +21,18 @@ func main() {
 		Version = "dev"
 	}
 
+	//mongoDB adapter
+	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
+	mongoDBName := getEnvKey("GR_MONGO_DATABASE", true)
+	mongoTimeout := getEnvKey("GR_MONGO_TIMEOUT", false)
+	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout)
+	err := storageAdapter.Start()
+	if err != nil {
+		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
+	}
+
 	//application
-	application := core.NewApplication(Version, Build, nil) //TODO add storage
+	application := core.NewApplication(Version, Build, storageAdapter)
 	application.Start()
 
 	//web adapter
