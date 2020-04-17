@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"groups/core"
+	"groups/core/model"
 	"log"
 	"net/http"
 
@@ -28,7 +29,7 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
 	return auth.apiKeysAuth.check(w, r)
 }
 
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) bool {
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) *model.User {
 	return auth.idTokenAuth.check(w, r)
 }
 
@@ -95,7 +96,7 @@ type IDTokenAuth struct {
 	idTokenVerifier *oidc.IDTokenVerifier
 }
 
-func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
+func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.User {
 	//TODO
 	log.Println("Make ID Token check")
 
@@ -133,7 +134,8 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 		log.Println(item)
 	}
 
-	return true
+	//TODO
+	return &model.User{ID: "123456789"}
 }
 
 //newIDTokenAuth creates new id token auth

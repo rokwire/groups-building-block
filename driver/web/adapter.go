@@ -62,13 +62,11 @@ func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		authenticated := we.auth.idTokenCheck(w, req)
-		if !authenticated {
+		user := we.auth.idTokenCheck(w, req)
+		if user == nil {
 			return
 		}
 
-		//TODO
-		user := &model.User{ID: "123456789"}
 		handler(user, w, req)
 	}
 }
