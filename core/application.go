@@ -21,9 +21,12 @@ func (app *Application) Start() {
 }
 
 //GetUser gets an user
-func (app *Application) GetUser() (*model.User, error) {
-	//TODO
-	return nil, nil
+func (app *Application) FindUser(externalID string) (*model.User, error) {
+	user, err := app.storage.FindUser(externalID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
 //NewApplication creates new Application

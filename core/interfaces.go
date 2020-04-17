@@ -1,5 +1,7 @@
 package core
 
+import "groups/core/model"
+
 //Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
@@ -29,6 +31,8 @@ func (s *administrationImpl) GetTODO() error {
 //Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
+
+	FindUser(externalID string) (*model.User, error)
 }
 
 //StorageListener listenes for change data storage events

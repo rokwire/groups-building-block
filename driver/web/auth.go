@@ -146,8 +146,12 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 		return nil
 	}
 
+	//4. Check if we have an user with the provided external id.
+	foundedUser, err := auth.app.FindUser(*userData.UIuceduUIN)
+	log.Println(foundedUser)
+
 	//TODO
-	log.Println(userData)
+
 	return &model.User{ID: "123456789"}
 }
 
