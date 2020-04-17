@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -40,6 +41,24 @@ func (sa *Adapter) FindUser(externalID string) (*model.User, error) {
 		return nil, nil
 	}
 	return result[0], nil
+}
+
+func (sa *Adapter) CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error) {
+	id, err := uuid.NewUUID()
+	if err != nil {
+		return nil, err
+	}
+
+	dateCreated := time.Now()
+	user := model.User{ID: id.String(), ExternalID: externalID, Email: email,
+		IsMemberOf: isMemberOf, DateCreated: dateCreated}
+	_, err = sa.db.users.InsertOne(&user)
+	if err != nil {
+		return nil, err
+	}
+
+	//return the inserted item
+	return &user, nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance

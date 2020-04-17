@@ -147,12 +147,25 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 	}
 
 	//4. Check if we have an user with the provided external id.
-	foundedUser, err := auth.app.FindUser(*userData.UIuceduUIN)
-	log.Println(foundedUser)
+	user, err := auth.app.FindUser(*userData.UIuceduUIN)
+	if err != nil {
+		log.Printf("error finding an for external id - %s\n", err)
 
-	//TODO
+		auth.responseInternalServerError(w)
+		return nil
+	}
+	if user == nil {
+		//this is the first call for this user, so we need to create it
+		user, err = auth.app.CreateUser(*userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
+		if err != nil {
+			log.Printf("error creating an user - %s\n", err)
 
-	return &model.User{ID: "123456789"}
+			auth.responseInternalServerError(w)
+			return nil
+		}
+	}
+
+	return user
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
@@ -167,6 +180,13 @@ func (auth *IDTokenAuth) responseUnauthorized(token string, w http.ResponseWrite
 
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte("Unauthorized"))
+}
+
+func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
+	log.Println(fmt.Sprintf("500 - Internal Server Error"))
+
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("Internal Server Error"))
 }
 
 //newIDTokenAuth creates new id token auth

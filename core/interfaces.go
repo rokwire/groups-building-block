@@ -33,6 +33,7 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(externalID string) (*model.User, error)
+	CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error)
 }
 
 //StorageListener listenes for change data storage events

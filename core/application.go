@@ -20,9 +20,18 @@ func (app *Application) Start() {
 	app.storage.SetStorageListener(&storageListener)
 }
 
-//GetUser gets an user
+//FindUser finds an user for the provided external id
 func (app *Application) FindUser(externalID string) (*model.User, error) {
 	user, err := app.storage.FindUser(externalID)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
+//CreateUser creates an user
+func (app *Application) CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error) {
+	user, err := app.storage.CreateUser(externalID, email, isMemberOf)
 	if err != nil {
 		return nil, err
 	}
