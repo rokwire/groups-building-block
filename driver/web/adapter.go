@@ -1,6 +1,7 @@
 package web
 
 import (
+	"groups/core"
 	"groups/driver/web/rest"
 	"groups/utils"
 	"log"
@@ -68,8 +69,8 @@ func (we Adapter) idTokenAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 }
 
 //NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(appKeys []string, oidcProvider string, oidcClientID string) *Adapter {
-	auth := NewAuth(appKeys, oidcProvider, oidcClientID)
+func NewWebAdapter(app *core.Application, appKeys []string, oidcProvider string, oidcClientID string) *Adapter {
+	auth := NewAuth(app, appKeys, oidcProvider, oidcClientID)
 	apisHandler := rest.NewApisHandler()
 	return &Adapter{auth: auth, apisHandler: apisHandler}
 }

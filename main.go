@@ -1,6 +1,7 @@
 package main
 
 import (
+	"groups/core"
 	"groups/driver/web"
 	"log"
 	"os"
@@ -19,11 +20,15 @@ func main() {
 		Version = "dev"
 	}
 
-	//APIkeys
+	//application
+	application := core.NewApplication(Version, Build, nil) //TODO add storage
+	application.Start()
+
+	//web adapter
 	apiKeys := getAPIKeys()
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
-	webAdapter := web.NewWebAdapter(apiKeys, oidcProvider, oidcClientID)
+	webAdapter := web.NewWebAdapter(application, apiKeys, oidcProvider, oidcClientID)
 	webAdapter.Start()
 }
 
