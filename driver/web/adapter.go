@@ -2,6 +2,7 @@ package web
 
 import (
 	"groups/core"
+	"groups/core/model"
 	"groups/driver/web/rest"
 	"groups/utils"
 	"log"
@@ -55,7 +56,9 @@ func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 	}
 }
 
-func (we Adapter) idTokenAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc {
+type authFunc = func(*model.User, http.ResponseWriter, *http.Request)
+
+func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
@@ -64,7 +67,9 @@ func (we Adapter) idTokenAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 			return
 		}
 
-		handler(w, req)
+		//TODO
+		user := &model.User{ID: "123456789"}
+		handler(user, w, req)
 	}
 }
 

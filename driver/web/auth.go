@@ -114,6 +114,8 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 		log.Println(err)
 	}
 
+	log.Println(idToken.Expiry)
+
 	// Extract custom claims
 	var claims struct {
 		UIuceduUIN        *string   `json:"uiucedu_uin"`

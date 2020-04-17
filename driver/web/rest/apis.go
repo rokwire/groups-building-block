@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"groups/core/model"
 	"log"
 	"net/http"
 )
@@ -10,8 +11,8 @@ type ApisHandler struct {
 }
 
 //Test test TODO
-func (h *ApisHandler) Test(w http.ResponseWriter, r *http.Request) {
-	log.Println("TODO")
+func (h *ApisHandler) Test(current *model.User, w http.ResponseWriter, r *http.Request) {
+	log.Println("TODO" + current.ID)
 }
 
 //NewApisHandler creates new rest Handler instance
