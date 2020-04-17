@@ -119,33 +119,35 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 	//2. Validate the token
 	idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)
 	if err != nil {
-		// handle error
 		log.Printf("error validating token - %s\n", err)
 
 		auth.responseUnauthorized(rawIDToken, w)
 		return nil
 	}
 
-	log.Println(idToken.Expiry)
-
-	// Extract custom claims
-	var claims struct {
+	//3. Get the user data from the token
+	var userData struct {
 		UIuceduUIN        *string   `json:"uiucedu_uin"`
 		Sub               *string   `json:"sub"`
 		Email             *string   `json:"email"`
 		UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 	}
-	if err := idToken.Claims(&claims); err != nil {
-		// handle error
-		log.Println(err)
-	}
-	log.Println(claims)
+	if err := idToken.Claims(&userData); err != nil {
+		log.Printf("error getting user data from token - %s\n", err)
 
-	for _, item := range *claims.UIuceduIsMemberOf {
-		log.Println(item)
+		auth.responseUnauthorized(rawIDToken, w)
+		return nil
+	}
+	//we must have UIuceduUIN
+	if userData.UIuceduUIN == nil {
+		log.Printf("missing uiuceuin data in the token - %s\n", err)
+
+		auth.responseUnauthorized(rawIDToken, w)
+		return nil
 	}
 
 	//TODO
+	log.Println(userData)
 	return &model.User{ID: "123456789"}
 }
 
