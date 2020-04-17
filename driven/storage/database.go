@@ -6,6 +6,8 @@ import (
 	"log"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -60,7 +62,11 @@ func (m *database) start() error {
 func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	log.Println("apply users checks.....")
 
-	//TODO - where index?
+	//add index - unique
+	err := users.AddIndex(bson.D{primitive.E{Key: "external_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
 
 	log.Println("users checks passed")
 	return nil

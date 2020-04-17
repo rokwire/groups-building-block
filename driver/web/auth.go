@@ -101,6 +101,7 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) bool {
 
 	rawIDToken := "12345"
 
+	//TODO
 	user, _ := auth.app.GetUser()
 	log.Println(user)
 
