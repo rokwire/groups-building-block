@@ -116,20 +116,14 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 	}
 	rawIDToken := splitAuthorization[1]
 
-	//TODO
-	log.Println("Make ID Token check")
-
-	//TODO
-	user, _ := auth.app.GetUser()
-	log.Println(user)
-
-	log.Println(rawIDToken)
-
-	// Parse and verify ID Token payload.
+	//2. Validate the token
 	idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)
 	if err != nil {
 		// handle error
-		log.Println(err)
+		log.Printf("error validating token - %s\n", err)
+
+		auth.responseUnauthorized(rawIDToken, w)
+		return nil
 	}
 
 	log.Println(idToken.Expiry)
@@ -160,6 +154,13 @@ func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
 
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("Bad Request"))
+}
+
+func (auth *IDTokenAuth) responseUnauthorized(token string, w http.ResponseWriter) {
+	log.Println(fmt.Sprintf("401 - Unauthorized for token %s", token))
+
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte("Unauthorized"))
 }
 
 //newIDTokenAuth creates new id token auth
