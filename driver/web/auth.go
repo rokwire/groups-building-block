@@ -90,6 +90,13 @@ func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
 
 ////////////////////////////////////
 
+type userData struct {
+	UIuceduUIN        *string   `json:"uiucedu_uin"`
+	Sub               *string   `json:"sub"`
+	Email             *string   `json:"email"`
+	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
+}
+
 //IDTokenAuth entity
 type IDTokenAuth struct {
 	app *core.Application
@@ -126,12 +133,7 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 	}
 
 	//3. Get the user data from the token
-	var userData struct {
-		UIuceduUIN        *string   `json:"uiucedu_uin"`
-		Sub               *string   `json:"sub"`
-		Email             *string   `json:"email"`
-		UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
-	}
+	var userData userData
 	if err := idToken.Claims(&userData); err != nil {
 		log.Printf("error getting user data from token - %s\n", err)
 
@@ -146,13 +148,24 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 		return nil
 	}
 
-	//4. Check if we have an user with the provided external id.
+	//4. Get the user for the provided external id.
+	user, err := auth.getUser(w, userData)
+	if err != nil {
+		log.Printf("error getting an user for external id - %s\n", err)
+
+		auth.responseInternalServerError(w)
+		return nil
+	}
+	return user
+}
+
+func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*model.User, error) {
 	user, err := auth.app.FindUser(*userData.UIuceduUIN)
 	if err != nil {
 		log.Printf("error finding an for external id - %s\n", err)
 
 		auth.responseInternalServerError(w)
-		return nil
+		return nil, err
 	}
 	if user == nil {
 		//this is the first call for this user, so we need to create it
@@ -161,11 +174,11 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 			log.Printf("error creating an user - %s\n", err)
 
 			auth.responseInternalServerError(w)
-			return nil
+			return nil, err
 		}
 	}
 
-	return user
+	return user, nil
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
