@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"gopkg.in/ericchiang/go-oidc.v2"
 )
@@ -97,11 +99,19 @@ type userData struct {
 	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 }
 
+type cacheUser struct {
+	user      *model.User
+	lastUsage time.Time
+}
+
 //IDTokenAuth entity
 type IDTokenAuth struct {
 	app *core.Application
 
 	idTokenVerifier *oidc.IDTokenVerifier
+
+	cachedUsers     map[string]*cacheUser //cache users while active - 5 minutes timeout
+	cachedUsersLock *sync.RWMutex
 }
 
 func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.User {
@@ -159,6 +169,21 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 	return user
 }
 
+func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
+	auth.cachedUsersLock.RLock()
+	defer auth.cachedUsersLock.RUnlock()
+	return auth.cachedUsers[externalID]
+}
+
+func (auth *IDTokenAuth) cachedUser(externalID string, user *model.User) {
+	auth.cachedUsersLock.RLock()
+
+	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
+	auth.cachedUsers[externalID] = cacheUser
+
+	auth.cachedUsersLock.RUnlock()
+}
+
 func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*model.User, error) {
 	user, err := auth.app.FindUser(*userData.UIuceduUIN)
 	if err != nil {
@@ -177,7 +202,6 @@ func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*mod
 			return nil, err
 		}
 	}
-
 	return user, nil
 }
 
@@ -210,6 +234,10 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, oidcClientID str
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
 
-	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier}
+	cacheUsers := make(map[string]*cacheUser)
+	lock := &sync.RWMutex{}
+
+	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier,
+		cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }
