@@ -100,8 +100,8 @@ type userData struct {
 }
 
 type cacheUser struct {
-	user      *model.User
-	lastUsage time.Time
+	user    *model.User
+	lastGet *time.Time
 }
 
 //IDTokenAuth entity
@@ -172,32 +172,57 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
 	auth.cachedUsersLock.RLock()
 	defer auth.cachedUsersLock.RUnlock()
-	return auth.cachedUsers[externalID]
+
+	cachedUser := auth.cachedUsers[externalID]
+
+	//keep the last get time
+	if cachedUser != nil {
+		now := time.Now()
+		cachedUser.lastGet = &now
+		auth.cachedUsers[externalID] = cachedUser
+	}
+
+	return cachedUser
 }
 
-func (auth *IDTokenAuth) cachedUser(externalID string, user *model.User) {
+func (auth *IDTokenAuth) cacheUser(externalID string, user *model.User) {
 	auth.cachedUsersLock.RLock()
 
-	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
+	cacheUser := &cacheUser{user: user, lastGet: nil}
 	auth.cachedUsers[externalID] = cacheUser
 
 	auth.cachedUsersLock.RUnlock()
 }
 
 func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*model.User, error) {
+	var err error
+
+	//1. First check if cached
+	cachedUser := auth.getCachedUser(*userData.UIuceduUIN)
+	if cachedUser != nil {
+		return cachedUser.user, nil
+	}
+
+	//2. Check if we have a such user in the application
 	user, err := auth.app.FindUser(*userData.UIuceduUIN)
 	if err != nil {
 		log.Printf("error finding an for external id - %s\n", err)
 		return nil, err
 	}
-	if user == nil {
-		//this is the first call for this user, so we need to create it
-		user, err = auth.app.CreateUser(*userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
-		if err != nil {
-			log.Printf("error creating an user - %s\n", err)
-			return nil, err
-		}
+	if user != nil {
+		//cache it
+		auth.cacheUser(*userData.UIuceduUIN, user)
+		return user, nil
 	}
+
+	//3. This is the first call for the user, so we need to create it
+	user, err = auth.app.CreateUser(*userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
+	if err != nil {
+		log.Printf("error creating an user - %s\n", err)
+		return nil, err
+	}
+	//cache it
+	auth.cacheUser(*userData.UIuceduUIN, user)
 	return user, nil
 }
 
