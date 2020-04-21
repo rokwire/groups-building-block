@@ -22,8 +22,7 @@ type Auth struct {
 
 //Start starts the auth module
 func (auth *Auth) Start() error {
-	//TODO
-	//go auth.checkForHangingStates()
+	auth.idTokenAuth.start()
 
 	return nil
 }
@@ -114,6 +113,49 @@ type IDTokenAuth struct {
 	cachedUsersLock *sync.RWMutex
 }
 
+func (auth *IDTokenAuth) start() {
+	go auth.cleanChacheUser()
+}
+
+//cleanChacheUser cleans all users from the cache with no activity > 5 minutes
+func (auth *IDTokenAuth) cleanChacheUser() {
+	log.Println("cleanChacheUser -> start")
+
+	toRemove := []string{}
+
+	//find all users to remove - more than 5 minutes period from their last usage
+	now := time.Now().Unix()
+	for key, cacheUser := range auth.cachedUsers {
+		lastUsage := cacheUser.lastGet
+		if lastUsage == nil {
+			continue
+		}
+		difference := now - lastUsage.Unix()
+
+		//5 minutes
+		if difference > 300 {
+			toRemove = append(toRemove, key)
+		}
+	}
+
+	//remove the selected ones
+	if len(toRemove) > 0 {
+		for _, key := range toRemove {
+			auth.deleteCacheUser(key)
+		}
+	} else {
+		log.Println("cleanChacheUser -> nothing to remove")
+	}
+
+	nextLoad := time.Minute * 5
+	log.Printf("cleanChacheUser() -> next exec after %s\n", nextLoad)
+	timer := time.NewTimer(nextLoad)
+	<-timer.C
+	log.Println("cleanChacheUser() -> timer expired")
+
+	auth.cleanChacheUser()
+}
+
 func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.User {
 	//1. Get the token from the request
 	authorizationHeader := r.Header.Get("Authorization")
@@ -190,6 +232,14 @@ func (auth *IDTokenAuth) cacheUser(externalID string, user *model.User) {
 
 	cacheUser := &cacheUser{user: user, lastGet: nil}
 	auth.cachedUsers[externalID] = cacheUser
+
+	auth.cachedUsersLock.RUnlock()
+}
+
+func (auth *IDTokenAuth) deleteCacheUser(externalID string) {
+	auth.cachedUsersLock.RLock()
+
+	delete(auth.cachedUsers, externalID)
 
 	auth.cachedUsersLock.RUnlock()
 }
