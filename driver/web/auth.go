@@ -114,12 +114,12 @@ type IDTokenAuth struct {
 }
 
 func (auth *IDTokenAuth) start() {
-	go auth.cleanChacheUser()
+	go auth.cleanCacheUser()
 }
 
 //cleanChacheUser cleans all users from the cache with no activity > 5 minutes
-func (auth *IDTokenAuth) cleanChacheUser() {
-	log.Println("cleanChacheUser -> start")
+func (auth *IDTokenAuth) cleanCacheUser() {
+	log.Println("cleanCacheUser -> start")
 
 	toRemove := []string{}
 
@@ -137,22 +137,22 @@ func (auth *IDTokenAuth) cleanChacheUser() {
 	//remove the selected ones
 	count := len(toRemove)
 	if count > 0 {
-		log.Printf("cleanChacheUser -> %d items to remove\n", count)
+		log.Printf("cleanCacheUser -> %d items to remove\n", count)
 
 		for _, key := range toRemove {
 			auth.deleteCacheUser(key)
 		}
 	} else {
-		log.Println("cleanChacheUser -> nothing to remove")
+		log.Println("cleanCacheUser -> nothing to remove")
 	}
 
 	nextLoad := time.Minute * 5
-	log.Printf("cleanChacheUser() -> next exec after %s\n", nextLoad)
+	log.Printf("cleanCacheUser() -> next exec after %s\n", nextLoad)
 	timer := time.NewTimer(nextLoad)
 	<-timer.C
-	log.Println("cleanChacheUser() -> timer expired")
+	log.Println("cleanCacheUser() -> timer expired")
 
-	auth.cleanChacheUser()
+	auth.cleanCacheUser()
 }
 
 func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.User {
