@@ -99,8 +99,8 @@ type userData struct {
 }
 
 type cacheUser struct {
-	user    *model.User
-	lastGet *time.Time
+	user      *model.User
+	lastUsage time.Time
 }
 
 //IDTokenAuth entity
@@ -126,11 +126,7 @@ func (auth *IDTokenAuth) cleanChacheUser() {
 	//find all users to remove - more than 5 minutes period from their last usage
 	now := time.Now().Unix()
 	for key, cacheUser := range auth.cachedUsers {
-		lastUsage := cacheUser.lastGet
-		if lastUsage == nil {
-			continue
-		}
-		difference := now - lastUsage.Unix()
+		difference := now - cacheUser.lastUsage.Unix()
 
 		//5 minutes
 		if difference > 300 {
@@ -139,7 +135,10 @@ func (auth *IDTokenAuth) cleanChacheUser() {
 	}
 
 	//remove the selected ones
-	if len(toRemove) > 0 {
+	count := len(toRemove)
+	if count > 0 {
+		log.Printf("cleanChacheUser -> %d items to remove\n", count)
+
 		for _, key := range toRemove {
 			auth.deleteCacheUser(key)
 		}
@@ -219,8 +218,7 @@ func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
 
 	//keep the last get time
 	if cachedUser != nil {
-		now := time.Now()
-		cachedUser.lastGet = &now
+		cachedUser.lastUsage = time.Now()
 		auth.cachedUsers[externalID] = cachedUser
 	}
 
@@ -230,7 +228,7 @@ func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
 func (auth *IDTokenAuth) cacheUser(externalID string, user *model.User) {
 	auth.cachedUsersLock.RLock()
 
-	cacheUser := &cacheUser{user: user, lastGet: nil}
+	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
 	auth.cachedUsers[externalID] = cacheUser
 
 	auth.cachedUsersLock.RUnlock()
