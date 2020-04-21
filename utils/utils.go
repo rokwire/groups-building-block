@@ -27,3 +27,32 @@ func LogRequest(req *http.Request) {
 	}
 	log.Printf("%s %s %s", method, path, header)
 }
+
+//Equal compares two slices
+func Equal(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if v != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+//EqualPointers compares two pointers slices
+func EqualPointers(a, b *[]string) bool {
+	if a == nil && b == nil {
+		return true //equals
+	}
+	if a != nil && b == nil {
+		return false // not equals
+	}
+	if a == nil && b != nil {
+		return false // not equals
+	}
+
+	//both are not nil
+	return Equal(*a, *b)
+}

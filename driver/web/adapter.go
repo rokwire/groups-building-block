@@ -56,7 +56,7 @@ func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 	}
 }
 
-type authFunc = func(*model.User, http.ResponseWriter, *http.Request)
+type authFunc = func(model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -67,7 +67,7 @@ func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 			return
 		}
 
-		handler(user, w, req)
+		handler(*user, w, req)
 	}
 }
 

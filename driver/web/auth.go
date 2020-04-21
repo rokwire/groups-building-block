@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"groups/core"
 	"groups/core/model"
+	"groups/utils"
 	"log"
 	"net/http"
 	"strings"
@@ -200,14 +201,53 @@ func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.Us
 	}
 
 	//4. Get the user for the provided external id.
-	user, err := auth.getUser(w, userData)
+	user, err := auth.getUser(userData)
 	if err != nil {
 		log.Printf("error getting an user for external id - %s\n", err)
 
 		auth.responseInternalServerError(w)
 		return nil
 	}
+	if user == nil {
+		log.Printf("for some reasons the user for external id - %s is nil\n", err)
+
+		auth.responseInternalServerError(w)
+		return nil
+	}
+
+	//5. Update the user if needed
+	user, err = auth.updateUserIfNeeded(*user, userData)
+	if err != nil {
+		log.Printf("error updating an user for external id - %s\n", err)
+
+		auth.responseInternalServerError(w)
+		return nil
+	}
+
+	//6. Return the user
 	return user
+}
+
+func (auth *IDTokenAuth) updateUserIfNeeded(current model.User, userData userData) (*model.User, error) {
+	currentList := current.IsMemberOf
+	newList := userData.UIuceduIsMemberOf
+
+	isEqual := utils.EqualPointers(currentList, newList)
+	if !isEqual {
+		log.Println("updateUserIfNeeded -> need to update user")
+
+		//1. remove it from the cache
+		auth.deleteCacheUser(current.ExternalID)
+
+		//2. update it
+		current.IsMemberOf = userData.UIuceduIsMemberOf
+		err := auth.app.UpdateUser(&current)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &current, nil
 }
 
 func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
@@ -242,7 +282,7 @@ func (auth *IDTokenAuth) deleteCacheUser(externalID string) {
 	auth.cachedUsersLock.RUnlock()
 }
 
-func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*model.User, error) {
+func (auth *IDTokenAuth) getUser(userData userData) (*model.User, error) {
 	var err error
 
 	//1. First check if cached

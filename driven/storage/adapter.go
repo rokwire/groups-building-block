@@ -43,6 +43,7 @@ func (sa *Adapter) FindUser(externalID string) (*model.User, error) {
 	return result[0], nil
 }
 
+//CreateUser creates an user
 func (sa *Adapter) CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
@@ -59,6 +60,20 @@ func (sa *Adapter) CreateUser(externalID string, email string, isMemberOf *[]str
 
 	//return the inserted item
 	return &user, nil
+}
+
+//SaveUser saves the user
+func (sa *Adapter) SaveUser(user *model.User) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: user.ID}}
+
+	dateUpdated := time.Now()
+	user.DateUpdated = &dateUpdated
+
+	err := sa.db.users.ReplaceOne(filter, user, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance

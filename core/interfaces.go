@@ -34,6 +34,7 @@ type Storage interface {
 
 	FindUser(externalID string) (*model.User, error)
 	CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error)
+	SaveUser(user *model.User) error
 }
 
 //StorageListener listenes for change data storage events

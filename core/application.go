@@ -38,6 +38,15 @@ func (app *Application) CreateUser(externalID string, email string, isMemberOf *
 	return user, nil
 }
 
+//UpdateUser updates the user
+func (app *Application) UpdateUser(user *model.User) error {
+	err := app.storage.SaveUser(user)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage) *Application {
 
