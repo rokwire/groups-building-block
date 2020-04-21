@@ -188,8 +188,6 @@ func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*mod
 	user, err := auth.app.FindUser(*userData.UIuceduUIN)
 	if err != nil {
 		log.Printf("error finding an for external id - %s\n", err)
-
-		auth.responseInternalServerError(w)
 		return nil, err
 	}
 	if user == nil {
@@ -197,8 +195,6 @@ func (auth *IDTokenAuth) getUser(w http.ResponseWriter, userData userData) (*mod
 		user, err = auth.app.CreateUser(*userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
 		if err != nil {
 			log.Printf("error creating an user - %s\n", err)
-
-			auth.responseInternalServerError(w)
 			return nil, err
 		}
 	}
