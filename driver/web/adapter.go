@@ -28,6 +28,9 @@ func (we *Adapter) Start() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
+	subrouter := router.PathPrefix("/groups").Subrouter()
+	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/groups/api").Subrouter()
 	restSubrouter.HandleFunc("/test", we.idTokenAuthWrapFunc(we.apisHandler.Test)).Methods("GET")
@@ -74,6 +77,6 @@ func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 //NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, appKeys []string, oidcProvider string, oidcClientID string) *Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcClientID)
-	apisHandler := rest.NewApisHandler()
+	apisHandler := rest.NewApisHandler(app)
 	return &Adapter{auth: auth, apisHandler: apisHandler}
 }
