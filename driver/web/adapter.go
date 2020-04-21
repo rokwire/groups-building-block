@@ -28,11 +28,11 @@ func (we *Adapter) Start() {
 
 	router := mux.NewRouter().StrictSlash(true)
 
-	subrouter := router.PathPrefix("/groups").Subrouter()
+	subrouter := router.PathPrefix("/gr").Subrouter()
 	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
 
 	//handle rest apis
-	restSubrouter := router.PathPrefix("/groups/api").Subrouter()
+	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
 	restSubrouter.HandleFunc("/test", we.idTokenAuthWrapFunc(we.apisHandler.Test)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))
