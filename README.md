@@ -4,7 +4,7 @@ The service is based on clear hexagonal architecture.
 
 ## Get version
 
-curl -X GET -i http://localhost/groups/version
+curl -X GET -i http://localhost/gr/version
 
 Response
 ```
