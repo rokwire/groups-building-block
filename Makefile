@@ -17,7 +17,7 @@ VERSION ?= ${MAJOR_VERSION}.${MINOR_VERSION}.${BUILD_NUMBER}
 
 export -n GOBIN
 export GOPATH
-export PATH=$(BIN): $(shell printenv PATH)
+#export PATH=$(BIN): $(shell printenv PATH)
 
 GO      = go
 GODOC   = godoc
@@ -110,6 +110,10 @@ help:
 .PHONY: version
 version:
 	@echo $(VERSION)
+
+.PHONY: swagger
+swagger: ;
+	swag init -g driver/web/adapter.go
 
 .PHONY: log-variables
 log-variables: ; $(info $(M) Log info…) @ ## Log the variables values

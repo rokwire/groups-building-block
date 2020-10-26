@@ -1,0 +1,28 @@
+basePath: /gr
+host: localhost
+info:
+  contact: {}
+  description: Rokwire Groups Building Block API Documentation.
+  license: {}
+  title: Rokwire Groups Building Block API
+  version: 1.0.2
+paths:
+  /version:
+    get:
+      description: Gives the service version.
+      operationId: Version
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+schemes:
+- https
+securityDefinitions:
+  RokwireAuth:
+    in: header
+    name: ROKWIRE-API-KEY
+    type: apiKey
+swagger: "2.0"

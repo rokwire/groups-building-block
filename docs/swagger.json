@@ -1,0 +1,41 @@
+{
+    "schemes": [
+        "https"
+    ],
+    "swagger": "2.0",
+    "info": {
+        "description": "Rokwire Groups Building Block API Documentation.",
+        "title": "Rokwire Groups Building Block API",
+        "contact": {},
+        "license": {},
+        "version": "1.0.2"
+    },
+    "host": "localhost",
+    "basePath": "/gr",
+    "paths": {
+        "/version": {
+            "get": {
+                "description": "Gives the service version.",
+                "produces": [
+                    "text/plain"
+                ],
+                "operationId": "Version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "RokwireAuth": {
+            "type": "apiKey",
+            "name": "ROKWIRE-API-KEY",
+            "in": "header"
+        }
+    }
+}

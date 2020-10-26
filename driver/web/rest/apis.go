@@ -13,6 +13,11 @@ type ApisHandler struct {
 }
 
 //Version gives the service version
+// @Description Gives the service version.
+// @ID Version
+// @Produce plain
+// @Success 200 {string} v1.1.0
+// @Router /version [get]
 func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
