@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/syncmap"
 	"gopkg.in/ericchiang/go-oidc.v2"
 )
 
@@ -42,7 +43,12 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (bool, *mod
 	//first check for id token
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
-		return true, auth.idTokenAuth.check(idToken, w)
+		authenticated := false
+		user := auth.idTokenAuth.check(idToken, w)
+		if user != nil {
+			authenticated = true
+		}
+		return authenticated, user
 	}
 
 	//check api key
@@ -157,7 +163,7 @@ type IDTokenAuth struct {
 
 	idTokenVerifier *oidc.IDTokenVerifier
 
-	cachedUsers     map[string]*cacheUser //cache users while active - 5 minutes timeout
+	cachedUsers     *syncmap.Map //cache users while active - 5 minutes timeout
 	cachedUsersLock *sync.RWMutex
 }
 
@@ -167,38 +173,49 @@ func (auth *IDTokenAuth) start() {
 
 //cleanChacheUser cleans all users from the cache with no activity > 5 minutes
 func (auth *IDTokenAuth) cleanCacheUser() {
-	log.Println("cleanCacheUser -> start")
+	log.Println("IDTokenAuth -> cleanCacheUser -> start")
 
 	toRemove := []string{}
 
 	//find all users to remove - more than 5 minutes period from their last usage
 	now := time.Now().Unix()
-	for key, cacheUser := range auth.cachedUsers {
-		difference := now - cacheUser.lastUsage.Unix()
+	auth.cachedUsers.Range(func(key, value interface{}) bool {
+		cacheUser, ok := value.(*cacheUser)
+		if !ok {
+			return false //break the iteration
+		}
+		externalID, ok := key.(string)
+		if !ok {
+			return false //break the iteration
+		}
 
+		difference := now - cacheUser.lastUsage.Unix()
 		//5 minutes
 		if difference > 300 {
-			toRemove = append(toRemove, key)
+			toRemove = append(toRemove, externalID)
 		}
-	}
+
+		// this will continue iterating
+		return true
+	})
 
 	//remove the selected ones
 	count := len(toRemove)
 	if count > 0 {
-		log.Printf("cleanCacheUser -> %d items to remove\n", count)
+		log.Printf("IDTokenAuth -> cleanCacheUser -> %d items to remove\n", count)
 
 		for _, key := range toRemove {
 			auth.deleteCacheUser(key)
 		}
 	} else {
-		log.Println("cleanCacheUser -> nothing to remove")
+		log.Println("IDTokenAuth -> cleanCacheUser -> nothing to remove")
 	}
 
 	nextLoad := time.Minute * 5
-	log.Printf("cleanCacheUser() -> next exec after %s\n", nextLoad)
+	log.Printf("IDTokenAuth -> cleanCacheUser() -> next exec after %s\n", nextLoad)
 	timer := time.NewTimer(nextLoad)
 	<-timer.C
-	log.Println("cleanCacheUser() -> timer expired")
+	log.Println("IDTokenAuth -> cleanCacheUser() -> timer expired")
 
 	auth.cleanCacheUser()
 }
@@ -290,12 +307,17 @@ func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
 	auth.cachedUsersLock.RLock()
 	defer auth.cachedUsersLock.RUnlock()
 
-	cachedUser := auth.cachedUsers[externalID]
+	var cachedUser *cacheUser //to return
+
+	item, _ := auth.cachedUsers.Load(externalID)
+	if item != nil {
+		cachedUser = item.(*cacheUser)
+	}
 
 	//keep the last get time
 	if cachedUser != nil {
 		cachedUser.lastUsage = time.Now()
-		auth.cachedUsers[externalID] = cachedUser
+		auth.cachedUsers.Store(externalID, cachedUser)
 	}
 
 	return cachedUser
@@ -305,7 +327,7 @@ func (auth *IDTokenAuth) cacheUser(externalID string, user *model.User) {
 	auth.cachedUsersLock.RLock()
 
 	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
-	auth.cachedUsers[externalID] = cacheUser
+	auth.cachedUsers.Store(externalID, cacheUser)
 
 	auth.cachedUsersLock.RUnlock()
 }
@@ -313,7 +335,7 @@ func (auth *IDTokenAuth) cacheUser(externalID string, user *model.User) {
 func (auth *IDTokenAuth) deleteCacheUser(externalID string) {
 	auth.cachedUsersLock.RLock()
 
-	delete(auth.cachedUsers, externalID)
+	auth.cachedUsers.Delete(externalID)
 
 	auth.cachedUsersLock.RUnlock()
 }
@@ -379,7 +401,7 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, oidcClientID str
 	}
 	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
 
-	cacheUsers := make(map[string]*cacheUser)
+	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
 	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier,

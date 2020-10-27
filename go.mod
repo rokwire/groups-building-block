@@ -12,6 +12,7 @@ require (
 	go.mongodb.org/mongo-driver v1.3.2
 	golang.org/x/crypto v0.0.0-20200414173820-0848c9571904 // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	gopkg.in/ericchiang/go-oidc.v2 v2.2.1
 	gopkg.in/square/go-jose.v2 v2.5.0 // indirect
 )
