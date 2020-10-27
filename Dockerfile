@@ -1,7 +1,18 @@
-FROM golang:latest 
+FROM golang:1.13.14-buster as builder
+
+ENV CGO_ENABLED=0
+
 RUN mkdir /groups-app
 WORKDIR /groups-app
 # Copy the source from the current directory to the Working Directory inside the container
 COPY . .
 RUN make
-CMD ["./bin/groups"]
+
+FROM alpine:3.11.6
+
+COPY --from=builder /groups-app/bin/groups /
+COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml
+
+COPY --from=builder /etc/passwd /etc/passwd
+
+ENTRYPOINT ["/groups"]
