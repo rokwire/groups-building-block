@@ -29,16 +29,59 @@ func (auth *Auth) Start() error {
 }
 
 func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
-	return auth.apiKeysAuth.check(w, r)
+	apiKey := auth.getAPIKey(r)
+	return auth.apiKeysAuth.check(apiKey, w)
 }
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) *model.User {
-	return auth.idTokenAuth.check(w, r)
+	idToken := auth.getIDToken(r)
+	return auth.idTokenAuth.check(idToken, w)
 }
 
-func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) *model.User {
-	//TODO
-	return nil
+func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
+	//first check for id token
+	idToken := auth.getIDToken(r)
+	if idToken != nil && len(*idToken) > 0 {
+		return true, auth.idTokenAuth.check(idToken, w)
+	}
+
+	//check api key
+	apiKey := auth.getAPIKey(r)
+	if apiKey != nil && len(*apiKey) > 0 {
+		return auth.apiKeysAuth.check(apiKey, w), nil
+	}
+
+	//neither id token nor api key - so bad request
+	log.Println("400 - Bad Request")
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte("Bad Request"))
+	return false, nil
+}
+
+func (auth *Auth) getAPIKey(r *http.Request) *string {
+	apiKey := r.Header.Get("ROKWIRE-API-KEY")
+	if len(apiKey) == 0 {
+		return nil
+	}
+	return &apiKey
+}
+
+func (auth *Auth) getIDToken(r *http.Request) *string {
+	// get the token from the request
+	authorizationHeader := r.Header.Get("Authorization")
+	if len(authorizationHeader) <= 0 {
+		return nil
+	}
+	splitAuthorization := strings.Fields(authorizationHeader)
+	if len(splitAuthorization) != 2 {
+		return nil
+	}
+	// expected - Bearer 1234
+	if splitAuthorization[0] != "Bearer" {
+		return nil
+	}
+	idToken := splitAuthorization[1]
+	return &idToken
 }
 
 //NewAuth creates new auth handler
@@ -57,10 +100,9 @@ type APIKeysAuth struct {
 	appKeys []string
 }
 
-func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) bool {
-	apiKey := r.Header.Get("ROKWIRE-API-KEY")
+func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
 	//check if there is api key in the header
-	if len(apiKey) == 0 {
+	if apiKey == nil || len(*apiKey) == 0 {
 		//no key, so return 400
 		log.Println(fmt.Sprintf("400 - Bad Request"))
 
@@ -73,14 +115,14 @@ func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) bool {
 	appKeys := auth.appKeys
 	exist := false
 	for _, element := range appKeys {
-		if element == apiKey {
+		if element == *apiKey {
 			exist = true
 			break
 		}
 	}
 	if !exist {
 		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", apiKey))
+		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *apiKey))
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
@@ -161,24 +203,13 @@ func (auth *IDTokenAuth) cleanCacheUser() {
 	auth.cleanCacheUser()
 }
 
-func (auth *IDTokenAuth) check(w http.ResponseWriter, r *http.Request) *model.User {
-	//1. Get the token from the request
-	authorizationHeader := r.Header.Get("Authorization")
-	if len(authorizationHeader) <= 0 {
+func (auth *IDTokenAuth) check(token *string, w http.ResponseWriter) *model.User {
+	//1. Check if there is a token
+	if token == nil || len(*token) == 0 {
 		auth.responseBadRequest(w)
 		return nil
 	}
-	splitAuthorization := strings.Fields(authorizationHeader)
-	if len(splitAuthorization) != 2 {
-		auth.responseBadRequest(w)
-		return nil
-	}
-	// expected - Bearer 1234
-	if splitAuthorization[0] != "Bearer" {
-		auth.responseBadRequest(w)
-		return nil
-	}
-	rawIDToken := splitAuthorization[1]
+	rawIDToken := *token
 
 	//2. Validate the token
 	idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)

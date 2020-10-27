@@ -22,9 +22,19 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
-//Test test TODO
-func (h *ApisHandler) Test(current model.User, w http.ResponseWriter, r *http.Request) {
-	log.Println("TODO" + current.ID)
+//JustAPIKey test TODO
+func (h *ApisHandler) JustAPIKey(w http.ResponseWriter, r *http.Request) {
+	log.Println("JustAPIKey")
+}
+
+//JustIDToken test TODO
+func (h *ApisHandler) JustIDToken(current *model.User, w http.ResponseWriter, r *http.Request) {
+	log.Println("JustIDToken")
+}
+
+//JustMixed test TODO
+func (h *ApisHandler) JustMixed(current *model.User, w http.ResponseWriter, r *http.Request) {
+	log.Println("JustMixed")
 }
 
 //NewApisHandler creates new rest Handler instance

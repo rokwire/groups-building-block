@@ -50,7 +50,9 @@ func (we *Adapter) Start() {
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
-	restSubrouter.HandleFunc("/test", we.idTokenAuthWrapFunc(we.apisHandler.Test)).Methods("GET")
+	restSubrouter.HandleFunc("/just-api-key", we.apiKeysAuthWrapFunc(we.apisHandler.JustAPIKey)).Methods("GET")
+	restSubrouter.HandleFunc("/just-id-token", we.idTokenAuthWrapFunc(we.apisHandler.JustIDToken)).Methods("GET")
+	restSubrouter.HandleFunc("/just-mixed", we.mixedAuthWrapFunc(we.apisHandler.JustMixed)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))
 }
@@ -86,7 +88,7 @@ func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 	}
 }
 
-type authFunc = func(model.User, http.ResponseWriter, *http.Request)
+type authFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
@@ -97,7 +99,21 @@ func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 			return
 		}
 
-		handler(*user, w, req)
+		handler(user, w, req)
+	}
+}
+
+func (we Adapter) mixedAuthWrapFunc(handler authFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		authenticated, user := we.auth.mixedCheck(w, req)
+		if !authenticated {
+			return
+		}
+
+		//user can be nil
+		handler(user, w, req)
 	}
 }
 
