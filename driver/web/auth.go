@@ -36,6 +36,11 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) *model.Us
 	return auth.idTokenAuth.check(w, r)
 }
 
+func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) *model.User {
+	//TODO
+	return nil
+}
+
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
