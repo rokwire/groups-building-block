@@ -15,7 +15,7 @@ type Group struct {
 	Tags                []string
 	MembershipQuestions []string
 
-	//TODO members
+	Members []Member
 
 	DateCreated time.Time
 	DateUpdated *time.Time
