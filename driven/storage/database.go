@@ -17,8 +17,9 @@ type database struct {
 	mongoDBName  string
 	mongoTimeout time.Duration
 
-	db    *mongo.Database
-	users *collectionWrapper
+	db              *mongo.Database
+	users           *collectionWrapper
+	groupcategories *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -52,9 +53,16 @@ func (m *database) start() error {
 		return err
 	}
 
+	groupcategories := &collectionWrapper{database: m, coll: db.Collection("groupcategories")}
+	err = m.applyGroupCategoriesChecks(groupcategories)
+	if err != nil {
+		return err
+	}
+
 	//asign the db and the collections
 	m.db = db
 	m.users = users
+	m.groupcategories = groupcategories
 
 	return nil
 }
@@ -69,6 +77,13 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	}
 
 	log.Println("users checks passed")
+	return nil
+}
+
+func (m *database) applyGroupCategoriesChecks(groupcategories *collectionWrapper) error {
+	log.Println("apply groupcategories checks.....")
+
+	log.Println("groupcategories checks passed")
 	return nil
 }
 
