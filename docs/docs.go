@@ -25,6 +25,31 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/group-categories": {
+            "get": {
+                "security": [
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gives all group categories.",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "GetGroupCategories",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -44,7 +69,7 @@ var doc = `{
         }
     },
     "securityDefinitions": {
-        "RokwireAuth": {
+        "APIKeyAuth": {
             "type": "apiKey",
             "name": "ROKWIRE-API-KEY",
             "in": "header"

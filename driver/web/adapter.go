@@ -29,7 +29,7 @@ type Adapter struct {
 // @BasePath /gr
 // @schemes https
 
-// @securityDefinitions.apikey RokwireAuth
+// @securityDefinitions.apikey APIKeyAuth
 // @in header
 // @name ROKWIRE-API-KEY
 

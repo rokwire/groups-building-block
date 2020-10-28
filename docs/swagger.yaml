@@ -7,6 +7,21 @@ info:
   title: Rokwire Groups Building Block API
   version: 1.0.2
 paths:
+  /api/group-categories:
+    get:
+      consumes:
+      - application/json
+      description: Gives all group categories.
+      operationId: GetGroupCategories
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - APIKeyAuth: []
   /version:
     get:
       description: Gives the service version.
@@ -21,7 +36,7 @@ paths:
 schemes:
 - https
 securityDefinitions:
-  RokwireAuth:
+  APIKeyAuth:
     in: header
     name: ROKWIRE-API-KEY
     type: apiKey

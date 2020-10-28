@@ -24,6 +24,12 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 }
 
 //GetGroupCategories gives all group categories
+// @Description Gives all group categories.
+// @ID GetGroupCategories
+// @Accept  json
+// @Success 200 {array} string
+// @Security APIKeyAuth
+// @Router /api/group-categories [get]
 func (h *ApisHandler) GetGroupCategories(w http.ResponseWriter, r *http.Request) {
 	groupCategories, err := h.app.Services.GetGroupCategories()
 	if err != nil {
