@@ -12,6 +12,11 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+type enumItem struct {
+	ID     string   `bson:"_id"`
+	Values []string `bson:"values"`
+}
+
 //Adapter implements the Storage interface
 type Adapter struct {
 	db *database
@@ -78,13 +83,19 @@ func (sa *Adapter) SaveUser(user *model.User) error {
 
 //ReadAllGroupCategories reads all group categories
 func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
-	filter := bson.D{}
-	var result []string
-	err := sa.db.groupcategories.Find(filter, &result, nil)
+	filter := bson.D{primitive.E{Key: "_id", Value: "categories"}}
+	var result []enumItem
+	err := sa.db.enums.Find(filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	if len(result) == 0 {
+		//not found
+		return nil, nil
+	}
+	categoryItem := result[0]
+
+	return categoryItem.Values, nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance

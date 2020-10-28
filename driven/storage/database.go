@@ -17,9 +17,9 @@ type database struct {
 	mongoDBName  string
 	mongoTimeout time.Duration
 
-	db              *mongo.Database
-	users           *collectionWrapper
-	groupcategories *collectionWrapper
+	db    *mongo.Database
+	users *collectionWrapper
+	enums *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -53,8 +53,8 @@ func (m *database) start() error {
 		return err
 	}
 
-	groupcategories := &collectionWrapper{database: m, coll: db.Collection("groupcategories")}
-	err = m.applyGroupCategoriesChecks(groupcategories)
+	enums := &collectionWrapper{database: m, coll: db.Collection("enums")}
+	err = m.applyEnumsChecks(enums)
 	if err != nil {
 		return err
 	}
@@ -62,7 +62,7 @@ func (m *database) start() error {
 	//asign the db and the collections
 	m.db = db
 	m.users = users
-	m.groupcategories = groupcategories
+	m.enums = enums
 
 	return nil
 }
@@ -80,10 +80,37 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	return nil
 }
 
-func (m *database) applyGroupCategoriesChecks(groupcategories *collectionWrapper) error {
-	log.Println("apply groupcategories checks.....")
+func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
+	log.Println("apply enums checks.....")
 
-	log.Println("groupcategories checks passed")
+	//add initial group categories data if not already added
+	fFilter := bson.D{primitive.E{Key: "_id", Value: "categories"}}
+	var result []enumItem
+	err := enums.Find(fFilter, &result, nil)
+	if err != nil {
+		return err
+	}
+	hasData := result != nil && len(result) > 0
+	if !hasData {
+		log.Println("there is no group categories, so add initial data")
+
+		data := []string{"Academic/Pre-Professional", "Athletic/Recreation", "Club Sports",
+			"Creative/Media/Performing Arts", "Cultural/Ethnic", "Graduate",
+			"Honorary", "International", "Other Social",
+			"Political", "Religious", "Residence Hall",
+			"Rights/Freedom Issues", "ROTC", "Service/Philanthropy",
+			"Social Fraternity/Sorority", "University Student Governance/Council/Committee"}
+
+		categoriesData := enumItem{ID: "categories", Values: data}
+		_, err = enums.InsertOne(&categoriesData)
+		if err != nil {
+			return err
+		}
+	} else {
+		log.Println("there is group categories data, so do nothing")
+	}
+
+	log.Println("enums checks passed")
 	return nil
 }
 
