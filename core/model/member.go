@@ -17,6 +17,7 @@ type Member struct {
 	DateUpdated *time.Time
 }
 
+//MemberAnswer represents member answer entity
 type MemberAnswer struct {
 	Question string
 	Answer   string
