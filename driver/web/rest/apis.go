@@ -1,6 +1,7 @@
 package rest
 
 import (
+	"encoding/json"
 	"groups/core"
 	"groups/core/model"
 	"log"
@@ -22,9 +23,29 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
-//JustAPIKey test TODO
-func (h *ApisHandler) JustAPIKey(w http.ResponseWriter, r *http.Request) {
-	log.Println("JustAPIKey")
+//GetGroupCategories gives all group categories
+func (h *ApisHandler) GetGroupCategories(w http.ResponseWriter, r *http.Request) {
+	groupCategories, err := h.app.Services.GetGroupCategories()
+	if err != nil {
+		log.Println("Error on getting the group categories")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if len(groupCategories) == 0 {
+		groupCategories = make([]string, 0)
+	}
+
+	data, err := json.Marshal(groupCategories)
+	if err != nil {
+		log.Println("Error on marshal the group categories")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 //JustIDToken test TODO

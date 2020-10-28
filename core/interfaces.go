@@ -5,6 +5,8 @@ import "groups/core/model"
 //Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
+
+	GetGroupCategories() ([]string, error)
 }
 
 type servicesImpl struct {
@@ -13,6 +15,10 @@ type servicesImpl struct {
 
 func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
+}
+
+func (s *servicesImpl) GetGroupCategories() ([]string, error) {
+	return s.app.getGroupCategories()
 }
 
 //Administration exposes administration APIs for the driver adapters
@@ -35,6 +41,8 @@ type Storage interface {
 	FindUser(externalID string) (*model.User, error)
 	CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error)
 	SaveUser(user *model.User) error
+
+	ReadAllGroupCategories() ([]string, error)
 }
 
 //StorageListener listenes for change data storage events

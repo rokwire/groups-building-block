@@ -50,8 +50,14 @@ func (we *Adapter) Start() {
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
-	restSubrouter.HandleFunc("/just-api-key", we.apiKeysAuthWrapFunc(we.apisHandler.JustAPIKey)).Methods("GET")
+
+	//api key protection
+	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
+
+	//id token protection
 	restSubrouter.HandleFunc("/just-id-token", we.idTokenAuthWrapFunc(we.apisHandler.JustIDToken)).Methods("GET")
+
+	//mixed protection
 	restSubrouter.HandleFunc("/just-mixed", we.mixedAuthWrapFunc(we.apisHandler.JustMixed)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))

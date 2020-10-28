@@ -76,6 +76,17 @@ func (sa *Adapter) SaveUser(user *model.User) error {
 	return nil
 }
 
+//ReadAllGroupCategories reads all group categories
+func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
+	filter := bson.D{}
+	var result []string
+	err := sa.db.groupcategories.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
