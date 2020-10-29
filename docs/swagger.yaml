@@ -1,4 +1,35 @@
 basePath: /gr
+definitions:
+  createGroupRequest:
+    properties:
+      category:
+        type: string
+      creator_email:
+        type: string
+      creator_name:
+        type: string
+      creator_photo_url:
+        type: string
+      description:
+        type: string
+      privacy:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+    required:
+    - category
+    - privacy
+    - title
+    type: object
+  createResponse:
+    properties:
+      inserted_id:
+        type: string
+    type: object
 host: localhost
 info:
   contact: {}
@@ -22,6 +53,30 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+  /api/groups:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire
+        groups access. Title must be a unique. Category must be one of the categories
+        list. Privacy can be public or private
+      operationId: CreateGroup
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
   /version:
     get:
       description: Gives the service version.
@@ -39,5 +94,9 @@ securityDefinitions:
   APIKeyAuth:
     in: header
     name: ROKWIRE-API-KEY
+    type: apiKey
+  AppUserAuth:
+    in: header (add Bearer prefix to the Authorization value)
+    name: Authorization
     type: apiKey
 swagger: "2.0"

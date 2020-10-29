@@ -33,6 +33,10 @@ type Adapter struct {
 // @in header
 // @name ROKWIRE-API-KEY
 
+// @securityDefinitions.apikey AppUserAuth
+// @in header (add Bearer prefix to the Authorization value)
+// @name Authorization
+
 //Start starts the web server
 func (we *Adapter) Start() {
 	//start the auth module

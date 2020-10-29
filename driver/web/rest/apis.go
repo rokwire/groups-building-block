@@ -66,9 +66,17 @@ type createGroupRequest struct {
 	CreatorName     string   `json:"creator_name"`
 	CreatorEmail    string   `json:"creator_email"`
 	CreatorPhotoURL string   `json:"creator_photo_url"`
-}
+} //@name createGroupRequest
 
 //CreateGroup creates a group
+// @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
+// @ID CreateGroup
+// @Accept json
+// @Produce json
+// @Param data body createGroupRequest true "body data"
+// @Success 200 {object} createResponse
+// @Security AppUserAuth
+// @Router /api/groups [post]
 func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
 		log.Printf("%s is not allowed to create a group", current.Email)

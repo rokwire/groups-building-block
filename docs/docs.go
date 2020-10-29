@@ -50,6 +50,42 @@ var doc = `{
                 }
             }
         },
+        "/api/groups": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "CreateGroup",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/createGroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/createResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -68,11 +104,63 @@ var doc = `{
             }
         }
     },
+    "definitions": {
+        "createGroupRequest": {
+            "type": "object",
+            "required": [
+                "category",
+                "privacy",
+                "title"
+            ],
+            "properties": {
+                "category": {
+                    "type": "string"
+                },
+                "creator_email": {
+                    "type": "string"
+                },
+                "creator_name": {
+                    "type": "string"
+                },
+                "creator_photo_url": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "privacy": {
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "createResponse": {
+            "type": "object",
+            "properties": {
+                "inserted_id": {
+                    "type": "string"
+                }
+            }
+        }
+    },
     "securityDefinitions": {
         "APIKeyAuth": {
             "type": "apiKey",
             "name": "ROKWIRE-API-KEY",
             "in": "header"
+        },
+        "AppUserAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header (add Bearer prefix to the Authorization value)"
         }
     }
 }`
