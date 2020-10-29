@@ -17,9 +17,10 @@ type database struct {
 	mongoDBName  string
 	mongoTimeout time.Duration
 
-	db    *mongo.Database
-	users *collectionWrapper
-	enums *collectionWrapper
+	db     *mongo.Database
+	users  *collectionWrapper
+	enums  *collectionWrapper
+	groups *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -59,10 +60,17 @@ func (m *database) start() error {
 		return err
 	}
 
+	groups := &collectionWrapper{database: m, coll: db.Collection("groups")}
+	err = m.applyGroupsChecks(groups)
+	if err != nil {
+		return err
+	}
+
 	//asign the db and the collections
 	m.db = db
 	m.users = users
 	m.enums = enums
+	m.groups = groups
 
 	return nil
 }
@@ -111,6 +119,15 @@ func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
 	}
 
 	log.Println("enums checks passed")
+	return nil
+}
+
+func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
+	log.Println("apply groups checks.....")
+
+	//TODO
+
+	log.Println("groups checks passed")
 	return nil
 }
 
