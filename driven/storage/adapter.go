@@ -176,7 +176,7 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, Members: members, DateCreated: now}
+			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
 			abortTransaction(sessionContext)
