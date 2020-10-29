@@ -17,6 +17,24 @@ type enumItem struct {
 	Values []string `bson:"values"`
 }
 
+type group struct {
+	ID                  string   `bson:"_id"`
+	Category            string   `bson:"category"` //one of the enums categories list
+	Title               string   `bson:"title"`
+	Privacy             string   `bson:"privacy"` //public or private
+	Description         *string  `bson:"description"`
+	ImageURL            *string  `bson:"image_url"`
+	WebURL              *string  `bson:"web_url"`
+	MembersCount        int      `bson:"members_count"` //to be supported up to date
+	Tags                []string `bson:"tags"`
+	MembershipQuestions []string `bson:"membership_questions"`
+
+	//TODO add members
+
+	DateCreated time.Time  `bson:"date_created"`
+	DateUpdated *time.Time `bson:"date_updated"`
+}
+
 //Adapter implements the Storage interface
 type Adapter struct {
 	db *database
