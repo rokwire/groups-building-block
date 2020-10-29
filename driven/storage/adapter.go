@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"groups/core"
 	"groups/core/model"
 	"log"
@@ -10,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type enumItem struct {
@@ -137,8 +141,44 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(title string, description *string, category string, tags []string, privacy string,
 	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	//TODO
-	return nil, nil
+	var insertedID *string
+
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. check if the category value is one of the enums list
+		categoryFilter := bson.D{primitive.E{Key: "values", Value: category}}
+		var categoriesResult []enumItem
+		err = sa.db.enums.FindWithContext(sessionContext, categoryFilter, &categoriesResult, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if len(categoriesResult) == 0 {
+			abortTransaction(sessionContext)
+			return errors.New("the provided category must be one of the categories list")
+		}
+
+		//TODO
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return insertedID, nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance
@@ -152,4 +192,11 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
 	return &Adapter{db: db}
+}
+
+func abortTransaction(sessionContext mongo.SessionContext) {
+	err := sessionContext.AbortTransaction(sessionContext)
+	if err != nil {
+		log.Printf("error on aborting a transaction - %s", err)
+	}
 }

@@ -17,7 +17,9 @@ type database struct {
 	mongoDBName  string
 	mongoTimeout time.Duration
 
-	db     *mongo.Database
+	db       *mongo.Database
+	dbClient *mongo.Client
+
 	users  *collectionWrapper
 	enums  *collectionWrapper
 	groups *collectionWrapper
@@ -66,8 +68,10 @@ func (m *database) start() error {
 		return err
 	}
 
-	//asign the db and the collections
+	//asign the db, db client and the collections
 	m.db = db
+	m.dbClient = client
+
 	m.users = users
 	m.enums = enums
 	m.groups = groups

@@ -28,8 +28,7 @@ func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 
 func (s *servicesImpl) CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	id := "1234"
-	return &id, nil
+	return s.app.createGroup(current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
 }
 
 //Administration exposes administration APIs for the driver adapters

@@ -17,7 +17,11 @@ type collectionWrapper struct {
 }
 
 func (collWrapper *collectionWrapper) Find(filter interface{}, result interface{}, findOptions *options.FindOptions) error {
-	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
+	return collWrapper.FindWithContext(context.Background(), filter, result, findOptions)
+}
+
+func (collWrapper *collectionWrapper) FindWithContext(ctx context.Context, filter interface{}, result interface{}, findOptions *options.FindOptions) error {
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
 	defer cancel()
 
 	if filter == nil {
