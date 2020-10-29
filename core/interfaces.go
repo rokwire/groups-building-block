@@ -1,12 +1,17 @@
 package core
 
-import "groups/core/model"
+import (
+	"groups/core/model"
+)
 
 //Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
 
 	GetGroupCategories() ([]string, error)
+
+	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
+		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 }
 
 type servicesImpl struct {
@@ -19,6 +24,12 @@ func (s *servicesImpl) GetVersion() string {
 
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
+}
+
+func (s *servicesImpl) CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
+	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
+	id := "1234"
+	return &id, nil
 }
 
 //Administration exposes administration APIs for the driver adapters
