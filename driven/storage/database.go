@@ -125,7 +125,20 @@ func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
 func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	log.Println("apply groups checks.....")
 
-	//TODO
+	err := groups.AddIndex(bson.D{primitive.E{Key: "category", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groups.AddIndex(bson.D{primitive.E{Key: "members.id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groups.AddIndex(bson.D{primitive.E{Key: "members.user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
 
 	log.Println("groups checks passed")
 	return nil
