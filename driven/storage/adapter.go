@@ -29,10 +29,28 @@ type group struct {
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
 
-	//TODO add members
+	Members []member `bson:"members"`
 
 	DateCreated time.Time  `bson:"date_created"`
 	DateUpdated *time.Time `bson:"date_updated"`
+}
+
+type member struct {
+	ID            string         `bson:"id"`
+	UserID        string         `bson:"user_id"`
+	Name          string         `bson:"name"`
+	Email         string         `bson:"email"`
+	PhotoURL      string         `bson:"photo_url"`
+	Status        string         `bson:"status"` //pending, member, admin
+	MemberAnswers []memberAnswer `bson:"member_answers"`
+
+	DateCreated time.Time  `bson:"date_created"`
+	DateUpdated *time.Time `bson:"date_updated"`
+}
+
+type memberAnswer struct {
+	Question string `bson:"question"`
+	Answer   string `bson:"answer"`
 }
 
 //Adapter implements the Storage interface
