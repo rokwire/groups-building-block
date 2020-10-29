@@ -83,7 +83,11 @@ func (collWrapper *collectionWrapper) ReplaceOne(filter interface{}, replacement
 }
 
 func (collWrapper *collectionWrapper) InsertOne(data interface{}) (interface{}, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
+	return collWrapper.InsertOneWithContext(context.Background(), data)
+}
+
+func (collWrapper *collectionWrapper) InsertOneWithContext(ctx context.Context, data interface{}) (interface{}, error) {
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
 
 	ins, err := collWrapper.coll.InsertOne(ctx, data)
 	cancel()

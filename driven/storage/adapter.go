@@ -141,7 +141,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(title string, description *string, category string, tags []string, privacy string,
 	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	var insertedID *string
+	var insertedID string
 
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -164,7 +164,24 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 			return errors.New("the provided category must be one of the categories list")
 		}
 
-		//TODO
+		//2. insert the group and the admin member
+		now := time.Now()
+
+		memberID, _ := uuid.NewUUID()
+		adminMember := member{ID: memberID.String(), UserID: creatorUserID, Name: creatorName, Email: creatorEmail,
+			PhotoURL: creatorPhotoURL, Status: "admin", DateCreated: now}
+
+		members := []member{adminMember}
+
+		groupID, _ := uuid.NewUUID()
+		insertedID = groupID.String()
+		group := group{ID: insertedID, Title: title, Description: description, Category: category,
+			Tags: tags, Privacy: privacy, Members: members, DateCreated: now}
+		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
 
 		//commit the transaction
 		err = sessionContext.CommitTransaction(sessionContext)
@@ -178,7 +195,7 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 		return nil, err
 	}
 
-	return insertedID, nil
+	return &insertedID, nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance
