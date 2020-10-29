@@ -11,3 +11,16 @@ type User struct {
 	DateCreated time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 }
+
+//IsMemberOfGroup says if the user is member of a group
+func (user User) IsMemberOfGroup(group string) bool {
+	if user.IsMemberOf == nil || len(*user.IsMemberOf) == 0 {
+		return false
+	}
+	for _, current := range *user.IsMemberOf {
+		if current == group {
+			return true
+		}
+	}
+	return false
+}

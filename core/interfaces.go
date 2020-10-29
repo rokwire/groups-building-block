@@ -43,6 +43,9 @@ type Storage interface {
 	SaveUser(user *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)
+
+	CreateGroup(title string, description *string, category string, tags []string, privacy string,
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 }
 
 //StorageListener listenes for change data storage events

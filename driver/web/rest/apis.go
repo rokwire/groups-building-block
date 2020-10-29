@@ -54,9 +54,16 @@ func (h *ApisHandler) GetGroupCategories(w http.ResponseWriter, r *http.Request)
 	w.Write(data)
 }
 
-//JustIDToken test TODO
-func (h *ApisHandler) JustIDToken(current *model.User, w http.ResponseWriter, r *http.Request) {
-	log.Println("JustIDToken")
+//CreateGroup creates a group
+func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+	if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
+		log.Printf("%s is not allowed to create a group - %s", current.Email)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+	}
+
+	//TODO
 }
 
 //JustMixed test TODO

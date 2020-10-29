@@ -134,6 +134,13 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 	return categoryItem.Values, nil
 }
 
+//CreateGroup creates a group. Returns the id of the created group
+func (sa *Adapter) CreateGroup(title string, description *string, category string, tags []string, privacy string,
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
+	//TODO
+	return nil, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
