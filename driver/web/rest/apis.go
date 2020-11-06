@@ -265,8 +265,13 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	for _, groupMap := range inInterface {
 		//fmt.Println("KV Pair: ", i, groupMap)
 		members := groupMap["members"].([]interface{})
+		for _, membersItem := range members {
+			//newMembersItem := membersItem
+			//log.Println(membersItem)
+			delete(membersItem.(map[string]interface{}), "user")
+			delete(membersItem.(map[string]interface{}), "group")
+		}
 
-		log.Println(members)
 		//delete(map(members), "user")
 		//	if field == "members" {
 		//
@@ -293,10 +298,10 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	nnv := newValue.Interface() */
 	//json.Marshal(newValue.Interface())
 
-	resp := Resp{List: groups}
+	//	resp := Resp{List: groups}
 	//resp := groups
 
-	data, err := json.Marshal(resp)
+	data, err := json.Marshal(inInterface)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
