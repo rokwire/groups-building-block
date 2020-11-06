@@ -15,10 +15,10 @@ type Member struct {
 
 	DateCreated time.Time  `json:"date_created"`
 	DateUpdated *time.Time `json:"date_updated"`
-}
+} //@name Member
 
 //MemberAnswer represents member answer entity
 type MemberAnswer struct {
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
-}
+} //@name MemberAnswer

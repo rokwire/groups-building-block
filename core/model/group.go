@@ -19,4 +19,4 @@ type Group struct {
 
 	DateCreated time.Time  `json:"date_created"`
 	DateUpdated *time.Time `json:"date_updated"`
-}
+} // @name Group

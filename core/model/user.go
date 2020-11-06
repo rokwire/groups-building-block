@@ -10,7 +10,7 @@ type User struct {
 	IsMemberOf  *[]string  `json:"is_member_of" bson:"is_member_of"`
 	DateCreated time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
-}
+} // @name User
 
 //IsMemberOfGroup says if the user is member of a group
 func (user User) IsMemberOfGroup(group string) bool {
