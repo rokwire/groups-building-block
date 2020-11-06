@@ -210,9 +210,9 @@ func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
 
 	result := make([]model.Group, len(list))
 	if list != nil {
-		for _, current := range list {
+		for i, current := range list {
 			item := constructGroup(current)
-			result = append(result, item)
+			result[i] = item
 		}
 	}
 	return result, nil
@@ -239,6 +239,47 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 }
 
 func constructGroup(gr group) model.Group {
-	//TODO
-	return model.Group{}
+	id := gr.ID
+	category := gr.Category
+	title := gr.Title
+	privacy := gr.Privacy
+	description := gr.Description
+	imageURL := gr.ImageURL
+	webURL := gr.WebURL
+	membersCount := gr.MembersCount
+	tags := gr.Tags
+	membershipQuestions := gr.MembershipQuestions
+
+	dateCreated := gr.DateCreated
+	dateUpdated := gr.DateUpdated
+
+	members := make([]model.Member, len(gr.Members))
+	for i, current := range gr.Members {
+		members[i] = constructMember(id, current)
+	}
+
+	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
+		Description: description, ImageURL: imageURL, WebURL: webURL, MembersCount: membersCount,
+		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
+		Members: members}
+}
+
+func constructMember(groupID string, member member) model.Member {
+	id := member.ID
+	user := model.User{ID: member.UserID}
+	name := member.Name
+	email := member.Email
+	photoURL := member.PhotoURL
+	status := member.Status
+	group := model.Group{ID: groupID}
+	dateCreated := member.DateCreated
+	dateUpdated := member.DateUpdated
+
+	memberAnswers := make([]model.MemberAnswer, len(member.MemberAnswers))
+	for i, current := range member.MemberAnswers {
+		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
+	}
+
+	return model.Member{ID: id, User: user, Name: name, Email: email, PhotoURL: photoURL,
+		Status: status, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }
