@@ -56,6 +56,7 @@ type Storage interface {
 
 	CreateGroup(title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+	ReadAllGroups() ([]model.Group, error)
 }
 
 //StorageListener listenes for change data storage events

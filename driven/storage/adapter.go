@@ -198,6 +198,12 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 	return &insertedID, nil
 }
 
+//ReadAllGroups reads all groups
+func (sa *Adapter) ReadAllGroups() ([]model.Group, error) {
+	//TODO
+	return nil, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
