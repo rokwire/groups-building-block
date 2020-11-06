@@ -57,6 +57,7 @@ func (we *Adapter) Start() {
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
+	restSubrouter.HandleFunc("/groups", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 
 	//id token protection
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")

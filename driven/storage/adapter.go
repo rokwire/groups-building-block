@@ -198,10 +198,24 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 	return &insertedID, nil
 }
 
-//ReadAllGroups reads all groups
-func (sa *Adapter) ReadAllGroups() ([]model.Group, error) {
-	//TODO
-	return nil, nil
+//FindGroups finds groups
+func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
+	filter := bson.D{}
+	//TODO filter by category
+	var list []group
+	err := sa.db.groups.Find(filter, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]model.Group, len(list))
+	if list != nil {
+		for _, current := range list {
+			item := constructGroup(current)
+			result = append(result, item)
+		}
+	}
+	return result, nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance
@@ -222,4 +236,9 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 	if err != nil {
 		log.Printf("error on aborting a transaction - %s", err)
 	}
+}
+
+func constructGroup(gr group) model.Group {
+	//TODO
+	return model.Group{}
 }

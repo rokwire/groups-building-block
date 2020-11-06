@@ -12,6 +12,7 @@ type Services interface {
 
 	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+	GetGroups(category *string) ([]model.Group, error)
 }
 
 type servicesImpl struct {
@@ -29,6 +30,10 @@ func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 func (s *servicesImpl) CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
 	return s.app.createGroup(current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
+}
+
+func (s *servicesImpl) GetGroups(category *string) ([]model.Group, error) {
+	return s.app.getGroups(category)
 }
 
 //Administration exposes administration APIs for the driver adapters
@@ -56,7 +61,7 @@ type Storage interface {
 
 	CreateGroup(title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
-	ReadAllGroups() ([]model.Group, error)
+	FindGroups(category *string) ([]model.Group, error)
 }
 
 //StorageListener listenes for change data storage events

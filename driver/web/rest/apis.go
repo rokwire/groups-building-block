@@ -138,6 +138,17 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 	w.Write(data)
 }
 
+//GetGroups gets groups
+func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
+	groups, err := h.app.Services.GetGroups(nil)
+	if err != nil {
+		log.Printf("error getting groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println(groups)
+}
+
 //JustMixed test TODO
 func (h *ApisHandler) JustMixed(current *model.User, w http.ResponseWriter, r *http.Request) {
 	log.Println("JustMixed")

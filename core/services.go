@@ -23,3 +23,13 @@ func (app *Application) createGroup(current model.User, title string, descriptio
 	}
 	return insertedID, nil
 }
+
+func (app *Application) getGroups(category *string) ([]model.Group, error) {
+
+	//TODO - data protection
+	groups, err := app.storage.FindGroups(category)
+	if err != nil {
+		return nil, err
+	}
+	return groups, nil
+}
