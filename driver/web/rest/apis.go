@@ -1,7 +1,9 @@
 package rest
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
@@ -179,46 +181,55 @@ func (p Resp) MarshalJSON() ([]byte, error) {
 		Address:   p.Address,
 		CreatedAt: millis.UnixNano() / 1000000,
 	} */
-	/*
-		buffer := bytes.NewBufferString("[")
-		length := len(p.List)
-		count := 0
-		for _, value := range p.List {
 
-			v := reflect.ValueOf(value)
-			t := v.Type()
-			sf := make([]reflect.StructField, 0)
-			for i := 0; i < t.NumField(); i++ {
-				structField := t.Field(i)
-				fmt.Printf("tag:%s\tname:%s\n", structField.Tag, structField.Name)
+	buffer := bytes.NewBufferString("[")
+	length := len(p.List)
+	count := 0
+	for _, value := range p.List {
 
-				if structField.Name == "ID" {
-					//	sf[i].Tag = `json:"name"`
+		/*v := reflect.ValueOf(value)
+		t := v.Type()
+		sf := make([]reflect.StructField, 0)
+		for i := 0; i < t.NumField(); i++ {
+			structField := t.Field(i)
+			fmt.Printf("tag:%s\tname:%s\n", structField.Tag, structField.Name)
 
-					sf = append(sf, structField)
-				}
-			}
-			newType := reflect.StructOf(sf)
-			newValue := v.Convert(newType)
-			nnv := newValue.Interface()
-			log.Println(nnv)
+			if structField.Name == "ID" {
+				//	sf[i].Tag = `json:"name"`
 
-			jsonValue := "12345"
-
-			//	jsonValue, err := json.Marshal(value)
-			//	if err != nil {
-			//	return nil, err
-			//	}
-			buffer.WriteString(fmt.Sprintf("%s", string(jsonValue)))
-			count++
-			if count < length {
-				buffer.WriteString(",")
+				sf = append(sf, structField)
 			}
 		}
-		buffer.WriteString("]")
-		return buffer.Bytes(), nil */
+		newType := reflect.StructOf(sf)
+		newValue := v.Convert(newType)
+		nnv := newValue.Interface()
+		log.Println(nnv)
 
-	return json.Marshal(p.List)
+		jsonValue := "12345" */
+
+		groupWrapper := GroupWrapperResp{value}
+		jsonValue, err := json.Marshal(groupWrapper)
+		if err != nil {
+			return nil, err
+		}
+		buffer.WriteString(fmt.Sprintf("%s", string(jsonValue)))
+		count++
+		if count < length {
+			buffer.WriteString(",")
+		}
+	}
+	buffer.WriteString("]")
+	return buffer.Bytes(), nil
+
+	//	return json.Marshal(p.List)
+}
+
+type GroupWrapperResp struct {
+	Group model.Group
+}
+
+func (gr GroupWrapperResp) MarshalJSON() ([]byte, error) {
+	return json.Marshal(gr.Group)
 }
 
 //GetGroups gets groups
@@ -282,10 +293,10 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	nnv := newValue.Interface() */
 	//json.Marshal(newValue.Interface())
 
-	//	resp := Resp{List: groups}
+	resp := Resp{List: groups}
 	//resp := groups
 
-	data, err := json.Marshal(inInterface)
+	data, err := json.Marshal(resp)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
