@@ -20,3 +20,29 @@ type Group struct {
 	DateCreated time.Time  `json:"date_created"`
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name Group
+
+//IsGroupAdmin says if the user is admin of the group
+func (this Group) IsGroupAdmin(userID string) bool {
+	if this.Members == nil {
+		return false
+	}
+	for _, item := range this.Members {
+		if item.User.ID == userID && item.Status == "admin" {
+			return true
+		}
+	}
+	return false
+}
+
+//IsGroupMember says if the user is a group member
+func (this Group) IsGroupMember(userID string) bool {
+	if this.Members == nil {
+		return false
+	}
+	for _, item := range this.Members {
+		if item.User.ID == userID && item.Status == "member" {
+			return true
+		}
+	}
+	return false
+}
