@@ -192,29 +192,7 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inrec, err := json.Marshal(groups)
-	if err != nil {
-		log.Printf("error marshaling the groups - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	var response []map[string]interface{}
-	err = json.Unmarshal(inrec, &response)
-	if err != nil {
-		log.Printf("error unmarshaling the groups - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	for _, groupMap := range response {
-		members := groupMap["members"].([]interface{})
-		for _, membersItem := range members {
-			delete(membersItem.(map[string]interface{}), "user")
-			delete(membersItem.(map[string]interface{}), "group")
-		}
-	}
-
-	data, err := json.Marshal(response)
+	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

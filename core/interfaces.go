@@ -12,7 +12,7 @@ type Services interface {
 
 	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
-	GetGroups(category *string) ([]model.Group, error)
+	GetGroups(category *string) ([]map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -32,7 +32,7 @@ func (s *servicesImpl) CreateGroup(current model.User, title string, description
 	return s.app.createGroup(current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
 }
 
-func (s *servicesImpl) GetGroups(category *string) ([]model.Group, error) {
+func (s *servicesImpl) GetGroups(category *string) ([]map[string]interface{}, error) {
 	return s.app.getGroups(category)
 }
 
