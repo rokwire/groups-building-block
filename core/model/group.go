@@ -22,11 +22,11 @@ type Group struct {
 } // @name Group
 
 //IsGroupAdmin says if the user is admin of the group
-func (this Group) IsGroupAdmin(userID string) bool {
-	if this.Members == nil {
+func (gr Group) IsGroupAdmin(userID string) bool {
+	if gr.Members == nil {
 		return false
 	}
-	for _, item := range this.Members {
+	for _, item := range gr.Members {
 		if item.User.ID == userID && item.Status == "admin" {
 			return true
 		}
@@ -35,11 +35,11 @@ func (this Group) IsGroupAdmin(userID string) bool {
 }
 
 //IsGroupMember says if the user is a group member
-func (this Group) IsGroupMember(userID string) bool {
-	if this.Members == nil {
+func (gr Group) IsGroupMember(userID string) bool {
+	if gr.Members == nil {
 		return false
 	}
-	for _, item := range this.Members {
+	for _, item := range gr.Members {
 		if item.User.ID == userID && item.Status == "member" {
 			return true
 		}
