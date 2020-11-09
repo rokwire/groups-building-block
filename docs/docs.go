@@ -207,31 +207,11 @@ var doc = `{
                     "items": {
                         "type": "object",
                         "properties": {
-                            "date_created": {
-                                "type": "string"
-                            },
-                            "date_updated": {
-                                "type": "string"
-                            },
                             "email": {
                                 "type": "string"
                             },
                             "id": {
                                 "type": "string"
-                            },
-                            "member_answers": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "answer": {
-                                            "type": "string"
-                                        },
-                                        "question": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
                             },
                             "name": {
                                 "type": "string"

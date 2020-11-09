@@ -152,18 +152,11 @@ type getGroupsResponse struct {
 	MembershipQuestions []string `json:"membership_questions"`
 
 	Members []struct {
-		ID            string `json:"id"`
-		Name          string `json:"name"`
-		Email         string `json:"email"`
-		PhotoURL      string `json:"photo_url"`
-		Status        string `json:"status"`
-		MemberAnswers []struct {
-			Question string `json:"question"`
-			Answer   string `json:"answer"`
-		} `json:"member_answers"`
-
-		DateCreated time.Time  `json:"date_created"`
-		DateUpdated *time.Time `json:"date_updated"`
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		PhotoURL string `json:"photo_url"`
+		Status   string `json:"status"`
 	} `json:"members"`
 
 	DateCreated time.Time  `json:"date_created"`

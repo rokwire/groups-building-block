@@ -1,15 +1,108 @@
 package core
 
-import "groups/core/model"
+import (
+	"groups/core/model"
+)
 
-//TODO
 func (app *Application) applyDataProtection(current *model.User, group model.Group) map[string]interface{} {
-	item := make(map[string]interface{})
+	//1 apply data protection for "anonymous"
+	if current == nil {
+		return app.protectDataForAnonymous(group)
+	}
 
-	item["id"] = group.ID
-	item["title"] = group.Title
+	//2 apply data protection for "group admin"
+	if group.IsGroupAdmin(current.ID) {
+		//TODO
+	}
 
-	return item
+	//3 apply data protection for "group member"
+	if group.IsGroupMember(current.ID) {
+		//TODO
+	}
+
+	//4 apply data protection for "NOT member"
+	//TODO
+	return nil
+}
+
+func (app *Application) protectDataForAnonymous(group model.Group) map[string]interface{} {
+	switch group.Privacy {
+	case "public":
+		item := make(map[string]interface{})
+
+		item["id"] = group.ID
+		item["category"] = group.Category
+		item["title"] = group.Title
+		item["privacy"] = group.Privacy
+		item["description"] = group.Description
+		item["image_url"] = group.ImageURL
+		item["web_url"] = group.WebURL
+		item["members_count"] = group.MembersCount
+		item["tags"] = group.Tags
+		item["membership_questions"] = group.MembershipQuestions
+
+		//members
+		membersCount := len(group.Members)
+		var membersItems []map[string]interface{}
+		if membersCount > 0 {
+			for _, current := range group.Members {
+				if current.Status == "admin" || current.Status == "member" {
+					mItem := make(map[string]interface{})
+					mItem["id"] = current.ID
+					mItem["name"] = current.Name
+					mItem["email"] = current.Email
+					mItem["photo_url"] = current.PhotoURL
+					mItem["status"] = current.Status
+					membersItems = append(membersItems, mItem)
+				}
+			}
+		}
+		item["members"] = membersItems
+
+		item["date_created"] = group.DateCreated
+		item["date_updated"] = group.DateUpdated
+
+		//TODO add events and posts when they appear
+		return item
+	case "private":
+		//we must protect events, posts and members(only admins are visible)
+		item := make(map[string]interface{})
+
+		item["id"] = group.ID
+		item["category"] = group.Category
+		item["title"] = group.Title
+		item["privacy"] = group.Privacy
+		item["description"] = group.Description
+		item["image_url"] = group.ImageURL
+		item["web_url"] = group.WebURL
+		item["members_count"] = group.MembersCount
+		item["tags"] = group.Tags
+		item["membership_questions"] = group.MembershipQuestions
+
+		//members
+		membersCount := len(group.Members)
+		var membersItems []map[string]interface{}
+		if membersCount > 0 {
+			for _, current := range group.Members {
+				if current.Status == "admin" {
+					mItem := make(map[string]interface{})
+					mItem["id"] = current.ID
+					mItem["name"] = current.Name
+					mItem["email"] = current.Email
+					mItem["photo_url"] = current.PhotoURL
+					mItem["status"] = current.Status
+					membersItems = append(membersItems, mItem)
+				}
+			}
+		}
+		item["members"] = membersItems
+
+		item["date_created"] = group.DateCreated
+		item["date_updated"] = group.DateUpdated
+
+		return item
+	}
+	return nil
 }
 
 func (app *Application) getVersion() string {
