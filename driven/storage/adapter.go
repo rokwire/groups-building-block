@@ -221,6 +221,26 @@ func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
 	return result, nil
 }
 
+//FindUserGroups finds the user groups
+func (sa *Adapter) FindUserGroups(userID string) ([]model.Group, error) {
+	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID}}
+
+	var list []group
+	err := sa.db.groups.Find(filter, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]model.Group, len(list))
+	if list != nil {
+		for i, current := range list {
+			item := constructGroup(current)
+			result[i] = item
+		}
+	}
+	return result, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)

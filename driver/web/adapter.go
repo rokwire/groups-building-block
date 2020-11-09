@@ -61,6 +61,7 @@ func (we *Adapter) Start() {
 
 	//id token protection
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
+	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
 
 	//mixed protection
 	restSubrouter.HandleFunc("/just-mixed", we.mixedAuthWrapFunc(we.apisHandler.JustMixed)).Methods("GET")

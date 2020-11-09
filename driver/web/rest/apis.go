@@ -197,6 +197,26 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
+	groups, err := h.app.Services.GetUserGroups(current)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(groups)
+	if err != nil {
+		log.Println("Error on marshal the user groups items")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 //JustMixed test TODO
 func (h *ApisHandler) JustMixed(current *model.User, w http.ResponseWriter, r *http.Request) {
 	log.Println("JustMixed")
