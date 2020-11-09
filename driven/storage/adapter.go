@@ -201,7 +201,10 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 //FindGroups finds groups
 func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
 	filter := bson.D{}
-	//TODO filter by category
+	if category != nil {
+		filter = bson.D{primitive.E{Key: "category", Value: category}}
+	}
+
 	var list []group
 	err := sa.db.groups.Find(filter, &list, nil)
 	if err != nil {
