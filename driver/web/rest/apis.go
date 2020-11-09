@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
 	"gopkg.in/go-playground/validator.v9"
 )
@@ -138,7 +139,45 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 	w.Write(data)
 }
 
-//GetGroups gets groups
+type getGroupsResponse struct {
+	ID                  string   `json:"id"`
+	Category            string   `json:"category"`
+	Title               string   `json:"title"`
+	Privacy             string   `json:"privacy"`
+	Description         *string  `json:"description"`
+	ImageURL            *string  `json:"image_url"`
+	WebURL              *string  `json:"web_url"`
+	MembersCount        int      `json:"members_count"`
+	Tags                []string `json:"tags"`
+	MembershipQuestions []string `json:"membership_questions"`
+
+	Members []struct {
+		ID            string `json:"id"`
+		Name          string `json:"name"`
+		Email         string `json:"email"`
+		PhotoURL      string `json:"photo_url"`
+		Status        string `json:"status"`
+		MemberAnswers []struct {
+			Question string `json:"question"`
+			Answer   string `json:"answer"`
+		} `json:"member_answers"`
+
+		DateCreated time.Time  `json:"date_created"`
+		DateUpdated *time.Time `json:"date_updated"`
+	} `json:"members"`
+
+	DateCreated time.Time  `json:"date_created"`
+	DateUpdated *time.Time `json:"date_updated"`
+} // @name getGroupsResponse
+
+//GetGroups gets groups. It can be filtered by category
+// @Description Gives the groups list. It can be filtered by category
+// @ID GetGroups
+// @Accept  json
+// @Param category query string false "Category"
+// @Success 200 {array} getGroupsResponse
+// @Security APIKeyAuth
+// @Router /api/groups [get]
 func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	var category *string
 	catogies, ok := r.URL.Query()["category"]
