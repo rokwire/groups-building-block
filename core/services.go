@@ -2,6 +2,7 @@ package core
 
 import (
 	"groups/core/model"
+	"log"
 )
 
 func (app *Application) applyDataProtection(current *model.User, group model.Group) map[string]interface{} {
@@ -13,14 +14,22 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 	//2 apply data protection for "group admin"
 	if group.IsGroupAdmin(current.ID) {
 		//TODO
+		log.Printf("%s - admin", group.Title)
 	}
 
 	//3 apply data protection for "group member"
 	if group.IsGroupMember(current.ID) {
 		//TODO
+		log.Printf("%s - member", group.Title)
 	}
 
-	//4 apply data protection for "NOT member"
+	//4 apply data protection for "group pending"
+	if group.IsGroupPending(current.ID) {
+		//TODO
+		log.Printf("%s - pending", group.Title)
+	}
+
+	//5 apply data protection for "NOT member"
 	//TODO
 	return nil
 }

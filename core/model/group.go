@@ -46,3 +46,16 @@ func (gr Group) IsGroupMember(userID string) bool {
 	}
 	return false
 }
+
+//IsGroupPending says if the user is a group pending
+func (gr Group) IsGroupPending(userID string) bool {
+	if gr.Members == nil {
+		return false
+	}
+	for _, item := range gr.Members {
+		if item.User.ID == userID && item.Status == "pending" {
+			return true
+		}
+	}
+	return false
+}
