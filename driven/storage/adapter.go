@@ -198,6 +198,11 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 	return &insertedID, nil
 }
 
+//FindGroup finds group by id
+func (sa *Adapter) FindGroup(id string) (*model.Group, error) {
+	return nil, nil
+}
+
 //FindGroups finds groups
 func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
 	filter := bson.D{}

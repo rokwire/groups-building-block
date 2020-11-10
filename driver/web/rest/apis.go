@@ -256,9 +256,26 @@ func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, 
 	w.Write(data)
 }
 
-//JustMixed test TODO
-func (h *ApisHandler) JustMixed(current *model.User, w http.ResponseWriter, r *http.Request) {
-	log.Println("JustMixed")
+//GetGroup gets a group
+func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//TODO
+	group, err := h.app.Services.GetGroup(current, "1234")
+	if err != nil {
+		log.Printf("error getting a group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(group)
+	if err != nil {
+		log.Println("Error on marshal the group")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 //NewApisHandler creates new rest Handler instance

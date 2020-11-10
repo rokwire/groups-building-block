@@ -292,3 +292,19 @@ func (app *Application) getUserGroups(current *model.User) ([]map[string]interfa
 
 	return groupsList, nil
 }
+
+func (app *Application) getGroup(current *model.User, id string) (map[string]interface{}, error) {
+	// find the group
+	group, err := app.storage.FindGroup(id)
+	if err != nil {
+		return nil, err
+	}
+	if group == nil {
+		return nil, nil
+	}
+
+	//apply data protection
+	res := app.applyDataProtection(current, *group)
+
+	return res, nil
+}

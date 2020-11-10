@@ -14,6 +14,7 @@ type Services interface {
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 	GetGroups(category *string) ([]map[string]interface{}, error)
 	GetUserGroups(current *model.User) ([]map[string]interface{}, error)
+	GetGroup(current *model.User, id string) (map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -41,6 +42,10 @@ func (s *servicesImpl) GetUserGroups(current *model.User) ([]map[string]interfac
 	return s.app.getUserGroups(current)
 }
 
+func (s *servicesImpl) GetGroup(current *model.User, id string) (map[string]interface{}, error) {
+	return s.app.getGroup(current, id)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetTODO() error
@@ -66,6 +71,7 @@ type Storage interface {
 
 	CreateGroup(title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+	FindGroup(id string) (*model.Group, error)
 	FindGroups(category *string) ([]model.Group, error)
 	FindUserGroups(userID string) ([]model.Group, error)
 }
