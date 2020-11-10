@@ -229,27 +229,6 @@ type getUserGroupsResponse struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getUserGroupsResponse
 
-/*
-type Member struct {
-	ID            string         `json:"id"`
-	User          User           `json:"user"`
-	Name          string         `json:"name"`
-	Email         string         `json:"email"`
-	PhotoURL      string         `json:"photo_url"`
-	Status        string         `json:"status"` //pending, member, admin
-	Group         Group          `json:"group"`
-	MemberAnswers []MemberAnswer `json:"member_answers"`
-
-	DateCreated time.Time  `json:"date_created"`
-	DateUpdated *time.Time `json:"date_updated"`
-} //@name Member
-
-//MemberAnswer represents member answer entity
-type MemberAnswer struct {
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
-} //@name MemberAnswer */
-
 //GetUserGroups gets the user groups.
 // @Description Gives the user groups.
 // @ID GetUserGroups
