@@ -18,8 +18,7 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 
 	//3 apply data protection for "group member"
 	if group.IsGroupMember(current.ID) {
-		//TODO
-		log.Printf("%s - member", group.Title)
+		return app.protectDataForMember(group)
 	}
 
 	//4 apply data protection for "group pending"
@@ -155,6 +154,45 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem["date_created"] = current.DateCreated
 			mItem["date_updated"] = current.DateUpdated
 			membersItems = append(membersItems, mItem)
+		}
+	}
+	item["members"] = membersItems
+
+	item["date_created"] = group.DateCreated
+	item["date_updated"] = group.DateUpdated
+
+	//TODO add events and posts when they appear
+	return item
+}
+
+func (app *Application) protectDataForMember(group model.Group) map[string]interface{} {
+	item := make(map[string]interface{})
+
+	item["id"] = group.ID
+	item["category"] = group.Category
+	item["title"] = group.Title
+	item["privacy"] = group.Privacy
+	item["description"] = group.Description
+	item["image_url"] = group.ImageURL
+	item["web_url"] = group.WebURL
+	item["members_count"] = group.MembersCount
+	item["tags"] = group.Tags
+	item["membership_questions"] = group.MembershipQuestions
+
+	//members
+	membersCount := len(group.Members)
+	var membersItems []map[string]interface{}
+	if membersCount > 0 {
+		for _, current := range group.Members {
+			if current.Status == "admin" || current.Status == "member" {
+				mItem := make(map[string]interface{})
+				mItem["id"] = current.ID
+				mItem["name"] = current.Name
+				mItem["email"] = current.Email
+				mItem["photo_url"] = current.PhotoURL
+				mItem["status"] = current.Status
+				membersItems = append(membersItems, mItem)
+			}
 		}
 	}
 	item["members"] = membersItems
