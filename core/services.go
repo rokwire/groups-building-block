@@ -25,9 +25,8 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 		return app.protectDataForPending(*current, group)
 	}
 
-	//5 apply data protection for "NOT member"
-	//TODO
-	return nil
+	//5 apply data protection for "NOT member" - treat it as anonymous user
+	return app.protectDataForAnonymous(group)
 }
 
 func (app *Application) protectDataForAnonymous(group model.Group) map[string]interface{} {
