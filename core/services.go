@@ -13,8 +13,7 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 
 	//2 apply data protection for "group admin"
 	if group.IsGroupAdmin(current.ID) {
-		//TODO
-		log.Printf("%s - admin", group.Title)
+		return app.protectDataForAdmin(group)
 	}
 
 	//3 apply data protection for "group member"
@@ -112,6 +111,59 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		return item
 	}
 	return nil
+}
+
+func (app *Application) protectDataForAdmin(group model.Group) map[string]interface{} {
+	item := make(map[string]interface{})
+
+	item["id"] = group.ID
+	item["category"] = group.Category
+	item["title"] = group.Title
+	item["privacy"] = group.Privacy
+	item["description"] = group.Description
+	item["image_url"] = group.ImageURL
+	item["web_url"] = group.WebURL
+	item["members_count"] = group.MembersCount
+	item["tags"] = group.Tags
+	item["membership_questions"] = group.MembershipQuestions
+
+	//members
+	membersCount := len(group.Members)
+	var membersItems []map[string]interface{}
+	if membersCount > 0 {
+		for _, current := range group.Members {
+			mItem := make(map[string]interface{})
+			mItem["id"] = current.ID
+			mItem["name"] = current.Name
+			mItem["email"] = current.Email
+			mItem["photo_url"] = current.PhotoURL
+			mItem["status"] = current.Status
+
+			//member answers
+			answersCount := len(current.MemberAnswers)
+			var answersItems []map[string]interface{}
+			if answersCount > 0 {
+				for _, cAnswer := range current.MemberAnswers {
+					aItem := make(map[string]interface{})
+					aItem["question"] = cAnswer.Question
+					aItem["answer"] = cAnswer.Answer
+					answersItems = append(answersItems, aItem)
+				}
+			}
+			mItem["member_answers"] = answersItems
+
+			mItem["date_created"] = current.DateCreated
+			mItem["date_updated"] = current.DateUpdated
+			membersItems = append(membersItems, mItem)
+		}
+	}
+	item["members"] = membersItems
+
+	item["date_created"] = group.DateCreated
+	item["date_updated"] = group.DateUpdated
+
+	//TODO add events and posts when they appear
+	return item
 }
 
 func (app *Application) getVersion() string {

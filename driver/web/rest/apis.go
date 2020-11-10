@@ -197,6 +197,7 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
+//TODO
 func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	groups, err := h.app.Services.GetUserGroups(current)
 	if err != nil {
