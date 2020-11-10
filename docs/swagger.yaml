@@ -76,6 +76,65 @@ definitions:
       web_url:
         type: string
     type: object
+  getUserGroupsResponse:
+    properties:
+      category:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      members:
+        items:
+          properties:
+            date_created:
+              type: string
+            date_updated:
+              type: string
+            email:
+              type: string
+            id:
+              type: string
+            member_answers:
+              items:
+                properties:
+                  answer:
+                    type: string
+                  question:
+                    type: string
+                type: object
+              type: array
+            name:
+              type: string
+            photo_url:
+              type: string
+            status:
+              type: string
+          type: object
+        type: array
+      members_count:
+        type: integer
+      membership_questions:
+        items:
+          type: string
+        type: array
+      privacy:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      web_url:
+        type: string
+    type: object
 host: localhost
 info:
   contact: {}
@@ -140,6 +199,21 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
+  /api/user/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the user groups.
+      operationId: GetUserGroups
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getUserGroupsResponse'
+            type: array
       security:
       - AppUserAuth: []
   /version:

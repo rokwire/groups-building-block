@@ -197,7 +197,66 @@ func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-//TODO
+type getUserGroupsResponse struct {
+	ID                  string   `json:"id"`
+	Category            string   `json:"category"`
+	Title               string   `json:"title"`
+	Privacy             string   `json:"privacy"`
+	Description         *string  `json:"description"`
+	ImageURL            *string  `json:"image_url"`
+	WebURL              *string  `json:"web_url"`
+	MembersCount        int      `json:"members_count"`
+	Tags                []string `json:"tags"`
+	MembershipQuestions []string `json:"membership_questions"`
+
+	Members []struct {
+		ID       string `json:"id"`
+		Name     string `json:"name"`
+		Email    string `json:"email"`
+		PhotoURL string `json:"photo_url"`
+		Status   string `json:"status"`
+
+		MemberAnswers []struct {
+			Question string `json:"question"`
+			Answer   string `json:"answer"`
+		} `json:"member_answers"`
+
+		DateCreated time.Time  `json:"date_created"`
+		DateUpdated *time.Time `json:"date_updated"`
+	} `json:"members"`
+
+	DateCreated time.Time  `json:"date_created"`
+	DateUpdated *time.Time `json:"date_updated"`
+} // @name getUserGroupsResponse
+
+/*
+type Member struct {
+	ID            string         `json:"id"`
+	User          User           `json:"user"`
+	Name          string         `json:"name"`
+	Email         string         `json:"email"`
+	PhotoURL      string         `json:"photo_url"`
+	Status        string         `json:"status"` //pending, member, admin
+	Group         Group          `json:"group"`
+	MemberAnswers []MemberAnswer `json:"member_answers"`
+
+	DateCreated time.Time  `json:"date_created"`
+	DateUpdated *time.Time `json:"date_updated"`
+} //@name Member
+
+//MemberAnswer represents member answer entity
+type MemberAnswer struct {
+	Question string `json:"question"`
+	Answer   string `json:"answer"`
+} //@name MemberAnswer */
+
+//GetUserGroups gets the user groups.
+// @Description Gives the user groups.
+// @ID GetUserGroups
+// @Accept  json
+// @Success 200 {array} getUserGroupsResponse
+// @Security AppUserAuth
+// @Router /api/user/groups [get]
 func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	groups, err := h.app.Services.GetUserGroups(current)
 	if err != nil {
