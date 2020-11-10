@@ -30,6 +30,65 @@ definitions:
       inserted_id:
         type: string
     type: object
+  getGroupResponse:
+    properties:
+      category:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      members:
+        items:
+          properties:
+            date_created:
+              type: string
+            date_updated:
+              type: string
+            email:
+              type: string
+            id:
+              type: string
+            member_answers:
+              items:
+                properties:
+                  answer:
+                    type: string
+                  question:
+                    type: string
+                type: object
+              type: array
+            name:
+              type: string
+            photo_url:
+              type: string
+            status:
+              type: string
+          type: object
+        type: array
+      members_count:
+        type: integer
+      membership_questions:
+        items:
+          type: string
+        type: array
+      privacy:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      web_url:
+        type: string
+    type: object
   getGroupsResponse:
     properties:
       category:
@@ -201,6 +260,26 @@ paths:
             $ref: '#/definitions/createResponse'
       security:
       - AppUserAuth: []
+  /api/groups/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Gives a group
+      operationId: GetGroup
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getGroupResponse'
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /api/user/groups:
     get:
       consumes:
