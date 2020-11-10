@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gorilla/mux"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -258,8 +259,15 @@ func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, 
 
 //GetGroup gets a group
 func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
-	//TODO
-	group, err := h.app.Services.GetGroup(current, "1234")
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("id is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	group, err := h.app.Services.GetGroup(current, id)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

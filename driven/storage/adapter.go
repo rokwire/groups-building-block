@@ -200,7 +200,19 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 
 //FindGroup finds group by id
 func (sa *Adapter) FindGroup(id string) (*model.Group, error) {
-	return nil, nil
+	filter := bson.D{primitive.E{Key: "_id", Value: id}}
+	var result []*group
+	err := sa.db.groups.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil || len(result) == 0 {
+		//not found
+		return nil, nil
+	}
+	group := result[0]
+	resultEntity := constructGroup(*group)
+	return &resultEntity, nil
 }
 
 //FindGroups finds groups
