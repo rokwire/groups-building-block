@@ -2,7 +2,6 @@ package core
 
 import (
 	"groups/core/model"
-	"log"
 )
 
 func (app *Application) applyDataProtection(current *model.User, group model.Group) map[string]interface{} {
@@ -23,8 +22,7 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 
 	//4 apply data protection for "group pending"
 	if group.IsGroupPending(current.ID) {
-		//TODO
-		log.Printf("%s - pending", group.Title)
+		return app.protectDataForPending(*current, group)
 	}
 
 	//5 apply data protection for "NOT member"
@@ -201,6 +199,44 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["date_updated"] = group.DateUpdated
 
 	//TODO add events and posts when they appear
+	return item
+}
+
+func (app *Application) protectDataForPending(user model.User, group model.Group) map[string]interface{} {
+	item := make(map[string]interface{})
+
+	item["id"] = group.ID
+	item["category"] = group.Category
+	item["title"] = group.Title
+	item["privacy"] = group.Privacy
+	item["description"] = group.Description
+	item["image_url"] = group.ImageURL
+	item["web_url"] = group.WebURL
+	item["members_count"] = group.MembersCount
+	item["tags"] = group.Tags
+	item["membership_questions"] = group.MembershipQuestions
+
+	//members
+	membersCount := len(group.Members)
+	var membersItems []map[string]interface{}
+	if membersCount > 0 {
+		for _, current := range group.Members {
+			if current.User.ID == user.ID {
+				mItem := make(map[string]interface{})
+				mItem["id"] = current.ID
+				mItem["name"] = current.Name
+				mItem["email"] = current.Email
+				mItem["photo_url"] = current.PhotoURL
+				mItem["status"] = current.Status
+				membersItems = append(membersItems, mItem)
+			}
+		}
+	}
+	item["members"] = membersItems
+
+	item["date_created"] = group.DateCreated
+	item["date_updated"] = group.DateUpdated
+
 	return item
 }
 
