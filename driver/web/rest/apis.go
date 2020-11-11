@@ -213,30 +213,17 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 	webURL := requestData.WebURL
 	tags := requestData.Tags
 	membershipQuestions := requestData.MembershipQuestions
-	//TODO
-	h.app.Services.UpdateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 
-	/*
-		audit := requestData.Audit
-		county, err := h.app.Administration.UpdateCounty(current, group, audit, ID, requestData.Name,
-			requestData.StateProvince, requestData.Country)
-		if err != nil {
-			log.Println(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		response := updateCountyResponse{ID: county.ID, Name: county.Name,
-			StateProvince: county.StateProvince, Country: county.Country}
-		data, err = json.Marshal(response)
-		if err != nil {
-			log.Println("Error on marshal the county item")
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
+	err = h.app.Services.UpdateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	if err != nil {
+		log.Printf("Error on updating group - %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		w.Write(data) */
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully updated"))
 }
 
 type getGroupsResponse struct {

@@ -201,7 +201,59 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(id string, category string, title string, privacy string, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
-	//TODO
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. check if the category value is one of the enums list
+		categoryFilter := bson.D{primitive.E{Key: "values", Value: category}}
+		var categoriesResult []enumItem
+		err = sa.db.enums.FindWithContext(sessionContext, categoryFilter, &categoriesResult, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if len(categoriesResult) == 0 {
+			abortTransaction(sessionContext)
+			return errors.New("the provided category must be one of the categories list")
+		}
+
+		//2. update the group
+		filter := bson.D{primitive.E{Key: "_id", Value: id}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "category", Value: category},
+				primitive.E{Key: "title", Value: title},
+				primitive.E{Key: "privacy", Value: privacy},
+				primitive.E{Key: "description", Value: description},
+				primitive.E{Key: "image_url", Value: imageURL},
+				primitive.E{Key: "web_url", Value: webURL},
+				primitive.E{Key: "tags", Value: tags},
+				primitive.E{Key: "membership_questions", Value: membershipQuestions},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
