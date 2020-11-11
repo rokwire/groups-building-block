@@ -140,6 +140,75 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 	w.Write(data)
 }
 
+//TODO check all fields
+type updateGroupRequest struct {
+	Title           string   `json:"title" validate:"required"`
+	Description     *string  `json:"description"`
+	Category        string   `json:"category" validate:"required"`
+	Tags            []string `json:"tags"`
+	Privacy         string   `json:"privacy" validate:"required,oneof=public private"`
+	CreatorName     string   `json:"creator_name"`
+	CreatorEmail    string   `json:"creator_email"`
+	CreatorPhotoURL string   `json:"creator_photo_url"`
+} //@name updateGroupRequest
+
+//UpdateGroup updates group
+func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	ID := params["id"]
+	if len(ID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the update group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData updateGroupRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the update group request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//validate
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating update group data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	/*
+		audit := requestData.Audit
+		county, err := h.app.Administration.UpdateCounty(current, group, audit, ID, requestData.Name,
+			requestData.StateProvince, requestData.Country)
+		if err != nil {
+			log.Println(err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		response := updateCountyResponse{ID: county.ID, Name: county.Name,
+			StateProvince: county.StateProvince, Country: county.Country}
+		data, err = json.Marshal(response)
+		if err != nil {
+			log.Println("Error on marshal the county item")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data) */
+}
+
 type getGroupsResponse struct {
 	ID                  string   `json:"id"`
 	Category            string   `json:"category"`
