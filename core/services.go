@@ -243,6 +243,14 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
+func (app *Application) getGroupEntity(id string) (*model.Group, error) {
+	group, err := app.storage.FindGroup(id)
+	if err != nil {
+		return nil, err
+	}
+	return group, nil
+}
+
 func (app *Application) getGroupCategories() ([]string, error) {
 	groupCategories, err := app.storage.ReadAllGroupCategories()
 	if err != nil {

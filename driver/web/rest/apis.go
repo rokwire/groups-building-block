@@ -153,9 +153,10 @@ type updateGroupRequest struct {
 
 //UpdateGroup updates group
 func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
 	params := mux.Vars(r)
-	ID := params["id"]
-	if len(ID) <= 0 {
+	id := params["id"]
+	if len(id) <= 0 {
 		log.Println("Group id is required")
 		http.Error(w, "Group id is required", http.StatusBadRequest)
 		return
@@ -176,13 +177,32 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 		return
 	}
 
-	//validate
 	validate := validator.New()
 	err = validate.Struct(requestData)
 	if err != nil {
 		log.Printf("Error on validating update group data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntity(id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided id - %s", id)
+		//do not say to much to the user as we do not if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to update a group", current.Email)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
 	}
 
 	/*

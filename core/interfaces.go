@@ -8,6 +8,8 @@ import (
 type Services interface {
 	GetVersion() string
 
+	GetGroupEntity(id string) (*model.Group, error)
+
 	GetGroupCategories() ([]string, error)
 
 	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
@@ -23,6 +25,10 @@ type servicesImpl struct {
 
 func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
+}
+
+func (s *servicesImpl) GetGroupEntity(id string) (*model.Group, error) {
+	return s.app.getGroupEntity(id)
 }
 
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
