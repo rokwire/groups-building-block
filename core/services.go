@@ -269,6 +269,15 @@ func (app *Application) createGroup(current model.User, title string, descriptio
 	return insertedID, nil
 }
 
+func (app *Application) updateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	err := app.storage.UpdateGroup(id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) getGroups(category *string) ([]map[string]interface{}, error) {
 	// find the groups objects
 	groups, err := app.storage.FindGroups(category)

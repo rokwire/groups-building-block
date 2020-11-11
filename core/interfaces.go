@@ -14,6 +14,8 @@ type Services interface {
 
 	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+	UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	GetGroups(category *string) ([]map[string]interface{}, error)
 	GetUserGroups(current *model.User) ([]map[string]interface{}, error)
 	GetGroup(current *model.User, id string) (map[string]interface{}, error)
@@ -38,6 +40,11 @@ func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 func (s *servicesImpl) CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
 	return s.app.createGroup(current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
+}
+
+func (s *servicesImpl) UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	return s.app.updateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
 func (s *servicesImpl) GetGroups(category *string) ([]map[string]interface{}, error) {
@@ -77,6 +84,8 @@ type Storage interface {
 
 	CreateGroup(title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+	UpdateGroup(id string, category string, title string, privacy string, description *string,
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	FindGroup(id string) (*model.Group, error)
 	FindGroups(category *string) ([]model.Group, error)
 	FindUserGroups(userID string) ([]model.Group, error)

@@ -198,6 +198,13 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 	return &insertedID, nil
 }
 
+//UpdateGroup updates a group.
+func (sa *Adapter) UpdateGroup(id string, category string, title string, privacy string, description *string,
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	//TODO
+	return nil
+}
+
 //FindGroup finds group by id
 func (sa *Adapter) FindGroup(id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id}}

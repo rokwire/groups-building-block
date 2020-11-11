@@ -194,7 +194,7 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 	}
 	if group == nil {
 		log.Printf("there is no a group for the provided id - %s", id)
-		//do not say to much to the user as we do not if he/she is an admin for the group yet
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -204,6 +204,17 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 	}
+
+	category := requestData.Category
+	title := requestData.Title
+	privacy := requestData.Privacy
+	description := requestData.Description
+	imageURL := requestData.ImageURL
+	webURL := requestData.WebURL
+	tags := requestData.Tags
+	membershipQuestions := requestData.MembershipQuestions
+	//TODO
+	h.app.Services.UpdateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 
 	/*
 		audit := requestData.Audit
