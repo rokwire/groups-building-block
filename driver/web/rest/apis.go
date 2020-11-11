@@ -140,16 +140,15 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 	w.Write(data)
 }
 
-//TODO check all fields
 type updateGroupRequest struct {
-	Title           string   `json:"title" validate:"required"`
-	Description     *string  `json:"description"`
-	Category        string   `json:"category" validate:"required"`
-	Tags            []string `json:"tags"`
-	Privacy         string   `json:"privacy" validate:"required,oneof=public private"`
-	CreatorName     string   `json:"creator_name"`
-	CreatorEmail    string   `json:"creator_email"`
-	CreatorPhotoURL string   `json:"creator_photo_url"`
+	Category            string   `json:"category" validate:"required"`
+	Title               string   `json:"title" validate:"required"`
+	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
+	Description         *string  `json:"description"`
+	ImageURL            *string  `json:"image_url"`
+	WebURL              *string  `json:"web_url"`
+	Tags                []string `json:"tags"`
+	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
 //UpdateGroup updates group
