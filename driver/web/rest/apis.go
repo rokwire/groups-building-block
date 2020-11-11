@@ -151,7 +151,16 @@ type updateGroupRequest struct {
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
-//UpdateGroup updates group
+//UpdateGroup updates a group
+// @Description Updates a group.
+// @ID UpdateGroup
+// @Accept json
+// @Produce json
+// @Param data body updateGroupRequest true "body data"
+// @Param id path string true "ID"
+// @Success 200 {string} Successfully updated
+// @Security AppUserAuth
+// @Router /api/groups/{id} [put]
 func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

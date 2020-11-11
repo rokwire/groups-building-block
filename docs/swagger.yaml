@@ -194,6 +194,33 @@ definitions:
       web_url:
         type: string
     type: object
+  updateGroupRequest:
+    properties:
+      category:
+        type: string
+      description:
+        type: string
+      image_url:
+        type: string
+      membership_questions:
+        items:
+          type: string
+        type: array
+      privacy:
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      web_url:
+        type: string
+    required:
+    - category
+    - privacy
+    - title
+    type: object
 host: localhost
 info:
   contact: {}
@@ -280,6 +307,32 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+    put:
+      consumes:
+      - application/json
+      description: Updates a group.
+      operationId: UpdateGroup
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateGroupRequest'
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
   /api/user/groups:
     get:
       consumes:
