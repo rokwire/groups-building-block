@@ -423,7 +423,15 @@ func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *ht
 
 //CreateMember create a group pending member
 func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
 
+	log.Println(groupID)
 }
 
 //NewApisHandler creates new rest Handler instance

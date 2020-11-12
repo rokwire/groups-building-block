@@ -317,6 +317,12 @@ func (sa *Adapter) FindUserGroups(userID string) ([]model.Group, error) {
 	return result, nil
 }
 
+//CreatePendingMember creates a pending member for a specific group
+func (sa *Adapter) CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []string) error {
+	//TODO
+	return nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)

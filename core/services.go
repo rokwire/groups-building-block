@@ -325,3 +325,8 @@ func (app *Application) getGroup(current *model.User, id string) (map[string]int
 
 	return res, nil
 }
+
+func (app *Application) createPendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []string) error {
+	//TODO
+	return nil
+}
