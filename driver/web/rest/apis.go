@@ -421,6 +421,11 @@ func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *ht
 	w.Write(data)
 }
 
+//CreateMember create a group pending member
+func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r *http.Request) {
+
+}
+
 //NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
