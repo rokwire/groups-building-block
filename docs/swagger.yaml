@@ -25,6 +25,24 @@ definitions:
     - privacy
     - title
     type: object
+  createMemberRequest:
+    properties:
+      email:
+        type: string
+      member_answers:
+        items:
+          properties:
+            answer:
+              type: string
+            question:
+              type: string
+          type: object
+        type: array
+      name:
+        type: string
+      photo_url:
+        type: string
+    type: object
   createResponse:
     properties:
       inserted_id:
@@ -244,6 +262,33 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+  /api/group/{group-id}/pending-members:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group pending member
+      operationId: CreatePendingMember
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createMemberRequest'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
   /api/groups:
     get:
       consumes:

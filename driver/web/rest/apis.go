@@ -429,9 +429,18 @@ type createMemberRequest struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
 	} `json:"member_answers"`
-}
+} // @name createMemberRequest
 
-//CreatePendingMember create a group pending member
+//CreatePendingMember creates a group pending member
+// @Description Creates a group pending member
+// @ID CreatePendingMember
+// @Accept json
+// @Produce json
+// @Param data body createMemberRequest true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200 {string} Successfully created
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/pending-members [post]
 func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
