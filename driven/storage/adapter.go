@@ -409,7 +409,73 @@ func (sa *Adapter) CreatePendingMember(groupID string, userID string, name strin
 
 //DeletePendingMember deletes a pending member from a specific group
 func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
-	//TODO
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. first check if there is a group for the prvoided group id
+		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		var result []*group
+		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			//there is no a group for the provided id
+			abortTransaction(sessionContext)
+			return errors.New("there is no a group for the provided id")
+		}
+		group := result[0]
+
+		//2. delete the pending member
+		members := group.Members
+		indexToRemove := -1
+		if len(members) > 0 {
+			for i, cMember := range members {
+				if cMember.UserID == userID && cMember.Status == "pending" {
+					indexToRemove = i
+					break
+				}
+			}
+		}
+		if indexToRemove == -1 {
+			return errors.New("there is no pending request for the user")
+		}
+
+		// delete it form the members list
+		members = append(members[:indexToRemove], members[indexToRemove+1:]...)
+
+		//save it
+		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members", Value: members},
+			},
+			},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
