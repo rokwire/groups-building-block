@@ -21,6 +21,7 @@ type Services interface {
 	GetGroup(current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	DeletePendingMember(current model.User, groupID string) error
 }
 
 type servicesImpl struct {
@@ -65,6 +66,10 @@ func (s *servicesImpl) CreatePendingMember(current model.User, groupID string, n
 	return s.app.createPendingMember(current, groupID, name, email, photoURL, memberAnswers)
 }
 
+func (s *servicesImpl) DeletePendingMember(current model.User, groupID string) error {
+	return s.app.deletePendingMember(current, groupID)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetTODO() error
@@ -97,6 +102,7 @@ type Storage interface {
 	FindUserGroups(userID string) ([]model.Group, error)
 
 	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	DeletePendingMember(groupID string, userID string) error
 }
 
 //StorageListener listenes for change data storage events

@@ -333,3 +333,11 @@ func (app *Application) createPendingMember(current model.User, groupID string, 
 	}
 	return nil
 }
+
+func (app *Application) deletePendingMember(current model.User, groupID string) error {
+	err := app.storage.DeletePendingMember(groupID, current.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

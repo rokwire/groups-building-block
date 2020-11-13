@@ -407,6 +407,12 @@ func (sa *Adapter) CreatePendingMember(groupID string, userID string, name strin
 	return nil
 }
 
+//DeletePendingMember deletes a pending member from a specific group
+func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
+	//TODO
+	return nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
