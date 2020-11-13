@@ -20,7 +20,7 @@ type Services interface {
 	GetUserGroups(current *model.User) ([]map[string]interface{}, error)
 	GetGroup(current *model.User, id string) (map[string]interface{}, error)
 
-	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []string) error
+	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 }
 
 type servicesImpl struct {
@@ -61,7 +61,7 @@ func (s *servicesImpl) GetGroup(current *model.User, id string) (map[string]inte
 	return s.app.getGroup(current, id)
 }
 
-func (s *servicesImpl) CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []string) error {
+func (s *servicesImpl) CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
 	return s.app.createPendingMember(current, groupID, name, email, photoURL, memberAnswers)
 }
 
@@ -96,7 +96,7 @@ type Storage interface {
 	FindGroups(category *string) ([]model.Group, error)
 	FindUserGroups(userID string) ([]model.Group, error)
 
-	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []string) error
+	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 }
 
 //StorageListener listenes for change data storage events

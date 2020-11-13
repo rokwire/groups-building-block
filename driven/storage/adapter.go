@@ -318,8 +318,92 @@ func (sa *Adapter) FindUserGroups(userID string) ([]model.Group, error) {
 }
 
 //CreatePendingMember creates a pending member for a specific group
-func (sa *Adapter) CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []string) error {
-	//TODO
+func (sa *Adapter) CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. first check if there is a group for the prvoided group id
+		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		var result []*group
+		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			//there is no a group for the provided id
+			abortTransaction(sessionContext)
+			return errors.New("there is no a group for the provided id")
+		}
+		group := result[0]
+
+		//2. check if the user is already a member of this group - pending, or member or admin
+		members := group.Members
+		if members != nil {
+			for _, cMember := range members {
+				if cMember.UserID == userID {
+					switch cMember.Status {
+					case "admin":
+						return errors.New("the user is an admin for the group")
+					case "member":
+						return errors.New("the user is a member for the group")
+					case "pending":
+						return errors.New("the user is pending for the group")
+					default:
+						return errors.New("error creating a pending user")
+					}
+				}
+			}
+		}
+
+		//3. check if the answers match the group questions
+		if len(group.MembershipQuestions) != len(memberAnswers) {
+			return errors.New("member answers mismatch")
+		}
+
+		//4. now we can add the pending member
+		now := time.Now()
+		memberID, _ := uuid.NewUUID()
+		var memberAns []memberAnswer
+		if len(memberAnswers) > 0 {
+			for _, cAns := range memberAnswers {
+				memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
+			}
+		}
+		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email,
+			PhotoURL: photoURL, Status: "pending", MemberAnswers: memberAns, DateCreated: now}
+		groupMembers := group.Members
+		groupMembers = append(groupMembers, pendingMember)
+		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members", Value: groupMembers},
+			},
+			},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

@@ -326,7 +326,10 @@ func (app *Application) getGroup(current *model.User, id string) (map[string]int
 	return res, nil
 }
 
-func (app *Application) createPendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []string) error {
-	//TODO
+func (app *Application) createPendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	err := app.storage.CreatePendingMember(groupID, current.ID, name, email, photoURL, memberAnswers)
+	if err != nil {
+		return err
+	}
 	return nil
 }

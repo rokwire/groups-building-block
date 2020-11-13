@@ -441,11 +441,51 @@ func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWr
 		return
 	}
 
-	log.Println(groupID)
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
 
-	//groupID string, name string, email string, photoURL string, memberAnswers []string
+	var requestData createMemberRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create pending member data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	//h.app.Services.CreatePendingMember()
+	//validate
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating create pending member data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	name := requestData.Name
+	email := requestData.Email
+	photoURL := requestData.PhotoURL
+	memberAnswers := requestData.MemberAnswers
+	mAnswers := make([]model.MemberAnswer, len(memberAnswers))
+	if memberAnswers != nil {
+		for i, current := range memberAnswers {
+			mAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
+		}
+	}
+
+	err = h.app.Services.CreatePendingMember(*current, groupID, name, email, photoURL, mAnswers)
+	if err != nil {
+		log.Printf("Error on creating a pending member - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully created"))
 }
 
 //NewApisHandler creates new rest Handler instance
