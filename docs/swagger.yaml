@@ -263,6 +263,24 @@ paths:
       security:
       - APIKeyAuth: []
   /api/group/{group-id}/pending-members:
+    delete:
+      consumes:
+      - text/plain
+      description: Deletes a group pending member
+      operationId: DeletePendingMember
+      parameters:
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Successfuly deleted
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
     post:
       consumes:
       - application/json
