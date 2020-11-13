@@ -421,8 +421,18 @@ func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *ht
 	w.Write(data)
 }
 
-//CreateMember create a group pending member
-func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r *http.Request) {
+type createMemberRequest struct {
+	Name          string `json:"name"`
+	Email         string `json:"email"`
+	PhotoURL      string `json:"photo_url"`
+	MemberAnswers []struct {
+		Question string `json:"question"`
+		Answer   string `json:"answer"`
+	} `json:"member_answers"`
+}
+
+//CreatePendingMember create a group pending member
+func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -432,6 +442,10 @@ func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r
 	}
 
 	log.Println(groupID)
+
+	//groupID string, name string, email string, photoURL string, memberAnswers []string
+
+	//h.app.Services.CreatePendingMember()
 }
 
 //NewApisHandler creates new rest Handler instance
