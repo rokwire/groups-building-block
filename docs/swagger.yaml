@@ -42,6 +42,8 @@ definitions:
         type: string
       photo_url:
         type: string
+    required:
+    - email
     type: object
   createResponse:
     properties:

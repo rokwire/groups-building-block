@@ -423,7 +423,7 @@ func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *ht
 
 type createMemberRequest struct {
 	Name          string `json:"name"`
-	Email         string `json:"email"`
+	Email         string `json:"email" validate:"required"`
 	PhotoURL      string `json:"photo_url"`
 	MemberAnswers []struct {
 		Question string `json:"question"`
