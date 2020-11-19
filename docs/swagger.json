@@ -115,6 +115,9 @@
                 "security": [
                     {
                         "APIKeyAuth": []
+                    },
+                    {
+                        "AppUserAuth": []
                     }
                 ],
                 "description": "Gives the groups list. It can be filtered by category",
@@ -257,6 +260,9 @@
                 "security": [
                     {
                         "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
                     }
                 ],
                 "description": "Gives the user groups.",

@@ -329,6 +329,7 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+      - AppUserAuth: []
     post:
       consumes:
       - application/json
@@ -413,6 +414,7 @@ paths:
             type: array
       security:
       - AppUserAuth: []
+      - APIKeyAuth: []
   /version:
     get:
       description: Gives the service version.

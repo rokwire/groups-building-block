@@ -266,6 +266,7 @@ type getGroupsResponse struct {
 // @Param category query string false "Category"
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
+// @Security AppUserAuth
 // @Router /api/groups [get]
 func (h *ApisHandler) GetGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	var category *string
@@ -331,6 +332,7 @@ type getUserGroupsResponse struct {
 // @Accept  json
 // @Success 200 {array} getUserGroupsResponse
 // @Security AppUserAuth
+// @Security APIKeyAuth
 // @Router /api/user/groups [get]
 func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	groups, err := h.app.Services.GetUserGroups(current)

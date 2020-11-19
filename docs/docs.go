@@ -127,6 +127,9 @@ var doc = `{
                 "security": [
                     {
                         "APIKeyAuth": []
+                    },
+                    {
+                        "AppUserAuth": []
                     }
                 ],
                 "description": "Gives the groups list. It can be filtered by category",
@@ -269,6 +272,9 @@ var doc = `{
                 "security": [
                     {
                         "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
                     }
                 ],
                 "description": "Gives the user groups.",
