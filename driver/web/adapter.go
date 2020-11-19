@@ -57,7 +57,6 @@ func (we *Adapter) Start() {
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
-	restSubrouter.HandleFunc("/groups", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 
 	//id token protection
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
@@ -67,6 +66,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
 
 	//mixed protection
+	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))

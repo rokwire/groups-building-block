@@ -16,7 +16,7 @@ type Services interface {
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 	UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
-	GetGroups(category *string) ([]map[string]interface{}, error)
+	GetGroups(current *model.User, category *string) ([]map[string]interface{}, error)
 	GetUserGroups(current *model.User) ([]map[string]interface{}, error)
 	GetGroup(current *model.User, id string) (map[string]interface{}, error)
 
@@ -50,8 +50,8 @@ func (s *servicesImpl) UpdateGroup(current *model.User, id string, category stri
 	return s.app.updateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
-func (s *servicesImpl) GetGroups(category *string) ([]map[string]interface{}, error) {
-	return s.app.getGroups(category)
+func (s *servicesImpl) GetGroups(current *model.User, category *string) ([]map[string]interface{}, error) {
+	return s.app.getGroups(current, category)
 }
 
 func (s *servicesImpl) GetUserGroups(current *model.User) ([]map[string]interface{}, error) {

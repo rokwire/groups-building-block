@@ -267,14 +267,14 @@ type getGroupsResponse struct {
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Router /api/groups [get]
-func (h *ApisHandler) GetGroups(w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	var category *string
 	catogies, ok := r.URL.Query()["category"]
 	if ok && len(catogies[0]) > 0 {
 		category = &catogies[0]
 	}
 
-	groups, err := h.app.Services.GetGroups(category)
+	groups, err := h.app.Services.GetGroups(current, category)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
