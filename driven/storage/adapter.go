@@ -360,7 +360,7 @@ func (sa *Adapter) CreatePendingMember(groupID string, userID string, name strin
 		}
 		group := result[0]
 
-		//2. check if the user is already a member of this group - pending, or member or admin
+		//2. check if the user is already a member of this group - pending or member or admin or rejected
 		members := group.Members
 		if members != nil {
 			for _, cMember := range members {
@@ -372,6 +372,8 @@ func (sa *Adapter) CreatePendingMember(groupID string, userID string, name strin
 						return errors.New("the user is a member for the group")
 					case "pending":
 						return errors.New("the user is pending for the group")
+					case "rejected":
+						return errors.New("the user is rejected for the group")
 					default:
 						return errors.New("error creating a pending user")
 					}
@@ -499,7 +501,89 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 
 //ApplyMembershipApproval applies a membership approval
 func (sa *Adapter) ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error {
-	//TODO
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. first check if there is a group for the provided membership id
+		groupFilter := bson.D{primitive.E{Key: "members.id", Value: membershipID}}
+		var result []*group
+		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			//there is no a group for the provided membership id
+			abortTransaction(sessionContext)
+			return errors.New("there is no a group for the provided membership id")
+		}
+		group := result[0]
+
+		//2. find the member
+		memberIndex := -1
+		var member member
+		if len(group.Members) > 0 {
+			for i, cMember := range group.Members {
+				if cMember.ID == membershipID && cMember.Status == "pending" {
+					member = cMember
+					memberIndex = i
+					break
+				}
+			}
+		}
+		if memberIndex == -1 {
+			return errors.New("there is an issue with the reject member index")
+		}
+
+		//3. apply approve/deny
+		membersCount := group.MembersCount
+		groupMembers := group.Members
+		now := time.Now()
+		if approve {
+			//apply approve
+			member.DateUpdated = &now
+			member.Status = "member"
+			membersCount = membersCount + 1
+			groupMembers[memberIndex] = member
+		} else {
+			//apply deny
+			member.DateUpdated = &now
+			member.Status = "rejected"
+			member.RejectReason = rejectReason
+			groupMembers[memberIndex] = member
+		}
+
+		saveFilter := bson.D{primitive.E{Key: "_id", Value: group.ID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members", Value: groupMembers},
+				primitive.E{Key: "members_count", Value: membersCount},
+			},
+			},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

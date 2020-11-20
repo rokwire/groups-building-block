@@ -604,7 +604,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	err = h.app.Services.ApplyMembershipApproval(*current, membershipID, approve, rejectedReason)
 	if err != nil {
 		log.Printf("Error on applying membership approval - %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
