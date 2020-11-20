@@ -497,6 +497,12 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 	return nil
 }
 
+//ApplyMembershipApproval applies a membership approval
+func (sa *Adapter) ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error {
+	//TODO
+	return nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)

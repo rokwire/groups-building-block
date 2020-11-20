@@ -601,28 +601,16 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	approve := *requestData.Approve
 	rejectedReason := requestData.RejectedReason
 
-	log.Println(approve)
-	log.Println(rejectedReason)
-	/*
-		category := requestData.Category
-		title := requestData.Title
-		privacy := requestData.Privacy
-		description := requestData.Description
-		imageURL := requestData.ImageURL
-		webURL := requestData.WebURL
-		tags := requestData.Tags
-		membershipQuestions := requestData.MembershipQuestions
+	err = h.app.Services.ApplyMembershipApproval(*current, membershipID, approve, rejectedReason)
+	if err != nil {
+		log.Printf("Error on applying membership approval - %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
-		err = h.app.Services.UpdateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
-		if err != nil {
-			log.Printf("Error on updating group - %s\n", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/plain")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Successfully updated")) */
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully processed"))
 }
 
 //NewApisHandler creates new rest Handler instance

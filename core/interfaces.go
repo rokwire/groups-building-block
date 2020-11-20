@@ -23,6 +23,8 @@ type Services interface {
 
 	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(current model.User, groupID string) error
+
+	ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error
 }
 
 type servicesImpl struct {
@@ -75,6 +77,10 @@ func (s *servicesImpl) DeletePendingMember(current model.User, groupID string) e
 	return s.app.deletePendingMember(current, groupID)
 }
 
+func (s *servicesImpl) ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error {
+	return s.app.applyMembershipApproval(current, membershipID, approve, rejectReason)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetTODO() error
@@ -109,6 +115,8 @@ type Storage interface {
 
 	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(groupID string, userID string) error
+
+	ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error
 }
 
 //StorageListener listenes for change data storage events
