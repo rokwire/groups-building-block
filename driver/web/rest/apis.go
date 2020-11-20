@@ -528,6 +528,10 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 	w.Write([]byte("Successfully deleted"))
 }
 
+func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//TODO
+}
+
 //NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
