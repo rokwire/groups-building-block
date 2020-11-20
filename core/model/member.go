@@ -9,7 +9,8 @@ type Member struct {
 	Name          string         `json:"name"`
 	Email         string         `json:"email"`
 	PhotoURL      string         `json:"photo_url"`
-	Status        string         `json:"status"` //pending, member, admin
+	Status        string         `json:"status"` //pending, member, admin, rejected
+	RejectReason  string         `json:"reject_reason"`
 	Group         Group          `json:"group"`
 	MemberAnswers []MemberAnswer `json:"member_answers"`
 

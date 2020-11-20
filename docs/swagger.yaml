@@ -88,6 +88,8 @@ definitions:
               type: string
             photo_url:
               type: string
+            rejected_reason:
+              type: string
             status:
               type: string
           type: object
@@ -126,13 +128,28 @@ definitions:
       members:
         items:
           properties:
+            date_created:
+              type: string
+            date_updated:
+              type: string
             email:
               type: string
             id:
               type: string
+            member_answers:
+              items:
+                properties:
+                  answer:
+                    type: string
+                  question:
+                    type: string
+                type: object
+              type: array
             name:
               type: string
             photo_url:
+              type: string
+            rejected_reason:
               type: string
             status:
               type: string
@@ -192,6 +209,8 @@ definitions:
             name:
               type: string
             photo_url:
+              type: string
+            rejected_reason:
               type: string
             status:
               type: string

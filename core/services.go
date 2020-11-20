@@ -25,7 +25,12 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 		return app.protectDataForPending(*current, group)
 	}
 
-	//5 apply data protection for "NOT member" - treat it as anonymous user
+	//5 apply data protection for "group rejected"
+	if group.IsGroupRejected(current.ID) {
+		return app.protectDataForRejected(*current, group)
+	}
+
+	//6 apply data protection for "NOT member" - treat it as anonymous user
 	return app.protectDataForAnonymous(group)
 }
 
@@ -134,6 +139,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
 			mItem["status"] = current.Status
+			mItem["rejected_reason"] = current.RejectReason
 
 			//member answers
 			answersCount := len(current.MemberAnswers)
@@ -227,6 +233,45 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
+				membersItems = append(membersItems, mItem)
+			}
+		}
+	}
+	item["members"] = membersItems
+
+	item["date_created"] = group.DateCreated
+	item["date_updated"] = group.DateUpdated
+
+	return item
+}
+
+func (app *Application) protectDataForRejected(user model.User, group model.Group) map[string]interface{} {
+	item := make(map[string]interface{})
+
+	item["id"] = group.ID
+	item["category"] = group.Category
+	item["title"] = group.Title
+	item["privacy"] = group.Privacy
+	item["description"] = group.Description
+	item["image_url"] = group.ImageURL
+	item["web_url"] = group.WebURL
+	item["members_count"] = group.MembersCount
+	item["tags"] = group.Tags
+	item["membership_questions"] = group.MembershipQuestions
+
+	//members
+	membersCount := len(group.Members)
+	var membersItems []map[string]interface{}
+	if membersCount > 0 {
+		for _, current := range group.Members {
+			if current.User.ID == user.ID {
+				mItem := make(map[string]interface{})
+				mItem["id"] = current.ID
+				mItem["name"] = current.Name
+				mItem["email"] = current.Email
+				mItem["photo_url"] = current.PhotoURL
+				mItem["status"] = current.Status
+				mItem["rejected_reason"] = current.RejectReason
 				membersItems = append(membersItems, mItem)
 			}
 		}

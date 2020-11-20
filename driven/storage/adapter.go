@@ -45,7 +45,8 @@ type member struct {
 	Name          string         `bson:"name"`
 	Email         string         `bson:"email"`
 	PhotoURL      string         `bson:"photo_url"`
-	Status        string         `bson:"status"` //pending, member, admin
+	Status        string         `bson:"status"` //pending, member, admin, reject
+	RejectReason  string         `bson:"reject_reason"`
 	MemberAnswers []memberAnswer `bson:"member_answers"`
 
 	DateCreated time.Time  `bson:"date_created"`
@@ -532,6 +533,7 @@ func constructMember(groupID string, member member) model.Member {
 	email := member.Email
 	photoURL := member.PhotoURL
 	status := member.Status
+	rejectReason := member.RejectReason
 	group := model.Group{ID: groupID}
 	dateCreated := member.DateCreated
 	dateUpdated := member.DateUpdated
@@ -542,5 +544,5 @@ func constructMember(groupID string, member member) model.Member {
 	}
 
 	return model.Member{ID: id, User: user, Name: name, Email: email, PhotoURL: photoURL,
-		Status: status, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
+		Status: status, RejectReason: rejectReason, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }

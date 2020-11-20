@@ -248,11 +248,20 @@ type getGroupsResponse struct {
 	MembershipQuestions []string `json:"membership_questions"`
 
 	Members []struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		PhotoURL string `json:"photo_url"`
-		Status   string `json:"status"`
+		ID             string `json:"id"`
+		Name           string `json:"name"`
+		Email          string `json:"email"`
+		PhotoURL       string `json:"photo_url"`
+		Status         string `json:"status"`
+		RejectedReason string `json:"rejected_reason"`
+
+		MemberAnswers []struct {
+			Question string `json:"question"`
+			Answer   string `json:"answer"`
+		} `json:"member_answers"`
+
+		DateCreated time.Time  `json:"date_created"`
+		DateUpdated *time.Time `json:"date_updated"`
 	} `json:"members"`
 
 	DateCreated time.Time  `json:"date_created"`
@@ -307,11 +316,12 @@ type getUserGroupsResponse struct {
 	MembershipQuestions []string `json:"membership_questions"`
 
 	Members []struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		PhotoURL string `json:"photo_url"`
-		Status   string `json:"status"`
+		ID             string `json:"id"`
+		Name           string `json:"name"`
+		Email          string `json:"email"`
+		PhotoURL       string `json:"photo_url"`
+		Status         string `json:"status"`
+		RejectedReason string `json:"rejected_reason"`
 
 		MemberAnswers []struct {
 			Question string `json:"question"`
@@ -367,11 +377,12 @@ type getGroupResponse struct {
 	MembershipQuestions []string `json:"membership_questions"`
 
 	Members []struct {
-		ID       string `json:"id"`
-		Name     string `json:"name"`
-		Email    string `json:"email"`
-		PhotoURL string `json:"photo_url"`
-		Status   string `json:"status"`
+		ID             string `json:"id"`
+		Name           string `json:"name"`
+		Email          string `json:"email"`
+		PhotoURL       string `json:"photo_url"`
+		Status         string `json:"status"`
+		RejectedReason string `json:"rejected_reason"`
 
 		MemberAnswers []struct {
 			Question string `json:"question"`
@@ -527,6 +538,17 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
 }
+
+/*
+type createMemberRequest struct {
+	Name          string `json:"name"`
+	Email         string `json:"email" validate:"required"`
+	PhotoURL      string `json:"photo_url"`
+	MemberAnswers []struct {
+		Question string `json:"question"`
+		Answer   string `json:"answer"`
+	} `json:"member_answers"`
+} // @name createMemberRequest */
 
 func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//TODO
