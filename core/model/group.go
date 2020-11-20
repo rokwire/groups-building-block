@@ -59,3 +59,16 @@ func (gr Group) IsGroupPending(userID string) bool {
 	}
 	return false
 }
+
+//IsGroupRejected says if the user is a group rejected
+func (gr Group) IsGroupRejected(userID string) bool {
+	if gr.Members == nil {
+		return false
+	}
+	for _, item := range gr.Members {
+		if item.User.ID == userID && item.Status == "rejected" {
+			return true
+		}
+	}
+	return false
+}
