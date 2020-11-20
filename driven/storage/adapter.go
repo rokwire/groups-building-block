@@ -275,6 +275,23 @@ func (sa *Adapter) FindGroup(id string) (*model.Group, error) {
 	return &resultEntity, nil
 }
 
+//FindGroupByMembership finds group by membership
+func (sa *Adapter) FindGroupByMembership(membershipID string) (*model.Group, error) {
+	filter := bson.D{primitive.E{Key: "members.id", Value: membershipID}}
+	var result []*group
+	err := sa.db.groups.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil || len(result) == 0 {
+		//not found
+		return nil, nil
+	}
+	group := result[0]
+	resultEntity := constructGroup(*group)
+	return &resultEntity, nil
+}
+
 //FindGroups finds groups
 func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
 	filter := bson.D{}

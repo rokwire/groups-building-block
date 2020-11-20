@@ -9,6 +9,7 @@ type Services interface {
 	GetVersion() string
 
 	GetGroupEntity(id string) (*model.Group, error)
+	GetGroupEntityByMembership(membershipID string) (*model.Group, error)
 
 	GetGroupCategories() ([]string, error)
 
@@ -34,6 +35,10 @@ func (s *servicesImpl) GetVersion() string {
 
 func (s *servicesImpl) GetGroupEntity(id string) (*model.Group, error) {
 	return s.app.getGroupEntity(id)
+}
+
+func (s *servicesImpl) GetGroupEntityByMembership(membershipID string) (*model.Group, error) {
+	return s.app.getGroupEntityByMembership(membershipID)
 }
 
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
@@ -98,6 +103,7 @@ type Storage interface {
 	UpdateGroup(id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	FindGroup(id string) (*model.Group, error)
+	FindGroupByMembership(membershipID string) (*model.Group, error)
 	FindGroups(category *string) ([]model.Group, error)
 	FindUserGroups(userID string) ([]model.Group, error)
 
