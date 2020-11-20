@@ -233,6 +233,15 @@ definitions:
       web_url:
         type: string
     type: object
+  membershipApprovalRequest:
+    properties:
+      approve:
+        type: boolean
+      reject_reason:
+        type: string
+    required:
+    - approve
+    type: object
   updateGroupRequest:
     properties:
       category:
@@ -407,6 +416,33 @@ paths:
       - description: ID
         in: path
         name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+  /api/memberships/{membership-id}/approval:
+    put:
+      consumes:
+      - application/json
+      description: Аpprove/Deny a membership
+      operationId: MembershipApproval
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/membershipApprovalRequest'
+      - description: Membership ID
+        in: path
+        name: membership-id
         required: true
         type: string
       produces:

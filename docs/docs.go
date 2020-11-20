@@ -267,6 +267,49 @@ var doc = `{
                 }
             }
         },
+        "/api/memberships/{membership-id}/approval": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Аpprove/Deny a membership",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "MembershipApproval",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/membershipApprovalRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Membership ID",
+                        "name": "membership-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/groups": {
             "get": {
                 "security": [
@@ -665,6 +708,20 @@ var doc = `{
                     "type": "string"
                 },
                 "web_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "membershipApprovalRequest": {
+            "type": "object",
+            "required": [
+                "approve"
+            ],
+            "properties": {
+                "approve": {
+                    "type": "boolean"
+                },
+                "reject_reason": {
                     "type": "string"
                 }
             }

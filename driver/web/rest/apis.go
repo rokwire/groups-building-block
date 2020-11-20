@@ -542,9 +542,18 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 type membershipApprovalRequest struct {
 	Approve        *bool  `json:"approve" validate:"required"`
 	RejectedReason string `json:"reject_reason"`
-}
+} // @name membershipApprovalRequest
 
 //MembershipApproval approve/deny a membership
+// @Description Аpprove/Deny a membership
+// @ID MembershipApproval
+// @Accept json
+// @Produce json
+// @Param data body membershipApprovalRequest true "body data"
+// @Param membership-id path string true "Membership ID"
+// @Success 200 {string} Successfully processed
+// @Security AppUserAuth
+// @Router /api/memberships/{membership-id}/approval [put]
 func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
