@@ -499,15 +499,6 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 	return nil
 }
 
-/*
-type vvv struct {
-	ID    string `bson:"_id"`
-	Title string `bson:"title"`
-
-
-	Members interface{} `bson:"members"`
-} */
-
 //DeleteMember deletes a member membership from a specific group
 func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 	// transaction
@@ -518,12 +509,35 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 			return err
 		}
 
-		adminsCount, err := sa.findAdminsCount(sessionContext, groupID)
+		//1. get the member as we need to validate it
+		pipeline := []bson.M{
+			{"$unwind": "$members"},
+			{"$match": bson.M{"_id": groupID, "members.user_id": userID}},
+		}
+		var result []struct {
+			ID     string `bson:"_id"`
+			Member member `bson:"members"`
+		}
+		err = sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
 		}
-		log.Println(adminsCount)
+		if result == nil || len(result) == 0 {
+			abortTransaction(sessionContext)
+			return errors.New("there is an issue processing the item")
+		}
+		member := result[0].Member
+		if !(member.Status == "admin" || member.Status == "member") {
+			return errors.New("you are not member/admin to the group")
+		}
+
+		/*adminsCount, err := sa.findAdminsCount(sessionContext, groupID)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		log.Println(adminsCount) */
 
 		/*
 			db.fruit.aggregate(
