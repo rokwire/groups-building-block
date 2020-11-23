@@ -541,7 +541,24 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 
 //DeleteMember deletes a member membership
 func (h *ApisHandler) DeleteMember(current *model.User, w http.ResponseWriter, r *http.Request) {
-	//TODO
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.DeleteMember(*current, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully deleted"))
 }
 
 type membershipApprovalRequest struct {

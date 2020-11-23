@@ -499,6 +499,11 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 	return nil
 }
 
+//DeleteMember deletes a member membership from a specific group
+func (sa *Adapter) DeleteMember(groupID string, userID string) error {
+	return nil
+}
+
 //ApplyMembershipApproval applies a membership approval
 func (sa *Adapter) ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error {
 	// transaction

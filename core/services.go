@@ -395,6 +395,14 @@ func (app *Application) deletePendingMember(current model.User, groupID string) 
 	return nil
 }
 
+func (app *Application) deleteMember(current model.User, groupID string) error {
+	err := app.storage.DeleteMember(groupID, current.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) applyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error {
 	err := app.storage.ApplyMembershipApproval(membershipID, approve, rejectReason)
 	if err != nil {

@@ -23,6 +23,7 @@ type Services interface {
 
 	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(current model.User, groupID string) error
+	DeleteMember(current model.User, groupID string) error
 
 	ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error
 }
@@ -77,6 +78,10 @@ func (s *servicesImpl) DeletePendingMember(current model.User, groupID string) e
 	return s.app.deletePendingMember(current, groupID)
 }
 
+func (s *servicesImpl) DeleteMember(current model.User, groupID string) error {
+	return s.app.deleteMember(current, groupID)
+}
+
 func (s *servicesImpl) ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error {
 	return s.app.applyMembershipApproval(current, membershipID, approve, rejectReason)
 }
@@ -115,6 +120,7 @@ type Storage interface {
 
 	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(groupID string, userID string) error
+	DeleteMember(groupID string, userID string) error
 
 	ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error
 }
