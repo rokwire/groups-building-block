@@ -38,6 +38,37 @@
                 }
             }
         },
+        "/api/group/{group-id}/members": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a member membership from a group",
+                "consumes": [
+                    "text/plain"
+                ],
+                "operationId": "DeleteMember",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfuly deleted",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/pending-members": {
             "post": {
                 "security": [

@@ -539,7 +539,14 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 	w.Write([]byte("Successfully deleted"))
 }
 
-//DeleteMember deletes a member membership
+//DeleteMember deletes a member membership from a group
+// @Description Deletes a member membership from a group
+// @ID DeleteMember
+// @Accept plain
+// @Param group-id path string true "Group ID"
+// @Success 200 {string} string "Successfuly deleted"
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/members [delete]
 func (h *ApisHandler) DeleteMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
