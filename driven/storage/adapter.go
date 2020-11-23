@@ -515,8 +515,9 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 			{"$match": bson.M{"_id": groupID, "members.user_id": userID}},
 		}
 		var result []struct {
-			ID     string `bson:"_id"`
-			Member member `bson:"members"`
+			ID           string `bson:"_id"`
+			MembersCount int    `bson:"members_count"`
+			Member       member `bson:"members"`
 		}
 		err = sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
 		if err != nil {
@@ -527,10 +528,45 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 			abortTransaction(sessionContext)
 			return errors.New("there is an issue processing the item")
 		}
-		member := result[0].Member
+		resultItem := result[0]
+		//membersCount := resultItem.MembersCount
+		member := resultItem.Member
 		if !(member.Status == "admin" || member.Status == "member") {
 			return errors.New("you are not member/admin to the group")
 		}
+
+		///////////////
+
+		//{$pull : {"items" : {"name":"itemB"}}}
+
+		change := bson.M{"$pull": bson.M{"members": bson.M{"id": member.ID}}}
+
+		//	change := bson.D{
+		//		bson.E{"$pull": bson.E{"members": bson.E{"id": member.ID}}},
+		//	}
+
+		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+
+		/*	update := bson.D{
+			/*	primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "members_count", Value: 50}, //TODO
+				},
+				},*/
+		/*		primitive.E{Key: "$pull", Value: bson.D{
+					primitive.E{Key: "members.id", Value: member.ID}, //TODO
+				},
+				},
+			} */
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, change, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		/*db.test.update(
+			{ _id : "777" },
+			{$pull : {"someArray.$[].someNestedArray" : {"name":"delete me"}}}
+		  ) */
 
 		/*adminsCount, err := sa.findAdminsCount(sessionContext, groupID)
 		if err != nil {
