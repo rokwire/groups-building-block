@@ -529,7 +529,7 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 			return errors.New("there is an issue processing the item")
 		}
 		resultItem := result[0]
-		//membersCount := resultItem.MembersCount
+		membersCount := resultItem.MembersCount
 		member := resultItem.Member
 		if !(member.Status == "admin" || member.Status == "member") {
 			return errors.New("you are not member/admin to the group")
@@ -537,9 +537,12 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 
 		///////////////
 
+		//db.collection.update({_id: pageId}, {$push: {values: dboVital}, $set: {endTime: time}});
+
 		//{$pull : {"items" : {"name":"itemB"}}}
 
-		change := bson.M{"$pull": bson.M{"members": bson.M{"id": member.ID}}}
+		//works
+		//	change := bson.M{"$pull": bson.M{"members": bson.M{"id": member.ID}}}
 
 		//	change := bson.D{
 		//		bson.E{"$pull": bson.E{"members": bson.E{"id": member.ID}}},
@@ -547,17 +550,14 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 
 		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
 
-		/*	update := bson.D{
-			/*	primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "members_count", Value: 50}, //TODO
-				},
-				},*/
-		/*		primitive.E{Key: "$pull", Value: bson.D{
-					primitive.E{Key: "members.id", Value: member.ID}, //TODO
-				},
-				},
-			} */
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, change, nil)
+		//TODO 50
+		//keep the members count updated
+		membersCount--
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{primitive.E{Key: "members_count", Value: membersCount}}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
