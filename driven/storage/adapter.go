@@ -467,7 +467,7 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 			return errors.New("there is no pending request for the user")
 		}
 
-		// delete it form the members list
+		// delete it from the members list
 		members = append(members[:indexToRemove], members[indexToRemove+1:]...)
 
 		//save it
@@ -501,6 +501,65 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 
 //DeleteMember deletes a member membership from a specific group
 func (sa *Adapter) DeleteMember(groupID string, userID string) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. first check if there is a group for the prvoided group id
+		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		var result []*group
+		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			//there is no a group for the provided id
+			abortTransaction(sessionContext)
+			return errors.New("there is no a group for the provided id")
+		}
+		group := result[0]
+		members := group.Members
+
+		//2. delete it
+		memberIndex := -1
+		adminsCount := 0
+		if len(members) > 0 {
+			for i, cMember := range members {
+				if cMember.UserID == userID {
+					memberIndex = i
+				}
+
+				if cMember.Status == "admin" {
+					adminsCount++
+				}
+			}
+		}
+		if memberIndex == -1 {
+			return errors.New("you are not part to the group")
+		}
+		member := members[memberIndex]
+		if !(member.Status == "admin" || member.Status == "member") {
+			return errors.New("you are not member/admin to the group")
+		}
+		//TODO admin counts
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
