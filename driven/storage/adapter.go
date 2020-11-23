@@ -736,19 +736,29 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 		{"$unwind": "$members"},
 		{"$group": bson.M{"_id": "$members.status", "count": bson.M{"$sum": 1}}},
 	}
-	var result []interface{}
+	var result []struct {
+		ID    string `bson:"_id"`
+		Count int    `bson:"count"`
+	}
 	err := sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
 	if err != nil {
 		return nil, err
 	}
+
 	if result == nil || len(result) == 0 {
-		//TODO abort
-		//not found
-		//	return nil
+		//no data - return 0
+		noDataCount := 0
+		return &noDataCount, nil
 	}
 
-	count := 5
-	return &count, nil
+	for _, item := range result {
+		if item.ID == "admin" {
+			return &item.Count, nil
+		}
+	}
+	//no data - return 0
+	noDataCount := 0
+	return &noDataCount, nil
 }
 
 //NewStorageAdapter creates a new storage adapter instance
