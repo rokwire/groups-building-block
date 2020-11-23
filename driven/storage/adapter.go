@@ -509,7 +509,7 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 			return err
 		}
 
-		//1. get the member as we need to validate it
+		// get the member as we need to validate it
 		pipeline := []bson.M{
 			{"$unwind": "$members"},
 			{"$match": bson.M{"_id": groupID, "members.user_id": userID}},
@@ -535,147 +535,31 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 			return errors.New("you are not member/admin to the group")
 		}
 
-		///////////////
+		//check if the member is admin, do not allow the group to become with 0 admins
+		if member.Status == "admin" {
+			adminsCount, err := sa.findAdminsCount(sessionContext, groupID)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+			if *adminsCount == 1 {
+				abortTransaction(sessionContext)
+				return errors.New("you are the only admin for the group, you need to set another person for amdin before to leave")
+			}
+		}
 
-		//db.collection.update({_id: pageId}, {$push: {values: dboVital}, $set: {endTime: time}});
-
-		//{$pull : {"items" : {"name":"itemB"}}}
-
-		//works
-		//	change := bson.M{"$pull": bson.M{"members": bson.M{"id": member.ID}}}
-
-		//	change := bson.D{
-		//		bson.E{"$pull": bson.E{"members": bson.E{"id": member.ID}}},
-		//	}
-
-		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
-
-		//TODO 50
-		//keep the members count updated
-		membersCount--
-		update := bson.D{
+		// delete the member, also keep the group members count updated
+		membersCount-- //keep the members count updated
+		changeFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		change := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{primitive.E{Key: "members_count", Value: membersCount}}},
 			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
 		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, changeFilter, change, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
 		}
-
-		/*db.test.update(
-			{ _id : "777" },
-			{$pull : {"someArray.$[].someNestedArray" : {"name":"delete me"}}}
-		  ) */
-
-		/*adminsCount, err := sa.findAdminsCount(sessionContext, groupID)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		log.Println(adminsCount) */
-
-		/*
-			db.fruit.aggregate(
-				// Limit matching documents (can take advantage of index)
-				{ $match: {
-					"_id" : ObjectId("52c1d909fc7fc68ddd999a73")
-				}},
-
-				// Unpack the question & answer arrays
-				{ $unwind: "$questions" },
-				{ $unwind: "$questions.answers" },
-
-				// Group by the answer values
-				{ $group: {
-					_id: "$questions.answers.answer",
-					count: { $sum: 1 }
-				}}
-			) */
-
-		/*	db.collection.aggregate( [
-				{ $count: "myCount" }
-			 ])
-
-			 pipeline := []bson.M{
-				{"$lookup": bson.M{
-					"from":         "users",
-					"localField":   "user_id",
-					"foreignField": "_id",
-					"as":           "user",
-				}},
-				{"$match": bson.M{"order_number": bson.M{"$in": orderNumbers}}},
-				{"$unwind": "$user"},
-				{"$project": bson.M{
-					"_id": 1, "order_number": 1,
-					"user_id": "$user._id", "user_external_id": "$user.external_id",
-				}}}
-
-			var result []*ctuJoin
-			err := sa.db.ctests.Aggregate(pipeline, &result, nil)
-			if err != nil {
-				return nil, err
-			}
-			if result == nil || len(result) == 0 {
-				//not found
-				return nil, nil
-			} */
-
-		/*	groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID},
-				primitive.E{Key: "members.user_id", Value: userID},
-				primitive.E{Key: "members.status", Value: "member"}}
-			var result []*group
-			err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
-			if err != nil {
-				abortTransaction(sessionContext)
-				return err
-			}
-			if result == nil || len(result) == 0 {
-				//there is no a group for the provided id
-				abortTransaction(sessionContext)
-				return errors.New("there is no a group for the provided id")
-			}
-			group := result[0]
-			log.Println(group) */
-
-		/*	//1. first check if there is a group for the prvoided group id
-			groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
-			var result []*group
-			err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
-			if err != nil {
-				abortTransaction(sessionContext)
-				return err
-			}
-			if result == nil || len(result) == 0 {
-				//there is no a group for the provided id
-				abortTransaction(sessionContext)
-				return errors.New("there is no a group for the provided id")
-			}
-			group := result[0]
-			members := group.Members
-
-			//2. delete it
-			memberIndex := -1
-			adminsCount := 0
-			if len(members) > 0 {
-				for i, cMember := range members {
-					if cMember.UserID == userID {
-						memberIndex = i
-					}
-
-					if cMember.Status == "admin" {
-						adminsCount++
-					}
-				}
-			}
-			if memberIndex == -1 {
-				return errors.New("you are not part to the group")
-			}
-			member := members[memberIndex]
-			if !(member.Status == "admin" || member.Status == "member") {
-				return errors.New("you are not member/admin to the group")
-			}
-			//TODO admin counts */
 
 		//commit the transaction
 		err = sessionContext.CommitTransaction(sessionContext)
