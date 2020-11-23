@@ -219,7 +219,11 @@ func (collWrapper *collectionWrapper) AddIndex(keys interface{}, unique bool) er
 }
 
 func (collWrapper *collectionWrapper) Aggregate(pipeline interface{}, result interface{}, ops *options.AggregateOptions) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
+	return collWrapper.AggregateWithContext(context.Background(), pipeline, result, ops)
+}
+
+func (collWrapper *collectionWrapper) AggregateWithContext(ctx context.Context, pipeline interface{}, result interface{}, ops *options.AggregateOptions) error {
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*15000)
 	defer cancel()
 
 	cursor, err := collWrapper.coll.Aggregate(ctx, pipeline, ops)
