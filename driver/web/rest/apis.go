@@ -539,6 +539,11 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 	w.Write([]byte("Successfully deleted"))
 }
 
+//DeleteMember deletes a member membership
+func (h *ApisHandler) DeleteMember(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//TODO
+}
+
 type membershipApprovalRequest struct {
 	Approve        *bool  `json:"approve" validate:"required"`
 	RejectedReason string `json:"reject_reason"`
