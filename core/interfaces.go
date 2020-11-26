@@ -88,8 +88,7 @@ func (s *servicesImpl) ApplyMembershipApproval(current model.User, membershipID 
 }
 
 func (s *servicesImpl) DeleteMembership(current model.User, membershipID string) error {
-	//TODO
-	return nil
+	return s.app.deleteMembership(current, membershipID)
 }
 
 //Administration exposes administration APIs for the driver adapters
@@ -129,6 +128,7 @@ type Storage interface {
 	DeleteMember(groupID string, userID string) error
 
 	ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error
+	DeleteMembership(currentUserID string, membershipID string) error
 }
 
 //StorageListener listenes for change data storage events

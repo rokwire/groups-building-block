@@ -410,3 +410,11 @@ func (app *Application) applyMembershipApproval(current model.User, membershipID
 	}
 	return nil
 }
+
+func (app *Application) deleteMembership(current model.User, membershipID string) error {
+	err := app.storage.DeleteMembership(current.ID, membershipID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

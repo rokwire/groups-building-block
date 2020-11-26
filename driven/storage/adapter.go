@@ -532,6 +532,7 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 		membersCount := resultItem.MembersCount
 		member := resultItem.Member
 		if !(member.Status == "admin" || member.Status == "member") {
+			abortTransaction(sessionContext)
 			return errors.New("you are not member/admin to the group")
 		}
 
@@ -644,6 +645,76 @@ func (sa *Adapter) ApplyMembershipApproval(membershipID string, approve bool, re
 			},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//DeleteMembership deletes a membership
+func (sa *Adapter) DeleteMembership(currentUserID string, membershipID string) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		// get the member as we need to validate it
+		pipeline := []bson.M{
+			{"$unwind": "$members"},
+			{"$match": bson.M{"members.id": membershipID}},
+		}
+		var result []struct {
+			GroupID      string `bson:"_id"`
+			MembersCount int    `bson:"members_count"`
+			Member       member `bson:"members"`
+		}
+		err = sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			abortTransaction(sessionContext)
+			return errors.New("there is an issue processing the item")
+		}
+		resultItem := result[0]
+		groupID := resultItem.GroupID
+		membersCount := resultItem.MembersCount
+		member := resultItem.Member
+		if member.UserID == currentUserID {
+			abortTransaction(sessionContext)
+			return errors.New("you cannot remove yourself")
+		}
+		if !(member.Status == "admin" || member.Status == "member") {
+			abortTransaction(sessionContext)
+			return errors.New("membership which is not member or admin cannot be removed from the group")
+		}
+
+		// delete the membership, also keep the group members count updated
+		membersCount-- //keep the members count updated
+		changeFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		change := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{primitive.E{Key: "members_count", Value: membersCount}}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, changeFilter, change, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
