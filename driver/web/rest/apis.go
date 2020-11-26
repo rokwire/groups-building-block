@@ -706,7 +706,16 @@ type updateMembershipRequest struct {
 	Status string `json:"status" validate:"required,oneof=member admin"`
 } // @name updateMembershipRequest
 
-//UpdateMembership updates membership
+//UpdateMembership updates a membership
+// @Description Updates a membership
+// @ID UpdateMembership
+// @Accept json
+// @Produce json
+// @Param data body updateMembershipRequest true "body data"
+// @Param membership-id path string true "Membership ID"
+// @Success 200 {string} Successfully updated
+// @Security AppUserAuth
+// @Router /api/memberships/{membership-id} [put]
 func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

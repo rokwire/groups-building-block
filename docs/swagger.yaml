@@ -269,6 +269,13 @@ definitions:
     - privacy
     - title
     type: object
+  updateMembershipRequest:
+    properties:
+      status:
+        type: string
+    required:
+    - status
+    type: object
 host: localhost
 info:
   contact: {}
@@ -453,6 +460,32 @@ paths:
       description: Deletes a membership
       operationId: DeleteMembership
       parameters:
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+    put:
+      consumes:
+      - application/json
+      description: Updates a membership
+      operationId: UpdateMembership
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateMembershipRequest'
       - description: Membership ID
         in: path
         name: membership-id

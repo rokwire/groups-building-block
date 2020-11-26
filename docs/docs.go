@@ -299,6 +299,47 @@ var doc = `{
             }
         },
         "/api/memberships/{membership-id}": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a membership",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "UpdateMembership",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/updateMembershipRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Membership ID",
+                        "name": "membership-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -827,6 +868,17 @@ var doc = `{
                     "type": "string"
                 },
                 "web_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "updateMembershipRequest": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "status": {
                     "type": "string"
                 }
             }
