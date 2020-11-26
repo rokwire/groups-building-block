@@ -66,7 +66,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMember)).Methods("DELETE")
 	restSubrouter.HandleFunc("/memberships/{membership-id}/approval", we.idTokenAuthWrapFunc(we.apisHandler.MembershipApproval)).Methods("PUT")
-	//restSubrouter.HandleFunc("/memberships/{membership-id}", ... DELETE - delete mebership
+	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMembership)).Methods("DELETE")
 	//restSubrouter.HandleFunc("/memberships/{membership-id}", ... PUT - update membership
 
 	//mixed protection

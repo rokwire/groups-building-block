@@ -651,6 +651,49 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	w.Write([]byte("Successfully processed"))
 }
 
+//DeleteMembership deletes memebrship
+func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	membershipID := params["membership-id"]
+	if len(membershipID) <= 0 {
+		log.Println("Membership id is required")
+		http.Error(w, "Membership id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntityByMembership(membershipID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided membership id - %s", membershipID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to delete membership", current.Email)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+	}
+
+	err = h.app.Services.DeleteMembership(*current, membershipID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully deleted"))
+}
+
 //NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}

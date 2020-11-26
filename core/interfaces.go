@@ -26,6 +26,7 @@ type Services interface {
 	DeleteMember(current model.User, groupID string) error
 
 	ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error
+	DeleteMembership(current model.User, membershipID string) error
 }
 
 type servicesImpl struct {
@@ -84,6 +85,11 @@ func (s *servicesImpl) DeleteMember(current model.User, groupID string) error {
 
 func (s *servicesImpl) ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error {
 	return s.app.applyMembershipApproval(current, membershipID, approve, rejectReason)
+}
+
+func (s *servicesImpl) DeleteMembership(current model.User, membershipID string) error {
+	//TODO
+	return nil
 }
 
 //Administration exposes administration APIs for the driver adapters
