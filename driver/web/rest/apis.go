@@ -652,6 +652,14 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 }
 
 //DeleteMembership deletes memebrship
+// @Description Deletes a membership
+// @ID DeleteMembership
+// @Accept json
+// @Produce json
+// @Param membership-id path string true "Membership ID"
+// @Success 200 {string} Successfully deleted
+// @Security AppUserAuth
+// @Router /api/memberships/{membership-id} [delete]
 func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
