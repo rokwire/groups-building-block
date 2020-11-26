@@ -27,6 +27,7 @@ type Services interface {
 
 	ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(current model.User, membershipID string) error
+	UpdateMembership(current model.User, membershipID string, status string) error
 }
 
 type servicesImpl struct {
@@ -91,6 +92,10 @@ func (s *servicesImpl) DeleteMembership(current model.User, membershipID string)
 	return s.app.deleteMembership(current, membershipID)
 }
 
+func (s *servicesImpl) UpdateMembership(current model.User, membershipID string, status string) error {
+	return s.app.updateMembership(current, membershipID, status)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetTODO() error
@@ -129,6 +134,7 @@ type Storage interface {
 
 	ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(currentUserID string, membershipID string) error
+	UpdateMembership(currentUserID string, membershipID string, status string) error
 }
 
 //StorageListener listenes for change data storage events

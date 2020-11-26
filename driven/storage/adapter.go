@@ -735,6 +735,70 @@ func (sa *Adapter) DeleteMembership(currentUserID string, membershipID string) e
 	return nil
 }
 
+//UpdateMembership updates a membership
+func (sa *Adapter) UpdateMembership(currentUserID string, membershipID string, status string) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		// get the member as we need to validate it
+		pipeline := []bson.M{
+			{"$unwind": "$members"},
+			{"$match": bson.M{"members.id": membershipID}},
+		}
+		var result []struct {
+			GroupID string `bson:"_id"`
+			Member  member `bson:"members"`
+		}
+		err = sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			abortTransaction(sessionContext)
+			return errors.New("there is an issue processing the item")
+		}
+		resultItem := result[0]
+		member := resultItem.Member
+		if member.UserID == currentUserID {
+			abortTransaction(sessionContext)
+			return errors.New("you cannot update yourself")
+		}
+
+		// update the membership
+		changeFilter := bson.D{primitive.E{Key: "members.id", Value: membershipID}}
+		change := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members.$.status", Value: status},
+				primitive.E{Key: "members.$.date_updated", Value: time.Now()},
+			}},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, changeFilter, change, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID string) (*int, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"_id": groupID}},

@@ -651,7 +651,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	w.Write([]byte("Successfully processed"))
 }
 
-//DeleteMembership deletes memebrship
+//DeleteMembership deletes membership
 // @Description Deletes a membership
 // @ID DeleteMembership
 // @Accept json
@@ -700,6 +700,78 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
+}
+
+type updateMembershipRequest struct {
+	Status string `json:"status" validate:"required,oneof=member admin"`
+} // @name updateMembershipRequest
+
+//UpdateMembership updates membership
+func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	membershipID := params["membership-id"]
+	if len(membershipID) <= 0 {
+		log.Println("Membership id is required")
+		http.Error(w, "Membership id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the membership update item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData updateMembershipRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the membership request update data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating membership update data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntityByMembership(membershipID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided membership id - %s", membershipID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to make update", current.Email)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+	}
+
+	status := requestData.Status
+
+	err = h.app.Services.UpdateMembership(*current, membershipID, status)
+	if err != nil {
+		log.Printf("Error on updating membership - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully updated"))
 }
 
 //NewApisHandler creates new rest Handler instance
