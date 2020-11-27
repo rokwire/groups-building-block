@@ -702,9 +702,9 @@ func (sa *Adapter) DeleteMembership(currentUserID string, membershipID string) e
 			abortTransaction(sessionContext)
 			return errors.New("you cannot remove yourself")
 		}
-		if !(member.Status == "admin" || member.Status == "member") {
+		if !(member.Status == "admin" || member.Status == "member" || member.Status == "rejected") {
 			abortTransaction(sessionContext)
-			return errors.New("membership which is not member or admin cannot be removed from the group")
+			return errors.New("membership which is not member or admin or rejected cannot be removed from the group")
 		}
 
 		// delete the membership, also keep the group members count updated
