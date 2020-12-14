@@ -164,12 +164,8 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 func (m *database) applyEventsChecks(events *collectionWrapper) error {
 	log.Println("apply events checks.....")
 
-	err := events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1}}, true)
-	if err != nil {
-		return err
-	}
-
-	err = events.AddIndex(bson.D{primitive.E{Key: "group_id", Value: 1}}, false)
+	//compound index
+	err := events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1}, primitive.E{Key: "group_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}
