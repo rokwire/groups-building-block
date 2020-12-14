@@ -769,6 +769,11 @@ func (sa *Adapter) UpdateMembership(currentUserID string, membershipID string, s
 			abortTransaction(sessionContext)
 			return errors.New("you cannot update yourself")
 		}
+		//check only admin or member to be updated
+		if !(member.Status == "admin" || member.Status == "member") {
+			abortTransaction(sessionContext)
+			return errors.New("only admin or member can be updated")
+		}
 
 		// update the membership
 		changeFilter := bson.D{primitive.E{Key: "members.id", Value: membershipID}}
