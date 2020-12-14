@@ -147,6 +147,7 @@ type Storage interface {
 	DeleteMembership(currentUserID string, membershipID string) error
 	UpdateMembership(currentUserID string, membershipID string, status string) error
 
+	FindEvents(groupID string) ([]model.Event, error)
 	CreateEvent(eventID string, groupID string) error
 	DeleteEvent(eventID string, groupID string) error
 }

@@ -817,6 +817,12 @@ func (sa *Adapter) UpdateMembership(currentUserID string, membershipID string, s
 	return nil
 }
 
+//FindEvents finds the events for a group
+func (sa *Adapter) FindEvents(groupID string) ([]model.Event, error) {
+	//TODO
+	return nil, nil
+}
+
 //CreateEvent creates a group event
 func (sa *Adapter) CreateEvent(eventID string, groupID string) error {
 	event := event{EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
