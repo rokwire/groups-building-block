@@ -23,6 +23,7 @@ type database struct {
 	users  *collectionWrapper
 	enums  *collectionWrapper
 	groups *collectionWrapper
+	events *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -68,6 +69,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	events := &collectionWrapper{database: m, coll: db.Collection("events")}
+	err = m.applyEventsChecks(events)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -75,6 +82,7 @@ func (m *database) start() error {
 	m.users = users
 	m.enums = enums
 	m.groups = groups
+	m.events = events
 
 	return nil
 }
@@ -150,6 +158,23 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	}
 
 	log.Println("groups checks passed")
+	return nil
+}
+
+func (m *database) applyEventsChecks(events *collectionWrapper) error {
+	log.Println("apply events checks.....")
+
+	err := events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	err = events.AddIndex(bson.D{primitive.E{Key: "group_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	log.Println("events checks passed")
 	return nil
 }
 
