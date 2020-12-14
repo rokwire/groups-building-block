@@ -426,3 +426,11 @@ func (app *Application) updateMembership(current model.User, membershipID string
 	}
 	return nil
 }
+
+func (app *Application) createEvent(current model.User, eventID string, groupID string) error {
+	err := app.storage.CreateEvent(eventID, groupID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

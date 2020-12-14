@@ -59,16 +59,16 @@ type memberAnswer struct {
 }
 
 type event struct {
-	EventID     string    `json:"event_id"`
-	GroupID     string    `json:"group_id"`
-	DateCreated time.Time `json:"date_created"`
-	Comments    []comment `json:"comments"`
+	EventID     string    `bson:"event_id"`
+	GroupID     string    `bson:"group_id"`
+	DateCreated time.Time `bson:"date_created"`
+	Comments    []comment `bson:"comments"`
 }
 
 type comment struct {
-	MemberID    string    `json:"member_id"`
-	Text        string    `json:"text"`
-	DateCreated time.Time `json:"date_created"`
+	MemberID    string    `bson:"member_id"`
+	Text        string    `bson:"text"`
+	DateCreated time.Time `bson:"date_created"`
 }
 
 //Adapter implements the Storage interface
@@ -810,6 +810,17 @@ func (sa *Adapter) UpdateMembership(currentUserID string, membershipID string, s
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//CreateEvent creates a group event
+func (sa *Adapter) CreateEvent(eventID string, groupID string) error {
+	event := event{EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
+	_, err := sa.db.events.InsertOne(event)
 	if err != nil {
 		return err
 	}

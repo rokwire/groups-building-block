@@ -85,6 +85,7 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
 	}
 
 	data, err := ioutil.ReadAll(r.Body)
@@ -212,6 +213,7 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
 	}
 
 	category := requestData.Category
@@ -634,6 +636,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
 	}
 
 	approve := *requestData.Approve
@@ -688,6 +691,7 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
 	}
 
 	err = h.app.Services.DeleteMembership(*current, membershipID)
@@ -767,6 +771,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
 	}
 
 	status := requestData.Status
@@ -781,6 +786,79 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully updated"))
+}
+
+type createGroupEventRequest struct {
+	EventID string `json:"event_id" validate:"required"`
+}
+
+//CreateGroupEvent creates a group event
+func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData createGroupEventRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create event request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating create event data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntity(groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	eventID := requestData.EventID
+
+	err = h.app.Services.CreateEvent(*current, eventID, groupID)
+	if err != nil {
+		log.Printf("Error on creating an event - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully created"))
 }
 
 //NewApisHandler creates new rest Handler instance
