@@ -790,9 +790,18 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 
 type createGroupEventRequest struct {
 	EventID string `json:"event_id" validate:"required"`
-}
+} // @name createGroupEventRequest
 
 //CreateGroupEvent creates a group event
+// @Description Creates a group event
+// @ID CreateGroupEvent
+// @Accept json
+// @Produce json
+// @Param data body createGroupEventRequest true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200 {string} Successfully created
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/events [post]
 func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -826,7 +835,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	//check if allowed to update
+	//check if allowed to create
 	group, err := h.app.Services.GetGroupEntity(groupID)
 	if err != nil {
 		log.Println(err.Error())
@@ -859,6 +868,56 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully created"))
+}
+
+//DeleteGroupEvent deletes a group event
+func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+	eventID := params["event-id"]
+	if len(eventID) <= 0 {
+		log.Println("Event id is required")
+		http.Error(w, "Event id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.DeleteEvent(*current, eventID, groupID)
+	if err != nil {
+		log.Printf("Error on deleting an event - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully deleted"))
 }
 
 //NewApisHandler creates new rest Handler instance

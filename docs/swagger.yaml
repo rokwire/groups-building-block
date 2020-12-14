@@ -1,5 +1,12 @@
 basePath: /gr
 definitions:
+  createGroupEventRequest:
+    properties:
+      event_id:
+        type: string
+    required:
+    - event_id
+    type: object
   createGroupRequest:
     properties:
       category:
@@ -299,6 +306,33 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+  /api/group/{group-id}/events:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group event
+      operationId: CreateGroupEvent
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createGroupEventRequest'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
   /api/group/{group-id}/members:
     delete:
       consumes:

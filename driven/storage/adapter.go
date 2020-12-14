@@ -828,6 +828,23 @@ func (sa *Adapter) CreateEvent(eventID string, groupID string) error {
 	return nil
 }
 
+//DeleteEvent deletes a group event
+func (sa *Adapter) DeleteEvent(eventID string, groupID string) error {
+	filter := bson.D{primitive.E{Key: "event_id", Value: eventID}, primitive.E{Key: "group_id", Value: groupID}}
+	result, err := sa.db.events.DeleteOne(filter, nil)
+	if err != nil {
+		return err
+	}
+	if result == nil {
+		return errors.New("result is nil for event with event id " + eventID)
+	}
+	deletedCount := result.DeletedCount
+	if deletedCount != 1 {
+		return errors.New("error occured while deleting an event with event id " + eventID)
+	}
+	return nil
+}
+
 func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID string) (*int, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"_id": groupID}},

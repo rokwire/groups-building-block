@@ -434,3 +434,11 @@ func (app *Application) createEvent(current model.User, eventID string, groupID 
 	}
 	return nil
 }
+
+func (app *Application) deleteEvent(current model.User, eventID string, groupID string) error {
+	err := app.storage.DeleteEvent(eventID, groupID)
+	if err != nil {
+		return err
+	}
+	return nil
+}

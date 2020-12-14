@@ -30,6 +30,7 @@ type Services interface {
 	UpdateMembership(current model.User, membershipID string, status string) error
 
 	CreateEvent(current model.User, eventID string, groupID string) error
+	DeleteEvent(current model.User, eventID string, groupID string) error
 }
 
 type servicesImpl struct {
@@ -102,6 +103,10 @@ func (s *servicesImpl) CreateEvent(current model.User, eventID string, groupID s
 	return s.app.createEvent(current, eventID, groupID)
 }
 
+func (s *servicesImpl) DeleteEvent(current model.User, eventID string, groupID string) error {
+	return s.app.deleteEvent(current, eventID, groupID)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetTODO() error
@@ -143,6 +148,7 @@ type Storage interface {
 	UpdateMembership(currentUserID string, membershipID string, status string) error
 
 	CreateEvent(eventID string, groupID string) error
+	DeleteEvent(eventID string, groupID string) error
 }
 
 //StorageListener listenes for change data storage events

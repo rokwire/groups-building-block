@@ -50,6 +50,49 @@ var doc = `{
                 }
             }
         },
+        "/api/group/{group-id}/events": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a group event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "CreateGroupEvent",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/createGroupEventRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/members": {
             "delete": {
                 "security": [
@@ -463,6 +506,17 @@ var doc = `{
         }
     },
     "definitions": {
+        "createGroupEventRequest": {
+            "type": "object",
+            "required": [
+                "event_id"
+            ],
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                }
+            }
+        },
         "createGroupRequest": {
             "type": "object",
             "required": [
