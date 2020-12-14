@@ -871,6 +871,15 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 }
 
 //DeleteGroupEvent deletes a group event
+// @Description Deletes a group event
+// @ID DeleteGroupEvent
+// @Accept json
+// @Produce json
+// @Param group-id path string true "Group ID"
+// @Param event-id path string true "Event ID"
+// @Success 200 {string} Successfully deleted
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/event/{event-id} [delete]
 func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

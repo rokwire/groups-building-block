@@ -306,6 +306,32 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+  /api/group/{group-id}/event/{event-id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a group event
+      operationId: DeleteGroupEvent
+      parameters:
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
   /api/group/{group-id}/events:
     post:
       consumes:
