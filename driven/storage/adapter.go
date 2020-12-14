@@ -58,6 +58,19 @@ type memberAnswer struct {
 	Answer   string `bson:"answer"`
 }
 
+type event struct {
+	EventID     string    `json:"event_id"`
+	GroupID     string    `json:"group_id"`
+	DateCreated time.Time `json:"date_created"`
+	Comments    []comment `json:"comments"`
+}
+
+type comment struct {
+	MemberID    string    `json:"member_id"`
+	Text        string    `json:"text"`
+	DateCreated time.Time `json:"date_created"`
+}
+
 //Adapter implements the Storage interface
 type Adapter struct {
 	db *database
