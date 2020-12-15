@@ -828,7 +828,29 @@ func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter,
 			return
 		}
 	}
-	log.Println("Can see!")
+
+	events, err := h.app.Services.GetEvents(groupID)
+	if err != nil {
+		log.Printf("error getting group events - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]string, len(events))
+	for i, e := range events {
+		result[i] = e.EventID
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		log.Println("Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 type createGroupEventRequest struct {

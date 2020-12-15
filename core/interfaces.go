@@ -29,6 +29,7 @@ type Services interface {
 	DeleteMembership(current model.User, membershipID string) error
 	UpdateMembership(current model.User, membershipID string, status string) error
 
+	GetEvents(groupID string) ([]model.Event, error)
 	CreateEvent(current model.User, eventID string, groupID string) error
 	DeleteEvent(current model.User, eventID string, groupID string) error
 }
@@ -97,6 +98,10 @@ func (s *servicesImpl) DeleteMembership(current model.User, membershipID string)
 
 func (s *servicesImpl) UpdateMembership(current model.User, membershipID string, status string) error {
 	return s.app.updateMembership(current, membershipID, status)
+}
+
+func (s *servicesImpl) GetEvents(groupID string) ([]model.Event, error) {
+	return s.app.getEvents(groupID)
 }
 
 func (s *servicesImpl) CreateEvent(current model.User, eventID string, groupID string) error {

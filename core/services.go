@@ -427,6 +427,14 @@ func (app *Application) updateMembership(current model.User, membershipID string
 	return nil
 }
 
+func (app *Application) getEvents(groupID string) ([]model.Event, error) {
+	events, err := app.storage.FindEvents(groupID)
+	if err != nil {
+		return nil, err
+	}
+	return events, nil
+}
+
 func (app *Application) createEvent(current model.User, eventID string, groupID string) error {
 	err := app.storage.CreateEvent(eventID, groupID)
 	if err != nil {
