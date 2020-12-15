@@ -21,6 +21,19 @@ type Group struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name Group
 
+//IsGroupAdminOrMember says if the user is an admin or a member of the group
+func (gr Group) IsGroupAdminOrMember(userID string) bool {
+	if gr.Members == nil {
+		return false
+	}
+	for _, item := range gr.Members {
+		if item.User.ID == userID && (item.Status == "admin" || item.Status == "member") {
+			return true
+		}
+	}
+	return false
+}
+
 //IsGroupAdmin says if the user is admin of the group
 func (gr Group) IsGroupAdmin(userID string) bool {
 	if gr.Members == nil {

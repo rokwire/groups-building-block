@@ -788,6 +788,49 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 	w.Write([]byte("Successfully updated"))
 }
 
+//GetGroupEvents gives the group events
+func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	group, err := h.app.Services.GetGroupEntity(groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if group.Privacy == "private" {
+		if current == nil {
+			log.Println("Anonymous user cannot see the events for a private group")
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+		if !group.IsGroupAdminOrMember(current.ID) {
+			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+	}
+	log.Println("Can see!")
+}
+
 type createGroupEventRequest struct {
 	EventID string `json:"event_id" validate:"required"`
 } // @name createGroupEventRequest
