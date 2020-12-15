@@ -789,6 +789,14 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 }
 
 //GetGroupEvents gives the group events
+// @Description Gives the group events.
+// @ID GetGroupEvents
+// @Accept json
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} string
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{group-id}/events [get]
 func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
