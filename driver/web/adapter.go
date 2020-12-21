@@ -97,22 +97,18 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-//TODO
-//type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
-type apiKeyAuthFunc = func(http.ResponseWriter, *http.Request)
+type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
 		clientID, authenticated := we.auth.apiKeyCheck(w, req)
-		//TODO
-		log.Println(clientID)
 		if !authenticated {
 			return
 		}
 
-		handler(w, req)
+		handler(clientID, w, req)
 	}
 }
 

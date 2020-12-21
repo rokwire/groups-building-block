@@ -8,10 +8,10 @@ import (
 type Services interface {
 	GetVersion() string
 
+	GetGroupCategories() ([]string, error)
+
 	GetGroupEntity(id string) (*model.Group, error)
 	GetGroupEntityByMembership(membershipID string) (*model.Group, error)
-
-	GetGroupCategories() ([]string, error)
 
 	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
@@ -42,16 +42,16 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
+func (s *servicesImpl) GetGroupCategories() ([]string, error) {
+	return s.app.getGroupCategories()
+}
+
 func (s *servicesImpl) GetGroupEntity(id string) (*model.Group, error) {
 	return s.app.getGroupEntity(id)
 }
 
 func (s *servicesImpl) GetGroupEntityByMembership(membershipID string) (*model.Group, error) {
 	return s.app.getGroupEntityByMembership(membershipID)
-}
-
-func (s *servicesImpl) GetGroupCategories() ([]string, error) {
-	return s.app.getGroupCategories()
 }
 
 func (s *servicesImpl) CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,

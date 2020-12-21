@@ -35,7 +35,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 // @Success 200 {array} string
 // @Security APIKeyAuth
 // @Router /api/group-categories [get]
-func (h *ApisHandler) GetGroupCategories(w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter, r *http.Request) {
 	groupCategories, err := h.app.Services.GetGroupCategories()
 	if err != nil {
 		log.Println("Error on getting the group categories")
