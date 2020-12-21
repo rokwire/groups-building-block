@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"groups/core"
+	"groups/core/model"
 	"log"
 	"time"
 
@@ -71,6 +73,12 @@ func (m *database) start() error {
 
 	events := &collectionWrapper{database: m, coll: db.Collection("events")}
 	err = m.applyEventsChecks(events)
+	if err != nil {
+		return err
+	}
+
+	//apply multi-tenant
+	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
 		return err
 	}
@@ -159,6 +167,60 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 	}
 
 	log.Println("events checks passed")
+	return nil
+}
+
+func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectionWrapper, groups *collectionWrapper, events *collectionWrapper) error {
+	log.Println("apply multi-tenant checks.....")
+
+	// transaction
+	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//apply users collection
+		var usersList []model.User
+		err = users.FindWithContext(sessionContext, bson.D{}, &usersList, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if len(usersList) > 0 {
+			for _, u := range usersList {
+				if len(u.ClientID) == 0 {
+					log.Printf("SET CLIENT ID for %s", u.Email)
+
+					_, err = users.UpdateOneWithContext(sessionContext,
+						bson.D{primitive.E{Key: "_id", Value: u.ID}},
+						bson.D{
+							primitive.E{Key: "$set", Value: bson.D{
+								primitive.E{Key: "client_id", Value: "edu.illinois.rokwire"}},
+							}},
+						nil)
+					if err != nil {
+						abortTransaction(sessionContext)
+						return err
+					}
+				}
+			}
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	log.Println("multi-tenant checks passed")
 	return nil
 }
 
