@@ -29,17 +29,22 @@ func (auth *Auth) Start() error {
 	return nil
 }
 
-func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) bool {
+func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
+	clientID := auth.getClientID(r)
 	apiKey := auth.getAPIKey(r)
-	return auth.apiKeysAuth.check(apiKey, w)
+	return clientID, auth.apiKeysAuth.check(apiKey, w)
 }
 
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) *model.User {
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
+	clientID := auth.getClientID(r)
 	idToken := auth.getIDToken(r)
-	return auth.idTokenAuth.check(idToken, w)
+	return clientID, auth.idTokenAuth.check(idToken, w)
 }
 
-func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User) {
+func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bool, *model.User) {
+	//get client ID
+	clientID := auth.getClientID(r)
+
 	//first check for id token
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
@@ -48,20 +53,20 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (bool, *mod
 		if user != nil {
 			authenticated = true
 		}
-		return authenticated, user
+		return clientID, authenticated, user
 	}
 
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
-		return auth.apiKeysAuth.check(apiKey, w), nil
+		return clientID, auth.apiKeysAuth.check(apiKey, w), nil
 	}
 
 	//neither id token nor api key - so bad request
 	log.Println("400 - Bad Request")
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("Bad Request"))
-	return false, nil
+	return clientID, false, nil
 }
 
 func (auth *Auth) getAPIKey(r *http.Request) *string {
@@ -70,6 +75,14 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 		return nil
 	}
 	return &apiKey
+}
+
+func (auth *Auth) getClientID(r *http.Request) string {
+	clientID := r.Header.Get("APP")
+	if len(clientID) == 0 {
+		clientID = "edu.illinois.rokwire"
+	}
+	return clientID
 }
 
 func (auth *Auth) getIDToken(r *http.Request) *string {

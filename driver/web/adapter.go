@@ -97,11 +97,17 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc {
+//TODO
+//type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
+type apiKeyAuthFunc = func(http.ResponseWriter, *http.Request)
+
+func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		authenticated := we.auth.apiKeyCheck(w, req)
+		clientID, authenticated := we.auth.apiKeyCheck(w, req)
+		//TODO
+		log.Println(clientID)
 		if !authenticated {
 			return
 		}
@@ -110,13 +116,17 @@ func (we Adapter) apiKeysAuthWrapFunc(handler http.HandlerFunc) http.HandlerFunc
 	}
 }
 
-type authFunc = func(*model.User, http.ResponseWriter, *http.Request)
+//TODO
+//type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
+type idTokenAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
-func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
+func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		user := we.auth.idTokenCheck(w, req)
+		clientID, user := we.auth.idTokenCheck(w, req)
+		//TODO
+		log.Println(clientID)
 		if user == nil {
 			return
 		}
@@ -125,11 +135,13 @@ func (we Adapter) idTokenAuthWrapFunc(handler authFunc) http.HandlerFunc {
 	}
 }
 
-func (we Adapter) mixedAuthWrapFunc(handler authFunc) http.HandlerFunc {
+func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		authenticated, user := we.auth.mixedCheck(w, req)
+		clientID, authenticated, user := we.auth.mixedCheck(w, req)
+		//TODO
+		log.Println(clientID)
 		if !authenticated {
 			return
 		}
