@@ -37,6 +37,8 @@ type group struct {
 
 	DateCreated time.Time  `bson:"date_created"`
 	DateUpdated *time.Time `bson:"date_updated"`
+
+	ClientID string `bson:"client_id"`
 }
 
 type member struct {
@@ -63,6 +65,8 @@ type event struct {
 	GroupID     string    `bson:"group_id"`
 	DateCreated time.Time `bson:"date_created"`
 	Comments    []comment `bson:"comments"`
+
+	ClientID string `bson:"client_id"`
 }
 
 type comment struct {
