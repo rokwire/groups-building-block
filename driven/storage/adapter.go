@@ -91,9 +91,10 @@ func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
 	sa.db.listener = storageListener
 }
 
-//FindUser finds the user for the provided external id
-func (sa *Adapter) FindUser(externalID string) (*model.User, error) {
-	filter := bson.D{primitive.E{Key: "external_id", Value: externalID}}
+//FindUser finds the user for the provided external id and client id
+func (sa *Adapter) FindUser(clientID string, externalID string) (*model.User, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "external_id", Value: externalID}}
 	var result []*model.User
 	err := sa.db.users.Find(filter, &result, nil)
 	if err != nil {
@@ -107,14 +108,14 @@ func (sa *Adapter) FindUser(externalID string) (*model.User, error) {
 }
 
 //CreateUser creates an user
-func (sa *Adapter) CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error) {
+func (sa *Adapter) CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
 	id, err := uuid.NewUUID()
 	if err != nil {
 		return nil, err
 	}
 
 	dateCreated := time.Now()
-	user := model.User{ID: id.String(), ExternalID: externalID, Email: email,
+	user := model.User{ID: id.String(), ClientID: clientID, ExternalID: externalID, Email: email,
 		IsMemberOf: isMemberOf, DateCreated: dateCreated}
 	_, err = sa.db.users.InsertOne(&user)
 	if err != nil {
@@ -126,8 +127,10 @@ func (sa *Adapter) CreateUser(externalID string, email string, isMemberOf *[]str
 }
 
 //SaveUser saves the user
-func (sa *Adapter) SaveUser(user *model.User) error {
+func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: user.ID}}
+
+	//clientID - no need ...
 
 	dateUpdated := time.Now()
 	user.DateUpdated = &dateUpdated

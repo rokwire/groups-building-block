@@ -31,14 +31,19 @@ func (auth *Auth) Start() error {
 
 func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
 	clientID := auth.getClientID(r)
+
 	apiKey := auth.getAPIKey(r)
-	return clientID, auth.apiKeysAuth.check(apiKey, w)
+	authenticated := auth.apiKeysAuth.check(apiKey, w)
+
+	return clientID, authenticated
 }
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
 	clientID := auth.getClientID(r)
+
 	idToken := auth.getIDToken(r)
-	return clientID, auth.idTokenAuth.check(idToken, w)
+	user := auth.idTokenAuth.check(clientID, idToken, w)
+	return clientID, user
 }
 
 func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bool, *model.User) {
@@ -49,7 +54,7 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(idToken, w)
+		user := auth.idTokenAuth.check(clientID, idToken, w)
 		if user != nil {
 			authenticated = true
 		}
@@ -59,7 +64,8 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
-		return clientID, auth.apiKeysAuth.check(apiKey, w), nil
+		authenticated := auth.apiKeysAuth.check(apiKey, w)
+		return clientID, authenticated, nil
 	}
 
 	//neither id token nor api key - so bad request
@@ -197,7 +203,7 @@ func (auth *IDTokenAuth) cleanCacheUser() {
 		if !ok {
 			return false //break the iteration
 		}
-		externalID, ok := key.(string)
+		identifier, ok := key.(string)
 		if !ok {
 			return false //break the iteration
 		}
@@ -205,7 +211,7 @@ func (auth *IDTokenAuth) cleanCacheUser() {
 		difference := now - cacheUser.lastUsage.Unix()
 		//5 minutes
 		if difference > 300 {
-			toRemove = append(toRemove, externalID)
+			toRemove = append(toRemove, identifier)
 		}
 
 		// this will continue iterating
@@ -233,7 +239,7 @@ func (auth *IDTokenAuth) cleanCacheUser() {
 	auth.cleanCacheUser()
 }
 
-func (auth *IDTokenAuth) check(token *string, w http.ResponseWriter) *model.User {
+func (auth *IDTokenAuth) check(clientID string, token *string, w http.ResponseWriter) *model.User {
 	//1. Check if there is a token
 	if token == nil || len(*token) == 0 {
 		auth.responseBadRequest(w)
@@ -267,7 +273,7 @@ func (auth *IDTokenAuth) check(token *string, w http.ResponseWriter) *model.User
 	}
 
 	//4. Get the user for the provided external id.
-	user, err := auth.getUser(userData)
+	user, err := auth.getUser(clientID, userData)
 	if err != nil {
 		log.Printf("error getting an user for external id - %s\n", err)
 
@@ -282,7 +288,7 @@ func (auth *IDTokenAuth) check(token *string, w http.ResponseWriter) *model.User
 	}
 
 	//5. Update the user if needed
-	user, err = auth.updateUserIfNeeded(*user, userData)
+	user, err = auth.updateUserIfNeeded(clientID, *user, userData)
 	if err != nil {
 		log.Printf("error updating an user for external id - %s\n", err)
 
@@ -294,7 +300,7 @@ func (auth *IDTokenAuth) check(token *string, w http.ResponseWriter) *model.User
 	return user
 }
 
-func (auth *IDTokenAuth) updateUserIfNeeded(current model.User, userData userData) (*model.User, error) {
+func (auth *IDTokenAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
 	currentList := current.IsMemberOf
 	newList := userData.UIuceduIsMemberOf
 
@@ -303,11 +309,11 @@ func (auth *IDTokenAuth) updateUserIfNeeded(current model.User, userData userDat
 		log.Println("updateUserIfNeeded -> need to update user")
 
 		//1. remove it from the cache
-		auth.deleteCacheUser(current.ExternalID)
+		auth.deleteCacheUser(current.ExternalID + "_" + clientID)
 
 		//2. update it
 		current.IsMemberOf = userData.UIuceduIsMemberOf
-		err := auth.app.UpdateUser(&current)
+		err := auth.app.UpdateUser(clientID, &current)
 		if err != nil {
 			return nil, err
 		}
@@ -316,13 +322,14 @@ func (auth *IDTokenAuth) updateUserIfNeeded(current model.User, userData userDat
 	return &current, nil
 }
 
-func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
+//the identifier is externalID_clientID
+func (auth *IDTokenAuth) getCachedUser(identifier string) *cacheUser {
 	auth.cachedUsersLock.RLock()
 	defer auth.cachedUsersLock.RUnlock()
 
 	var cachedUser *cacheUser //to return
 
-	item, _ := auth.cachedUsers.Load(externalID)
+	item, _ := auth.cachedUsers.Load(identifier)
 	if item != nil {
 		cachedUser = item.(*cacheUser)
 	}
@@ -330,58 +337,60 @@ func (auth *IDTokenAuth) getCachedUser(externalID string) *cacheUser {
 	//keep the last get time
 	if cachedUser != nil {
 		cachedUser.lastUsage = time.Now()
-		auth.cachedUsers.Store(externalID, cachedUser)
+		auth.cachedUsers.Store(identifier, cachedUser)
 	}
 
 	return cachedUser
 }
 
-func (auth *IDTokenAuth) cacheUser(externalID string, user *model.User) {
+//the identifier is externalID_clientID
+func (auth *IDTokenAuth) cacheUser(identifier string, user *model.User) {
 	auth.cachedUsersLock.RLock()
 
 	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
-	auth.cachedUsers.Store(externalID, cacheUser)
+	auth.cachedUsers.Store(identifier, cacheUser)
 
 	auth.cachedUsersLock.RUnlock()
 }
 
-func (auth *IDTokenAuth) deleteCacheUser(externalID string) {
+//the identifier is externalID_clientID
+func (auth *IDTokenAuth) deleteCacheUser(identifier string) {
 	auth.cachedUsersLock.RLock()
 
-	auth.cachedUsers.Delete(externalID)
+	auth.cachedUsers.Delete(identifier)
 
 	auth.cachedUsersLock.RUnlock()
 }
 
-func (auth *IDTokenAuth) getUser(userData userData) (*model.User, error) {
+func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.User, error) {
 	var err error
 
 	//1. First check if cached
-	cachedUser := auth.getCachedUser(*userData.UIuceduUIN)
+	cachedUser := auth.getCachedUser(*userData.UIuceduUIN + "_" + clientID)
 	if cachedUser != nil {
 		return cachedUser.user, nil
 	}
 
 	//2. Check if we have a such user in the application
-	user, err := auth.app.FindUser(*userData.UIuceduUIN)
+	user, err := auth.app.FindUser(clientID, *userData.UIuceduUIN)
 	if err != nil {
 		log.Printf("error finding an for external id - %s\n", err)
 		return nil, err
 	}
 	if user != nil {
 		//cache it
-		auth.cacheUser(*userData.UIuceduUIN, user)
+		auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
 		return user, nil
 	}
 
 	//3. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(*userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
+	user, err = auth.app.CreateUser(clientID, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
 		log.Printf("error creating an user - %s\n", err)
 		return nil, err
 	}
 	//cache it
-	auth.cacheUser(*userData.UIuceduUIN, user)
+	auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
 	return user, nil
 }
 

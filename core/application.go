@@ -21,8 +21,8 @@ func (app *Application) Start() {
 }
 
 //FindUser finds an user for the provided external id
-func (app *Application) FindUser(externalID string) (*model.User, error) {
-	user, err := app.storage.FindUser(externalID)
+func (app *Application) FindUser(clientID string, externalID string) (*model.User, error) {
+	user, err := app.storage.FindUser(clientID, externalID)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +30,8 @@ func (app *Application) FindUser(externalID string) (*model.User, error) {
 }
 
 //CreateUser creates an user
-func (app *Application) CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error) {
-	user, err := app.storage.CreateUser(externalID, email, isMemberOf)
+func (app *Application) CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
+	user, err := app.storage.CreateUser(clientID, externalID, email, isMemberOf)
 	if err != nil {
 		return nil, err
 	}
@@ -39,8 +39,8 @@ func (app *Application) CreateUser(externalID string, email string, isMemberOf *
 }
 
 //UpdateUser updates the user
-func (app *Application) UpdateUser(user *model.User) error {
-	err := app.storage.SaveUser(user)
+func (app *Application) UpdateUser(clientID string, user *model.User) error {
+	err := app.storage.SaveUser(clientID, user)
 	if err != nil {
 		return err
 	}

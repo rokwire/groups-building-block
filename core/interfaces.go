@@ -129,9 +129,9 @@ func (s *administrationImpl) GetTODO() error {
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
-	FindUser(externalID string) (*model.User, error)
-	CreateUser(externalID string, email string, isMemberOf *[]string) (*model.User, error)
-	SaveUser(user *model.User) error
+	FindUser(clientID string, externalID string) (*model.User, error)
+	CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error)
+	SaveUser(clientID string, user *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)
 

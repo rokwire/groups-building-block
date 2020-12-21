@@ -202,6 +202,25 @@ func (collWrapper *collectionWrapper) Watch(pipeline interface{}) error {
 	return nil
 }
 
+func (collWrapper *collectionWrapper) ListIndexes() ([]bson.M, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
+	defer cancel()
+
+	indexes, err := collWrapper.coll.Indexes().List(ctx, nil)
+	if err != nil {
+		log.Printf("error getting indexes list: %s\n", err)
+		return nil, err
+	}
+
+	var list []bson.M
+	err = indexes.All(ctx, &list)
+	if err != nil {
+		log.Printf("error iterating indexes list: %s\n", err)
+		return nil, err
+	}
+	return list, nil
+}
+
 func (collWrapper *collectionWrapper) AddIndex(keys interface{}, unique bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
 	defer cancel()
@@ -214,6 +233,15 @@ func (collWrapper *collectionWrapper) AddIndex(keys interface{}, unique bool) er
 	}
 
 	_, err := collWrapper.coll.Indexes().CreateOne(ctx, index, nil)
+
+	return err
+}
+
+func (collWrapper *collectionWrapper) DropIndex(name string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
+	defer cancel()
+
+	_, err := collWrapper.coll.Indexes().DropOne(ctx, name)
 
 	return err
 }
