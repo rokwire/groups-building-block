@@ -96,6 +96,11 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 		return err
 	}
 
+	err = users.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	log.Println("users checks passed")
 	return nil
 }
@@ -130,6 +135,11 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		return err
 	}
 
+	err = groups.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
 	log.Println("groups checks passed")
 	return nil
 }
@@ -139,6 +149,11 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 
 	//compound index
 	err := events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1}, primitive.E{Key: "group_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	err = events.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
