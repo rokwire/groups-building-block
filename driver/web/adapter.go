@@ -61,7 +61,7 @@ func (we *Adapter) Start() {
 	//id token protection
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
-	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFuncNEW(we.apisHandler.GetUserGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMember)).Methods("DELETE")
@@ -113,7 +113,6 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 }
 
 //TODO
-//type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
 type idTokenAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
@@ -128,6 +127,23 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		}
 
 		handler(user, w, req)
+	}
+}
+
+//TODO Change the name
+type idTokenAuthFuncNew = func(string, *model.User, http.ResponseWriter, *http.Request)
+
+//TODO Change the name
+func (we Adapter) idTokenAuthWrapFuncNEW(handler idTokenAuthFuncNew) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, user := we.auth.idTokenCheck(w, req)
+		if user == nil {
+			return
+		}
+
+		handler(clientID, user, w, req)
 	}
 }
 

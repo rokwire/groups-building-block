@@ -18,7 +18,7 @@ type Services interface {
 	UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	GetGroups(current *model.User, category *string) ([]map[string]interface{}, error)
-	GetUserGroups(current *model.User) ([]map[string]interface{}, error)
+	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
 	GetGroup(current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
@@ -68,8 +68,8 @@ func (s *servicesImpl) GetGroups(current *model.User, category *string) ([]map[s
 	return s.app.getGroups(current, category)
 }
 
-func (s *servicesImpl) GetUserGroups(current *model.User) ([]map[string]interface{}, error) {
-	return s.app.getUserGroups(current)
+func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
+	return s.app.getUserGroups(clientID, current)
 }
 
 func (s *servicesImpl) GetGroup(current *model.User, id string) (map[string]interface{}, error) {
@@ -142,7 +142,7 @@ type Storage interface {
 	FindGroup(id string) (*model.Group, error)
 	FindGroupByMembership(membershipID string) (*model.Group, error)
 	FindGroups(category *string) ([]model.Group, error)
-	FindUserGroups(userID string) ([]model.Group, error)
+	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
 	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(groupID string, userID string) error

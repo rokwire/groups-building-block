@@ -335,9 +335,10 @@ func (sa *Adapter) FindGroups(category *string) ([]model.Group, error) {
 	return result, nil
 }
 
-//FindUserGroups finds the user groups
-func (sa *Adapter) FindUserGroups(userID string) ([]model.Group, error) {
-	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID}}
+//FindUserGroups finds the user groups for client id
+func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group, error) {
+	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID},
+		primitive.E{Key: "client_id", Value: clientID}}
 
 	var list []group
 	err := sa.db.groups.Find(filter, &list, nil)

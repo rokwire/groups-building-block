@@ -347,9 +347,9 @@ func (app *Application) getGroups(current *model.User, category *string) ([]map[
 	return groupsList, nil
 }
 
-func (app *Application) getUserGroups(current *model.User) ([]map[string]interface{}, error) {
+func (app *Application) getUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
 	// find the user groups
-	groups, err := app.storage.FindUserGroups(current.ID)
+	groups, err := app.storage.FindUserGroups(clientID, current.ID)
 	if err != nil {
 		return nil, err
 	}

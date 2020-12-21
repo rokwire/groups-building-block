@@ -346,8 +346,8 @@ type getUserGroupsResponse struct {
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/user/groups [get]
-func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
-	groups, err := h.app.Services.GetUserGroups(current)
+func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	groups, err := h.app.Services.GetUserGroups(clientID, current)
 	if err != nil {
 		log.Printf("error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
