@@ -98,13 +98,22 @@ func (m *database) start() error {
 func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	log.Println("apply users checks.....")
 
-	//add index - unique
-	err := users.AddIndex(bson.D{primitive.E{Key: "external_id", Value: 1}}, true)
+	//drop the previous index - external_id
+	err := users.DropIndex("external_id_1")
 	if err != nil {
-		return err
+		//just log
+		log.Printf("%s", err.Error())
 	}
 
-	err = users.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, false)
+	//drop the previous index - client_id
+	err = users.DropIndex("client_id_1")
+	if err != nil {
+		//just log
+		log.Printf("%s", err.Error())
+	}
+
+	//create compound index
+	err = users.AddIndex(bson.D{primitive.E{Key: "external_id", Value: 1}, primitive.E{Key: "client_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}
@@ -123,7 +132,21 @@ func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
 func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	log.Println("apply groups checks.....")
 
-	err := groups.AddIndex(bson.D{primitive.E{Key: "title", Value: 1}}, true)
+	//drop the previous index - title
+	err := groups.DropIndex("title_1")
+	if err != nil {
+		//just log
+		log.Printf("%s", err.Error())
+	}
+	//drop the previous index - client_id
+	err = groups.DropIndex("client_id_1")
+	if err != nil {
+		//just log
+		log.Printf("%s", err.Error())
+	}
+
+	//create compound index
+	err = groups.AddIndex(bson.D{primitive.E{Key: "title", Value: 1}, primitive.E{Key: "client_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}
@@ -143,11 +166,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		return err
 	}
 
-	err = groups.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, false)
-	if err != nil {
-		return err
-	}
-
 	log.Println("groups checks passed")
 	return nil
 }
@@ -155,13 +173,23 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 func (m *database) applyEventsChecks(events *collectionWrapper) error {
 	log.Println("apply events checks.....")
 
-	//compound index
-	err := events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1}, primitive.E{Key: "group_id", Value: 1}}, true)
+	//drop the previous compound index
+	err := events.DropIndex("event_id_1_group_id_1")
 	if err != nil {
-		return err
+		//just log
+		log.Printf("%s", err.Error())
+	}
+	//drop the previous index - client_id
+	err = events.DropIndex("client_id_1")
+	if err != nil {
+		//just log
+		log.Printf("%s", err.Error())
 	}
 
-	err = events.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, false)
+	//create compound index
+	err = events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1},
+		primitive.E{Key: "group_id", Value: 1},
+		primitive.E{Key: "client_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}
