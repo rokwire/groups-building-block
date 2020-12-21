@@ -103,33 +103,6 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
 	log.Println("apply enums checks.....")
 
-	//add initial group categories data if not already added
-	fFilter := bson.D{primitive.E{Key: "_id", Value: "categories"}}
-	var result []enumItem
-	err := enums.Find(fFilter, &result, nil)
-	if err != nil {
-		return err
-	}
-	hasData := result != nil && len(result) > 0
-	if !hasData {
-		log.Println("there is no group categories, so add initial data")
-
-		data := []string{"Academic/Pre-Professional", "Athletic/Recreation", "Club Sports",
-			"Creative/Media/Performing Arts", "Cultural/Ethnic", "Graduate",
-			"Honorary", "International", "Other Social",
-			"Political", "Religious", "Residence Hall",
-			"Rights/Freedom Issues", "ROTC", "Service/Philanthropy",
-			"Social Fraternity/Sorority", "University Student Governance/Council/Committee"}
-
-		categoriesData := enumItem{ID: "categories", Values: data}
-		_, err = enums.InsertOne(&categoriesData)
-		if err != nil {
-			return err
-		}
-	} else {
-		log.Println("there is group categories data, so do nothing")
-	}
-
 	log.Println("enums checks passed")
 	return nil
 }
