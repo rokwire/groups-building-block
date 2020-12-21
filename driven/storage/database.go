@@ -191,10 +191,64 @@ func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectio
 		if len(usersList) > 0 {
 			for _, u := range usersList {
 				if len(u.ClientID) == 0 {
-					log.Printf("SET CLIENT ID for %s", u.Email)
+					log.Printf("USERS - SET CLIENT ID for %s", u.Email)
 
 					_, err = users.UpdateOneWithContext(sessionContext,
 						bson.D{primitive.E{Key: "_id", Value: u.ID}},
+						bson.D{
+							primitive.E{Key: "$set", Value: bson.D{
+								primitive.E{Key: "client_id", Value: "edu.illinois.rokwire"}},
+							}},
+						nil)
+					if err != nil {
+						abortTransaction(sessionContext)
+						return err
+					}
+				}
+			}
+		}
+
+		//apply groups collection
+		var groupsList []group
+		err = groups.FindWithContext(sessionContext, bson.D{}, &groupsList, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if len(groupsList) > 0 {
+			for _, gr := range groupsList {
+				if len(gr.ClientID) == 0 {
+					log.Printf("GROUPS - SET CLIENT ID for %s", gr.Title)
+
+					_, err = groups.UpdateOneWithContext(sessionContext,
+						bson.D{primitive.E{Key: "_id", Value: gr.ID}},
+						bson.D{
+							primitive.E{Key: "$set", Value: bson.D{
+								primitive.E{Key: "client_id", Value: "edu.illinois.rokwire"}},
+							}},
+						nil)
+					if err != nil {
+						abortTransaction(sessionContext)
+						return err
+					}
+				}
+			}
+		}
+
+		//apply events collection
+		var eventsList []event
+		err = events.FindWithContext(sessionContext, bson.D{}, &eventsList, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if len(eventsList) > 0 {
+			for _, ev := range eventsList {
+				if len(ev.ClientID) == 0 {
+					log.Printf("EVENTS - SET CLIENT ID for %s", ev.EventID)
+
+					_, err = events.UpdateOneWithContext(sessionContext,
+						bson.D{primitive.E{Key: "event_id", Value: ev.EventID}},
 						bson.D{
 							primitive.E{Key: "$set", Value: bson.D{
 								primitive.E{Key: "client_id", Value: "edu.illinois.rokwire"}},
