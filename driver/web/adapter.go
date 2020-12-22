@@ -112,24 +112,6 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	}
 }
 
-//TODO
-type idTokenAuthFuncOld = func(*model.User, http.ResponseWriter, *http.Request)
-
-func (we Adapter) idTokenAuthWrapFuncOld(handler idTokenAuthFuncOld) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		clientID, user := we.auth.idTokenCheck(w, req)
-		//TODO
-		log.Println(clientID)
-		if user == nil {
-			return
-		}
-
-		handler(user, w, req)
-	}
-}
-
 type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
@@ -142,22 +124,6 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		}
 
 		handler(clientID, user, w, req)
-	}
-}
-
-func (we Adapter) mixedAuthWrapFuncOld(handler idTokenAuthFuncOld) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		clientID, authenticated, user := we.auth.mixedCheck(w, req)
-		//TODO
-		log.Println(clientID)
-		if !authenticated {
-			return
-		}
-
-		//user can be nil
-		handler(user, w, req)
 	}
 }
 
