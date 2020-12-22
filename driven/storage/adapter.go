@@ -690,7 +690,7 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 }
 
 //DeleteMembership deletes a membership
-func (sa *Adapter) DeleteMembership(currentUserID string, membershipID string) error {
+func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membershipID string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -702,7 +702,7 @@ func (sa *Adapter) DeleteMembership(currentUserID string, membershipID string) e
 		// get the member as we need to validate it
 		pipeline := []bson.M{
 			{"$unwind": "$members"},
-			{"$match": bson.M{"members.id": membershipID}},
+			{"$match": bson.M{"members.id": membershipID, "client_id": clientID}},
 		}
 		var result []struct {
 			GroupID      string `bson:"_id"`

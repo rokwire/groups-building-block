@@ -411,8 +411,8 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 	return nil
 }
 
-func (app *Application) deleteMembership(current model.User, membershipID string) error {
-	err := app.storage.DeleteMembership(current.ID, membershipID)
+func (app *Application) deleteMembership(clientID string, current model.User, membershipID string) error {
+	err := app.storage.DeleteMembership(clientID, current.ID, membershipID)
 	if err != nil {
 		return err
 	}

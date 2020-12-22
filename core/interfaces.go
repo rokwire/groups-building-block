@@ -26,7 +26,7 @@ type Services interface {
 	DeleteMember(clientID string, current model.User, groupID string) error
 
 	ApplyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error
-	DeleteMembership(current model.User, membershipID string) error
+	DeleteMembership(clientID string, current model.User, membershipID string) error
 	UpdateMembership(clientID string, current model.User, membershipID string, status string) error
 
 	GetEvents(clientID string, groupID string) ([]model.Event, error)
@@ -92,8 +92,8 @@ func (s *servicesImpl) ApplyMembershipApproval(clientID string, current model.Us
 	return s.app.applyMembershipApproval(clientID, current, membershipID, approve, rejectReason)
 }
 
-func (s *servicesImpl) DeleteMembership(current model.User, membershipID string) error {
-	return s.app.deleteMembership(current, membershipID)
+func (s *servicesImpl) DeleteMembership(clientID string, current model.User, membershipID string) error {
+	return s.app.deleteMembership(clientID, current, membershipID)
 }
 
 func (s *servicesImpl) UpdateMembership(clientID string, current model.User, membershipID string, status string) error {
@@ -149,7 +149,7 @@ type Storage interface {
 	DeleteMember(clientID string, groupID string, userID string) error
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
-	DeleteMembership(currentUserID string, membershipID string) error
+	DeleteMembership(clientID string, currentUserID string, membershipID string) error
 	UpdateMembership(clientID string, currentUserID string, membershipID string, status string) error
 
 	FindEvents(clientID string, groupID string) ([]model.Event, error)

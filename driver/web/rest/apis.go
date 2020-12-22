@@ -663,7 +663,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/memberships/{membership-id} [delete]
-func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -674,7 +674,7 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntityByMembership("", membershipID)
+	group, err := h.app.Services.GetGroupEntityByMembership(clientID, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -694,7 +694,7 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	err = h.app.Services.DeleteMembership(*current, membershipID)
+	err = h.app.Services.DeleteMembership(clientID, *current, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
