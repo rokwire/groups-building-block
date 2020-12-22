@@ -875,7 +875,7 @@ type createGroupEventRequest struct {
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/events [post]
-func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -909,7 +909,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity("", groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -931,7 +931,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 
 	eventID := requestData.EventID
 
-	err = h.app.Services.CreateEvent(*current, eventID, groupID)
+	err = h.app.Services.CreateEvent(clientID, *current, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

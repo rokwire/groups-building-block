@@ -852,8 +852,8 @@ func (sa *Adapter) FindEvents(clientID string, groupID string) ([]model.Event, e
 }
 
 //CreateEvent creates a group event
-func (sa *Adapter) CreateEvent(eventID string, groupID string) error {
-	event := event{EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
+func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string) error {
+	event := event{ClientID: clientID, EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
 	_, err := sa.db.events.InsertOne(event)
 	if err != nil {
 		return err

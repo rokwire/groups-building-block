@@ -435,8 +435,8 @@ func (app *Application) getEvents(clientID string, groupID string) ([]model.Even
 	return events, nil
 }
 
-func (app *Application) createEvent(current model.User, eventID string, groupID string) error {
-	err := app.storage.CreateEvent(eventID, groupID)
+func (app *Application) createEvent(clientID string, current model.User, eventID string, groupID string) error {
+	err := app.storage.CreateEvent(clientID, eventID, groupID)
 	if err != nil {
 		return err
 	}
