@@ -59,22 +59,22 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
 
 	//id token protection
-	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
-	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
-	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFuncNEW(we.apisHandler.GetUserGroups)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
-	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMember)).Methods("DELETE")
-	restSubrouter.HandleFunc("/memberships/{membership-id}/approval", we.idTokenAuthWrapFunc(we.apisHandler.MembershipApproval)).Methods("PUT")
-	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMembership)).Methods("DELETE")
-	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateMembership)).Methods("PUT")
-	restSubrouter.HandleFunc("/group/{group-id}/events", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupEvent)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupEvent)).Methods("DELETE")
+	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFuncOld(we.apisHandler.CreateGroup)).Methods("POST")
+	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFuncOld(we.apisHandler.UpdateGroup)).Methods("PUT")
+	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFuncOld(we.apisHandler.CreatePendingMember)).Methods("POST")
+	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFuncOld(we.apisHandler.DeletePendingMember)).Methods("DELETE")
+	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFuncOld(we.apisHandler.DeleteMember)).Methods("DELETE")
+	restSubrouter.HandleFunc("/memberships/{membership-id}/approval", we.idTokenAuthWrapFuncOld(we.apisHandler.MembershipApproval)).Methods("PUT")
+	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFuncOld(we.apisHandler.DeleteMembership)).Methods("DELETE")
+	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFuncOld(we.apisHandler.UpdateMembership)).Methods("PUT")
+	restSubrouter.HandleFunc("/group/{group-id}/events", we.idTokenAuthWrapFuncOld(we.apisHandler.CreateGroupEvent)).Methods("POST")
+	restSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFuncOld(we.apisHandler.DeleteGroupEvent)).Methods("DELETE")
 
 	//mixed protection
-	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
-	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
+	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFuncOld(we.apisHandler.GetGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFuncOld(we.apisHandler.GetGroup)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFuncOld(we.apisHandler.GetGroupEvents)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":80", router))
 }
@@ -113,9 +113,9 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 }
 
 //TODO
-type idTokenAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
+type idTokenAuthFuncOld = func(*model.User, http.ResponseWriter, *http.Request)
 
-func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+func (we Adapter) idTokenAuthWrapFuncOld(handler idTokenAuthFuncOld) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
@@ -130,11 +130,9 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 	}
 }
 
-//TODO Change the name
-type idTokenAuthFuncNew = func(string, *model.User, http.ResponseWriter, *http.Request)
+type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
 
-//TODO Change the name
-func (we Adapter) idTokenAuthWrapFuncNEW(handler idTokenAuthFuncNew) http.HandlerFunc {
+func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
@@ -147,7 +145,7 @@ func (we Adapter) idTokenAuthWrapFuncNEW(handler idTokenAuthFuncNew) http.Handle
 	}
 }
 
-func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+func (we Adapter) mixedAuthWrapFuncOld(handler idTokenAuthFuncOld) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
@@ -160,6 +158,20 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 
 		//user can be nil
 		handler(user, w, req)
+	}
+}
+
+func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, authenticated, user := we.auth.mixedCheck(w, req)
+		if !authenticated {
+			return
+		}
+
+		//user can be nil
+		handler(clientID, user, w, req)
 	}
 }
 
