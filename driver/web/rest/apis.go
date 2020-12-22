@@ -797,7 +797,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{group-id}/events [get]
-func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -808,7 +808,7 @@ func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter,
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity("", groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -837,7 +837,7 @@ func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter,
 		}
 	}
 
-	events, err := h.app.Services.GetEvents(groupID)
+	events, err := h.app.Services.GetEvents(clientID, groupID)
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

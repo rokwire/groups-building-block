@@ -29,7 +29,7 @@ type Services interface {
 	DeleteMembership(current model.User, membershipID string) error
 	UpdateMembership(current model.User, membershipID string, status string) error
 
-	GetEvents(groupID string) ([]model.Event, error)
+	GetEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(current model.User, eventID string, groupID string) error
 	DeleteEvent(current model.User, eventID string, groupID string) error
 }
@@ -100,8 +100,8 @@ func (s *servicesImpl) UpdateMembership(current model.User, membershipID string,
 	return s.app.updateMembership(current, membershipID, status)
 }
 
-func (s *servicesImpl) GetEvents(groupID string) ([]model.Event, error) {
-	return s.app.getEvents(groupID)
+func (s *servicesImpl) GetEvents(clientID string, groupID string) ([]model.Event, error) {
+	return s.app.getEvents(clientID, groupID)
 }
 
 func (s *servicesImpl) CreateEvent(current model.User, eventID string, groupID string) error {
@@ -152,7 +152,7 @@ type Storage interface {
 	DeleteMembership(currentUserID string, membershipID string) error
 	UpdateMembership(currentUserID string, membershipID string, status string) error
 
-	FindEvents(groupID string) ([]model.Event, error)
+	FindEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(eventID string, groupID string) error
 	DeleteEvent(eventID string, groupID string) error
 }

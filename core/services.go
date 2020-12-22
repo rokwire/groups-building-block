@@ -427,8 +427,8 @@ func (app *Application) updateMembership(current model.User, membershipID string
 	return nil
 }
 
-func (app *Application) getEvents(groupID string) ([]model.Event, error) {
-	events, err := app.storage.FindEvents(groupID)
+func (app *Application) getEvents(clientID string, groupID string) ([]model.Event, error) {
+	events, err := app.storage.FindEvents(clientID, groupID)
 	if err != nil {
 		return nil, err
 	}

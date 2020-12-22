@@ -829,8 +829,9 @@ func (sa *Adapter) UpdateMembership(currentUserID string, membershipID string, s
 }
 
 //FindEvents finds the events for a group
-func (sa *Adapter) FindEvents(groupID string) ([]model.Event, error) {
-	filter := bson.D{primitive.E{Key: "group_id", Value: groupID}}
+func (sa *Adapter) FindEvents(clientID string, groupID string) ([]model.Event, error) {
+	filter := bson.D{primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID}}
 	var result []event
 	err := sa.db.events.Find(filter, &result, nil)
 	if err != nil {
