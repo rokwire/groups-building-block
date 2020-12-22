@@ -79,7 +79,7 @@ type createGroupRequest struct {
 // @Success 200 {object} createResponse
 // @Security AppUserAuth
 // @Router /api/groups [post]
-func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
 		log.Printf("%s is not allowed to create a group", current.Email)
 
@@ -121,7 +121,7 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
 
-	insertedID, err := h.app.Services.CreateGroup(*current, title, description, category, tags, privacy,
+	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
 		creatorName, creatorEmail, creatorPhotoURL)
 	if err != nil {
 		log.Println(err.Error())

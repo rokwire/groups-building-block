@@ -160,7 +160,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 }
 
 //CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(title string, description *string, category string, tags []string, privacy string,
+func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
 	var insertedID string
 
@@ -196,7 +196,7 @@ func (sa *Adapter) CreateGroup(title string, description *string, category strin
 
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
-		group := group{ID: insertedID, Title: title, Description: description, Category: category,
+		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
 			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {

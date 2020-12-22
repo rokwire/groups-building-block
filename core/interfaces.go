@@ -13,7 +13,7 @@ type Services interface {
 	GetGroupEntity(id string) (*model.Group, error)
 	GetGroupEntityByMembership(membershipID string) (*model.Group, error)
 
-	CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
+	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 	UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
@@ -54,9 +54,9 @@ func (s *servicesImpl) GetGroupEntityByMembership(membershipID string) (*model.G
 	return s.app.getGroupEntityByMembership(membershipID)
 }
 
-func (s *servicesImpl) CreateGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
+func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	return s.app.createGroup(current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
+	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
 }
 
 func (s *servicesImpl) UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
@@ -135,7 +135,7 @@ type Storage interface {
 
 	ReadAllGroupCategories() ([]string, error)
 
-	CreateGroup(title string, description *string, category string, tags []string, privacy string,
+	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 	UpdateGroup(id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error

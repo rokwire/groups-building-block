@@ -312,9 +312,9 @@ func (app *Application) getGroupCategories() ([]string, error) {
 	return groupCategories, nil
 }
 
-func (app *Application) createGroup(current model.User, title string, description *string, category string, tags []string, privacy string,
+func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	insertedID, err := app.storage.CreateGroup(title, description, category, tags, privacy,
+	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
 		current.ID, creatorName, creatorEmail, creatorPhotoURL)
 	if err != nil {
 		return nil, err

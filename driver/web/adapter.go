@@ -59,7 +59,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
 
 	//id token protection
-	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFuncOld(we.apisHandler.CreateGroup)).Methods("POST")
+	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFuncOld(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFuncOld(we.apisHandler.CreatePendingMember)).Methods("POST")
