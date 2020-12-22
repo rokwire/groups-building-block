@@ -524,7 +524,7 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 }
 
 //DeleteMember deletes a member membership from a specific group
-func (sa *Adapter) DeleteMember(groupID string, userID string) error {
+func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -536,7 +536,7 @@ func (sa *Adapter) DeleteMember(groupID string, userID string) error {
 		// get the member as we need to validate it
 		pipeline := []bson.M{
 			{"$unwind": "$members"},
-			{"$match": bson.M{"_id": groupID, "members.user_id": userID}},
+			{"$match": bson.M{"_id": groupID, "members.user_id": userID, "client_id": clientID}},
 		}
 		var result []struct {
 			ID           string `bson:"_id"`
