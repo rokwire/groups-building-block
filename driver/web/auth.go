@@ -20,6 +20,8 @@ import (
 type Auth struct {
 	apiKeysAuth *APIKeysAuth
 	idTokenAuth *IDTokenAuth
+
+	supportedClients []string
 }
 
 //Start starts the auth module
@@ -29,50 +31,78 @@ func (auth *Auth) Start() error {
 	return nil
 }
 
+func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, *string) {
+	clientID := r.Header.Get("APP")
+	if len(clientID) == 0 {
+		clientID = "edu.illinois.rokwire"
+	}
+
+	//check if supported
+	for _, s := range auth.supportedClients {
+		if s == clientID {
+			return true, &clientID
+		}
+	}
+
+	log.Println(fmt.Sprintf("400 - Bad Request"))
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte("Bad Request"))
+	return false, nil
+}
+
 func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientID := auth.getClientID(r)
+	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	if !clientIDOK {
+		return "", false
+	}
 
 	apiKey := auth.getAPIKey(r)
 	authenticated := auth.apiKeysAuth.check(apiKey, w)
 
-	return clientID, authenticated
+	return *clientID, authenticated
 }
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
-	clientID := auth.getClientID(r)
+	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	if !clientIDOK {
+		return "", nil
+	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, w)
-	return clientID, user
+	user := auth.idTokenAuth.check(*clientID, idToken, w)
+	return *clientID, user
 }
 
 func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bool, *model.User) {
 	//get client ID
-	clientID := auth.getClientID(r)
+	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	if !clientIDOK {
+		return "", false, nil
+	}
 
 	//first check for id token
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(clientID, idToken, w)
+		user := auth.idTokenAuth.check(*clientID, idToken, w)
 		if user != nil {
 			authenticated = true
 		}
-		return clientID, authenticated, user
+		return *clientID, authenticated, user
 	}
 
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
 		authenticated := auth.apiKeysAuth.check(apiKey, w)
-		return clientID, authenticated, nil
+		return *clientID, authenticated, nil
 	}
 
 	//neither id token nor api key - so bad request
 	log.Println("400 - Bad Request")
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("Bad Request"))
-	return clientID, false, nil
+	return *clientID, false, nil
 }
 
 func (auth *Auth) getAPIKey(r *http.Request) *string {
@@ -81,14 +111,6 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 		return nil
 	}
 	return &apiKey
-}
-
-func (auth *Auth) getClientID(r *http.Request) string {
-	clientID := r.Header.Get("APP")
-	if len(clientID) == 0 {
-		clientID = "edu.illinois.rokwire"
-	}
-	return clientID
 }
 
 func (auth *Auth) getIDToken(r *http.Request) *string {
@@ -114,7 +136,9 @@ func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcC
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth}
+	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
+
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, supportedClients: supportedClients}
 	return &auth
 }
 
