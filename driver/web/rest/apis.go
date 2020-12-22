@@ -408,7 +408,7 @@ type getGroupResponse struct {
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/groups/{id} [get]
-func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
@@ -417,7 +417,7 @@ func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *ht
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(current, id)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

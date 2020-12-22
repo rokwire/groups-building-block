@@ -363,21 +363,20 @@ func (app *Application) getUserGroups(clientID string, current *model.User) ([]m
 	return groupsList, nil
 }
 
-func (app *Application) getGroup(current *model.User, id string) (map[string]interface{}, error) {
-	/*	// find the group
-		group, err := app.storage.FindGroup(id)
-		if err != nil {
-			return nil, err
-		}
-		if group == nil {
-			return nil, nil
-		}
+func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
+	// find the group
+	group, err := app.storage.FindGroup(clientID, id)
+	if err != nil {
+		return nil, err
+	}
+	if group == nil {
+		return nil, nil
+	}
 
-		//apply data protection
-		res := app.applyDataProtection(current, *group)
+	//apply data protection
+	res := app.applyDataProtection(current, *group)
 
-		return res, nil */
-	return nil, nil
+	return res, nil
 }
 
 func (app *Application) createPendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {

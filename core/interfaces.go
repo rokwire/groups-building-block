@@ -19,7 +19,7 @@ type Services interface {
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	GetGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
-	GetGroup(current *model.User, id string) (map[string]interface{}, error)
+	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(current model.User, groupID string) error
@@ -72,8 +72,8 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]ma
 	return s.app.getUserGroups(clientID, current)
 }
 
-func (s *servicesImpl) GetGroup(current *model.User, id string) (map[string]interface{}, error) {
-	return s.app.getGroup(current, id)
+func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
+	return s.app.getGroup(clientID, current, id)
 }
 
 func (s *servicesImpl) CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
