@@ -379,8 +379,8 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return res, nil
 }
 
-func (app *Application) createPendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	err := app.storage.CreatePendingMember(groupID, current.ID, name, email, photoURL, memberAnswers)
+func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, email, photoURL, memberAnswers)
 	if err != nil {
 		return err
 	}

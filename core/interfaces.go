@@ -21,7 +21,7 @@ type Services interface {
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
-	CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(current model.User, groupID string) error
 	DeleteMember(current model.User, groupID string) error
 
@@ -76,8 +76,8 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 	return s.app.getGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) CreatePendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	return s.app.createPendingMember(current, groupID, name, email, photoURL, memberAnswers)
+func (s *servicesImpl) CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	return s.app.createPendingMember(clientID, current, groupID, name, email, photoURL, memberAnswers)
 }
 
 func (s *servicesImpl) DeletePendingMember(current model.User, groupID string) error {
@@ -144,7 +144,7 @@ type Storage interface {
 	FindGroups(clientID string, category *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
-	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(groupID string, userID string) error
 	DeleteMember(groupID string, userID string) error
 

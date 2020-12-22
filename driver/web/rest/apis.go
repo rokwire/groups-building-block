@@ -456,7 +456,7 @@ type createMemberRequest struct {
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/pending-members [post]
-func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -500,7 +500,7 @@ func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWr
 		}
 	}
 
-	err = h.app.Services.CreatePendingMember(*current, groupID, name, email, photoURL, mAnswers)
+	err = h.app.Services.CreatePendingMember(clientID, *current, groupID, name, email, photoURL, mAnswers)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
