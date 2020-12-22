@@ -25,6 +25,15 @@
                     "application/json"
                 ],
                 "operationId": "GetGroupCategories",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -54,6 +63,13 @@
                 ],
                 "operationId": "DeleteGroupEvent",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Group ID",
@@ -97,6 +113,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Group ID",
                         "name": "group-id",
                         "in": "path",
@@ -130,6 +153,13 @@
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -172,6 +202,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Group ID",
                         "name": "group-id",
                         "in": "path",
@@ -204,6 +241,13 @@
                 ],
                 "operationId": "CreatePendingMember",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -244,6 +288,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Group ID",
                         "name": "group-id",
                         "in": "path",
@@ -278,6 +329,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Category",
                         "name": "category",
                         "in": "query"
@@ -310,6 +368,13 @@
                 ],
                 "operationId": "CreateGroup",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -348,6 +413,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "ID",
                         "name": "id",
                         "in": "path",
@@ -378,6 +450,13 @@
                 ],
                 "operationId": "UpdateGroup",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -422,6 +501,13 @@
                 "operationId": "UpdateMembership",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "body data",
                         "name": "data",
                         "in": "body",
@@ -464,6 +550,13 @@
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Membership ID",
                         "name": "membership-id",
                         "in": "path",
@@ -496,6 +589,13 @@
                 ],
                 "operationId": "MembershipApproval",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -538,6 +638,15 @@
                     "application/json"
                 ],
                 "operationId": "GetUserGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

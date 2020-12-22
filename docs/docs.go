@@ -37,6 +37,15 @@ var doc = `{
                     "application/json"
                 ],
                 "operationId": "GetGroupCategories",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -66,6 +75,13 @@ var doc = `{
                 ],
                 "operationId": "DeleteGroupEvent",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "type": "string",
                         "description": "Group ID",
@@ -109,6 +125,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Group ID",
                         "name": "group-id",
                         "in": "path",
@@ -142,6 +165,13 @@ var doc = `{
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -184,6 +214,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Group ID",
                         "name": "group-id",
                         "in": "path",
@@ -216,6 +253,13 @@ var doc = `{
                 ],
                 "operationId": "CreatePendingMember",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -256,6 +300,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Group ID",
                         "name": "group-id",
                         "in": "path",
@@ -290,6 +341,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Category",
                         "name": "category",
                         "in": "query"
@@ -322,6 +380,13 @@ var doc = `{
                 ],
                 "operationId": "CreateGroup",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -360,6 +425,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "ID",
                         "name": "id",
                         "in": "path",
@@ -390,6 +462,13 @@ var doc = `{
                 ],
                 "operationId": "UpdateGroup",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -434,6 +513,13 @@ var doc = `{
                 "operationId": "UpdateMembership",
                 "parameters": [
                     {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
                         "description": "body data",
                         "name": "data",
                         "in": "body",
@@ -476,6 +562,13 @@ var doc = `{
                 "parameters": [
                     {
                         "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
                         "description": "Membership ID",
                         "name": "membership-id",
                         "in": "path",
@@ -508,6 +601,13 @@ var doc = `{
                 ],
                 "operationId": "MembershipApproval",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -550,6 +650,15 @@ var doc = `{
                     "application/json"
                 ],
                 "operationId": "GetUserGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

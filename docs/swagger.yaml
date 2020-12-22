@@ -297,6 +297,12 @@ paths:
       - application/json
       description: Gives all group categories.
       operationId: GetGroupCategories
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       responses:
         "200":
           description: OK
@@ -313,6 +319,11 @@ paths:
       description: Deletes a group event
       operationId: DeleteGroupEvent
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -339,6 +350,11 @@ paths:
       description: Gives the group events.
       operationId: GetGroupEvents
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -360,6 +376,11 @@ paths:
       description: Creates a group event
       operationId: CreateGroupEvent
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: body data
         in: body
         name: data
@@ -387,6 +408,11 @@ paths:
       description: Deletes a member membership from a group
       operationId: DeleteMember
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -406,6 +432,11 @@ paths:
       description: Deletes a group pending member
       operationId: DeletePendingMember
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -424,6 +455,11 @@ paths:
       description: Creates a group pending member
       operationId: CreatePendingMember
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: body data
         in: body
         name: data
@@ -451,6 +487,11 @@ paths:
       description: Gives the groups list. It can be filtered by category
       operationId: GetGroups
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: Category
         in: query
         name: category
@@ -473,6 +514,11 @@ paths:
         list. Privacy can be public or private
       operationId: CreateGroup
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: body data
         in: body
         name: data
@@ -495,6 +541,11 @@ paths:
       description: Gives a group
       operationId: GetGroup
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: ID
         in: path
         name: id
@@ -514,6 +565,11 @@ paths:
       description: Updates a group.
       operationId: UpdateGroup
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: body data
         in: body
         name: data
@@ -541,6 +597,11 @@ paths:
       description: Deletes a membership
       operationId: DeleteMembership
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: Membership ID
         in: path
         name: membership-id
@@ -561,6 +622,11 @@ paths:
       description: Updates a membership
       operationId: UpdateMembership
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: body data
         in: body
         name: data
@@ -588,6 +654,11 @@ paths:
       description: Аpprove/Deny a membership
       operationId: MembershipApproval
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       - description: body data
         in: body
         name: data
@@ -614,6 +685,12 @@ paths:
       - application/json
       description: Gives the user groups.
       operationId: GetUserGroups
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
       responses:
         "200":
           description: OK

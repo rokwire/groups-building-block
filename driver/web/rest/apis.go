@@ -32,6 +32,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 // @Description Gives all group categories.
 // @ID GetGroupCategories
 // @Accept  json
+// @Param APP header string true "APP"
 // @Success 200 {array} string
 // @Security APIKeyAuth
 // @Router /api/group-categories [get]
@@ -75,6 +76,7 @@ type createGroupRequest struct {
 // @ID CreateGroup
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param data body createGroupRequest true "body data"
 // @Success 200 {object} createResponse
 // @Security AppUserAuth
@@ -157,6 +159,7 @@ type updateGroupRequest struct {
 // @ID UpdateGroup
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param data body updateGroupRequest true "body data"
 // @Param id path string true "ID"
 // @Success 200 {string} Successfully updated
@@ -274,6 +277,7 @@ type getGroupsResponse struct {
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetGroups
 // @Accept  json
+// @Param APP header string true "APP"
 // @Param category query string false "Category"
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
@@ -342,6 +346,7 @@ type getUserGroupsResponse struct {
 // @Description Gives the user groups.
 // @ID GetUserGroups
 // @Accept  json
+// @Param APP header string true "APP"
 // @Success 200 {array} getUserGroupsResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -403,6 +408,7 @@ type getGroupResponse struct {
 // @Description Gives a group
 // @ID GetGroup
 // @Accept json
+// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200 {object} getGroupResponse
 // @Security AppUserAuth
@@ -451,6 +457,7 @@ type createMemberRequest struct {
 // @ID CreatePendingMember
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param data body createMemberRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
@@ -516,6 +523,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 // @Description Deletes a group pending member
 // @ID DeletePendingMember
 // @Accept plain
+// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
@@ -545,6 +553,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // @Description Deletes a member membership from a group
 // @ID DeleteMember
 // @Accept plain
+// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
@@ -580,6 +589,7 @@ type membershipApprovalRequest struct {
 // @ID MembershipApproval
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param data body membershipApprovalRequest true "body data"
 // @Param membership-id path string true "Membership ID"
 // @Success 200 {string} Successfully processed
@@ -659,6 +669,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 // @ID DeleteMembership
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param membership-id path string true "Membership ID"
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
@@ -715,6 +726,7 @@ type updateMembershipRequest struct {
 // @ID UpdateMembership
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param data body updateMembershipRequest true "body data"
 // @Param membership-id path string true "Membership ID"
 // @Success 200 {string} Successfully updated
@@ -792,6 +804,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 // @Description Gives the group events.
 // @ID GetGroupEvents
 // @Accept json
+// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} string
 // @Security AppUserAuth
@@ -870,6 +883,7 @@ type createGroupEventRequest struct {
 // @ID CreateGroupEvent
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param data body createGroupEventRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
@@ -948,6 +962,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 // @ID DeleteGroupEvent
 // @Accept json
 // @Produce json
+// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Param event-id path string true "Event ID"
 // @Success 200 {string} Successfully deleted
