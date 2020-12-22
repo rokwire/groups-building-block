@@ -452,7 +452,7 @@ func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID s
 }
 
 //DeletePendingMember deletes a pending member from a specific group
-func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
+func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -462,7 +462,7 @@ func (sa *Adapter) DeletePendingMember(groupID string, userID string) error {
 		}
 
 		//1. first check if there is a group for the prvoided group id
-		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}, primitive.E{Key: "client_id", Value: clientID}}
 		var result []*group
 		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
 		if err != nil {

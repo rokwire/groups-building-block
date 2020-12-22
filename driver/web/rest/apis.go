@@ -520,7 +520,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/pending-members [delete]
-func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -529,7 +529,7 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 		return
 	}
 
-	err := h.app.Services.DeletePendingMember(*current, groupID)
+	err := h.app.Services.DeletePendingMember(clientID, *current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

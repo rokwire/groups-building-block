@@ -387,8 +387,8 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 	return nil
 }
 
-func (app *Application) deletePendingMember(current model.User, groupID string) error {
-	err := app.storage.DeletePendingMember(groupID, current.ID)
+func (app *Application) deletePendingMember(clientID string, current model.User, groupID string) error {
+	err := app.storage.DeletePendingMember(clientID, groupID, current.ID)
 	if err != nil {
 		return err
 	}

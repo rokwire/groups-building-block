@@ -22,7 +22,7 @@ type Services interface {
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
-	DeletePendingMember(current model.User, groupID string) error
+	DeletePendingMember(clientID string, current model.User, groupID string) error
 	DeleteMember(current model.User, groupID string) error
 
 	ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error
@@ -80,8 +80,8 @@ func (s *servicesImpl) CreatePendingMember(clientID string, current model.User, 
 	return s.app.createPendingMember(clientID, current, groupID, name, email, photoURL, memberAnswers)
 }
 
-func (s *servicesImpl) DeletePendingMember(current model.User, groupID string) error {
-	return s.app.deletePendingMember(current, groupID)
+func (s *servicesImpl) DeletePendingMember(clientID string, current model.User, groupID string) error {
+	return s.app.deletePendingMember(clientID, current, groupID)
 }
 
 func (s *servicesImpl) DeleteMember(current model.User, groupID string) error {
@@ -145,7 +145,7 @@ type Storage interface {
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
-	DeletePendingMember(groupID string, userID string) error
+	DeletePendingMember(clientID string, groupID string, userID string) error
 	DeleteMember(groupID string, userID string) error
 
 	ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error
