@@ -296,8 +296,8 @@ func (app *Application) getGroupEntity(clientID string, id string) (*model.Group
 	return group, nil
 }
 
-func (app *Application) getGroupEntityByMembership(membershipID string) (*model.Group, error) {
-	group, err := app.storage.FindGroupByMembership(membershipID)
+func (app *Application) getGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
+	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
 	if err != nil {
 		return nil, err
 	}
@@ -403,8 +403,8 @@ func (app *Application) deleteMember(clientID string, current model.User, groupI
 	return nil
 }
 
-func (app *Application) applyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error {
-	err := app.storage.ApplyMembershipApproval(membershipID, approve, rejectReason)
+func (app *Application) applyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error {
+	err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
 	if err != nil {
 		return err
 	}

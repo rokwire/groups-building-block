@@ -298,8 +298,8 @@ func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
 }
 
 //FindGroupByMembership finds group by membership
-func (sa *Adapter) FindGroupByMembership(membershipID string) (*model.Group, error) {
-	filter := bson.D{primitive.E{Key: "members.id", Value: membershipID}}
+func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (*model.Group, error) {
+	filter := bson.D{primitive.E{Key: "members.id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
 	var result []*group
 	err := sa.db.groups.Find(filter, &result, nil)
 	if err != nil {
@@ -602,7 +602,7 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 }
 
 //ApplyMembershipApproval applies a membership approval
-func (sa *Adapter) ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error {
+func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -612,7 +612,7 @@ func (sa *Adapter) ApplyMembershipApproval(membershipID string, approve bool, re
 		}
 
 		//1. first check if there is a group for the provided membership id
-		groupFilter := bson.D{primitive.E{Key: "members.id", Value: membershipID}}
+		groupFilter := bson.D{primitive.E{Key: "members.id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
 		var result []*group
 		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
 		if err != nil {

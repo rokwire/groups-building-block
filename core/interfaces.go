@@ -11,7 +11,7 @@ type Services interface {
 	GetGroupCategories() ([]string, error)
 
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
-	GetGroupEntityByMembership(membershipID string) (*model.Group, error)
+	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
@@ -25,7 +25,7 @@ type Services interface {
 	DeletePendingMember(clientID string, current model.User, groupID string) error
 	DeleteMember(clientID string, current model.User, groupID string) error
 
-	ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error
+	ApplyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(current model.User, membershipID string) error
 	UpdateMembership(current model.User, membershipID string, status string) error
 
@@ -50,8 +50,8 @@ func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group,
 	return s.app.getGroupEntity(clientID, id)
 }
 
-func (s *servicesImpl) GetGroupEntityByMembership(membershipID string) (*model.Group, error) {
-	return s.app.getGroupEntityByMembership(membershipID)
+func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
+	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
@@ -88,8 +88,8 @@ func (s *servicesImpl) DeleteMember(clientID string, current model.User, groupID
 	return s.app.deleteMember(clientID, current, groupID)
 }
 
-func (s *servicesImpl) ApplyMembershipApproval(current model.User, membershipID string, approve bool, rejectReason string) error {
-	return s.app.applyMembershipApproval(current, membershipID, approve, rejectReason)
+func (s *servicesImpl) ApplyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error {
+	return s.app.applyMembershipApproval(clientID, current, membershipID, approve, rejectReason)
 }
 
 func (s *servicesImpl) DeleteMembership(current model.User, membershipID string) error {
@@ -140,7 +140,7 @@ type Storage interface {
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
-	FindGroupByMembership(membershipID string) (*model.Group, error)
+	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroups(clientID string, category *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
@@ -148,7 +148,7 @@ type Storage interface {
 	DeletePendingMember(clientID string, groupID string, userID string) error
 	DeleteMember(clientID string, groupID string, userID string) error
 
-	ApplyMembershipApproval(membershipID string, approve bool, rejectReason string) error
+	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(currentUserID string, membershipID string) error
 	UpdateMembership(currentUserID string, membershipID string, status string) error
 

@@ -585,7 +585,7 @@ type membershipApprovalRequest struct {
 // @Success 200 {string} Successfully processed
 // @Security AppUserAuth
 // @Router /api/memberships/{membership-id}/approval [put]
-func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -619,7 +619,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntityByMembership(membershipID)
+	group, err := h.app.Services.GetGroupEntityByMembership(clientID, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -642,7 +642,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	approve := *requestData.Approve
 	rejectedReason := requestData.RejectedReason
 
-	err = h.app.Services.ApplyMembershipApproval(*current, membershipID, approve, rejectedReason)
+	err = h.app.Services.ApplyMembershipApproval(clientID, *current, membershipID, approve, rejectedReason)
 	if err != nil {
 		log.Printf("Error on applying membership approval - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -674,7 +674,7 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntityByMembership(membershipID)
+	group, err := h.app.Services.GetGroupEntityByMembership("", membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -754,7 +754,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntityByMembership(membershipID)
+	group, err := h.app.Services.GetGroupEntityByMembership("", membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
