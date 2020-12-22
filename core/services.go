@@ -331,9 +331,9 @@ func (app *Application) updateGroup(clientID string, current *model.User, id str
 	return nil
 }
 
-func (app *Application) getGroups(current *model.User, category *string) ([]map[string]interface{}, error) {
+func (app *Application) getGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(category)
+	groups, err := app.storage.FindGroups(clientID, category)
 	if err != nil {
 		return nil, err
 	}

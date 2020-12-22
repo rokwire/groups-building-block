@@ -72,7 +72,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFuncOld(we.apisHandler.DeleteGroupEvent)).Methods("DELETE")
 
 	//mixed protection
-	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFuncOld(we.apisHandler.GetGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFuncOld(we.apisHandler.GetGroup)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFuncOld(we.apisHandler.GetGroupEvents)).Methods("GET")
 

@@ -17,7 +17,7 @@ type Services interface {
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
-	GetGroups(current *model.User, category *string) ([]map[string]interface{}, error)
+	GetGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
 	GetGroup(current *model.User, id string) (map[string]interface{}, error)
 
@@ -64,8 +64,8 @@ func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id stri
 	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
-func (s *servicesImpl) GetGroups(current *model.User, category *string) ([]map[string]interface{}, error) {
-	return s.app.getGroups(current, category)
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error) {
+	return s.app.getGroups(clientID, current, category)
 }
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
@@ -141,7 +141,7 @@ type Storage interface {
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(membershipID string) (*model.Group, error)
-	FindGroups(category *string) ([]model.Group, error)
+	FindGroups(clientID string, category *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
 	CreatePendingMember(groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
