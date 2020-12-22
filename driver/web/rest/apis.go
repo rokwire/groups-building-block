@@ -720,7 +720,7 @@ type updateMembershipRequest struct {
 // @Success 200 {string} Successfully updated
 // @Security AppUserAuth
 // @Router /api/memberships/{membership-id} [put]
-func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -754,7 +754,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntityByMembership("", membershipID)
+	group, err := h.app.Services.GetGroupEntityByMembership(clientID, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -776,7 +776,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 
 	status := requestData.Status
 
-	err = h.app.Services.UpdateMembership(*current, membershipID, status)
+	err = h.app.Services.UpdateMembership(clientID, *current, membershipID, status)
 	if err != nil {
 		log.Printf("Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

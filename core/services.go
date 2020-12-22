@@ -419,8 +419,8 @@ func (app *Application) deleteMembership(current model.User, membershipID string
 	return nil
 }
 
-func (app *Application) updateMembership(current model.User, membershipID string, status string) error {
-	err := app.storage.UpdateMembership(current.ID, membershipID, status)
+func (app *Application) updateMembership(clientID string, current model.User, membershipID string, status string) error {
+	err := app.storage.UpdateMembership(clientID, current.ID, membershipID, status)
 	if err != nil {
 		return err
 	}
