@@ -953,7 +953,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/event/{event-id} [delete]
-func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -970,7 +970,7 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity("", groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -990,7 +990,7 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	err = h.app.Services.DeleteEvent(*current, eventID, groupID)
+	err = h.app.Services.DeleteEvent(clientID, *current, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

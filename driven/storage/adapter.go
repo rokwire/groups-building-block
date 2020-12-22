@@ -863,8 +863,10 @@ func (sa *Adapter) CreateEvent(eventID string, groupID string) error {
 }
 
 //DeleteEvent deletes a group event
-func (sa *Adapter) DeleteEvent(eventID string, groupID string) error {
-	filter := bson.D{primitive.E{Key: "event_id", Value: eventID}, primitive.E{Key: "group_id", Value: groupID}}
+func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) error {
+	filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID}}
 	result, err := sa.db.events.DeleteOne(filter, nil)
 	if err != nil {
 		return err
