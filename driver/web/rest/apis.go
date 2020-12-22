@@ -162,7 +162,7 @@ type updateGroupRequest struct {
 // @Success 200 {string} Successfully updated
 // @Security AppUserAuth
 // @Router /api/groups/{id} [put]
-func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	id := params["id"]
@@ -196,7 +196,7 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(id)
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -225,7 +225,7 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 	tags := requestData.Tags
 	membershipQuestions := requestData.MembershipQuestions
 
-	err = h.app.Services.UpdateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 	if err != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -808,7 +808,7 @@ func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter,
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(groupID)
+	group, err := h.app.Services.GetGroupEntity("", groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -909,7 +909,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(groupID)
+	group, err := h.app.Services.GetGroupEntity("", groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -970,7 +970,7 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(groupID)
+	group, err := h.app.Services.GetGroupEntity("", groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

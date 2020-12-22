@@ -10,12 +10,12 @@ type Services interface {
 
 	GetGroupCategories() ([]string, error)
 
-	GetGroupEntity(id string) (*model.Group, error)
+	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
-	UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
+	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	GetGroups(current *model.User, category *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
@@ -46,8 +46,8 @@ func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
 
-func (s *servicesImpl) GetGroupEntity(id string) (*model.Group, error) {
-	return s.app.getGroupEntity(id)
+func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
+	return s.app.getGroupEntity(clientID, id)
 }
 
 func (s *servicesImpl) GetGroupEntityByMembership(membershipID string) (*model.Group, error) {
@@ -59,9 +59,9 @@ func (s *servicesImpl) CreateGroup(clientID string, current model.User, title st
 	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
 }
 
-func (s *servicesImpl) UpdateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
+func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
-	return s.app.updateGroup(current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
 func (s *servicesImpl) GetGroups(current *model.User, category *string) ([]map[string]interface{}, error) {
@@ -137,9 +137,9 @@ type Storage interface {
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
-	UpdateGroup(id string, category string, title string, privacy string, description *string,
+	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
-	FindGroup(id string) (*model.Group, error)
+	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(membershipID string) (*model.Group, error)
 	FindGroups(category *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)

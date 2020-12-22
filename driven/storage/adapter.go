@@ -220,7 +220,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 }
 
 //UpdateGroup updates a group.
-func (sa *Adapter) UpdateGroup(id string, category string, title string, privacy string, description *string,
+func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -244,7 +244,8 @@ func (sa *Adapter) UpdateGroup(id string, category string, title string, privacy
 		}
 
 		//2. update the group
-		filter := bson.D{primitive.E{Key: "_id", Value: id}}
+		filter := bson.D{primitive.E{Key: "_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID}}
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "category", Value: category},
@@ -278,9 +279,10 @@ func (sa *Adapter) UpdateGroup(id string, category string, title string, privacy
 	return nil
 }
 
-//FindGroup finds group by id
-func (sa *Adapter) FindGroup(id string) (*model.Group, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: id}}
+//FindGroup finds group by id and client id
+func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: id},
+		primitive.E{Key: "client_id", Value: clientID}}
 	var result []*group
 	err := sa.db.groups.Find(filter, &result, nil)
 	if err != nil {

@@ -288,8 +288,8 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) getGroupEntity(id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(id)
+func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
+	group, err := app.storage.FindGroup(clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -322,9 +322,9 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 	return insertedID, nil
 }
 
-func (app *Application) updateGroup(current *model.User, id string, category string, title string, privacy string, description *string,
+func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
-	err := app.storage.UpdateGroup(id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 	if err != nil {
 		return err
 	}
@@ -364,19 +364,20 @@ func (app *Application) getUserGroups(clientID string, current *model.User) ([]m
 }
 
 func (app *Application) getGroup(current *model.User, id string) (map[string]interface{}, error) {
-	// find the group
-	group, err := app.storage.FindGroup(id)
-	if err != nil {
-		return nil, err
-	}
-	if group == nil {
-		return nil, nil
-	}
+	/*	// find the group
+		group, err := app.storage.FindGroup(id)
+		if err != nil {
+			return nil, err
+		}
+		if group == nil {
+			return nil, nil
+		}
 
-	//apply data protection
-	res := app.applyDataProtection(current, *group)
+		//apply data protection
+		res := app.applyDataProtection(current, *group)
 
-	return res, nil
+		return res, nil */
+	return nil, nil
 }
 
 func (app *Application) createPendingMember(current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
