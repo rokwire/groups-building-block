@@ -22,10 +22,11 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
-	users  *collectionWrapper
-	enums  *collectionWrapper
-	groups *collectionWrapper
-	events *collectionWrapper
+	users   *collectionWrapper
+	enums   *collectionWrapper
+	groups  *collectionWrapper
+	events  *collectionWrapper
+	configs *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -76,6 +77,11 @@ func (m *database) start() error {
 	if err != nil {
 		return err
 	}
+	configs := &collectionWrapper{database: m, coll: db.Collection("configs")}
+	err = m.applyConfigChecks(configs)
+	if err != nil {
+		return err
+	}
 
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
@@ -91,6 +97,7 @@ func (m *database) start() error {
 	m.enums = enums
 	m.groups = groups
 	m.events = events
+	m.configs = configs
 
 	return nil
 }
@@ -143,6 +150,9 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	if err != nil {
 		//just log
 		log.Printf("%s", err.Error())
+	}
+	func (m *database) applyConfigChecks(config *collectionWrapper) error {
+		log.Println("apply config checks.....")
 	}
 
 	//create compound index
