@@ -151,9 +151,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		//just log
 		log.Printf("%s", err.Error())
 	}
-	func (m *database) applyConfigChecks(config *collectionWrapper) error {
-		log.Println("apply config checks.....")
-	}
 
 	//create compound index
 	err = groups.AddIndex(bson.D{primitive.E{Key: "title", Value: 1}, primitive.E{Key: "client_id", Value: 1}}, true)
@@ -177,6 +174,10 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	}
 
 	log.Println("groups checks passed")
+	return nil
+}
+func (m *database) applyConfigChecks(config *collectionWrapper) error {
+	log.Println("apply config checks.....")
 	return nil
 }
 
