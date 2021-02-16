@@ -176,8 +176,31 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	log.Println("groups checks passed")
 	return nil
 }
-func (m *database) applyConfigChecks(config *collectionWrapper) error {
+func (m *database) applyConfigChecks(configs *collectionWrapper) error {
 	log.Println("apply config checks.....")
+
+	//check if there is a default config in the database - create one if there is no
+	filter := bson.D{primitive.E{Key: "name", Value: "default"}}
+	var result []model.GroupsConfig
+	err := configs.Find(filter, &result, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(result) == 0 {
+		//if there is no, then add it
+		log.Println("need to add a default config")
+		event := model.GroupsConfig{Name: "default", UpdatePeriod: 55}
+		_, err := configs.InsertOne(event)
+		if err != nil {
+			return err
+		}
+	} else {
+		//no need to add
+		log.Println("no need to add a default config")
+	}
+
+	log.Println("config checks passed")
 	return nil
 }
 
