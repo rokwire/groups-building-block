@@ -1021,3 +1021,29 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
 }
+
+//Config updates
+func (h *ApisHandler) UpdateConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var config model.GroupsConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		log.Printf("Error on updating config - %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully updated"))
+}

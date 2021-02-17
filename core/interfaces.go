@@ -160,6 +160,7 @@ type Storage interface {
 //StorageListener listenes for change data storage events
 type StorageListener interface {
 	OnConfigsChanged()
+	UpdateConfig(config *model.GroupsConfig) error
 }
 
 type storageListenerImpl struct {
