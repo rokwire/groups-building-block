@@ -1037,8 +1037,9 @@ func (h *ApisHandler) UpdateConfig(clientID string, current *model.User, w http.
 		return
 	}
 
+	err = h.app.Administration.UpdateConfig(&config)
 	if err != nil {
-		log.Printf("Error on updating config - %s\n", err)
+		log.Printf("Error on updating  config - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

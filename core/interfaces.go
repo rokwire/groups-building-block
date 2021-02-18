@@ -114,6 +114,7 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
+	UpdateConfig(config *model.GroupsConfig) error
 	GetTODO() error
 }
 
@@ -123,6 +124,9 @@ type administrationImpl struct {
 
 func (s *administrationImpl) GetTODO() error {
 	return s.app.getTODO()
+}
+func (s *administrationImpl) UpdateConfig(config *model.GroupsConfig) error {
+	return s.app.updateConfig(config)
 }
 
 //Storage is used by core to storage data - DB storage adapter, file storage adapter etc
@@ -155,12 +159,13 @@ type Storage interface {
 	FindEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
+
+	//SaveConfig(Config *model.GroupsConfig) error
 }
 
 //StorageListener listenes for change data storage events
 type StorageListener interface {
 	OnConfigsChanged()
-	UpdateConfig(config *model.GroupsConfig) error
 }
 
 type storageListenerImpl struct {
