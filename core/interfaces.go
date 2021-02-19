@@ -114,6 +114,7 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
+	GetConfig() (*model.GroupsConfig, error)
 	UpdateConfig(config *model.GroupsConfig) error
 	GetTODO() error
 }
@@ -124,6 +125,9 @@ type administrationImpl struct {
 
 func (s *administrationImpl) GetTODO() error {
 	return s.app.getTODO()
+}
+func (s *administrationImpl) GetConfig() (*model.GroupsConfig, error) {
+	return s.app.getConfig()
 }
 func (s *administrationImpl) UpdateConfig(config *model.GroupsConfig) error {
 	return s.app.updateConfig(config)

@@ -15,3 +15,10 @@ func (app *Application) updateConfig(config *model.GroupsConfig) error {
 
 	return nil
 }
+func (app *Application) getCovid19Config() (*model.GroupsConfig, error) {
+	/*config, err := app.storage.ReadCovid19Config()
+	if err != nil {
+		return nil, err
+	}*/
+	//return , nil
+}

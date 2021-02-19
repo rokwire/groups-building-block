@@ -1022,6 +1022,25 @@ func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
 }
 
+//GetCovid19Config gets the covid19 config
+func (h *ApisHandler) GetConfig(current model.User, group string, w http.ResponseWriter, r *http.Request) {
+	config, err := h.app.Administration.GetConfig()
+	if err != nil {
+		log.Printf("Error on getting config - %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	data, err := json.Marshal(config)
+	if err != nil {
+		log.Println("Error on marshal the config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 //Config updates
 func (h *ApisHandler) UpdateConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
