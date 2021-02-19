@@ -160,7 +160,7 @@ type Storage interface {
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
-	//SaveConfig(Config *model.GroupsConfig) error
+	SaveConfig(Config *model.GroupsConfig) error
 }
 
 //StorageListener listenes for change data storage events

@@ -142,6 +142,16 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	return nil
 }
 
+//SaveConfig saves the  configuration to the storage
+func (sa *Adapter) SaveConfig(Config *model.GroupsConfig) error {
+	filter := bson.D{primitive.E{Key: "name", Value: Config.Name}}
+	err := sa.db.configs.ReplaceOne(filter, Config, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //ReadAllGroupCategories reads all group categories
 func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: "categories"}}
