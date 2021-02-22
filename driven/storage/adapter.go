@@ -144,7 +144,7 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 
 //ReadConfig reads the configuration from the storage
 func (sa *Adapter) ReadConfig() (*model.GroupsConfig, error) {
-	filter := bson.D{primitive.E{Key: "name", Value: "covid19"}}
+	filter := bson.D{primitive.E{Key: "name", Value: "default"}}
 	var result []*model.GroupsConfig
 	err := sa.db.configs.Find(filter, &result, nil)
 	if err != nil {
