@@ -1022,8 +1022,8 @@ func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
 }
 
-//GetCovid19Config gets the covid19 config
-func (h *ApisHandler) GetConfig(current model.User, group string, w http.ResponseWriter, r *http.Request) {
+//GetConfig gets the config
+func (h *ApisHandler) GetConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	config, err := h.app.Administration.GetConfig()
 	if err != nil {
 		log.Printf("Error on getting config - %s\n", err)

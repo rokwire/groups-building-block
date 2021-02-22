@@ -142,6 +142,23 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	return nil
 }
 
+//ReadConfig reads the configuration from the storage
+func (sa *Adapter) ReadConfig() (*model.GroupsConfig, error) {
+	filter := bson.D{primitive.E{Key: "name", Value: "covid19"}}
+	var result []*model.GroupsConfig
+	err := sa.db.configs.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil || len(result) == 0 {
+		return nil, errors.New("no  config found")
+	}
+	if len(result) > 1 {
+		return nil, errors.New("more than 1 configs were found")
+	}
+	return result[0], nil
+}
+
 //SaveConfig saves the  configuration to the storage
 func (sa *Adapter) SaveConfig(Config *model.GroupsConfig) error {
 	filter := bson.D{primitive.E{Key: "name", Value: Config.Name}}
