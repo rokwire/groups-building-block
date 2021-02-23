@@ -58,3 +58,13 @@ func NewApplication(version string, build string, storage Storage) *Application 
 
 	return &application
 }
+
+//CreateAdminAppUser creates an admin app user
+func (app *Application) CreateAdminAppUser(shibboAuth *model.ShibbolethAuth) (*model.User, error) {
+	externalID := "a_" + shibboAuth.Uin //TODO
+	user, err := app.storage.CreateAdminUser(shibboAuth, externalID, "", "", false, false, false, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}

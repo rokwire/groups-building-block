@@ -49,6 +49,9 @@ func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	w.Write([]byte("Bad Request"))
 	return false, nil
 }
+func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, string, *model.ShibbolethAuth) {
+	return auth.adminAuth.check(w, r)
+}
 
 func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
 	clientIDOK, clientID := auth.clientIDCheck(w, r)
@@ -61,6 +64,85 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, b
 
 	return *clientID, authenticated
 }
+
+func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) (bool, *string) {
+	vHeader := r.Header.Get("v")
+	var appVersion *string
+	if len(vHeader) > 0 {
+		appVersion = &vHeader
+	}
+
+	apiKey := r.Header.Get("ROKWIRE-API-KEY")
+	//check if there is api key in the header
+	if len(apiKey) == 0 {
+		//no key, so return 400
+		log.Println(fmt.Sprintf("400 - Bad Request"))
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request"))
+		return false, nil
+	}
+
+	//check if the api key is one of the listed
+	appKeys := auth.appKeys
+	exist := false
+	for _, element := range appKeys {
+		if element == apiKey {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		//not exist, so return 401
+		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", apiKey))
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return false, nil
+	}
+	return true, appVersion
+
+	
+	func (auth *Auth) createAdminAppUser(shibboAuth *model.ShibbolethAuth) (*model.User, error) {
+		return auth.adminAuth.createAdminAppUser(shibboAuth)
+	}
+	func (auth *AdminAuth) createAdminAppUser(shibboAuth *model.ShibbolethAuth) (*model.User, error) {
+		user, err := auth.app.CreateAdminAppUser(shibboAuth)
+		if err != nil {
+			return nil, err
+		}
+	
+		return user, nil
+	}
+	
+	func (auth *AdminAuth) getIDToken(r *http.Request) (*string, *string, error) {
+		var tokenType string
+	
+		//1. Check if there is a cookie
+		cookie, err := r.Cookie("rwa-at-data")
+		if err == nil && cookie != nil && len(cookie.Value) > 0 {
+			//there is a cookie
+			tokenType = "web"
+			return &cookie.Value, &tokenType, nil
+		}
+	
+		//2. Check if there is a token in the Authorization header
+		authorizationHeader := r.Header.Get("Authorization")
+		if len(authorizationHeader) <= 0 {
+			return nil, nil, errors.New("error getting Authorization header")
+		}
+		splitAuthorization := strings.Fields(authorizationHeader)
+		if len(splitAuthorization) != 2 {
+			return nil, nil, errors.New("error processing the Authorization header")
+		}
+		// expected - Bearer 1234
+		if splitAuthorization[0] != "Bearer" {
+			return nil, nil, errors.New("error processing the Authorization header")
+		}
+		rawIDToken := splitAuthorization[1]
+		tokenType = "mobile"
+		return &rawIDToken, &tokenType, nil
+	}
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
 	clientIDOK, clientID := auth.clientIDCheck(w, r)

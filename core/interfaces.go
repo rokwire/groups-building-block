@@ -166,6 +166,8 @@ type Storage interface {
 
 	SaveConfig(Config *model.GroupsConfig) error
 	ReadConfig() (*model.GroupsConfig, error)
+	CreateAdminUser(shibboAuth *model.ShibbolethAuth, externalID string,
+		uuid string, publicKey string, consent bool, exposureNotification bool, rePost bool, encryptedKey *string, encryptedBlob *string) (*model.User, error)
 }
 
 //StorageListener listenes for change data storage events
