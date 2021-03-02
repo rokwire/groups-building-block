@@ -13,7 +13,6 @@ func LogRequest(req *http.Request) {
 
 	method := req.Method
 	path := req.URL.Path
-	//url := req.URL
 
 	val, ok := req.Header["User-Agent"]
 	if ok && len(val) != 0 && val[0] == "ELB-HealthChecker/2.0" {
