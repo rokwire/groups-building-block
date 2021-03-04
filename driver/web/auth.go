@@ -49,9 +49,11 @@ func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	w.Write([]byte("Bad Request"))
 	return false, nil
 }
+
+/*
 func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (bool, *model.User, string, *model.ShibbolethAuth) {
 	return auth.adminAuth.check(w, r)
-}
+} */
 
 func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
 	clientIDOK, clientID := auth.clientIDCheck(w, r)
@@ -65,6 +67,7 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, b
 	return *clientID, authenticated
 }
 
+/*
 func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) (bool, *string) {
 	vHeader := r.Header.Get("v")
 	var appVersion *string
@@ -101,9 +104,9 @@ func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) (bool, *s
 		return false, nil
 	}
 	return true, appVersion
+} */
 
-	
-	func (auth *Auth) createAdminAppUser(shibboAuth *model.ShibbolethAuth) (*model.User, error) {
+/*	func (auth *Auth) createAdminAppUser(shibboAuth *model.ShibbolethAuth) (*model.User, error) {
 		return auth.adminAuth.createAdminAppUser(shibboAuth)
 	}
 	func (auth *AdminAuth) createAdminAppUser(shibboAuth *model.ShibbolethAuth) (*model.User, error) {
@@ -111,38 +114,38 @@ func (auth *APIKeysAuth) check(w http.ResponseWriter, r *http.Request) (bool, *s
 		if err != nil {
 			return nil, err
 		}
-	
+
 		return user, nil
 	}
-	
-	func (auth *AdminAuth) getIDToken(r *http.Request) (*string, *string, error) {
-		var tokenType string
-	
-		//1. Check if there is a cookie
-		cookie, err := r.Cookie("rwa-at-data")
-		if err == nil && cookie != nil && len(cookie.Value) > 0 {
-			//there is a cookie
-			tokenType = "web"
-			return &cookie.Value, &tokenType, nil
-		}
-	
-		//2. Check if there is a token in the Authorization header
-		authorizationHeader := r.Header.Get("Authorization")
-		if len(authorizationHeader) <= 0 {
-			return nil, nil, errors.New("error getting Authorization header")
-		}
-		splitAuthorization := strings.Fields(authorizationHeader)
-		if len(splitAuthorization) != 2 {
-			return nil, nil, errors.New("error processing the Authorization header")
-		}
-		// expected - Bearer 1234
-		if splitAuthorization[0] != "Bearer" {
-			return nil, nil, errors.New("error processing the Authorization header")
-		}
-		rawIDToken := splitAuthorization[1]
-		tokenType = "mobile"
-		return &rawIDToken, &tokenType, nil
+
+func (auth *AdminAuth) getIDToken(r *http.Request) (*string, *string, error) {
+	var tokenType string
+
+	//1. Check if there is a cookie
+	cookie, err := r.Cookie("rwa-at-data")
+	if err == nil && cookie != nil && len(cookie.Value) > 0 {
+		//there is a cookie
+		tokenType = "web"
+		return &cookie.Value, &tokenType, nil
 	}
+
+	//2. Check if there is a token in the Authorization header
+	authorizationHeader := r.Header.Get("Authorization")
+	if len(authorizationHeader) <= 0 {
+		return nil, nil, errors.New("error getting Authorization header")
+	}
+	splitAuthorization := strings.Fields(authorizationHeader)
+	if len(splitAuthorization) != 2 {
+		return nil, nil, errors.New("error processing the Authorization header")
+	}
+	// expected - Bearer 1234
+	if splitAuthorization[0] != "Bearer" {
+		return nil, nil, errors.New("error processing the Authorization header")
+	}
+	rawIDToken := splitAuthorization[1]
+	tokenType = "mobile"
+	return &rawIDToken, &tokenType, nil
+} */
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
 	clientIDOK, clientID := auth.clientIDCheck(w, r)

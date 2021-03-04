@@ -118,35 +118,35 @@ type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Requ
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
-		var err error
+		/*	var err error
 
-		ok, user, group, shibboAuth := we.auth.adminCheck(w, req)
-		if !ok {
-			return
-		}
-		if user == nil {
-			//it is valid but the user does not exist, so create it first
-			user, err = we.auth.createAdminAppUser(shibboAuth)
-			if err != nil {
-				log.Printf("Error on creating admin app user - %s", err.Error())
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			ok, user, group, shibboAuth := we.auth.adminCheck(w, req)
+			if !ok {
 				return
 			}
-			log.Println("Admin user created")
-		}
+			if user == nil {
+				//it is valid but the user does not exist, so create it first
+				user, err = we.auth.createAdminAppUser(shibboAuth)
+				if err != nil {
+					log.Printf("Error on creating admin app user - %s", err.Error())
+					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+					return
+				}
+				log.Println("Admin user created")
+			}
 
-		//authorization
-		sub := group        // the group that wants to access a resource.
-		obj := req.URL.Path // the resource that is going to be accessed.
-		act := req.Method   // the operation that the user performs on the resource.
-		acOK := we.authorization.Enforce(sub, obj, act)
-		if !acOK {
-			log.Printf("Access control error - %s is trying to apply %s operation for %s\n", sub, act, obj)
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-			return
-		}
+			//authorization
+			sub := group        // the group that wants to access a resource.
+			obj := req.URL.Path // the resource that is going to be accessed.
+			act := req.Method   // the operation that the user performs on the resource.
+			acOK := we.authorization.Enforce(sub, obj, act)
+			if !acOK {
+				log.Printf("Access control error - %s is trying to apply %s operation for %s\n", sub, act, obj)
+				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+				return
+			}
 
-		handler(*user, group, w, req)
+			handler(*user, group, w, req) */
 	}
 }
 
