@@ -341,6 +341,26 @@ type getUserGroupsResponse struct {
 	DateCreated time.Time  `json:"date_created"`
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getUserGroupsResponse
+//Get the Group Memberships of the users
+func (h *ApisHandler) GetUserGroupsMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	groups, err := h.app.Services.GetUserGroupsMemberships(clientID, current)
+	if err != nil {
+		log.Printf("this user has no memberships in other groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(groups)
+	if err != nil {
+		log.Println("Error on marshal the user groups items")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
 
 //GetUserGroups gets the user groups.
 // @Description Gives the user groups.
@@ -381,15 +401,17 @@ type getGroupResponse struct {
 	WebURL              *string  `json:"web_url"`
 	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
+	GroupMemberships    []string `json:"goup_memberships"`
 	MembershipQuestions []string `json:"membership_questions"`
 
 	Members []struct {
-		ID             string `json:"id"`
-		Name           string `json:"name"`
-		Email          string `json:"email"`
-		PhotoURL       string `json:"photo_url"`
-		Status         string `json:"status"`
-		RejectedReason string `json:"rejected_reason"`
+		ID               string  `json:"id"`
+		Name             string  `json:"name"`
+		Email            string  `json:"email"`
+		PhotoURL         string  `json:"photo_url"`
+		Status           string  `json:"status"`
+		GroupMemberships *string `json:"goup_memberships"`
+		RejectedReason   string  `json:"rejected_reason"`
 
 		MemberAnswers []struct {
 			Question string `json:"question"`

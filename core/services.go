@@ -362,6 +362,21 @@ func (app *Application) getUserGroups(clientID string, current *model.User) ([]m
 
 	return groupsList, nil
 }
+func (app *Application) getUserGroupsMemberships(clientID string, current *model.User) ([]map[string]interface{}, error) {
+	// find the user groups
+	groups, err := app.storage.FindUserGroups(clientID, current.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	//apply data protection
+	groupsList := make([]map[string]interface{}, len(groups))
+	for i, item := range groups {
+		groupsList[i] = app.applyDataProtection(current, item)
+	}
+
+	return groupsList, nil
+}
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
 	// find the group
