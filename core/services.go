@@ -312,6 +312,14 @@ func (app *Application) getGroupCategories() ([]string, error) {
 	return groupCategories, nil
 }
 
+func (app *Application) getUserGroupsMemberships() ([]string, error) {
+	groupCategories, err := app.storage.ReadAllGroupCategories()
+	if err != nil {
+		return nil, err
+	}
+	return groupCategories, nil
+}
+
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
@@ -362,21 +370,23 @@ func (app *Application) getUserGroups(clientID string, current *model.User) ([]m
 
 	return groupsList, nil
 }
-func (app *Application) getUserGroupsMemberships(clientID string, current *model.User) ([]map[string]interface{}, error) {
-	// find the user groups
-	groups, err := app.storage.FindUserGroups(clientID, current.ID)
+
+/*func (app *Application) getUserGroupsMemberships() ([]string, error) {
+	groupMembership, err := app.storage.FindUserGroups()
 	if err != nil {
 		return nil, err
 	}
+	return groupMembership, nil
+}
 
 	//apply data protection
-	groupsList := make([]map[string]interface{}, len(groups))
+	/*groupMembershipList := make([]map[string]interface{}, len(groups))
 	for i, item := range groups {
-		groupsList[i] = app.applyDataProtection(current, item)
+		groupMembershipList[i] = app.applyDataProtection(current, item)
 	}
 
-	return groupsList, nil
-}
+	return groupMembershipList, nil
+}*/
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
 	// find the group

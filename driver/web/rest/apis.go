@@ -342,17 +342,21 @@ type getUserGroupsResponse struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getUserGroupsResponse
 //Get the Group Memberships of the users
-func (h *ApisHandler) GetUserGroupsMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	groups, err := h.app.Services.GetUserGroupsMemberships(clientID, current)
+func (h *ApisHandler) GetUserGroupsMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+	groupMembership, err := h.app.Services.GetUserGroupsMemberships()
 	if err != nil {
-		log.Printf("this user has no memberships in other groups - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println("Error on getting the user group memberships")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	data, err := json.Marshal(groups)
+	if len(groupMembership) == 0 {
+		log.Println("The user has no memberships in any groups")
+	}
+
+	data, err := json.Marshal(groupMembership)
 	if err != nil {
-		log.Println("Error on marshal the user groups items")
+		log.Println("Error on marshal the group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

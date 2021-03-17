@@ -19,7 +19,7 @@ type Services interface {
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	GetGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
-	GetUserGroupsMemberships(clientID string, current *model.User) ([]map[string]interface{}, error)
+	GetUserGroupsMemberships() ([]string, error)
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
@@ -46,6 +46,9 @@ func (s *servicesImpl) GetVersion() string {
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
+func (s *servicesImpl) GetUserGroupsMemberships() ([]string, error) {
+	return s.app.getUserGroupsMemberships()
+}
 
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
 	return s.app.getGroupEntity(clientID, id)
@@ -71,9 +74,6 @@ func (s *servicesImpl) GetGroups(clientID string, current *model.User, category 
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
 	return s.app.getUserGroups(clientID, current)
-}
-func (s *servicesImpl) GetUserGroupsMemberships(clientID string, current *model.User) ([]map[string]interface{}, error) {
-	return s.app.getUserGroupsMemberships(clientID, current)
 }
 
 func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
