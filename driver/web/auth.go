@@ -18,8 +18,9 @@ import (
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth *APIKeysAuth
-	idTokenAuth *IDTokenAuth
+	apiKeysAuth  *APIKeysAuth
+	idTokenAuth  *IDTokenAuth
+	internalAuth *InternalAuth
 
 	supportedClients []string
 }
@@ -71,6 +72,17 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, 
 	idToken := auth.getIDToken(r)
 	user := auth.idTokenAuth.check(*clientID, idToken, w)
 	return *clientID, user
+}
+func (auth *Auth) InternalAuth(w http.ResponseWriter, r *http.Request) (string, bool) {
+	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	if !clientIDOK {
+		return "", false
+	}
+
+	apiKey := auth.getAPIKey(r)
+	authenticated := auth.internalAuth.check(apiKey, w)
+
+	return *clientID, authenticated
 }
 
 func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bool, *model.User) {
@@ -148,8 +160,41 @@ func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcC
 type APIKeysAuth struct {
 	appKeys []string
 }
+type InternalAuth struct {
+	appKeys []string
+}
 
 func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
+	//check if there is api key in the header
+	if apiKey == nil || len(*apiKey) == 0 {
+		//no key, so return 400
+		log.Println(fmt.Sprintf("400 - Bad Request"))
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request"))
+		return false
+	}
+
+	//check if the api key is one of the listed
+	appKeys := auth.appKeys
+	exist := false
+	for _, element := range appKeys {
+		if element == *apiKey {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		//not exist, so return 401
+		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *apiKey))
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return false
+	}
+	return true
+}
+func (auth *InternalAuth) check(apiKey *string, w http.ResponseWriter) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		//no key, so return 400
