@@ -14,11 +14,6 @@ func LogRequest(req *http.Request) {
 	method := req.Method
 	path := req.URL.Path
 
-	val, ok := req.Header["User-Agent"]
-	if ok && len(val) != 0 && val[0] == "ELB-HealthChecker/2.0" {
-		return
-	}
-
 	header := make(map[string][]string)
 	for key, value := range req.Header {
 		var logValue []string
