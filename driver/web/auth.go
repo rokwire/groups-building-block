@@ -20,7 +20,7 @@ import (
 type Auth struct {
 	apiKeysAuth  *APIKeysAuth
 	idTokenAuth  *IDTokenAuth
-	internalAuth *InternalAuthCheck
+	internalAuth *InternalAuth
 
 	supportedClients []string
 }
@@ -221,11 +221,11 @@ type cacheUser struct {
 }
 
 //InternalAuthCheck entity
-type InternalAuthCheck struct {
+type InternalAuth struct {
 	appKeys []string
 }
 
-func (auth *InternalAuthCheck) check(internalKey *string, w http.ResponseWriter) bool {
+func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool {
 	//check if there is internal key in the header
 	if internalKey == nil || len(*internalKey) == 0 {
 		//no key, so return 400
