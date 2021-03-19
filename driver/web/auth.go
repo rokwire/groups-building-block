@@ -20,7 +20,7 @@ import (
 type Auth struct {
 	apiKeysAuth  *APIKeysAuth
 	idTokenAuth  *IDTokenAuth
-	internalAuth *InternalAuth
+	internalAuth *InternalAuthCheck
 
 	supportedClients []string
 }
@@ -73,14 +73,14 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, 
 	user := auth.idTokenAuth.check(*clientID, idToken, w)
 	return *clientID, user
 }
-func (auth *Auth) InternalAuth(w http.ResponseWriter, r *http.Request) (string, bool) {
+func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
 	clientIDOK, clientID := auth.clientIDCheck(w, r)
 	if !clientIDOK {
 		return "", false
 	}
 
-	apiKey := auth.getAPIKey(r)
-	authenticated := auth.internalAuth.check(apiKey, w)
+	internalAuthKey := auth.getInternalAPIKey(r)
+	authenticated := auth.internalAuth.check(internalAuthKey, w)
 
 	return *clientID, authenticated
 }
@@ -125,6 +125,14 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 	return &apiKey
 }
 
+func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
+	apiKey := r.Header.Get("ROKWIRE-API-KEY")
+	if len(apiKey) == 0 {
+		return nil
+	}
+	return &apiKey
+}
+
 func (auth *Auth) getIDToken(r *http.Request) *string {
 	// get the token from the request
 	authorizationHeader := r.Header.Get("Authorization")
@@ -160,41 +168,8 @@ func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcC
 type APIKeysAuth struct {
 	appKeys []string
 }
-type InternalAuth struct {
-	appKeys []string
-}
 
 func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
-	//check if there is api key in the header
-	if apiKey == nil || len(*apiKey) == 0 {
-		//no key, so return 400
-		log.Println(fmt.Sprintf("400 - Bad Request"))
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
-		return false
-	}
-
-	//check if the api key is one of the listed
-	appKeys := auth.appKeys
-	exist := false
-	for _, element := range appKeys {
-		if element == *apiKey {
-			exist = true
-			break
-		}
-	}
-	if !exist {
-		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *apiKey))
-
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
-		return false
-	}
-	return true
-}
-func (auth *InternalAuth) check(apiKey *string, w http.ResponseWriter) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		//no key, so return 400
@@ -243,6 +218,42 @@ type userData struct {
 type cacheUser struct {
 	user      *model.User
 	lastUsage time.Time
+}
+
+//InternalAuthCheck entity
+type InternalAuthCheck struct {
+	appKeys []string
+}
+
+func (auth *InternalAuthCheck) check(internalKey *string, w http.ResponseWriter) bool {
+	//check if there is internal key in the header
+	if internalKey == nil || len(*internalKey) == 0 {
+		//no key, so return 400
+		log.Println(fmt.Sprintf("400 - Bad Request"))
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request"))
+		return false
+	}
+
+	//check if the api key is one of the listed
+	appKeys := auth.appKeys
+	exist := false
+	for _, element := range appKeys {
+		if element == *internalKey {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		//not exist, so return 401
+		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalKey))
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return false
+	}
+	return true
 }
 
 //IDTokenAuth entity
