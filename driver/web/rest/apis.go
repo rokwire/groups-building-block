@@ -71,6 +71,39 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 } //@name createGroupRequest
 
+// Gets the user group memberships
+func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+	userGroupMembership, err := h.app.Services.GetUserGroupMemberships()
+	if err != nil {
+		log.Println("The user has no group memberships")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if len(userGroupMembership) == 0 {
+		userGroupMembership = make([]string, 0)
+	}
+
+	data, err := json.Marshal(userGroupMembership)
+	if err != nil {
+		log.Println("Error on marshal the user group membership")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+//"id":"1234","title":"titlee","privacy":"public","membership_status":"member"
+type userGroupMembership struct {
+	ID      string `json:"1234"`
+	Title   string `json:"titlee" validate:"required"`
+	Privacy string `json:"public"`
+	Status  string `json:"member"`
+}
+
 //CreateGroup creates a group
 // @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
 // @ID CreateGroup

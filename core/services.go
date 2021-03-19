@@ -311,6 +311,13 @@ func (app *Application) getGroupCategories() ([]string, error) {
 	}
 	return groupCategories, nil
 }
+func (app *Application) getUserGroupMemberships() ([]string, error) {
+	getUserGroupMemberships, err := app.storage.ReadAllGroupCategories()
+	if err != nil {
+		return nil, err
+	}
+	return getUserGroupMemberships, nil
+}
 
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {

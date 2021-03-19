@@ -55,6 +55,9 @@ func (we *Adapter) Start() {
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
 
+	//internal key protection
+	restSubrouter.HandleFunc("/gr/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
+
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
 
@@ -124,6 +127,21 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		}
 
 		handler(clientID, user, w, req)
+	}
+}
+
+type internalKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
+
+func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, authenticated := we.auth.internalAuthCheck(w, req)
+		if !authenticated {
+			return
+		}
+
+		handler(clientID, w, req)
 	}
 }
 
