@@ -126,7 +126,7 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 }
 
 func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
-	apiKey := r.Header.Get("ROKWIRE-API-KEY")
+	apiKey := r.Header.Get("ROKWIRE_GS_API_KEY")
 	if len(apiKey) == 0 {
 		return nil
 	}

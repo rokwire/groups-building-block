@@ -56,7 +56,7 @@ func (we *Adapter) Start() {
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
 
 	//internal key protection
-	restSubrouter.HandleFunc("/gr/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")

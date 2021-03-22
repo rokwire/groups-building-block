@@ -73,18 +73,18 @@ type createGroupRequest struct {
 
 // Gets the user group memberships
 func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
-	userGroupMembership, err := h.app.Services.GetUserGroupMemberships()
+	userGroupMemberships, err := h.app.Services.GetUserGroupMemberships()
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	if len(userGroupMembership) == 0 {
-		userGroupMembership = make([]string, 0)
+	if len(userGroupMemberships) == 0 {
+		userGroupMemberships = make([]string, 0)
 	}
 
-	data, err := json.Marshal(userGroupMembership)
+	data, err := json.Marshal(userGroupMemberships)
 	if err != nil {
 		log.Println("Error on marshal the user group membership")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

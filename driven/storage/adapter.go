@@ -141,6 +141,22 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	}
 	return nil
 }
+//StoreUserGroupMembership stores user group membership
+func (sa *Adapter) StoreUserGroupMembership(externalID string) (*model.Group, error) {
+	filter := bson.D{primitive.E{Key: "external_id", Value: externalID}}
+	var result []enumItem
+	err := sa.db.enums.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	
+	if len(result) == 0 {
+		//not found
+		return nil, nil
+	}
+	membership := result[0]
+
+	return membership.Values, nil
 
 //ReadAllGroupCategories reads all group categories
 func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
