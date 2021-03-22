@@ -46,7 +46,7 @@ func (s *servicesImpl) GetVersion() string {
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
-func (s *servicesImpl) GetUserGroupMemberships(externalID string) (*model.Group, error) {
+func (s *servicesImpl) GetUserGroupMemberships(externalID string) ([]*model.Group, error) {
 	return s.app.getUserGroupMemberships()
 }
 
@@ -138,7 +138,7 @@ type Storage interface {
 	SaveUser(clientID string, user *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)
-	StoreUserGroupMembership(externalID string) (*model.Group, error)
+	FindUserGroupMembership(externalID string) ([]*model.Group, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)

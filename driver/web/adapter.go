@@ -160,7 +160,7 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 }
 
 //NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider string, oidcClientID string) *Adapter {
+func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider string, oidcClientID string, internalApiKeys string) *Adapter {
 	auth := NewAuth(app, appKeys, oidcProvider, oidcClientID)
 	apisHandler := rest.NewApisHandler(app)
 	return &Adapter{host: host, auth: auth, apisHandler: apisHandler}

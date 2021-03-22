@@ -40,7 +40,8 @@ func main() {
 	host := getEnvKey("GR_HOST", true)
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID)
+	internalApiKeys := getEnvKey("ROKWIRE_GS_API_KEYS ", true)
+	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID, internalApiKeys)
 	webAdapter.Start()
 }
 
@@ -55,6 +56,18 @@ func getAPIKeys() []string {
 	}
 
 	return rokwireAPIKeysList
+}
+func getInternalAPIKeys() []string {
+	//get from the environment
+	internalAPIKeys := getEnvKey("ROKWIRE_GS_API_KEYS ", true)
+
+	//it is comma separated format
+	rokwireInternalAPIKeysList := strings.Split(internalAPIKeys, ",")
+	if len(rokwireInternalAPIKeysList) <= 0 {
+		log.Fatal("For some reasons the apis keys list is empty")
+	}
+
+	return rokwireInternalAPIKeysList
 }
 
 func getEnvKey(key string, required bool) string {

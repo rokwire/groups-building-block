@@ -155,6 +155,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
+	internalApiAuth := newInternalApiAuth
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
@@ -192,6 +193,42 @@ func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
 	if !exist {
 		//not exist, so return 401
 		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *apiKey))
+
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte("Unauthorized"))
+		return false
+	}
+	return true
+}
+
+//newInternalKeyAuth entity
+type newInternalKeyAuth struct {
+	internalAppKey []string
+}
+
+func (auth *newInternalKeyAuth) check(internalApiKey *string, w http.ResponseWriter) bool {
+	//check if there is internal api key in the header
+	if internalApiKey == nil || len(*internalApiKey) == 0 {
+		//no key, so return 400
+		log.Println(fmt.Sprintf("400 - Bad Request"))
+
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte("Bad Request"))
+		return false
+	}
+
+	//check if the internal api key is one of the listed
+	internalAppKey := auth.internalAppKey
+	exist := false
+	for _, element := range internalAppKey {
+		if element == *internalApiKey {
+			exist = true
+			break
+		}
+	}
+	if !exist {
+		//not exist, so return 401
+		log.Println(fmt.Sprintf("401 - Unauthorized for internal key %s", *apiKey))
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))

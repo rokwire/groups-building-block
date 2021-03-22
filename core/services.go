@@ -311,8 +311,8 @@ func (app *Application) getGroupCategories() ([]string, error) {
 	}
 	return groupCategories, nil
 }
-func (app *Application) getUserGroupMemberships(externalID string) (*model.Group, error) {
-	getUserGroupMemberships, err := app.storage.StoreUserGroupMembership()
+func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Group, error) {
+	getUserGroupMemberships, err := app.storage.FindUserGroupMembership()
 	if err != nil {
 		return nil, err
 	}
