@@ -46,7 +46,7 @@ func (s *servicesImpl) GetVersion() string {
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
-func (s *servicesImpl) GetUserGroupMemberships() ([]string, error) {
+func (s *servicesImpl) GetUserGroupMemberships(externalID string) (*model.Group, error) {
 	return s.app.getUserGroupMemberships()
 }
 
@@ -54,7 +54,7 @@ func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group,
 	return s.app.getGroupEntity(clientID, id)
 }
 
-func (s *servicesImpl) GetGroupEntityByMembership(externalID string) (*model.Group, error) {
+func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
 	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
