@@ -9,7 +9,7 @@ type Services interface {
 	GetVersion() string
 
 	GetGroupCategories() ([]string, error)
-	GetUserGroupMemberships(externalID string) (*model.Group, error)
+	GetUserGroupMemberships(externalID string) ([]*model.Group, error)
 
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -47,7 +47,7 @@ func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
 func (s *servicesImpl) GetUserGroupMemberships(externalID string) ([]*model.Group, error) {
-	return s.app.getUserGroupMemberships()
+	return s.app.getUserGroupMemberships(externalID)
 }
 
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {

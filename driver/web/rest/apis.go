@@ -72,16 +72,12 @@ type createGroupRequest struct {
 } //@name createGroupRequest
 
 // Gets the user group memberships
-func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
-	userGroupMemberships, err := h.app.Services.GetUserGroupMemberships()
+func (h *ApisHandler) GetUserGroupMemberships(externalID string, w http.ResponseWriter, r *http.Request) {
+	userGroupMemberships, err := h.app.Services.GetUserGroupMemberships(externalID)
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
-	}
-
-	if len(userGroupMemberships) == 0 {
-		userGroupMemberships = make([]string, 0)
 	}
 
 	data, err := json.Marshal(userGroupMemberships)
@@ -96,12 +92,11 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 	w.Write(data)
 }
 
-//"id":"1234","title":"titlee","privacy":"public","membership_status":"member"
 type userGroupMembership struct {
-	ID      string `json:"1234"`
-	Title   string `json:"titlee" validate:"required"`
-	Privacy string `json:"public"`
-	Status  string `json:"member"`
+	ID                string `json:"id"`
+	Title             string `json:"title"`
+	Privacy           string `json:"privacy"`
+	Membership_status string `json:"membership_status"`
 }
 
 //CreateGroup creates a group

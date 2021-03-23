@@ -32,6 +32,7 @@ type group struct {
 	MembersCount        int      `bson:"members_count"` //to be supported up to date
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
+	Values              []string `bson:"values"`
 
 	Members []member `bson:"members"`
 
@@ -141,22 +142,23 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	}
 	return nil
 }
-//StoreUserGroupMembership stores user group membership
-func (sa *Adapter) StoreUserGroupMembership(externalID string) (*model.Group, error) {
+
+//FindUserGroupsMemberships stores user group membership
+func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "external_id", Value: externalID}}
-	var result []enumItem
+	var result []*model.Group
 	err := sa.db.enums.Find(filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if len(result) == 0 {
 		//not found
 		return nil, nil
 	}
-	membership := result[0]
 
-	return membership.Values, nil
+	return result, nil
+}
 
 //ReadAllGroupCategories reads all group categories
 func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {

@@ -18,9 +18,10 @@ import (
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth  *APIKeysAuth
-	idTokenAuth  *IDTokenAuth
-	internalAuth *InternalAuth
+	apiKeysAuth     *APIKeysAuth
+	idTokenAuth     *IDTokenAuth
+	internalAuth    *InternalAuth
+	internalApiAuth *NewInternalKeyAuth
 
 	supportedClients []string
 }
@@ -152,14 +153,14 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, appKeys []string, oidcProvider string, oidcClientID string) *Auth {
+func NewAuth(app *core.Application, appKeys []string, internalApiKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
-	internalApiAuth := newInternalApiAuth
+	internalApiAuth := newInternalApiAuth(internalApiKeys)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, supportedClients: supportedClients}
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalApiAuth: internalApiAuth, supportedClients: supportedClients}
 	return &auth
 }
 
@@ -202,11 +203,11 @@ func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
 }
 
 //newInternalKeyAuth entity
-type newInternalKeyAuth struct {
+type NewInternalKeyAuth struct {
 	internalAppKey []string
 }
 
-func (auth *newInternalKeyAuth) check(internalApiKey *string, w http.ResponseWriter) bool {
+func (auth *NewInternalKeyAuth) check(internalApiKey *string, w http.ResponseWriter) bool {
 	//check if there is internal api key in the header
 	if internalApiKey == nil || len(*internalApiKey) == 0 {
 		//no key, so return 400
@@ -228,7 +229,7 @@ func (auth *newInternalKeyAuth) check(internalApiKey *string, w http.ResponseWri
 	}
 	if !exist {
 		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for internal key %s", *apiKey))
+		log.Println(fmt.Sprintf("401 - Unauthorized for internal key %s", *internalApiKey))
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
@@ -256,6 +257,26 @@ type cacheUser struct {
 	user      *model.User
 	lastUsage time.Time
 }
+
+//NewInternalApiAuth creates new Internal api keys auth
+func newInternalApiAuth(internalApiKeys []string) *NewInternalKeyAuth {
+	auth := NewInternalKeyAuth{internalApiKeys}
+	return &auth
+}
+
+////////////////////////////////////
+
+/*type userData struct {
+	UIuceduUIN        *string   `json:"uiucedu_uin"`
+	Sub               *string   `json:"sub"`
+	Email             *string   `json:"email"`
+	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
+}
+
+type cacheUser struct {
+	user      *model.Group
+	lastUsage time.Time
+}*/
 
 //InternalAuthCheck entity
 type InternalAuth struct {
