@@ -32,7 +32,6 @@ type group struct {
 	MembersCount        int      `bson:"members_count"` //to be supported up to date
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
-	Values              []string `bson:"values"`
 
 	Members []member `bson:"members"`
 
