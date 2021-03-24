@@ -59,7 +59,7 @@ func getAPIKeys() []string {
 }
 func getInternalAPIKeys() []string {
 	//get from the environment
-	internalApiKeys := getEnvKey("ROKWIRE_GS_API_KEYS ", true)
+	internalApiKeys := getEnvKey("GR_GS_API_KEYS", true)
 
 	//it is comma separated format
 	rokwireInternalAPIKeysList := strings.Split(internalApiKeys, ",")
