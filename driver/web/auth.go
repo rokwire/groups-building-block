@@ -18,10 +18,9 @@ import (
 
 //Auth handler
 type Auth struct {
-	apiKeysAuth     *APIKeysAuth
-	idTokenAuth     *IDTokenAuth
-	internalAuth    *InternalAuth
-	internalApiAuth *InternalAuth
+	apiKeysAuth  *APIKeysAuth
+	idTokenAuth  *IDTokenAuth
+	internalAuth *InternalAuth
 
 	supportedClients []string
 }
@@ -157,11 +156,11 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 func NewAuth(app *core.Application, appKeys []string, internalApiKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
-	internalApiAuth := newInternalAuth(internalApiKeys)
+	internalAuth := newInternalAuth(internalApiKeys)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalApiAuth: internalApiAuth, supportedClients: supportedClients}
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, supportedClients: supportedClients}
 	return &auth
 }
 
@@ -263,7 +262,7 @@ func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool
 
 //newInternalAuth creates new internal auth
 func newInternalAuth(internalApiKeys []string) *InternalAuth {
-	auth := InternalAuth{internalApiKeys}
+	auth := InternalAuth{appKeys: internalApiKeys}
 	return &auth
 }
 
