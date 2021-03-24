@@ -72,7 +72,10 @@ type createGroupRequest struct {
 } //@name createGroupRequest
 
 // Gets the user group memberships
-func (h *ApisHandler) GetUserGroupMemberships(externalID string, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+	//TODO - get the user identifier from the request path. You have it here - /int/user/{identifier}/groups
+	externalID := "from the query"
+
 	userGroupMemberships, err := h.app.Services.GetUserGroupMemberships(externalID)
 	if err != nil {
 		log.Println("The user has no group memberships")
