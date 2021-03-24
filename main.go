@@ -41,7 +41,7 @@ func main() {
 	host := getEnvKey("GR_HOST", true)
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID, internalApiKeys)
+	webAdapter := web.NewWebAdapter(application, host, apiKeys, internalApiKeys, oidcProvider, oidcClientID)
 	webAdapter.Start()
 }
 
