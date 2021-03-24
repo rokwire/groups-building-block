@@ -312,7 +312,7 @@ func (app *Application) getGroupCategories() ([]string, error) {
 	return groupCategories, nil
 }
 func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Group, error) {
-	getUserGroupMemberships, err := app.storage.FindUserGroupMembership(externalID)
+	getUserGroupMemberships, err := app.storage.FindUserGroupsMemberships(externalID)
 	if err != nil {
 		return nil, err
 	}

@@ -138,7 +138,7 @@ type Storage interface {
 	SaveUser(clientID string, user *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)
-	FindUserGroupMembership(externalID string) ([]*model.Group, error)
+	FindUserGroupsMemberships(externalID string) ([]*model.Group, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
