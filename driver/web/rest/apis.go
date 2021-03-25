@@ -73,7 +73,6 @@ type createGroupRequest struct {
 
 // Gets the user group memberships
 func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
-	//TODO - get the user identifier from the request path. You have it here - /int/user/{identifier}/groups
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
