@@ -80,7 +80,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 		http.Error(w, "identifier is required", http.StatusBadRequest)
 		return
 	}
-	externalID := "from the query"
+	externalID := identifier
 
 	userGroupMemberships, err := h.app.Services.GetUserGroupMemberships(externalID)
 	if err != nil {
