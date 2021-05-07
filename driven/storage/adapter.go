@@ -156,15 +156,16 @@ func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group,
 	}
 	user := result[0]
 	userID := user.ID
-	filterID := bson.D{primitive.E{Key: "_id", Value: userID}}
-	var resultID []*model.Group
-	errID := sa.db.groups.Find(filterID, &resultID, nil)
+
+	////////////////////////
+	filterID := bson.D{primitive.E{Key: "members.user_id", Value: userID}}
+	var resultList []*model.Group
+	err = sa.db.groups.Find(filterID, &resultList, nil)
 	if err != nil {
-		return nil, errID
+		return nil, err
 	}
 
-	return resultID, nil
-	//TODO - do not look in the enums collection but you have to look in the groups collection
+	return resultList, nil
 }
 
 //ReadAllGroupCategories reads all group categories
