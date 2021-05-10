@@ -143,16 +143,16 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 }
 
 //FindUserGroupsMemberships stores user group membership
-func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group, error) {
+func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error) {
 	filter := bson.D{primitive.E{Key: "external_id", Value: externalID}}
 	var result []*model.User
 	err := sa.db.users.Find(filter, &result, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if result == nil || len(result) == 0 {
 		//not found
-		return nil, nil
+		return nil, nil, nil
 	}
 	user := result[0]
 	userID := user.ID
@@ -162,10 +162,10 @@ func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group,
 	var resultList []*model.Group
 	err = sa.db.groups.Find(filterID, &resultList, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return resultList, nil
+	return resultList, user, nil
 }
 
 //ReadAllGroupCategories reads all group categories

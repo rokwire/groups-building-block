@@ -82,14 +82,36 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 	}
 	externalID := identifier
 
-	userGroupMemberships, err := h.app.Services.GetUserGroupMemberships(externalID)
+	userGroupMemberships, user, err := h.app.Services.GetUserGroupMemberships(externalID)
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	data, err := json.Marshal(userGroupMemberships)
+	userGroups := make([]userGroupMembership, len(userGroupMemberships))
+	for i, group := range userGroupMemberships {
+
+		memberStatus := " "
+
+		members := group.Members
+		for _, member := range members {
+			if member.User.ID == user.ID {
+				memberStatus = member.Status
+			}
+		}
+
+		ugm := userGroupMembership{
+			ID:                group.ID,
+			Title:             group.Title,
+			Privacy:           group.Privacy,
+			Membership_status: memberStatus,
+		}
+
+		userGroups[i] = ugm
+	}
+
+	data, err := json.Marshal(userGroups)
 	if err != nil {
 		log.Println("Error on marshal the user group membership")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

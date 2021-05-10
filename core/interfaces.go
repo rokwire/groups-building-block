@@ -9,7 +9,7 @@ type Services interface {
 	GetVersion() string
 
 	GetGroupCategories() ([]string, error)
-	GetUserGroupMemberships(externalID string) ([]*model.Group, error)
+	GetUserGroupMemberships(externalID string) ([]*model.Group, *model.User, error)
 
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -46,7 +46,7 @@ func (s *servicesImpl) GetVersion() string {
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
-func (s *servicesImpl) GetUserGroupMemberships(externalID string) ([]*model.Group, error) {
+func (s *servicesImpl) GetUserGroupMemberships(externalID string) ([]*model.Group, *model.User, error) {
 	return s.app.getUserGroupMemberships(externalID)
 }
 
@@ -138,7 +138,7 @@ type Storage interface {
 	SaveUser(clientID string, user *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)
-	FindUserGroupsMemberships(externalID string) ([]*model.Group, error)
+	FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
