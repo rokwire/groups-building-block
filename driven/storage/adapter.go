@@ -157,15 +157,27 @@ func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group,
 	user := result[0]
 	userID := user.ID
 
-	////////////////////////
 	filterID := bson.D{primitive.E{Key: "members.user_id", Value: userID}}
-	var resultList []*model.Group
+	var resultList []*group
 	err = sa.db.groups.Find(filterID, &resultList, nil)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return resultList, user, nil
+	modelGroups := make([]*model.Group, len(resultList))
+	for i, current := range resultList {
+
+		members := current.Members
+		newMembers := make([]model.Member, len(members))
+		for i, c := range members {
+			memberUser := model.User{ID: c.UserID}
+			newMembers[i] = model.Member{ID: c.ID, Status: c.Status, User: memberUser}
+		}
+		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
+	}
+
+	return modelGroups, user, nil
+
 }
 
 //ReadAllGroupCategories reads all group categories
