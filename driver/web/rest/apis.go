@@ -71,6 +71,72 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 } //@name createGroupRequest
 
+//GetUserGroupMemberships gets the user groups memberships
+// @Description Gives the user groups memberships
+// @ID GetUserGroupMemberships
+// @Accept json
+// @Param identifier path string true "Identifier"
+// @Success 200 {object} userGroupMembership
+// @Security IntAPIKeyAuth
+// @Router /api/int/user/{identifier}/groups [get]
+func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	identifier := params["identifier"]
+	if len(identifier) <= 0 {
+		log.Println("Identifier is required")
+		http.Error(w, "identifier is required", http.StatusBadRequest)
+		return
+	}
+	externalID := identifier
+
+	userGroupMemberships, user, err := h.app.Services.GetUserGroupMemberships(externalID)
+	if err != nil {
+		log.Println("The user has no group memberships")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	userGroups := make([]userGroupMembership, len(userGroupMemberships))
+	for i, group := range userGroupMemberships {
+
+		memberStatus := ""
+
+		members := group.Members
+		for _, member := range members {
+			if member.User.ID == user.ID {
+				memberStatus = member.Status
+			}
+		}
+
+		ugm := userGroupMembership{
+			ID:               group.ID,
+			Title:            group.Title,
+			Privacy:          group.Privacy,
+			MembershipStatus: memberStatus,
+		}
+
+		userGroups[i] = ugm
+	}
+
+	data, err := json.Marshal(userGroups)
+	if err != nil {
+		log.Println("Error on marshal the user group membership")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type userGroupMembership struct {
+	ID               string `json:"id"`
+	Title            string `json:"title"`
+	Privacy          string `json:"privacy"`
+	MembershipStatus string `json:"membership_status"`
+}
+
 //CreateGroup creates a group
 // @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
 // @ID CreateGroup
