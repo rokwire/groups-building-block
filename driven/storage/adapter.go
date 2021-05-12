@@ -142,6 +142,44 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	return nil
 }
 
+//FindUserGroupsMemberships stores user group membership
+func (sa *Adapter) FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error) {
+	filter := bson.D{primitive.E{Key: "external_id", Value: externalID}}
+	var result []*model.User
+	err := sa.db.users.Find(filter, &result, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+	if result == nil || len(result) == 0 {
+		//not found
+		return nil, nil, nil
+	}
+	user := result[0]
+	userID := user.ID
+
+	filterID := bson.D{primitive.E{Key: "members.user_id", Value: userID}}
+	var resultList []*group
+	err = sa.db.groups.Find(filterID, &resultList, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	modelGroups := make([]*model.Group, len(resultList))
+	for i, current := range resultList {
+
+		members := current.Members
+		newMembers := make([]model.Member, len(members))
+		for i, c := range members {
+			memberUser := model.User{ID: c.UserID}
+			newMembers[i] = model.Member{ID: c.ID, Status: c.Status, User: memberUser}
+		}
+		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
+	}
+
+	return modelGroups, user, nil
+
+}
+
 //ReadAllGroupCategories reads all group categories
 func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: "categories"}}

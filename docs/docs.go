@@ -496,6 +496,37 @@ var doc = `{
                 }
             }
         },
+        "/api/int/user/{identifier}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gives the user groups memberships",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "GetUserGroupMemberships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.userGroupMembership"
+                        }
+                    }
+                }
+            }
+        },
         "/api/memberships/{membership-id}": {
             "put": {
                 "security": [
@@ -1071,6 +1102,23 @@ var doc = `{
                 }
             }
         },
+        "rest.userGroupMembership": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "membership_status": {
+                    "type": "string"
+                },
+                "privacy": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "updateGroupRequest": {
             "type": "object",
             "required": [
@@ -1133,6 +1181,11 @@ var doc = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header (add Bearer prefix to the Authorization value)"
+        },
+        "IntAPIKeyAuth": {
+            "type": "apiKey",
+            "name": "ROKWIRE_GS_API_KEY",
+            "in": "header"
         }
     }
 }`

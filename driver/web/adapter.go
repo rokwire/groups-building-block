@@ -37,6 +37,10 @@ type Adapter struct {
 // @in header (add Bearer prefix to the Authorization value)
 // @name Authorization
 
+// @securityDefinitions.apikey IntAPIKeyAuth
+// @in header
+// @name ROKWIRE_GS_API_KEY
+
 //Start starts the web server
 func (we *Adapter) Start() {
 	//start the auth module
@@ -54,6 +58,9 @@ func (we *Adapter) Start() {
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
+
+	//internal key protection
+	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
@@ -127,6 +134,21 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 	}
 }
 
+type internalKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
+
+func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, authenticated := we.auth.internalAuthCheck(w, req)
+		if !authenticated {
+			return
+		}
+
+		handler(clientID, w, req)
+	}
+}
+
 func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
@@ -142,8 +164,8 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 }
 
 //NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider string, oidcClientID string) *Adapter {
-	auth := NewAuth(app, appKeys, oidcProvider, oidcClientID)
+func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider []string, oidcClientID string, internalAPIKeys string) *Adapter {
+	auth := NewAuth(app, appKeys, oidcProvider, oidcClientID, internalAPIKeys)
 	apisHandler := rest.NewApisHandler(app)
 	return &Adapter{host: host, auth: auth, apisHandler: apisHandler}
 }

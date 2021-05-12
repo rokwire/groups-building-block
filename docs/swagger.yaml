@@ -249,6 +249,17 @@ definitions:
     required:
     - approve
     type: object
+  rest.userGroupMembership:
+    properties:
+      id:
+        type: string
+      membership_status:
+        type: string
+      privacy:
+        type: string
+      title:
+        type: string
+    type: object
   updateGroupRequest:
     properties:
       category:
@@ -590,6 +601,25 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/int/user/{identifier}/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the user groups memberships
+      operationId: GetUserGroupMemberships
+      parameters:
+      - description: Identifier
+        in: path
+        name: identifier
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.userGroupMembership'
+      security:
+      - IntAPIKeyAuth: []
   /api/memberships/{membership-id}:
     delete:
       consumes:
@@ -722,5 +752,9 @@ securityDefinitions:
   AppUserAuth:
     in: header (add Bearer prefix to the Authorization value)
     name: Authorization
+    type: apiKey
+  IntAPIKeyAuth:
+    in: header
+    name: ROKWIRE_GS_API_KEY
     type: apiKey
 swagger: "2.0"
