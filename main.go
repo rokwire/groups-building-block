@@ -37,11 +37,11 @@ func main() {
 
 	//web adapter
 	apiKeys := getAPIKeys()
-	internalApiKeys := getInternalAPIKeys()
+	internalAPIKeys := getInternalAPIKeys()
 	host := getEnvKey("GR_HOST", true)
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, internalApiKeys, oidcProvider, oidcClientID)
+	webAdapter := web.NewWebAdapter(application, host, apiKeys, internalAPIKeys, oidcProvider, oidcClientID)
 	webAdapter.Start()
 }
 
@@ -59,10 +59,10 @@ func getAPIKeys() []string {
 }
 func getInternalAPIKeys() []string {
 	//get from the environment
-	internalApiKeys := getEnvKey("GR_GS_API_KEYS", true)
+	internalAPIKeys := getEnvKey("GR_GS_API_KEYS", true)
 
 	//it is comma separated format
-	rokwireInternalAPIKeysList := strings.Split(internalApiKeys, ",")
+	rokwireInternalAPIKeysList := strings.Split(internalAPIKeys, ",")
 	if len(rokwireInternalAPIKeysList) <= 0 {
 		log.Fatal("Keys list is empty")
 	}

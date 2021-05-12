@@ -71,7 +71,7 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 } //@name createGroupRequest
 
-// Gets the user group memberships
+//GetUserGroupMemberships gets the user group memberships
 func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
@@ -92,7 +92,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 	userGroups := make([]userGroupMembership, len(userGroupMemberships))
 	for i, group := range userGroupMemberships {
 
-		memberStatus := " "
+		memberStatus := ""
 
 		members := group.Members
 		for _, member := range members {
@@ -102,10 +102,10 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 		}
 
 		ugm := userGroupMembership{
-			ID:                group.ID,
-			Title:             group.Title,
-			Privacy:           group.Privacy,
-			Membership_status: memberStatus,
+			ID:               group.ID,
+			Title:            group.Title,
+			Privacy:          group.Privacy,
+			MembershipStatus: memberStatus,
 		}
 
 		userGroups[i] = ugm
@@ -124,10 +124,10 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 }
 
 type userGroupMembership struct {
-	ID                string `json:"id"`
-	Title             string `json:"title"`
-	Privacy           string `json:"privacy"`
-	Membership_status string `json:"membership_status"`
+	ID               string `json:"id"`
+	Title            string `json:"title"`
+	Privacy          string `json:"privacy"`
+	MembershipStatus string `json:"membership_status"`
 }
 
 //CreateGroup creates a group

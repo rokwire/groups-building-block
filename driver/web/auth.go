@@ -153,10 +153,10 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, appKeys []string, internalApiKeys []string, oidcProvider string, oidcClientID string) *Auth {
+func NewAuth(app *core.Application, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
-	internalAuth := newInternalAuth(internalApiKeys)
+	internalAuth := newInternalAuth(internalAPIKeys)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
@@ -224,7 +224,7 @@ type cacheUser struct {
 
 ////////////////////////////////////
 
-//InternalAuthCheck entity
+//InternalAuth entity
 type InternalAuth struct {
 	appKeys []string
 }
@@ -261,8 +261,8 @@ func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool
 }
 
 //newInternalAuth creates new internal auth
-func newInternalAuth(internalApiKeys []string) *InternalAuth {
-	auth := InternalAuth{appKeys: internalApiKeys}
+func newInternalAuth(internalAPIKeys []string) *InternalAuth {
+	auth := InternalAuth{appKeys: internalAPIKeys}
 	return &auth
 }
 
