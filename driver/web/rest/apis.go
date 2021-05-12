@@ -71,7 +71,14 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 } //@name createGroupRequest
 
-//GetUserGroupMemberships gets the user group memberships
+//GetUserGroupMemberships gets the user groups memberships
+// @Description Gives the user groups memberships
+// @ID GetUserGroupMemberships
+// @Accept json
+// @Param identifier path string true "Identifier"
+// @Success 200 {object} userGroupMembership
+// @Security IntAPIKeyAuth
+// @Router /api/int/user/{identifier}/groups [get]
 func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
