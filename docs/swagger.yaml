@@ -298,9 +298,8 @@ host: localhost
 info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
-  license: {}
   title: Rokwire Groups Building Block API
-  version: 1.0.2
+  version: 1.4.1
 paths:
   /api/group-categories:
     get:
@@ -506,6 +505,10 @@ paths:
       - description: Category
         in: query
         name: category
+        type: string
+      - description: Filtering by group's title
+        in: query
+        name: title
         type: string
       responses:
         "200":

@@ -7,8 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "license": {},
-        "version": "1.0.2"
+        "version": "1.4.1"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -338,6 +337,12 @@
                         "type": "string",
                         "description": "Category",
                         "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title",
+                        "name": "title",
                         "in": "query"
                     }
                 ],

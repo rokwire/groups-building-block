@@ -69,6 +69,8 @@ type createGroupRequest struct {
 	CreatorName     string   `json:"creator_name"`
 	CreatorEmail    string   `json:"creator_email"`
 	CreatorPhotoURL string   `json:"creator_photo_url"`
+	ImageURL        *string  `json:"image_url"`
+	WebURL          *string  `json:"web_url"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -188,9 +190,11 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	creatorName := requestData.CreatorName
 	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
+	imageUrl := requestData.ImageURL
+	webUrl := requestData.WebURL
 
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL)
+		creatorName, creatorEmail, creatorPhotoURL, imageUrl, webUrl)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -345,6 +349,7 @@ type getGroupsResponse struct {
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
+// @Param title query string false "Filtering by group's title"
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
@@ -356,7 +361,13 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		category = &catogies[0]
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category)
+	var title *string
+	titles, ok := r.URL.Query()["title"]
+	if ok && len(titles[0]) > 0 {
+		title = &titles[0]
+	}
+
+	groups, err := h.app.Services.GetGroups(clientID, current, category, title)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1086,4 +1097,9 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 //NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
+}
+
+//NewAdminApisHandler creates new rest Handler instance
+func NewAdminApisHandler(app *core.Application) *AdminApisHandler {
+	return &AdminApisHandler{app: app}
 }

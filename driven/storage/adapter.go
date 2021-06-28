@@ -199,7 +199,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
 	var insertedID string
 
 	// transaction
@@ -235,7 +235,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now}
+			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -353,11 +353,13 @@ func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (
 }
 
 //FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, category *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, category *string, title *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if category != nil {
-		filter = bson.D{primitive.E{Key: "category", Value: category},
-			primitive.E{Key: "client_id", Value: clientID}}
+		filter = append(filter, primitive.E{Key: "category", Value: category})
+	}
+	if title != nil {
+		filter = append(filter, primitive.E{Key: "title", Value: title})
 	}
 
 	var list []group
