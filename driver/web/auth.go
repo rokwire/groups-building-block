@@ -2,6 +2,7 @@ package web
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"groups/core"
 	"groups/core/model"
@@ -21,6 +22,7 @@ type Auth struct {
 	apiKeysAuth  *APIKeysAuth
 	idTokenAuth  *IDTokenAuth
 	internalAuth *InternalAuth
+	adminAuth    *AdminAuth
 
 	supportedClients []string
 }
@@ -153,14 +155,15 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string) *Auth {
+func NewAuth(app *core.Application, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string, oidcAdminClientID string, oidcAdminWebClientID string) *Auth {
 	apiKeysAuth := newAPIKeysAuth(appKeys)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
 	internalAuth := newInternalAuth(internalAPIKeys)
+	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, supportedClients: supportedClients}
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClients}
 	return &auth
 }
 
@@ -519,6 +522,156 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, oidcClientID str
 	lock := &sync.RWMutex{}
 
 	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier,
+		cachedUsers: cacheUsers, cachedUsersLock: lock}
+	return &auth
+}
+
+////////////////////////////////////
+
+//AdminAuth entity
+type AdminAuth struct {
+	app *core.Application
+
+	appVerifier    *oidc.IDTokenVerifier
+	appClientID    string
+	webAppVerifier *oidc.IDTokenVerifier
+	webAppClientID string
+
+	cachedUsers     *syncmap.Map //cache users while active - 5 minutes timeout
+	cachedUsersLock *sync.RWMutex
+}
+
+func (auth *AdminAuth) start() {
+
+}
+
+//gets the token from the request - as cookie or as Authorization header.
+//returns the id token and its type - mobile or web. If the token is taken by the cookie it is web otherwise it is mobile
+func (auth *AdminAuth) getIDToken(r *http.Request) (*string, *string, error) {
+	var tokenType string
+
+	//1. Check if there is a cookie
+	cookie, err := r.Cookie("rwa-at-data")
+	if err == nil && cookie != nil && len(cookie.Value) > 0 {
+		//there is a cookie
+		tokenType = "web"
+		return &cookie.Value, &tokenType, nil
+	}
+
+	//2. Check if there is a token in the Authorization header
+	authorizationHeader := r.Header.Get("Authorization")
+	if len(authorizationHeader) <= 0 {
+		return nil, nil, errors.New("error getting Authorization header")
+	}
+	splitAuthorization := strings.Fields(authorizationHeader)
+	if len(splitAuthorization) != 2 {
+		return nil, nil, errors.New("error processing the Authorization header")
+	}
+	// expected - Bearer 1234
+	if splitAuthorization[0] != "Bearer" {
+		return nil, nil, errors.New("error processing the Authorization header")
+	}
+	rawIDToken := splitAuthorization[1]
+	tokenType = "mobile"
+	return &rawIDToken, &tokenType, nil
+}
+
+func (auth *AdminAuth) verify(rawIDToken string, tokenType string) (*oidc.IDToken, error) {
+	switch tokenType {
+	case "mobile":
+		log.Println("AdminAuth -> mobile app client token")
+		return auth.appVerifier.Verify(context.Background(), rawIDToken)
+	case "web":
+		log.Println("AdminAuth -> web app client token")
+		return auth.webAppVerifier.Verify(context.Background(), rawIDToken)
+	default:
+		return nil, errors.New("AdminAuth -> there is an issue with the audience")
+	}
+}
+
+func (auth *AdminAuth) responseBadRequest(w http.ResponseWriter) {
+	log.Println("AdminAuth -> 400 - Bad Request")
+
+	w.WriteHeader(http.StatusBadRequest)
+	w.Write([]byte("Bad Request"))
+}
+
+func (auth *AdminAuth) responseUnauthorized(token string, w http.ResponseWriter) {
+	log.Printf("AdminAuth -> 401 - Unauthorized for token %s", token)
+
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte("Unauthorized"))
+}
+
+func (auth *AdminAuth) responseForbbiden(info string, w http.ResponseWriter) {
+	log.Printf("AdminAuth -> 403 - Forbidden - %s", info)
+
+	w.WriteHeader(http.StatusForbidden)
+	w.Write([]byte("Forbidden"))
+}
+
+func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
+	log.Println("AdminAuth -> 500 - Internal Server Error")
+
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("Internal Server Error"))
+}
+
+func (auth *AdminAuth) getUser(clientID *string, userData userData) (*model.User, error) {
+	var err error
+
+	//2. Check if we have a such user in the application
+	user, err := auth.app.FindUser(*clientID, *userData.UIuceduUIN)
+	if err != nil {
+		log.Printf("error finding an for external id - %s\n", err)
+		return nil, err
+	}
+	if user != nil {
+		return user, nil
+	}
+
+	//3. This is the first call for the user, so we need to create it
+	user, err = auth.app.CreateUser(*clientID, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
+	if err != nil {
+		log.Printf("error creating an user - %s\n", err)
+		return nil, err
+	}
+	return user, nil
+}
+
+func (auth *AdminAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
+	currentList := current.IsMemberOf
+	newList := userData.UIuceduIsMemberOf
+
+	isEqual := utils.EqualPointers(currentList, newList)
+	if !isEqual {
+		log.Println("updateUserIfNeeded -> need to update user")
+
+		//2. update it
+		current.IsMemberOf = userData.UIuceduIsMemberOf
+		err := auth.app.UpdateUser(clientID, &current)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &current, nil
+}
+
+func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string) *AdminAuth {
+	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	appVerifier := provider.Verifier(&oidc.Config{ClientID: appClientID})
+	webAppVerifier := provider.Verifier(&oidc.Config{ClientID: webAppClientID})
+
+	cacheUsers := &syncmap.Map{}
+	lock := &sync.RWMutex{}
+
+	auth := AdminAuth{app: app, appVerifier: appVerifier, appClientID: appClientID,
+		webAppVerifier: webAppVerifier, webAppClientID: webAppClientID,
 		cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }

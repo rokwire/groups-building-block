@@ -353,11 +353,13 @@ func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (
 }
 
 //FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, category *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, category *string, title *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if category != nil {
-		filter = bson.D{primitive.E{Key: "category", Value: category},
-			primitive.E{Key: "client_id", Value: clientID}}
+		filter = append(filter, primitive.E{Key: "category", Value: category})
+	}
+	if title != nil {
+		filter = append(filter, primitive.E{Key: "title", Value: title})
 	}
 
 	var list []group
