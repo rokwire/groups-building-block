@@ -13,8 +13,8 @@ FROM alpine:3.11.6
 COPY --from=builder /groups-app/bin/groups /
 COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml
 
-COPY --from=builder /content-app/driver/web/authorization_model.conf /driver/web/authorization_model.conf
-COPY --from=builder /content-app/driver/web/authorization_policy.csv /driver/web/authorization_policy.csv
+COPY --from=builder /groups-app/driver/web/authorization_model.conf /driver/web/authorization_model.conf
+COPY --from=builder /groups-app/driver/web/authorization_policy.csv /driver/web/authorization_policy.csv
 
 COPY --from=builder /etc/passwd /etc/passwd
 
