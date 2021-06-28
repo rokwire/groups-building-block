@@ -193,7 +193,6 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	imageUrl := requestData.ImageURL
 	webUrl := requestData.WebURL
 
-
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
 		creatorName, creatorEmail, creatorPhotoURL, imageUrl, webUrl)
 	if err != nil {
