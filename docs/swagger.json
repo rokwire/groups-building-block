@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.4.0"
+        "version": "1.4.1"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -323,9 +323,6 @@
                 "description": "Gives the groups list. It can be filtered by category",
                 "consumes": [
                     "application/json"
-                ],
-                "tags": [
-                    "Admin"
                 ],
                 "operationId": "GetGroups",
                 "parameters": [

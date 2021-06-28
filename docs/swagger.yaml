@@ -299,7 +299,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.4.0
+  version: 1.4.1
 paths:
   /api/group-categories:
     get:
@@ -520,8 +520,6 @@ paths:
       security:
       - APIKeyAuth: []
       - AppUserAuth: []
-      tags:
-      - Admin
     post:
       consumes:
       - application/json
