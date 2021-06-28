@@ -28,7 +28,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.4.1
+// @version 1.4.2
 // @host localhost
 // @BasePath /gr
 // @schemes https
@@ -92,7 +92,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":8082", router))
+	log.Fatal(http.ListenAndServe(":80", router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {

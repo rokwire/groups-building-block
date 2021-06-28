@@ -69,6 +69,8 @@ type createGroupRequest struct {
 	CreatorName     string   `json:"creator_name"`
 	CreatorEmail    string   `json:"creator_email"`
 	CreatorPhotoURL string   `json:"creator_photo_url"`
+	ImageURL        *string  `json:"image_url"`
+	WebURL          *string  `json:"web_url"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -188,9 +190,12 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	creatorName := requestData.CreatorName
 	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
+	imageUrl := requestData.ImageURL
+	webUrl := requestData.WebURL
+
 
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL)
+		creatorName, creatorEmail, creatorPhotoURL, imageUrl, webUrl)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

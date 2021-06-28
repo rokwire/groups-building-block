@@ -15,7 +15,7 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	GetGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error)
@@ -59,8 +59,9 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
+		imageURL, webURL)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
@@ -141,7 +142,7 @@ type Storage interface {
 	FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
