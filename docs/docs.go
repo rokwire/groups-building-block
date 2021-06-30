@@ -377,9 +377,6 @@ var doc = `{
                 "consumes": [
                     "application/json"
                 ],
-                "tags": [
-                    "Admin"
-                ],
                 "operationId": "GetGroups",
                 "parameters": [
                     {
@@ -397,7 +394,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title",
+                        "description": "Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     }
@@ -1256,7 +1253,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.4.2",
+	Version:     "1.4.4",
 	Host:        "localhost",
 	BasePath:    "/gr",
 	Schemes:     []string{"https"},

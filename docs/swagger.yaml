@@ -303,7 +303,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.4.2
+  version: 1.4.4
 paths:
   /api/group-categories:
     get:
@@ -536,7 +536,7 @@ paths:
         in: query
         name: category
         type: string
-      - description: Filtering by group's title
+      - description: Filtering by group's title (case-insensitive)
         in: query
         name: title
         type: string
@@ -550,8 +550,6 @@ paths:
       security:
       - APIKeyAuth: []
       - AppUserAuth: []
-      tags:
-      - Admin
     post:
       consumes:
       - application/json
