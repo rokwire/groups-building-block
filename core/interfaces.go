@@ -15,10 +15,11 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
-	GetGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error)
+	DeleteGroup(clientID string, current *model.User, id string) error
+	GetGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
@@ -59,8 +60,9 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
-	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL)
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
+		imageURL, webURL)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
@@ -68,8 +70,12 @@ func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id stri
 	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error) {
-	return s.app.getGroups(clientID, current, category)
+func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
+	return s.app.deleteGroup(clientID, current, id)
+}
+
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error) {
+	return s.app.getGroups(clientID, current, category, title)
 }
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
@@ -141,12 +147,13 @@ type Storage interface {
 	FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error)
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
+	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
-	FindGroups(clientID string, category *string) ([]model.Group, error)
+	FindGroups(clientID string, category *string, title *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error

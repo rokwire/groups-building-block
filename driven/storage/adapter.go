@@ -199,7 +199,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
 	var insertedID string
 
 	// transaction
@@ -235,7 +235,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now}
+			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -317,6 +317,46 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 	return nil
 }
 
+//DeleteGroup deletes a group.
+func (sa *Adapter) DeleteGroup(clientID string, id string) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. delete mapped group events
+		eventFilter := bson.D{primitive.E{Key: "group_id", Value: id}, primitive.E{Key: "client_id", Value: clientID}}
+		_, err = sa.db.events.DeleteOne(eventFilter, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//2. delete the group
+		filter := bson.D{primitive.E{Key: "_id", Value: id}, primitive.E{Key: "client_id", Value: clientID}}
+		_, err = sa.db.groups.DeleteOne(filter, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 //FindGroup finds group by id and client id
 func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id},
@@ -353,11 +393,13 @@ func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (
 }
 
 //FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, category *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, category *string, title *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if category != nil {
-		filter = bson.D{primitive.E{Key: "category", Value: category},
-			primitive.E{Key: "client_id", Value: clientID}}
+		filter = append(filter, primitive.E{Key: "category", Value: category})
+	}
+	if title != nil {
+		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
 	}
 
 	var list []group

@@ -7,8 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "license": {},
-        "version": "1.3.0"
+        "version": "1.4.4"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -311,6 +310,47 @@
                 }
             }
         },
+        "/api/group/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "DeleteGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/groups": {
             "get": {
                 "security": [
@@ -338,6 +378,12 @@
                         "type": "string",
                         "description": "Category",
                         "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
                         "in": "query"
                     }
                 ],
@@ -744,6 +790,9 @@
                 "description": {
                     "type": "string"
                 },
+                "image_url": {
+                    "type": "string"
+                },
                 "privacy": {
                     "type": "string"
                 },
@@ -754,6 +803,9 @@
                     }
                 },
                 "title": {
+                    "type": "string"
+                },
+                "web_url": {
                     "type": "string"
                 }
             }

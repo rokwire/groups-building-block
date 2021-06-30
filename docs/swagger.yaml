@@ -19,6 +19,8 @@ definitions:
         type: string
       description:
         type: string
+      image_url:
+        type: string
       privacy:
         type: string
       tags:
@@ -26,6 +28,8 @@ definitions:
           type: string
         type: array
       title:
+        type: string
+      web_url:
         type: string
     required:
     - category
@@ -298,9 +302,8 @@ host: localhost
 info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
-  license: {}
   title: Rokwire Groups Building Block API
-  version: 1.3.0
+  version: 1.4.4
 paths:
   /api/group-categories:
     get:
@@ -491,6 +494,32 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/group/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a group.
+      operationId: DeleteGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
   /api/groups:
     get:
       consumes:
@@ -506,6 +535,10 @@ paths:
       - description: Category
         in: query
         name: category
+        type: string
+      - description: Filtering by group's title (case-insensitive)
+        in: query
+        name: title
         type: string
       responses:
         "200":

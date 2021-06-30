@@ -19,7 +19,6 @@ var doc = `{
         "description": "{{.Description}}",
         "title": "{{.Title}}",
         "contact": {},
-        "license": {},
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
@@ -323,6 +322,47 @@ var doc = `{
                 }
             }
         },
+        "/api/group/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "DeleteGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/groups": {
             "get": {
                 "security": [
@@ -350,6 +390,12 @@ var doc = `{
                         "type": "string",
                         "description": "Category",
                         "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
                         "in": "query"
                     }
                 ],
@@ -756,6 +802,9 @@ var doc = `{
                 "description": {
                     "type": "string"
                 },
+                "image_url": {
+                    "type": "string"
+                },
                 "privacy": {
                     "type": "string"
                 },
@@ -766,6 +815,9 @@ var doc = `{
                     }
                 },
                 "title": {
+                    "type": "string"
+                },
+                "web_url": {
                     "type": "string"
                 }
             }
@@ -1201,7 +1253,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.3.0",
+	Version:     "1.4.4",
 	Host:        "localhost",
 	BasePath:    "/gr",
 	Schemes:     []string{"https"},

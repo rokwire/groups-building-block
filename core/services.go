@@ -320,9 +320,9 @@ func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Gro
 }
 
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string) (*string, error) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
-		current.ID, creatorName, creatorEmail, creatorPhotoURL)
+		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
 	if err != nil {
 		return nil, err
 	}
@@ -338,9 +338,17 @@ func (app *Application) updateGroup(clientID string, current *model.User, id str
 	return nil
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, category *string) ([]map[string]interface{}, error) {
+func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
+	err := app.storage.DeleteGroup(clientID, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (app *Application) getGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, category)
+	groups, err := app.storage.FindGroups(clientID, category, title)
 	if err != nil {
 		return nil, err
 	}
