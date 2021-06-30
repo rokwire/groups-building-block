@@ -322,6 +322,47 @@ var doc = `{
                 }
             }
         },
+        "/api/group/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "DeleteGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/groups": {
             "get": {
                 "security": [
@@ -335,6 +376,9 @@ var doc = `{
                 "description": "Gives the groups list. It can be filtered by category",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Admin"
                 ],
                 "operationId": "GetGroups",
                 "parameters": [
@@ -761,6 +805,9 @@ var doc = `{
                 "description": {
                     "type": "string"
                 },
+                "image_url": {
+                    "type": "string"
+                },
                 "privacy": {
                     "type": "string"
                 },
@@ -771,6 +818,9 @@ var doc = `{
                     }
                 },
                 "title": {
+                    "type": "string"
+                },
+                "web_url": {
                     "type": "string"
                 }
             }
@@ -1206,7 +1256,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.4.1",
+	Version:     "1.4.2",
 	Host:        "localhost",
 	BasePath:    "/gr",
 	Schemes:     []string{"https"},
