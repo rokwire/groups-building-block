@@ -399,7 +399,7 @@ func (sa *Adapter) FindGroups(clientID string, category *string, title *string) 
 		filter = append(filter, primitive.E{Key: "category", Value: category})
 	}
 	if title != nil {
-		filter = append(filter, primitive.E{Key: "title", Value: title})
+		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
 	}
 
 	var list []group

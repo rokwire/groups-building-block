@@ -402,7 +402,7 @@ type getGroupsResponse struct {
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
-// @Param title query string false "Filtering by group's title"
+// @Param title query string false "Filtering by group's title (case-insensitive)"
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
