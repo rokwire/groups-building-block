@@ -338,6 +338,14 @@ func (app *Application) updateGroup(clientID string, current *model.User, id str
 	return nil
 }
 
+func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
+	err := app.storage.DeleteGroup(clientID, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) getGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error) {
 	// find the groups objects
 	groups, err := app.storage.FindGroups(clientID, category, title)

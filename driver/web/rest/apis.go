@@ -190,11 +190,11 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	creatorName := requestData.CreatorName
 	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
-	imageUrl := requestData.ImageURL
-	webUrl := requestData.WebURL
+	imageURL := requestData.ImageURL
+	webURL := requestData.WebURL
 
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageUrl, webUrl)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -308,6 +308,59 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully updated"))
+}
+
+//DeleteGroup deletes a group
+// @Description Deletes a group.
+// @ID DeleteGroup
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param id path string true "ID"
+// @Success 200 {string} Successfully deleted
+// @Security AppUserAuth
+// @Router /api/group/{id} [delete]
+func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided id - %s", id)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to update a group", current.Email)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.DeleteGroup(clientID, current, id)
+	if err != nil {
+		log.Printf("Error on deleting group - %s\n", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully deleted"))
 }
 
 type getGroupsResponse struct {
