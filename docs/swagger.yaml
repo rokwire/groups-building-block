@@ -303,7 +303,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.4.4
+  version: 1.4.5
 paths:
   /api/group-categories:
     get:
