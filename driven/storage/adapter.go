@@ -210,20 +210,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 			return err
 		}
 
-		//1. check if the category value is one of the enums list
-		categoryFilter := bson.D{primitive.E{Key: "values", Value: category}}
-		var categoriesResult []enumItem
-		err = sa.db.enums.FindWithContext(sessionContext, categoryFilter, &categoriesResult, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if len(categoriesResult) == 0 {
-			abortTransaction(sessionContext)
-			return errors.New("the provided category must be one of the categories list")
-		}
-
-		//2. insert the group and the admin member
+		// insert the group and the admin member
 		now := time.Now()
 
 		memberID, _ := uuid.NewUUID()
@@ -268,20 +255,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 			return err
 		}
 
-		//1. check if the category value is one of the enums list
-		categoryFilter := bson.D{primitive.E{Key: "values", Value: category}}
-		var categoriesResult []enumItem
-		err = sa.db.enums.FindWithContext(sessionContext, categoryFilter, &categoriesResult, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if len(categoriesResult) == 0 {
-			abortTransaction(sessionContext)
-			return errors.New("the provided category must be one of the categories list")
-		}
-
-		//2. update the group
+		// update the group
 		filter := bson.D{primitive.E{Key: "_id", Value: id},
 			primitive.E{Key: "client_id", Value: clientID}}
 		update := bson.D{
