@@ -465,3 +465,19 @@ func (app *Application) deleteEvent(clientID string, current model.User, eventID
 	}
 	return nil
 }
+
+func (app *Application) getPosts(clientID string, current *model.User, groupID string) ([]model.Post, error){
+	return app.storage.FindPosts(clientID, groupID)
+}
+
+func (app *Application) createPost(clientID string, current *model.User, post *model.Post) (*model.Post, error){
+	return app.storage.CreatePost(clientID, post)
+}
+
+func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error){
+	return app.storage.UpdatePost(clientID, post)
+}
+
+func (app *Application) deletePost(clientID string, current *model.User, postID string) error{
+	return app.storage.DeletePost(clientID, postID)
+}

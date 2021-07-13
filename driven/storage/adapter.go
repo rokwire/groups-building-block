@@ -966,6 +966,75 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
+func (sa *Adapter) FindPosts(clientID string, groupID string) ([]model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "group_id", Value: groupID}}
+
+	var list []model.Post
+	err := sa.db.posts.Find(filter, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (sa *Adapter) CreatePost(clientID string, post *model.Post) (*model.Post, error) {
+
+	if post.ClientID == nil { // Always required
+		post.ClientID = &clientID
+	}
+
+	if post.ID == nil{ // Always required
+		id := uuid.New().String()
+		post.ID = &id
+	}
+
+	if post.Replies != nil{ // This is constructed only for GET all for group
+		post.Replies = nil
+	}
+
+	_, err := sa.db.posts.InsertOne(post)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+func (sa *Adapter) UpdatePost(clientID string, post *model.Post) (*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+
+	if post.ClientID == nil { // Always required
+		post.ClientID = &clientID
+	}
+
+	if post.ID == nil{ // Always required
+		return nil, fmt.Errorf("Missing id")
+	}
+
+	if post.Replies != nil{ // This is constructed only for GET all for group
+		post.Replies = nil
+	}
+
+	_, err := sa.db.posts.UpdateOne(filter, post, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+func (sa *Adapter) DeletePost(clientID string, postID string) error {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
+
+	_, err := sa.db.posts.DeleteOne(filter, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)

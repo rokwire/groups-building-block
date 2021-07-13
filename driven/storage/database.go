@@ -26,6 +26,7 @@ type database struct {
 	enums  *collectionWrapper
 	groups *collectionWrapper
 	events *collectionWrapper
+	posts  *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -77,6 +78,11 @@ func (m *database) start() error {
 		return err
 	}
 
+	posts := &collectionWrapper{database: m, coll: db.Collection("posts")}
+	if err != nil {
+		return err
+	}
+
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
@@ -91,6 +97,7 @@ func (m *database) start() error {
 	m.enums = enums
 	m.groups = groups
 	m.events = events
+	m.posts = posts
 
 	return nil
 }
