@@ -1158,10 +1158,10 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 // @Router /api/group/{groupID}/posts [get]
 func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["id"]
+	id := params["groupID"]
 	if len(id) <= 0 {
-		log.Println("id is required")
-		http.Error(w, "id is required", http.StatusBadRequest)
+		log.Println("groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -1192,13 +1192,13 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/post [post]
+// @Router /api/group/{groupId}/post [post]
 func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["id"]
+	id := params["groupID"]
 	if len(id) <= 0 {
-		log.Println("id is required")
-		http.Error(w, "id is required", http.StatusBadRequest)
+		log.Println("groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -1212,21 +1212,23 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 	var post *model.Post
 	err = json.Unmarshal(data, &post)
 	if err != nil {
-		log.Printf("error on unmarshal posts for group (%s) - %s", id, err.Error())
+		log.Printf("error on unmarshal posts for group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
+	post.GroupID = id // Set group id from the query param
+
 	post, err = h.app.Services.CreatePost(clientID, current, post)
 	if err != nil {
-		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
+		log.Printf("error getting posts for group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	data, err = json.Marshal(post)
 	if err != nil {
-		log.Printf("error on marshal posts for group (%s) - %s", id, err.Error())
+		log.Printf("error on marshal posts for group - %s", err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -1247,10 +1249,10 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 // @Router /api/post [put]
 func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["id"]
+	id := params["groupID"]
 	if len(id) <= 0 {
-		log.Println("id is required")
-		http.Error(w, "id is required", http.StatusBadRequest)
+		log.Println("groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -1299,16 +1301,23 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 // @Router /api/post [delete]
 func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["id"]
-	if len(id) <= 0 {
-		log.Println("id is required")
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("groupID is required")
 		http.Error(w, "id is required", http.StatusBadRequest)
 		return
 	}
 
-	err := h.app.Services.DeletePost(clientID, current, id)
+	postID := params["postID"]
+	if len(postID) <= 0 {
+		log.Println("postID is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.DeletePost(clientID, current, groupID, postID)
 	if err != nil {
-		log.Printf("error deleting posts for group (%s) - %s", id, err.Error())
+		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

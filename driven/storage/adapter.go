@@ -966,34 +966,66 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
-func (sa *Adapter) FindPosts(clientID string, groupID string) ([]model.Post, error) {
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string) ([]model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "group_id", Value: groupID}}
 
+	group, err := sa.FindGroup(clientID, groupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		return nil, fmt.Errorf("the user is not member or admin of the group")
+	}
+
 	var list []model.Post
-	err := sa.db.posts.Find(filter, &list, nil)
+	err = sa.db.posts.Find(filter, &list, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	return list, nil
+	var resultList = make([]model.Post, 0)
+	var postMapping = make(map[string]model.Post)
+
+	if list != nil {
+		for _, post := range list {
+			postID := post.ID
+			postMapping[*postID] = post
+		}
+		for _, post := range postMapping {
+			var parentPost model.Post
+			if post.ParentID != nil {
+				parentID := post.ParentID
+				parentPost = postMapping[*parentID]
+				var repliesList []model.Post
+				if parentPost.Replies == nil {
+					repliesList = []model.Post{}
+					parentPost.Replies = repliesList
+				} else {
+					repliesList = parentPost.Replies
+				}
+
+				repliesList = append(repliesList, post)
+				parentPost.Replies = repliesList
+				postMapping[*parentPost.ID] = parentPost
+			}
+		}
+		for _, post := range postMapping {
+			if post.ParentID == nil {
+				resultList = append(resultList, post)
+			}
+		}
+	}
+
+	return resultList, nil
 }
 
-func (sa *Adapter) CreatePost(clientID string, post *model.Post) (*model.Post, error) {
+func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string, postID string) (*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
-	if post.ClientID == nil { // Always required
-		post.ClientID = &clientID
+	group, err := sa.FindGroup(clientID, groupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		return nil, fmt.Errorf("the user is not member or admin of the group")
 	}
 
-	if post.ID == nil{ // Always required
-		id := uuid.New().String()
-		post.ID = &id
-	}
-
-	if post.Replies != nil{ // This is constructed only for GET all for group
-		post.Replies = nil
-	}
-
-	_, err := sa.db.posts.InsertOne(post)
+	var post *model.Post
+	err = sa.db.posts.FindOne(filter, &post, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1001,18 +1033,62 @@ func (sa *Adapter) CreatePost(clientID string, post *model.Post) (*model.Post, e
 	return post, nil
 }
 
-func (sa *Adapter) UpdatePost(clientID string, post *model.Post) (*model.Post, error) {
+func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+
+	group, err := sa.FindGroup(clientID, post.GroupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		return nil, fmt.Errorf("the user is not member or admin of the group")
+	}
+
+	if post.ClientID == nil { // Always required
+		post.ClientID = &clientID
+	}
+
+	if post.ID == nil { // Always required
+		id := uuid.New().String()
+		post.ID = &id
+	}
+
+	if post.Replies != nil { // This is constructed only for GET all for group
+		post.Replies = nil
+	}
+
+	now := time.Now()
+	post.DateCreated = &now
+	post.DateUpdated = &now
+
+	group, err = sa.FindGroup(clientID, post.GroupID)
+	if group != nil && err == nil && (group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
+		post.Member = model.PostCreator{
+			UserID: current.ID,
+			Email:  current.Email,
+			Name:   *name,
+		}
+	} else {
+		return nil, fmt.Errorf("the user is not member or admin of the group")
+	}
+
+	_, err = sa.db.posts.InsertOne(post)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
 
 	if post.ClientID == nil { // Always required
 		post.ClientID = &clientID
 	}
 
-	if post.ID == nil{ // Always required
+	if post.ID == nil { // Always required
 		return nil, fmt.Errorf("Missing id")
 	}
 
-	if post.Replies != nil{ // This is constructed only for GET all for group
+	if post.Replies != nil { // This is constructed only for GET all for group
 		post.Replies = nil
 	}
 
@@ -1024,10 +1100,16 @@ func (sa *Adapter) UpdatePost(clientID string, post *model.Post) (*model.Post, e
 	return post, nil
 }
 
-func (sa *Adapter) DeletePost(clientID string, postID string) error {
+func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
+
+	group, err := sa.FindGroup(clientID, groupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		return fmt.Errorf("the user is not member or admin of the group")
+	}
+
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
-	_, err := sa.db.posts.DeleteOne(filter, nil)
+	_, err = sa.db.posts.DeleteOne(filter, nil)
 	if err != nil {
 		return err
 	}

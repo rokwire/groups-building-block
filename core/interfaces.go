@@ -38,7 +38,7 @@ type Services interface {
 	GetPosts(clientID string, current *model.User, groupID string) ([]model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, current *model.User, postID string) error
+	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
 
 type servicesImpl struct {
@@ -127,20 +127,20 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
-func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string) ([]model.Post, error){
-	return s.app.getPosts(clientID, current, groupID);
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string) ([]model.Post, error) {
+	return s.app.getPosts(clientID, current, groupID)
 }
 
-func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error){
+func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	return s.app.createPost(clientID, current, post)
 }
 
-func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error){
+func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	return s.app.updatePost(clientID, current, post)
 }
 
-func (s *servicesImpl) DeletePost(clientID string, current *model.User, postID string) error{
-	return s.app.deletePost(clientID, current, postID)
+func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
+	return s.app.deletePost(clientID, current, groupID, postID)
 }
 
 //Administration exposes administration APIs for the driver adapters
@@ -189,10 +189,11 @@ type Storage interface {
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
-	FindPosts(clientID string, groupID string) ([]model.Post, error)
-	CreatePost(clientID string, post *model.Post) (*model.Post, error)
-	UpdatePost(clientID string, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, postID string) error
+	FindPosts(clientID string, current *model.User, groupID string) ([]model.Post, error)
+	FindPost(clientID string, current *model.User, groupID string, postID string) (*model.Post, error)
+	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
 
 //StorageListener listenes for change data storage events
