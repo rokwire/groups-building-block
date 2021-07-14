@@ -966,6 +966,7 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
+//FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string) ([]model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "group_id", Value: groupID}}
 
@@ -1016,6 +1017,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	return resultList, nil
 }
 
+//FindPost Retrieves a posts by groupID and postID
 func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string, postID string) (*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
@@ -1033,6 +1035,7 @@ func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string
 	return post, nil
 }
 
+// CreatePost Created a post
 func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 
 	group, err := sa.FindGroup(clientID, post.GroupID)
@@ -1077,6 +1080,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	return post, nil
 }
 
+// UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
 
@@ -1100,6 +1104,7 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 	return post, nil
 }
 
+// DeletePost Deletes a post
 func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
 
 	group, err := sa.FindGroup(clientID, groupID)

@@ -86,7 +86,7 @@ func (gr Group) IsGroupRejected(userID string) bool {
 	return false
 }
 
-//IsGroupRejected says if the user is a group rejected
+//UserNameByID says if the user is a group rejected
 func (gr Group) UserNameByID(userID string) *string {
 	if gr.Members == nil {
 		return nil
