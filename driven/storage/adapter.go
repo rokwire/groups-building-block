@@ -32,6 +32,7 @@ type group struct {
 	MembersCount        int      `bson:"members_count"` //to be supported up to date
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
+	Hidden              bool     `bson:"hidden"`
 
 	Members []member `bson:"members"`
 
@@ -199,7 +200,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error) {
 	var insertedID string
 
 	// transaction
@@ -222,7 +223,9 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL}
+			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
+			Hidden: hidden,
+		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -246,7 +249,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -269,6 +272,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "tags", Value: tags},
 				primitive.E{Key: "membership_questions", Value: membershipQuestions},
 				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "hidden", Value: hidden},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -389,6 +393,7 @@ func (sa *Adapter) FindGroups(clientID string, category *string, title *string) 
 			result[i] = item
 		}
 	}
+
 	return result, nil
 }
 
@@ -972,7 +977,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	group, err := sa.FindGroup(clientID, groupID)
 	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
-		return nil, fmt.Errorf("the user is not member or admin of the group")
+		filter = append(filter, primitive.E{Key: "private", Value: false})
 	}
 
 	var list []model.Post
@@ -1152,6 +1157,7 @@ func constructGroup(gr group) model.Group {
 	webURL := gr.WebURL
 	membersCount := gr.MembersCount
 	tags := gr.Tags
+	hidden := gr.Hidden
 	membershipQuestions := gr.MembershipQuestions
 
 	dateCreated := gr.DateCreated
@@ -1165,7 +1171,7 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL, MembersCount: membersCount,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members}
+		Members: members, Hidden: hidden}
 }
 
 func constructMember(groupID string, member member) model.Member {

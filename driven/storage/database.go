@@ -79,6 +79,7 @@ func (m *database) start() error {
 	}
 
 	posts := &collectionWrapper{database: m, coll: db.Collection("posts")}
+	err = m.applyPostsChecks(posts)
 	if err != nil {
 		return err
 	}
@@ -202,6 +203,52 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 	}
 
 	log.Println("events checks passed")
+	return nil
+}
+
+func (m *database) applyPostsChecks(posts *collectionWrapper) error {
+	log.Println("apply posts checks.....")
+
+	indexes, _ := posts.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+	if indexMapping["client_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+	if indexMapping["private_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "private", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+	if indexMapping["private_1_client_id_1__id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "private", Value: 1},
+				primitive.E{Key: "client_id", Value: 1},
+				primitive.E{Key: "_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("posts checks passed")
 	return nil
 }
 

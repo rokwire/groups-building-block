@@ -19,6 +19,8 @@ definitions:
         type: string
       description:
         type: string
+      hidden:
+        type: boolean
       image_url:
         type: string
       privacy:
@@ -253,6 +255,21 @@ definitions:
     required:
     - approve
     type: object
+  rest.postResponse:
+    properties:
+      body:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      parent_id:
+        type: string
+      private:
+        type: boolean
+      subject:
+        type: string
+    type: object
   rest.userGroupMembership:
     properties:
       id:
@@ -270,6 +287,8 @@ definitions:
         type: string
       description:
         type: string
+      hidden:
+        type: boolean
       image_url:
         type: string
       membership_questions:
@@ -303,7 +322,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.4.5
+  version: 1.4.7
 paths:
   /api/group-categories:
     get:
@@ -494,6 +513,85 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/group/{groupID}/posts:
+    get:
+      description: gets all posts for the desired group.
+      operationId: GetGroupPosts
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.postResponse'
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+  /api/group/{groupId}/posts:
+    post:
+      consumes:
+      - application/json
+      description: creates a post within the desired group.
+      operationId: CreateGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.postResponse'
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+    put:
+      consumes:
+      - application/json
+      description: Updates a post within the desired group.
+      operationId: UpdateGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.postResponse'
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+  /api/group/{groupId}/posts/{postId}:
+    delete:
+      consumes:
+      - application/json
+      description: Updates a post within the desired group.
+      operationId: DeleteGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /api/group/{id}:
     delete:
       consumes:

@@ -14,6 +14,7 @@ type Group struct {
 	MembersCount        int      `json:"members_count"` //to be supported up to date
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
+	Hidden              bool     `json:"hidden"`
 
 	Members []Member `json:"members"`
 

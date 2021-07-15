@@ -22,7 +22,7 @@ type ApisHandler struct {
 // @Description Gives the service version.
 // @ID Version
 // @Produce plain
-// @Success 200 {string} v1.1.0
+// @Success 200 {string} v1.4.7
 // @Router /version [get]
 func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
@@ -71,6 +71,7 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 	ImageURL        *string  `json:"image_url"`
 	WebURL          *string  `json:"web_url"`
+	Hidden          bool     `json:"hidden"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -192,9 +193,10 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	creatorPhotoURL := requestData.CreatorPhotoURL
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
+	hidden := requestData.Hidden
 
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, hidden)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -221,6 +223,7 @@ type updateGroupRequest struct {
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	Tags                []string `json:"tags"`
+	Hidden              bool     `json:"hidden"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
@@ -296,9 +299,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	tags := requestData.Tags
+	hidden := requestData.Hidden
 	membershipQuestions := requestData.MembershipQuestions
 
-	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
 	if err != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1150,9 +1154,8 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 //GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID GetGroupPosts
-// @Accept  json
 // @Param APP header string true "APP"
-// @Success 200 {array}
+// @Success 200 {array} postResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupID}/posts [get]
@@ -1187,12 +1190,13 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 //CreateGroupPost creates a post within the desired group.
 // @Description creates a post within the desired group.
 // @ID CreateGroupPost
-// @Accept  json
+// @Accept json
+// @Produce json
 // @Param APP header string true "APP"
-// @Success 200
+// @Success 200 {object} postResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{groupId}/post [post]
+// @Router /api/group/{groupId}/posts [post]
 func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["groupID"]
@@ -1238,15 +1242,24 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 	w.Write(data)
 }
 
+type postResponse struct {
+	ID       string `json:"id"`
+	GroupID  string `json:"group_id"`
+	ParentID string `json:"parent_id"`
+	Subject  string `json:"subject"`
+	Body     string `json:"body"`
+	Private  bool   `json:"private"`
+}
+
 //UpdateGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID UpdateGroupPost
 // @Accept  json
 // @Param APP header string true "APP"
-// @Success 200
+// @Success 200 {object} postResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/post [put]
+// @Router /api/group/{groupId}/posts [put]
 func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["groupID"]
@@ -1298,7 +1311,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/post [delete]
+// @Router /api/group/{groupId}/posts/{postId} [delete]
 func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
