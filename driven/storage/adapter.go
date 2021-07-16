@@ -990,12 +990,12 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	var postMapping = make(map[string]*model.Post)
 
 	if list != nil {
-		for i, _ := range list {
+		for i := range list {
 			postID := list[i].ID
 			list[i].Replies = make([]*model.Post, 0)
 			postMapping[*postID] = list[i]
 		}
-		for id, _ := range postMapping {
+		for id := range postMapping {
 			var parentPost *model.Post
 			if postMapping[id].ParentID != nil {
 				parentID := postMapping[id].ParentID
@@ -1006,7 +1006,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 				parentPost.Replies = repliesList
 			}
 		}
-		for key, _ := range postMapping {
+		for key := range postMapping {
 			if postMapping[key].ParentID == nil {
 				resultList = append(resultList, postMapping[key])
 			}
@@ -1134,10 +1134,10 @@ func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID stri
 		return fmt.Errorf("the user is not member or admin of the group")
 	}
 
-	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true);
+	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true)
 	if len(childPosts) > 0 && err == nil {
-		for _, post := range childPosts{
-			sa.DeletePost(clientID, current, groupID, *post.ID);
+		for _, post := range childPosts {
+			sa.DeletePost(clientID, current, groupID, *post.ID)
 		}
 	}
 
