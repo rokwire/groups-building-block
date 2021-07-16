@@ -35,7 +35,7 @@ type Services interface {
 	CreateEvent(clientID string, current model.User, eventID string, groupID string) error
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
 
-	GetPosts(clientID string, current *model.User, groupID string) ([]model.Post, error)
+	GetPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string) error
@@ -127,7 +127,7 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
-func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string) ([]model.Post, error) {
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
 	return s.app.getPosts(clientID, current, groupID)
 }
 
@@ -189,8 +189,9 @@ type Storage interface {
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
-	FindPosts(clientID string, current *model.User, groupID string) ([]model.Post, error)
-	FindPost(clientID string, current *model.User, groupID string, postID string) (*model.Post, error)
+	FindPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error)
+	FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error)
+	FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string) error

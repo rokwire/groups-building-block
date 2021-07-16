@@ -972,7 +972,7 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 }
 
 //FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string) ([]model.Post, error) {
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "group_id", Value: groupID}}
 
 	group, err := sa.FindGroup(clientID, groupID)
@@ -980,41 +980,35 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 		filter = append(filter, primitive.E{Key: "private", Value: false})
 	}
 
-	var list []model.Post
+	var list []*model.Post
 	err = sa.db.posts.Find(filter, &list, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var resultList = make([]model.Post, 0)
-	var postMapping = make(map[string]model.Post)
+	var resultList = make([]*model.Post, 0)
+	var postMapping = make(map[string]*model.Post)
 
 	if list != nil {
-		for _, post := range list {
-			postID := post.ID
-			postMapping[*postID] = post
+		for i, _ := range list {
+			postID := list[i].ID
+			list[i].Replies = make([]*model.Post, 0)
+			postMapping[*postID] = list[i]
 		}
-		for _, post := range postMapping {
-			var parentPost model.Post
-			if post.ParentID != nil {
-				parentID := post.ParentID
+		for id, _ := range postMapping {
+			var parentPost *model.Post
+			if postMapping[id].ParentID != nil {
+				parentID := postMapping[id].ParentID
 				parentPost = postMapping[*parentID]
-				var repliesList []model.Post
-				if parentPost.Replies == nil {
-					repliesList = []model.Post{}
-					parentPost.Replies = repliesList
-				} else {
-					repliesList = parentPost.Replies
-				}
+				repliesList := parentPost.Replies
 
-				repliesList = append(repliesList, post)
+				repliesList = append(repliesList, postMapping[id])
 				parentPost.Replies = repliesList
-				postMapping[*parentPost.ID] = parentPost
 			}
 		}
-		for _, post := range postMapping {
-			if post.ParentID == nil {
-				resultList = append(resultList, post)
+		for key, _ := range postMapping {
+			if postMapping[key].ParentID == nil {
+				resultList = append(resultList, postMapping[key])
 			}
 		}
 	}
@@ -1022,22 +1016,45 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	return resultList, nil
 }
 
-//FindPost Retrieves a posts by groupID and postID
-func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string, postID string) (*model.Post, error) {
+//FindPost Retrieves a post by groupID and postID
+func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
-	group, err := sa.FindGroup(clientID, groupID)
-	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
-		return nil, fmt.Errorf("the user is not member or admin of the group")
+	if !skipMembershipCheck {
+		group, err := sa.FindGroup(clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
+		}
 	}
 
 	var post *model.Post
-	err = sa.db.posts.FindOne(filter, &post, nil)
+	err := sa.db.posts.FindOne(filter, &post, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	return post, nil
+}
+
+// FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
+// This method doesn't construct tree hierarchy!
+func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool) ([]*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
+
+	if !skipMembershipCheck {
+		group, err := sa.FindGroup(clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
+		}
+	}
+
+	var posts []*model.Post
+	err := sa.db.posts.Find(filter, &posts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }
 
 // CreatePost Created a post
@@ -1115,6 +1132,13 @@ func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID stri
 	group, err := sa.FindGroup(clientID, groupID)
 	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
 		return fmt.Errorf("the user is not member or admin of the group")
+	}
+
+	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true);
+	if len(childPosts) > 0 && err == nil {
+		for _, post := range childPosts{
+			sa.DeletePost(clientID, current, groupID, *post.ID);
+		}
 	}
 
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}

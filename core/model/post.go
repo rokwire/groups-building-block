@@ -13,7 +13,7 @@ type Post struct {
 	Body        string      `json:"body" bson:"body"`
 	Status      string      `json:"status" bson:"status"`
 	Private     bool        `json:"private" bson:"private"`
-	Replies     []Post      `json:"replies,omitempty"` // This is constructed by the code (ParentID)
+	Replies     []*Post     `json:"replies,omitempty"` // This is constructed by the code (ParentID)
 	DateCreated *time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time  `json:"date_updated" bson:"date_updated"`
 }

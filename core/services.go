@@ -479,7 +479,7 @@ func (app *Application) deleteEvent(clientID string, current model.User, eventID
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string) ([]model.Post, error) {
+func (app *Application) getPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
 	return app.storage.FindPosts(clientID, current, groupID)
 }
 
