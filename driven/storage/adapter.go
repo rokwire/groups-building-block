@@ -32,6 +32,7 @@ type group struct {
 	MembersCount        int      `bson:"members_count"` //to be supported up to date
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
+	Hidden              bool     `bson:"hidden"`
 
 	Members []member `bson:"members"`
 
@@ -199,7 +200,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error) {
 	var insertedID string
 
 	// transaction
@@ -222,7 +223,9 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL}
+			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
+			Hidden: hidden,
+		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -246,7 +249,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -269,6 +272,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "tags", Value: tags},
 				primitive.E{Key: "membership_questions", Value: membershipQuestions},
 				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "hidden", Value: hidden},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -389,6 +393,7 @@ func (sa *Adapter) FindGroups(clientID string, category *string, title *string) 
 			result[i] = item
 		}
 	}
+
 	return result, nil
 }
 
@@ -966,6 +971,186 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
+//FindPosts Retrieves posts for a group
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "group_id", Value: groupID}}
+
+	group, err := sa.FindGroup(clientID, groupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		filter = append(filter, primitive.E{Key: "private", Value: false})
+	}
+
+	var list []*model.Post
+	err = sa.db.posts.Find(filter, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resultList = make([]*model.Post, 0)
+	var postMapping = make(map[string]*model.Post)
+
+	if list != nil {
+		for i := range list {
+			postID := list[i].ID
+			list[i].Replies = make([]*model.Post, 0)
+			postMapping[*postID] = list[i]
+		}
+		for id := range postMapping {
+			var parentPost *model.Post
+			if postMapping[id].ParentID != nil {
+				parentID := postMapping[id].ParentID
+				parentPost = postMapping[*parentID]
+				repliesList := parentPost.Replies
+
+				repliesList = append(repliesList, postMapping[id])
+				parentPost.Replies = repliesList
+			}
+		}
+		for key := range postMapping {
+			if postMapping[key].ParentID == nil {
+				resultList = append(resultList, postMapping[key])
+			}
+		}
+	}
+
+	return resultList, nil
+}
+
+//FindPost Retrieves a post by groupID and postID
+func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
+
+	if !skipMembershipCheck {
+		group, err := sa.FindGroup(clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
+		}
+	}
+
+	var post *model.Post
+	err := sa.db.posts.FindOne(filter, &post, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+// FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
+// This method doesn't construct tree hierarchy!
+func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool) ([]*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
+
+	if !skipMembershipCheck {
+		group, err := sa.FindGroup(clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
+		}
+	}
+
+	var posts []*model.Post
+	err := sa.db.posts.Find(filter, &posts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+// CreatePost Created a post
+func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+
+	group, err := sa.FindGroup(clientID, post.GroupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		return nil, fmt.Errorf("the user is not member or admin of the group")
+	}
+
+	if post.ClientID == nil { // Always required
+		post.ClientID = &clientID
+	}
+
+	if post.ID == nil { // Always required
+		id := uuid.New().String()
+		post.ID = &id
+	}
+
+	if post.Replies != nil { // This is constructed only for GET all for group
+		post.Replies = nil
+	}
+
+	now := time.Now()
+	post.DateCreated = &now
+	post.DateUpdated = &now
+
+	group, err = sa.FindGroup(clientID, post.GroupID)
+	if group != nil && err == nil && (group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
+		post.Member = model.PostCreator{
+			UserID: current.ID,
+			Email:  current.Email,
+			Name:   *name,
+		}
+	} else {
+		return nil, fmt.Errorf("the user is not member or admin of the group")
+	}
+
+	_, err = sa.db.posts.InsertOne(post)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+// UpdatePost Updates a post
+func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+
+	if post.ClientID == nil { // Always required
+		post.ClientID = &clientID
+	}
+
+	if post.ID == nil { // Always required
+		return nil, fmt.Errorf("Missing id")
+	}
+
+	if post.Replies != nil { // This is constructed only for GET all for group
+		post.Replies = nil
+	}
+
+	_, err := sa.db.posts.UpdateOne(filter, post, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
+}
+
+// DeletePost Deletes a post
+func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
+
+	group, err := sa.FindGroup(clientID, groupID)
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		return fmt.Errorf("the user is not member or admin of the group")
+	}
+
+	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true)
+	if len(childPosts) > 0 && err == nil {
+		for _, post := range childPosts {
+			sa.DeletePost(clientID, current, groupID, *post.ID)
+		}
+	}
+
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
+
+	_, err = sa.db.posts.DeleteOne(filter, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
@@ -996,6 +1181,7 @@ func constructGroup(gr group) model.Group {
 	webURL := gr.WebURL
 	membersCount := gr.MembersCount
 	tags := gr.Tags
+	hidden := gr.Hidden
 	membershipQuestions := gr.MembershipQuestions
 
 	dateCreated := gr.DateCreated
@@ -1009,7 +1195,7 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL, MembersCount: membersCount,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members}
+		Members: members, Hidden: hidden}
 }
 
 func constructMember(groupID string, member member) model.Member {

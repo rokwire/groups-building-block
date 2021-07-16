@@ -22,7 +22,7 @@ type ApisHandler struct {
 // @Description Gives the service version.
 // @ID Version
 // @Produce plain
-// @Success 200 {string} v1.1.0
+// @Success 200 {string} v1.4.7
 // @Router /version [get]
 func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
@@ -71,6 +71,7 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 	ImageURL        *string  `json:"image_url"`
 	WebURL          *string  `json:"web_url"`
+	Hidden          bool     `json:"hidden"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -192,9 +193,10 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	creatorPhotoURL := requestData.CreatorPhotoURL
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
+	hidden := requestData.Hidden
 
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, hidden)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -221,6 +223,7 @@ type updateGroupRequest struct {
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	Tags                []string `json:"tags"`
+	Hidden              bool     `json:"hidden"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
@@ -296,9 +299,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	tags := requestData.Tags
+	hidden := requestData.Hidden
 	membershipQuestions := requestData.MembershipQuestions
 
-	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
 	if err != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1145,6 +1149,194 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
+}
+
+//GetGroupPosts gets all posts for the desired group.
+// @Description gets all posts for the desired group.
+// @ID GetGroupPosts
+// @Param APP header string true "APP"
+// @Success 200 {array} postResponse
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupID}/posts [get]
+func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["groupID"]
+	if len(id) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	posts, err := h.app.Services.GetPosts(clientID, current, id)
+	if err != nil {
+		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(posts)
+	if err != nil {
+		log.Printf("error on marshal posts for group (%s) - %s", id, err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+//CreateGroupPost creates a post within the desired group.
+// @Description creates a post within the desired group.
+// @ID CreateGroupPost
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Success 200 {object} postResponse
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts [post]
+func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["groupID"]
+	if len(id) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var post *model.Post
+	err = json.Unmarshal(data, &post)
+	if err != nil {
+		log.Printf("error on unmarshal posts for group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	post.GroupID = id // Set group id from the query param
+
+	post, err = h.app.Services.CreatePost(clientID, current, post)
+	if err != nil {
+		log.Printf("error getting posts for group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(post)
+	if err != nil {
+		log.Printf("error on marshal posts for group - %s", err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type postResponse struct {
+	ID       string `json:"id"`
+	GroupID  string `json:"group_id"`
+	ParentID string `json:"parent_id"`
+	Subject  string `json:"subject"`
+	Body     string `json:"body"`
+	Private  bool   `json:"private"`
+}
+
+//UpdateGroupPost Updates a post within the desired group.
+// @Description Updates a post within the desired group.
+// @ID UpdateGroupPost
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200 {object} postResponse
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts [put]
+func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["groupID"]
+	if len(id) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var post *model.Post
+	err = json.Unmarshal(data, &post)
+	if err != nil {
+		log.Printf("error on unmarshal posts for group (%s) - %s", id, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	post, err = h.app.Services.UpdatePost(clientID, current, post)
+	if err != nil {
+		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(post)
+	if err != nil {
+		log.Printf("error on marshal posts for group (%s) - %s", id, err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+//DeleteGroupPost Updates a post within the desired group.
+// @Description Updates a post within the desired group.
+// @ID DeleteGroupPost
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts/{postId} [delete]
+func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID := params["postID"]
+	if len(postID) <= 0 {
+		log.Println("postID is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.DeletePost(clientID, current, groupID, postID)
+	if err != nil {
+		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 }
 
 //NewApisHandler creates new rest Handler instance

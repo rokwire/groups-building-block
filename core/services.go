@@ -48,6 +48,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["web_url"] = group.WebURL
 		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
+		item["hidden"] = group.Hidden
 		item["membership_questions"] = group.MembershipQuestions
 
 		//members
@@ -86,6 +87,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["web_url"] = group.WebURL
 		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
+		item["hidden"] = group.Hidden
 		item["membership_questions"] = group.MembershipQuestions
 
 		//members
@@ -126,6 +128,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
+	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -180,6 +183,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
+	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -219,6 +223,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
+	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -257,6 +262,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
+	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -320,9 +326,9 @@ func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Gro
 }
 
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
-		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
+		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, hidden)
 	if err != nil {
 		return nil, err
 	}
@@ -330,8 +336,8 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 }
 
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
-	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
+	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
 	if err != nil {
 		return err
 	}
@@ -353,9 +359,16 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 		return nil, err
 	}
 
+	visibleGroups := make([]model.Group, 0)
+	for _, group := range groups {
+		if !group.Hidden || group.IsGroupAdminOrMember(current.ID) || (title != nil && group.Title == *title) {
+			visibleGroups = append(visibleGroups, group)
+		}
+	}
+
 	//apply data protection
-	groupsList := make([]map[string]interface{}, len(groups))
-	for i, item := range groups {
+	groupsList := make([]map[string]interface{}, len(visibleGroups))
+	for i, item := range visibleGroups {
 		groupsList[i] = app.applyDataProtection(current, item)
 	}
 
@@ -464,4 +477,20 @@ func (app *Application) deleteEvent(clientID string, current model.User, eventID
 		return err
 	}
 	return nil
+}
+
+func (app *Application) getPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
+	return app.storage.FindPosts(clientID, current, groupID)
+}
+
+func (app *Application) createPost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	return app.storage.CreatePost(clientID, current, post)
+}
+
+func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	return app.storage.UpdatePost(clientID, current, post)
+}
+
+func (app *Application) deletePost(clientID string, current *model.User, groupID string, postID string) error {
+	return app.storage.DeletePost(clientID, current, groupID, postID)
 }

@@ -15,9 +15,9 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
@@ -34,6 +34,11 @@ type Services interface {
 	GetEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(clientID string, current model.User, eventID string, groupID string) error
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
+
+	GetPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error)
+	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
 
 type servicesImpl struct {
@@ -60,14 +65,14 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error) {
 	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
-		imageURL, webURL)
+		imageURL, webURL, hidden)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
-	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
+	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -122,6 +127,22 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
+	return s.app.getPosts(clientID, current, groupID)
+}
+
+func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	return s.app.createPost(clientID, current, post)
+}
+
+func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	return s.app.updatePost(clientID, current, post)
+}
+
+func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
+	return s.app.deletePost(clientID, current, groupID, postID)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetTODO() error
@@ -147,9 +168,9 @@ type Storage interface {
 	FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -167,6 +188,13 @@ type Storage interface {
 	FindEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
+
+	FindPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error)
+	FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error)
+	FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool) ([]*model.Post, error)
+	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
 
 //StorageListener listenes for change data storage events
