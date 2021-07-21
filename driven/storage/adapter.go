@@ -1104,8 +1104,6 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
-
 	if post.ClientID == nil { // Always required
 		post.ClientID = &clientID
 	}
@@ -1114,11 +1112,21 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 		return nil, fmt.Errorf("Missing id")
 	}
 
-	if post.Replies != nil { // This is constructed only for GET all for group
-		post.Replies = nil
-	}
+	now := time.Now()
+	post.DateUpdated = &now
 
-	_, err := sa.db.posts.UpdateOne(filter, post, nil)
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "subject", Value: post.Subject},
+				primitive.E{Key: "body", Value: post.Body},
+				primitive.E{Key: "private", Value: post.Private},
+				primitive.E{Key: "date_updated", Value: post.DateUpdated },
+			},
+		},
+	}
+	_, err := sa.db.groups.UpdateOne(filter, update, nil)
 	if err != nil {
 		return nil, err
 	}
