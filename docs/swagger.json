@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.4.7"
+        "version": "1.4.10"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -499,6 +499,9 @@
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Admin"
+                ],
                 "operationId": "GetGroups",
                 "parameters": [
                     {
@@ -516,7 +519,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Filtering by group's title",
                         "name": "title",
                         "in": "query"
                     }
