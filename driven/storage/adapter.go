@@ -1106,6 +1106,9 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 
 	originalPost, _ := sa.FindPost(clientID, current, post.GroupID, *post.ID, true)
+	if originalPost == nil {
+		return nil, fmt.Errorf("unable to find post with id (%s) ", post.ID)
+	}
 	if originalPost.Member.UserID != current.ID {
 		return nil, fmt.Errorf("only creator of the post can update it")
 	}
@@ -1132,7 +1135,7 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 		},
 		},
 	}
-	_, err := sa.db.groups.UpdateOne(filter, update, nil)
+	_, err := sa.db.posts.UpdateOne(filter, update, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1145,6 +1148,9 @@ func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID stri
 
 	group, _ := sa.FindGroup(clientID, groupID)
 	originalPost, _ := sa.FindPost(clientID, current, groupID, postID, true)
+	if originalPost == nil {
+		return fmt.Errorf("unable to find post with id (%s) ", postID)
+	}
 	if group == nil || originalPost == nil || (!group.IsGroupAdmin(current.ID) && originalPost.Member.UserID != current.ID) {
 		return fmt.Errorf("only creator of the post or group admin can delete it")
 	}
