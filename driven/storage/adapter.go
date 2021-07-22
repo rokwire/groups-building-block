@@ -1104,6 +1104,12 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+
+	originalPost, _ := sa.FindPost(clientID, current, post.GroupID, *post.ID, true)
+	if originalPost.Member.UserID != current.ID {
+		return nil, fmt.Errorf("only creator of the post can update it")
+	}
+
 	if post.ClientID == nil { // Always required
 		post.ClientID = &clientID
 	}
@@ -1119,11 +1125,11 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "subject", Value: post.Subject},
-				primitive.E{Key: "body", Value: post.Body},
-				primitive.E{Key: "private", Value: post.Private},
-				primitive.E{Key: "date_updated", Value: post.DateUpdated },
-			},
+			primitive.E{Key: "subject", Value: post.Subject},
+			primitive.E{Key: "body", Value: post.Body},
+			primitive.E{Key: "private", Value: post.Private},
+			primitive.E{Key: "date_updated", Value: post.DateUpdated},
+		},
 		},
 	}
 	_, err := sa.db.groups.UpdateOne(filter, update, nil)
@@ -1137,9 +1143,10 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 // DeletePost Deletes a post
 func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
 
-	group, err := sa.FindGroup(clientID, groupID)
-	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
-		return fmt.Errorf("the user is not member or admin of the group")
+	group, _ := sa.FindGroup(clientID, groupID)
+	originalPost, _ := sa.FindPost(clientID, current, groupID, postID, true)
+	if group == nil || originalPost == nil || (!group.IsGroupAdmin(current.ID) && originalPost.Member.UserID != current.ID) {
+		return fmt.Errorf("only creator of the post or group admin can delete it")
 	}
 
 	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true)

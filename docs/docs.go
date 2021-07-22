@@ -357,38 +357,6 @@ var doc = `{
             }
         },
         "/api/group/{groupId}/posts": {
-            "put": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Updates a post within the desired group.",
-                "consumes": [
-                    "application/json"
-                ],
-                "operationId": "UpdateGroupPost",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
-                        }
-                    }
-                }
-            },
             "post": {
                 "security": [
                     {
@@ -426,6 +394,38 @@ var doc = `{
             }
         },
         "/api/group/{groupId}/posts/{postId}": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Updates a post within the desired group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "UpdateGroupPost",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.postResponse"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {

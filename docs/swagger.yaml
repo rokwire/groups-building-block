@@ -555,6 +555,24 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+  /api/group/{groupId}/posts/{postId}:
+    delete:
+      consumes:
+      - application/json
+      description: Updates a post within the desired group.
+      operationId: DeleteGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
     put:
       consumes:
       - application/json
@@ -571,24 +589,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rest.postResponse'
-      security:
-      - AppUserAuth: []
-      - APIKeyAuth: []
-  /api/group/{groupId}/posts/{postId}:
-    delete:
-      consumes:
-      - application/json
-      description: Updates a post within the desired group.
-      operationId: DeleteGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      responses:
-        "200":
-          description: ""
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
