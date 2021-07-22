@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
@@ -1291,9 +1292,9 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	if postID != *post.ID {
-		log.Printf("unexpected post id query param (%s) - %s", postID, err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	if post.ID == nil || postID != *post.ID {
+		log.Printf("unexpected post id query param (%s) and post json data", postID)
+		http.Error(w, fmt.Sprintf("inconsistent post id query param (%s) and post json data", postID), http.StatusBadRequest)
 		return
 	}
 
