@@ -22,7 +22,7 @@ type ApisHandler struct {
 // @Description Gives the service version.
 // @ID Version
 // @Produce plain
-// @Success 200 {string} v1.4.7
+// @Success 200 {string} v1.4.9
 // @Router /version [get]
 func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
@@ -1259,13 +1259,20 @@ type postResponse struct {
 // @Success 200 {object} postResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{groupId}/posts [put]
+// @Router /api/group/{groupId}/posts/{postId} [put]
 func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["groupID"]
-	if len(id) <= 0 {
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
 		log.Println("groupID is required")
-		http.Error(w, "groupID is required", http.StatusBadRequest)
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID := params["postID"]
+	if len(postID) <= 0 {
+		log.Println("postID is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
 		return
 	}
 
@@ -1279,21 +1286,27 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 	var post *model.Post
 	err = json.Unmarshal(data, &post)
 	if err != nil {
-		log.Printf("error on unmarshal posts for group (%s) - %s", id, err.Error())
+		log.Printf("error on unmarshal post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if postID != *post.ID {
+		log.Printf("unexpected post id query param (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	post, err = h.app.Services.UpdatePost(clientID, current, post)
 	if err != nil {
-		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
+		log.Printf("error update post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	data, err = json.Marshal(post)
 	if err != nil {
-		log.Printf("error on marshal posts for group (%s) - %s", id, err.Error())
+		log.Printf("error on marshal post (%s) - %s", postID, err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
