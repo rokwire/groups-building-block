@@ -1107,7 +1107,7 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 
 	originalPost, _ := sa.FindPost(clientID, current, post.GroupID, *post.ID, true)
 	if originalPost == nil {
-		return nil, fmt.Errorf("unable to find post with id (%s) ", post.ID)
+		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
 	if originalPost.Member.UserID != current.ID {
 		return nil, fmt.Errorf("only creator of the post can update it")
