@@ -1025,7 +1025,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	if paging && len(list) > 0 {
 		for _, post := range list {
-			childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, *post.ID, true, true)
+			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, *post.ID, true, order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
 					list = append(list, childPost)
@@ -1043,20 +1043,20 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 			list[i].Replies = make([]*model.Post, 0)
 			postMapping[*postID] = list[i]
 		}
-		for id := range postMapping {
+		for _, post := range list {
 			var parentPost *model.Post
-			if postMapping[id].ParentID != nil {
-				parentID := postMapping[id].ParentID
+			if post.ParentID != nil {
+				parentID := post.ParentID
 				parentPost = postMapping[*parentID]
 				repliesList := parentPost.Replies
 
-				repliesList = append(repliesList, postMapping[id])
+				repliesList = append(repliesList, post)
 				parentPost.Replies = repliesList
 			}
 		}
-		for key := range postMapping {
-			if postMapping[key].ParentID == nil {
-				resultList = append(resultList, postMapping[key])
+		for _, post := range list {
+			if post.ParentID == nil {
+				resultList = append(resultList, post)
 			}
 		}
 	}
@@ -1084,9 +1084,33 @@ func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string
 	return post, nil
 }
 
+// FindTopPostByParentID Finds the top post by parent id
+func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool) (*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: parentID}}
+
+	if !skipMembershipCheck {
+		group, err := sa.FindGroup(clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
+		}
+	}
+
+	var post *model.Post
+	err := sa.db.posts.FindOne(filter, &post, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if post.ParentID != nil {
+		return sa.FindTopPostByParentID(clientID, current, groupID, *post.ParentID, skipMembershipCheck)
+	}
+
+	return post, nil
+}
+
 // FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool, recursive bool) ([]*model.Post, error) {
+func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
 
 	if !skipMembershipCheck {
@@ -1096,8 +1120,15 @@ func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, gro
 		}
 	}
 
+	findOptions := options.Find()
+	if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	}
+
 	var posts []*model.Post
-	err := sa.db.posts.Find(filter, &posts, nil)
+	err := sa.db.posts.Find(filter, &posts, findOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -1105,7 +1136,7 @@ func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, gro
 	if recursive {
 		if len(posts) > 0 {
 			for _, post := range posts {
-				childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, *post.ID, true, recursive)
+				childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, *post.ID, true, recursive, order)
 				if err == nil && childPosts != nil {
 					for _, childPost := range childPosts {
 						posts = append(posts, childPost)
@@ -1113,6 +1144,34 @@ func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, gro
 				}
 			}
 		}
+	}
+
+	return posts, nil
+}
+
+// FindPostsByTopParentID  Retrieves a post by groupID and top parent id
+// This method doesn't construct tree hierarchy!
+func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, groupID string, topParentID string, skipMembershipCheck bool, order *string) ([]*model.Post, error) {
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "top_parent_id", Value: topParentID}}
+
+	if !skipMembershipCheck {
+		group, err := sa.FindGroup(clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
+		}
+	}
+
+	findOptions := options.Find()
+	if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	}
+
+	var posts []*model.Post
+	err := sa.db.posts.Find(filter, &posts, findOptions)
+	if err != nil {
+		return nil, err
 	}
 
 	return posts, nil
@@ -1137,6 +1196,13 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 
 	if post.Replies != nil { // This is constructed only for GET all for group
 		post.Replies = nil
+	}
+
+	if post.ParentID != nil {
+		topPost, _ := sa.FindTopPostByParentID(clientID, current, group.ID, *post.ParentID, false)
+		if topPost != nil && topPost.ParentID == nil {
+			post.TopParentID = topPost.ID
+		}
 	}
 
 	now := time.Now()
@@ -1216,7 +1282,7 @@ func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID stri
 		return fmt.Errorf("only creator of the post or group admin can delete it")
 	}
 
-	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true, false)
+	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true, false, nil)
 	if len(childPosts) > 0 && err == nil {
 		for _, post := range childPosts {
 			sa.DeletePost(clientID, current, groupID, *post.ID)

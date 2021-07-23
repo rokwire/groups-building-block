@@ -8,6 +8,7 @@ type Post struct {
 	ClientID    *string     `json:"client_id" bson:"client_id"`
 	GroupID     string      `json:"group_id" bson:"group_id"`
 	ParentID    *string     `json:"parent_id" bson:"parent_id"`
+	TopParentID *string     `json:"top_parent_id" bson:"top_parent_id"`
 	Member      PostCreator `json:"member" bson:"member"`
 	Subject     string      `json:"subject" bson:"subject"`
 	Body        string      `json:"body" bson:"body"`

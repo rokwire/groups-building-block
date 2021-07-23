@@ -275,6 +275,15 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 			return err
 		}
 	}
+	if indexMapping["top_parent_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "top_parent_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
 	log.Println("posts checks passed")
 	return nil
 }
