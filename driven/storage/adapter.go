@@ -382,7 +382,7 @@ func (sa *Adapter) FindGroups(clientID string, category *string, title *string, 
 	}
 
 	findOptions := options.Find()
-	if "desc" == *order {
+	if order != nil && "desc" == *order {
 		findOptions.SetSort(bson.D{{"date_created", -1}})
 	} else {
 		findOptions.SetSort(bson.D{{"date_created", 1}})
@@ -999,7 +999,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	paging := false
 	findOptions := options.Find()
-	if "desc" == *order {
+	if order != nil && "desc" == *order {
 		findOptions.SetSort(bson.D{{"date_created", -1}})
 	} else {
 		findOptions.SetSort(bson.D{{"date_created", 1}})
