@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"groups/core"
 	"groups/core/model"
 	"log"
@@ -371,7 +372,7 @@ func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (
 }
 
 //FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, category *string, title *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, category *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if category != nil {
 		filter = append(filter, primitive.E{Key: "category", Value: category})
@@ -380,8 +381,21 @@ func (sa *Adapter) FindGroups(clientID string, category *string, title *string) 
 		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
 	}
 
+	findOptions := options.Find()
+	if "desc" == *order {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+	}
+
 	var list []group
-	err := sa.db.groups.Find(filter, &list, nil)
+	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -972,18 +986,52 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 }
 
 //FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "group_id", Value: groupID}}
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "group_id", Value: groupID},
+	}
 
 	group, err := sa.FindGroup(clientID, groupID)
 	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
 		filter = append(filter, primitive.E{Key: "private", Value: false})
 	}
 
+	paging := false
+	findOptions := options.Find()
+	if "desc" == *order {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+		paging = true
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+		paging = true
+	}
+
+	if paging {
+		filter = append(filter, primitive.E{Key: "parent_id", Value: nil})
+	}
+
 	var list []*model.Post
-	err = sa.db.posts.Find(filter, &list, nil)
+	err = sa.db.posts.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
+	}
+
+	if paging && len(list) > 0 {
+		for _, post := range list {
+			childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, *post.ID, true, true)
+			if err == nil && childPosts != nil {
+				for _, childPost := range childPosts {
+					list = append(list, childPost)
+				}
+			}
+		}
 	}
 
 	var resultList = make([]*model.Post, 0)
@@ -1038,7 +1086,7 @@ func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string
 
 // FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool) ([]*model.Post, error) {
+func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool, recursive bool) ([]*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
 
 	if !skipMembershipCheck {
@@ -1052,6 +1100,19 @@ func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, gro
 	err := sa.db.posts.Find(filter, &posts, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if recursive {
+		if len(posts) > 0 {
+			for _, post := range posts {
+				childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, *post.ID, true, recursive)
+				if err == nil && childPosts != nil {
+					for _, childPost := range childPosts {
+						posts = append(posts, childPost)
+					}
+				}
+			}
+		}
 	}
 
 	return posts, nil
@@ -1155,7 +1216,7 @@ func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID stri
 		return fmt.Errorf("only creator of the post or group admin can delete it")
 	}
 
-	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true)
+	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true, false)
 	if len(childPosts) > 0 && err == nil {
 		for _, post := range childPosts {
 			sa.DeletePost(clientID, current, groupID, *post.ID)

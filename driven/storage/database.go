@@ -174,6 +174,25 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		return err
 	}
 
+	indexes, _ := groups.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+	if indexMapping["date_created_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_created", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("groups checks passed")
 	return nil
 }
@@ -247,7 +266,15 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 			return err
 		}
 	}
-
+	if indexMapping["date_created_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_created", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
 	log.Println("posts checks passed")
 	return nil
 }
