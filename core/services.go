@@ -352,9 +352,9 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 	return nil
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error) {
+func (app *Application) getGroups(clientID string, current *model.User, category *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, category, title)
+	groups, err := app.storage.FindGroups(clientID, category, title, offset, limit, order)
 	if err != nil {
 		return nil, err
 	}
@@ -479,8 +479,8 @@ func (app *Application) deleteEvent(clientID string, current model.User, eventID
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID)
+func (app *Application) getPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return app.storage.FindPosts(clientID, current, groupID, offset, limit, order)
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
