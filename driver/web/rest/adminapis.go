@@ -6,6 +6,7 @@ import (
 	"groups/core/model"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 //AdminApisHandler handles the rest Admin APIs implementation
@@ -38,7 +39,31 @@ func (h *AdminApisHandler) GetGroups(clientID string, current *model.User, w htt
 		title = &titles[0]
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category, title)
+	var offset *int64
+	offsets, ok := r.URL.Query()["offset"]
+	if ok && len(offsets[0]) > 0 {
+		val, err := strconv.ParseInt(offsets[0], 0, 64)
+		if err == nil {
+			offset = &val
+		}
+	}
+
+	var limit *int64
+	limits, ok := r.URL.Query()["limit"]
+	if ok && len(limits[0]) > 0 {
+		val, err := strconv.ParseInt(limits[0], 0, 64)
+		if err == nil {
+			limit = &val
+		}
+	}
+
+	var order *string
+	orders, ok := r.URL.Query()["order"]
+	if ok && len(orders[0]) > 0 {
+		order = &orders[0]
+	}
+
+	groups, err := h.app.Services.GetGroups(clientID, current, category, title, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
