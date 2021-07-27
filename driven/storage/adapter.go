@@ -293,46 +293,6 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 	return nil
 }
 
-//resetGroupUpdatedDate set the updated date to the current date time (now)
-func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
-	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		// update the group
-		filter := bson.D{
-			primitive.E{Key: "_id", Value: id},
-			primitive.E{Key: "client_id", Value: clientID},
-		}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now()},
-			}},
-		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 //DeleteGroup deletes a group.
 func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 	// transaction
@@ -537,6 +497,7 @@ func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID s
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "members", Value: groupMembers},
+				primitive.E{Key: "date_updated", Value: time.Now()},
 			},
 			},
 		}
@@ -556,8 +517,6 @@ func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID s
 	})
 	if err != nil {
 		return err
-	} else {
-		sa.resetGroupUpdatedDate(clientID, groupID)
 	}
 
 	return nil
@@ -611,6 +570,7 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "members", Value: members},
+				primitive.E{Key: "date_updated", Value: time.Now()},
 			},
 			},
 		}
@@ -630,8 +590,6 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 	})
 	if err != nil {
 		return err
-	} else {
-		sa.resetGroupUpdatedDate(clientID, groupID)
 	}
 
 	return nil
@@ -691,7 +649,10 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 		membersCount-- //keep the members count updated
 		changeFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
 		change := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{primitive.E{Key: "members_count", Value: membersCount}}},
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members_count", Value: membersCount},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
 			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, changeFilter, change, nil)
@@ -710,8 +671,6 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 	})
 	if err != nil {
 		return err
-	} else {
-		sa.resetGroupUpdatedDate(clientID, groupID)
 	}
 
 	return nil
@@ -976,13 +935,12 @@ func (sa *Adapter) FindEvents(clientID string, groupID string) ([]model.Event, e
 func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string) error {
 	event := event{ClientID: clientID, EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
 	_, err := sa.db.events.InsertOne(event)
-	if err != nil {
-		return err
-	} else {
+
+	if err == nil {
 		sa.resetGroupUpdatedDate(clientID, groupID)
 	}
 
-	return nil
+	return err
 }
 
 //DeleteEvent deletes a group event
@@ -1275,13 +1233,12 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	}
 
 	_, err = sa.db.posts.InsertOne(post)
-	if err != nil {
-		return nil, err
-	} else {
+
+	if err == nil {
 		sa.resetGroupUpdatedDate(clientID, post.GroupID)
 	}
 
-	return post, nil
+	return post, err
 }
 
 // UpdatePost Updates a post
@@ -1318,13 +1275,12 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 		},
 	}
 	_, err := sa.db.posts.UpdateOne(filter, update, nil)
-	if err != nil {
-		return nil, err
-	} else {
+
+	if err == nil {
 		sa.resetGroupUpdatedDate(clientID, post.GroupID)
 	}
 
-	return post, nil
+	return post, err
 }
 
 // DeletePost Deletes a post
@@ -1349,12 +1305,51 @@ func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID stri
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
 	_, err = sa.db.posts.DeleteOne(filter, nil)
-	if err != nil {
-		return err
-	} else {
+
+	if err == nil {
 		sa.resetGroupUpdatedDate(clientID, groupID)
 	}
 
+	return err
+}
+
+//resetGroupUpdatedDate set the updated date to the current date time (now)
+func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		// update the group
+		filter := bson.D{
+			primitive.E{Key: "_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID},
+		}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
