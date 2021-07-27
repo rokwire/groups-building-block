@@ -19,8 +19,6 @@ definitions:
         type: string
       description:
         type: string
-      hidden:
-        type: boolean
       image_url:
         type: string
       privacy:
@@ -287,8 +285,6 @@ definitions:
         type: string
       description:
         type: string
-      hidden:
-        type: boolean
       image_url:
         type: string
       membership_questions:
@@ -634,7 +630,7 @@ paths:
         in: query
         name: category
         type: string
-      - description: Filtering by group's title
+      - description: Filtering by group's title (case-insensitive)
         in: query
         name: title
         type: string
@@ -648,8 +644,6 @@ paths:
       security:
       - APIKeyAuth: []
       - AppUserAuth: []
-      tags:
-      - Admin
     post:
       consumes:
       - application/json

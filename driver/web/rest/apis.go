@@ -73,7 +73,6 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 	ImageURL        *string  `json:"image_url"`
 	WebURL          *string  `json:"web_url"`
-	Hidden          bool     `json:"hidden"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -224,7 +223,6 @@ type updateGroupRequest struct {
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	Tags                []string `json:"tags"`
-	Hidden              bool     `json:"hidden"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
@@ -300,10 +298,9 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	tags := requestData.Tags
-	hidden := requestData.Hidden
 	membershipQuestions := requestData.MembershipQuestions
 
-	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
+	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 	if err != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

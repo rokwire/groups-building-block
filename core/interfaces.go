@@ -17,7 +17,7 @@ type Services interface {
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
 		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
@@ -71,8 +71,8 @@ func (s *servicesImpl) CreateGroup(clientID string, current model.User, title st
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
-	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -170,7 +170,7 @@ type Storage interface {
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)

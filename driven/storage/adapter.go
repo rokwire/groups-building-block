@@ -248,7 +248,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -271,7 +271,6 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "tags", Value: tags},
 				primitive.E{Key: "membership_questions", Value: membershipQuestions},
 				primitive.E{Key: "date_updated", Value: time.Now()},
-				primitive.E{Key: "hidden", Value: hidden},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -1340,7 +1339,7 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL, MembersCount: membersCount,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members,}
+		Members: members}
 }
 
 func constructMember(groupID string, member member) model.Member {

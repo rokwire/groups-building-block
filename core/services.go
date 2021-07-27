@@ -330,8 +330,8 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 }
 
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, hidden bool) error {
-	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 	if err != nil {
 		return err
 	}
