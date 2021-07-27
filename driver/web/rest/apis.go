@@ -73,7 +73,6 @@ type createGroupRequest struct {
 	CreatorPhotoURL string   `json:"creator_photo_url"`
 	ImageURL        *string  `json:"image_url"`
 	WebURL          *string  `json:"web_url"`
-	Hidden          bool     `json:"hidden"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -224,7 +223,6 @@ type updateGroupRequest struct {
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	Tags                []string `json:"tags"`
-	Hidden              bool     `json:"hidden"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
