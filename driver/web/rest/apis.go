@@ -300,10 +300,9 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	tags := requestData.Tags
-	hidden := requestData.Hidden
 	membershipQuestions := requestData.MembershipQuestions
 
-	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, hidden)
+	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 	if err != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
