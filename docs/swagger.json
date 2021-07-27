@@ -499,6 +499,9 @@
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Admin"
+                ],
                 "operationId": "GetGroups",
                 "parameters": [
                     {
@@ -516,7 +519,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Filtering by group's title",
                         "name": "title",
                         "in": "query"
                     }

@@ -511,6 +511,9 @@ var doc = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Admin"
+                ],
                 "operationId": "GetGroups",
                 "parameters": [
                     {
@@ -528,7 +531,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Filtering by group's title",
                         "name": "title",
                         "in": "query"
                     }

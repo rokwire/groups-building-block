@@ -853,7 +853,7 @@ func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membe
 		changeFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
 		change := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
-			 	primitive.E{Key: "members_count", Value: membersCount},
+				primitive.E{Key: "members_count", Value: membersCount},
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
 			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
