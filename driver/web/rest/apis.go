@@ -195,10 +195,9 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	creatorPhotoURL := requestData.CreatorPhotoURL
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
-	hidden := requestData.Hidden
 
 	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, hidden)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -33,7 +33,6 @@ type group struct {
 	MembersCount        int      `bson:"members_count"` //to be supported up to date
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
-	Hidden              bool     `bson:"hidden"`
 
 	Members []member `bson:"members"`
 
@@ -201,7 +200,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
 	var insertedID string
 
 	// transaction
@@ -225,7 +224,6 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
 			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
-			Hidden: hidden,
 		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
@@ -1329,7 +1327,6 @@ func constructGroup(gr group) model.Group {
 	webURL := gr.WebURL
 	membersCount := gr.MembersCount
 	tags := gr.Tags
-	hidden := gr.Hidden
 	membershipQuestions := gr.MembershipQuestions
 
 	dateCreated := gr.DateCreated
@@ -1343,7 +1340,7 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL, MembersCount: membersCount,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members, Hidden: hidden}
+		Members: members,}
 }
 
 func constructMember(groupID string, member member) model.Member {
