@@ -48,7 +48,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["web_url"] = group.WebURL
 		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
-		item["hidden"] = group.Hidden
 		item["membership_questions"] = group.MembershipQuestions
 
 		//members
@@ -87,7 +86,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["web_url"] = group.WebURL
 		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
-		item["hidden"] = group.Hidden
 		item["membership_questions"] = group.MembershipQuestions
 
 		//members
@@ -128,7 +126,6 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
-	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -183,7 +180,6 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
-	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -223,7 +219,6 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
-	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -262,7 +257,6 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["web_url"] = group.WebURL
 	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
-	item["hidden"] = group.Hidden
 	item["membership_questions"] = group.MembershipQuestions
 
 	//members
@@ -326,9 +320,9 @@ func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Gro
 }
 
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, hidden bool) (*string, error) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
-		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, hidden)
+		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +355,7 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 
 	visibleGroups := make([]model.Group, 0)
 	for _, group := range groups {
-		if !group.Hidden || group.IsGroupAdminOrMember(current.ID) || (title != nil && group.Title == *title) {
+		if group.Privacy != "private" || group.IsGroupAdminOrMember(current.ID) || (title != nil && group.Title == *title) {
 			visibleGroups = append(visibleGroups, group)
 		}
 	}
