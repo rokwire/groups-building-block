@@ -154,16 +154,14 @@ type userGroupMembership struct {
 func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
 		log.Printf("%s is not allowed to create a group", current.Email)
-
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
+		http.Error(w, core.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a group - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -171,7 +169,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create group data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -180,7 +178,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	err = validate.Struct(requestData)
 	if err != nil {
 		log.Printf("Error on validating create group data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, core.NewValidationError(err).JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -195,18 +193,18 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 
-	insertedID, err := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
 		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if groupErr != nil {
+		log.Println(groupErr.Error())
+		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
 	data, err = json.Marshal(createResponse{InsertedID: *insertedID})
 	if err != nil {
 		log.Println("Error on marshal create group response")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -243,14 +241,14 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	id := params["id"]
 	if len(id) <= 0 {
 		log.Println("Group id is required")
-		http.Error(w, "Group id is required", http.StatusBadRequest)
+		http.Error(w, core.NewMissingParamError("Group id is required").JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the update group item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -258,7 +256,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the update group request data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -266,7 +264,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	err = validate.Struct(requestData)
 	if err != nil {
 		log.Printf("Error on validating update group data - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -274,20 +272,18 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 	if group == nil {
 		log.Printf("there is no a group for the provided id - %s", id)
 		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, core.NewNotFoundError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 	if !group.IsGroupAdmin(current.ID) {
 		log.Printf("%s is not allowed to update a group", current.Email)
-
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
+		http.Error(w, core.NewForbiddenError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -300,10 +296,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	tags := requestData.Tags
 	membershipQuestions := requestData.MembershipQuestions
 
-	err = h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
-	if err != nil {
+	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
