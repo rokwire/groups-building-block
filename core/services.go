@@ -320,7 +320,7 @@ func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Gro
 }
 
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
 		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
 	if err != nil {
@@ -330,7 +330,7 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 }
 
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError {
 	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 	if err != nil {
 		return err

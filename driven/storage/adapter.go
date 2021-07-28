@@ -9,6 +9,7 @@ import (
 	"groups/core/model"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -200,11 +201,20 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *core.GroupError) {
 	var insertedID string
 
+	existingGroups, err := sa.FindGroups(clientID, nil, &title, nil, nil, nil)
+	if err == nil && len(existingGroups) > 0 {
+		for _, group := range existingGroups {
+			if strings.ToLower(group.Title) == strings.ToLower(title) {
+				return nil, core.NewGropDuplicationError()
+			}
+		}
+	}
+
 	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+	err = sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
 		if err != nil {
 			log.Printf("error starting a transaction - %s", err)
@@ -240,7 +250,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, core.NewServerError()
 	}
 
 	return &insertedID, nil
@@ -248,9 +258,19 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *core.GroupError {
+
+	existingGroups, err := sa.FindGroups(clientID, nil, &title, nil, nil, nil)
+	if err == nil && len(existingGroups) > 0 {
+		for _, group := range existingGroups {
+			if group.ID != id && strings.ToLower(group.Title) == strings.ToLower(title) {
+				return core.NewGropDuplicationError()
+			}
+		}
+	}
+
 	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+	err = sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
 		if err != nil {
 			log.Printf("error starting a transaction - %s", err)
@@ -288,7 +308,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 		return nil
 	})
 	if err != nil {
-		return err
+		return core.NewServerError()
 	}
 	return nil
 }
