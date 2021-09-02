@@ -66,7 +66,8 @@ func (we *Adapter) Start() {
 	adminSubrouter := restSubrouter.PathPrefix("/admin").Subrouter()
 
 	// Admin APIs
-	adminSubrouter.HandleFunc("/groups", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/user/groups", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/groups", we.adminAppIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 
 	//internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")

@@ -193,6 +193,16 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["privacy_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "privacy", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("groups checks passed")
 	return nil
 }
