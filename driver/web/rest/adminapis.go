@@ -21,7 +21,7 @@ type AdminApisHandler struct {
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
-// @Param title query string false "Filtering by group's title"
+// @Param title query string false "Filtering by group's title - case insensitive"
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
@@ -95,7 +95,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
-// @Param title query string false "Filtering by group's title"
+// @Param title query string false "Filtering by group's title - case insensitive"
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
