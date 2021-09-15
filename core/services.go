@@ -2,6 +2,7 @@ package core
 
 import (
 	"groups/core/model"
+	"strings"
 )
 
 func (app *Application) applyDataProtection(current *model.User, group model.Group) map[string]interface{} {
@@ -355,7 +356,8 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 
 	visibleGroups := make([]model.Group, 0)
 	for _, group := range groups {
-		if group.Privacy != "private" || group.IsGroupAdminOrMember(current.ID) || (title != nil && group.Title == *title) {
+
+		if group.Privacy != "private" || group.IsGroupAdminOrMember(current.ID) || (title != nil && strings.EqualFold(group.Title, *title)) {
 			visibleGroups = append(visibleGroups, group)
 		}
 	}
