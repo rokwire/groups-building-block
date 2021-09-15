@@ -412,6 +412,12 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		category = &catogies[0]
 	}
 
+	var privacy *string
+	privacyParam, ok := r.URL.Query()["privacy"]
+	if ok && len(privacyParam[0]) > 0 {
+		privacy = &privacyParam[0]
+	}
+
 	var title *string
 	titles, ok := r.URL.Query()["title"]
 	if ok && len(titles[0]) > 0 {
@@ -442,7 +448,7 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		order = &orders[0]
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category, title, offset, limit, order)
+	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

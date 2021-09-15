@@ -204,7 +204,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *core.GroupError) {
 	var insertedID string
 
-	existingGroups, err := sa.FindGroups(clientID, nil, &title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, group := range existingGroups {
 			if strings.ToLower(group.Title) == strings.ToLower(title) {
@@ -260,7 +260,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *core.GroupError {
 
-	existingGroups, err := sa.FindGroups(clientID, nil, &title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, group := range existingGroups {
 			if group.ID != id && strings.ToLower(group.Title) == strings.ToLower(title) {
@@ -389,13 +389,16 @@ func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (
 }
 
 //FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, category *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if category != nil {
 		filter = append(filter, primitive.E{Key: "category", Value: category})
 	}
 	if title != nil {
 		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
+	}
+	if privacy != nil {
+		filter = append(filter, primitive.E{Key: "privacy", Value: privacy})
 	}
 
 	findOptions := options.Find()
