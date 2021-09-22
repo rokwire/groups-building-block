@@ -150,13 +150,14 @@ type userGroupMembership struct {
 // @Security AppUserAuth
 // @Router /api/groups [post]
 func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
-		log.Printf("%s is not allowed to create a group", current.Email)
+	// NOTE: Permissions should be handled using the admin auth wrap function and the associated authorization policy
+	// if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
+	// 	log.Printf("%s is not allowed to create a group", current.Email)
 
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
-		return
-	}
+	// 	w.WriteHeader(http.StatusForbidden)
+	// 	w.Write([]byte("Forbidden"))
+	// 	return
+	// }
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
