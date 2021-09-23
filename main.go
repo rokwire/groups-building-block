@@ -33,8 +33,8 @@ func main() {
 	}
 
 	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
-	notificationsBaseUrl := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseUrl)
+	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
+	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter)

@@ -14,6 +14,7 @@ type Adapter struct {
 	baseURL        string
 }
 
+// Recipient struct
 type Recipient struct {
 	UserID string `json:"user_id"`
 	Name   string `json:"name"`
