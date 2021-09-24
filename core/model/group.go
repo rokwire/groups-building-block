@@ -86,7 +86,7 @@ func (gr Group) IsGroupRejected(userID string) bool {
 	return false
 }
 
-//UserNameByID Get name of the user
+//UserNameByID says if the user is a group rejected
 func (gr Group) UserNameByID(userID string) *string {
 	if gr.Members == nil {
 		return nil
@@ -95,19 +95,6 @@ func (gr Group) UserNameByID(userID string) *string {
 		if item.User.ID == userID {
 			name := item.Name
 			return &name
-		}
-	}
-	return nil
-}
-
-// GetMemberByID says if the user is a group rejected
-func (gr Group) GetMemberByID(userID string) *Member {
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.ID == userID {
-			return &item
 		}
 	}
 	return nil
