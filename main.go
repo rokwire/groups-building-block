@@ -2,7 +2,6 @@ package main
 
 import (
 	core "groups/core"
-	"groups/driven/notifications"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
 	"log"
@@ -32,12 +31,8 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
-	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
-	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
-
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter)
 	application.Start()
 
 	//web adapter

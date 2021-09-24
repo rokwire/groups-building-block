@@ -10,8 +10,7 @@ type Application struct {
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
 
-	storage       Storage
-	notifications Notifications
+	storage Storage
 }
 
 //Start starts the core part of the application
@@ -49,9 +48,9 @@ func (app *Application) UpdateUser(clientID string, user *model.User) error {
 }
 
 //NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, notifications Notifications) *Application {
+func NewApplication(version string, build string, storage Storage) *Application {
 
-	application := Application{version: version, build: build, storage: storage, notifications: notifications}
+	application := Application{version: version, build: build, storage: storage}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
