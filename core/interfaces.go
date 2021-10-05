@@ -160,8 +160,8 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
-	FindUser(clientID string, externalID string) (*model.User, error)
-	CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error)
+	FindUser(clientID string, id string, external bool) (*model.User, error)
+	CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error)
 	SaveUser(clientID string, user *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)

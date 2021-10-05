@@ -519,31 +519,43 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.Use
 	var err error
 
 	//1. First check if cached
-	cachedUser := auth.getCachedUser(*userData.UIuceduUIN + "_" + clientID)
+	cachedUser := auth.getCachedUser(*userData.Sub + "_" + clientID)
 	if cachedUser != nil {
 		return cachedUser.user, nil
 	}
 
-	//2. Check if we have a such user in the application
-	user, err := auth.app.FindUser(clientID, *userData.UIuceduUIN)
+	//2. Check if we have a such user by Core BB Account ID in the application
+	user, err := auth.app.FindUser(clientID, *userData.Sub, false)
 	if err != nil {
-		log.Printf("error finding an for external id - %s\n", err)
+		log.Printf("error finding user for _id %s: %s\n", *userData.Sub, err.Error())
 		return nil, err
 	}
 	if user != nil {
 		//cache it
-		auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
+		auth.cacheUser(*userData.Sub+"_"+clientID, user)
+		return user, nil
+	}
+
+	user, err = auth.app.FindUser(clientID, *userData.UIuceduUIN, true)
+	if err != nil {
+		log.Printf("error finding an for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
+		return nil, err
+	}
+	if user != nil {
+		//replace user document with one having _id = sub (Core BB Account ID)
+		//cache it
+		auth.cacheUser(*userData.Sub+"_"+clientID, user)
 		return user, nil
 	}
 
 	//3. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(clientID, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
+	user, err = auth.app.CreateUser(clientID, *userData.Sub, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
-		log.Printf("error creating an user - %s\n", err)
+		log.Printf("error creating an user - %s\n", err.Error())
 		return nil, err
 	}
 	//cache it
-	auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
+	auth.cacheUser(*userData.Sub+"_"+clientID, user)
 	return user, nil
 }
 
@@ -785,7 +797,7 @@ func (auth *AdminAuth) getUser(clientID *string, userData userData) (*model.User
 	var err error
 
 	//2. Check if we have a such user in the application
-	user, err := auth.app.FindUser(*clientID, *userData.UIuceduUIN)
+	user, err := auth.app.FindUser(*clientID, *userData.UIuceduUIN, true)
 	if err != nil {
 		log.Printf("error finding an for external id - %s\n", err)
 		return nil, err
@@ -795,7 +807,7 @@ func (auth *AdminAuth) getUser(clientID *string, userData userData) (*model.User
 	}
 
 	//3. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(*clientID, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
+	user, err = auth.app.CreateUser(*clientID, *userData.Sub, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
 		log.Printf("error creating an user - %s\n", err)
 		return nil, err

@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"groups/core"
 	"groups/core/model"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -94,15 +95,20 @@ func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
 }
 
 //FindUser finds the user for the provided external id and client id
-func (sa *Adapter) FindUser(clientID string, externalID string) (*model.User, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "external_id", Value: externalID}}
+func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.User, error) {
+	var filter bson.D
+	if external {
+		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "external_id", Value: id}}
+	} else {
+		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: id}}
+	}
+
 	var result []*model.User
 	err := sa.db.users.Find(filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}
-	if result == nil || len(result) == 0 {
+	if result == nil {
 		//not found
 		return nil, nil
 	}
@@ -110,16 +116,11 @@ func (sa *Adapter) FindUser(clientID string, externalID string) (*model.User, er
 }
 
 //CreateUser creates an user
-func (sa *Adapter) CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
+func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
 	dateCreated := time.Now()
-	user := model.User{ID: id.String(), ClientID: clientID, ExternalID: externalID, Email: email,
-		IsMemberOf: isMemberOf, DateCreated: dateCreated}
-	_, err = sa.db.users.InsertOne(&user)
+	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, IsMemberOf: isMemberOf,
+		DateCreated: dateCreated}
+	_, err := sa.db.users.InsertOne(&user)
 	if err != nil {
 		return nil, err
 	}
