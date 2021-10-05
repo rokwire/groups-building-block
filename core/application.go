@@ -47,6 +47,15 @@ func (app *Application) UpdateUser(clientID string, user *model.User) error {
 	return nil
 }
 
+//RefactorUser refactors the user using the new id
+func (app *Application) RefactorUser(clientID string, current *model.User, newID string) (*model.User, error) {
+	refactoredUser, err := app.storage.RefactorUser(clientID, current, newID)
+	if err != nil {
+		return nil, err
+	}
+	return refactoredUser, nil
+}
+
 //NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage) *Application {
 

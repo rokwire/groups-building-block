@@ -543,8 +543,17 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.Use
 	}
 	if user != nil {
 		//replace user document with one having _id = sub (Core BB Account ID)
+		refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
+		if err != nil {
+			log.Printf("put something here") //TODO: print something useful
+		}
+		if refactoredUser != nil {
+			//cache it
+			auth.cacheUser(*userData.Sub+"_"+clientID, user)
+			return refactoredUser, nil
+		}
 		//cache it
-		auth.cacheUser(*userData.Sub+"_"+clientID, user)
+		auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
 		return user, nil
 	}
 
