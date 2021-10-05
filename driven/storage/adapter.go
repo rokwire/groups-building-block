@@ -162,7 +162,7 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 		// insert the new user
 		_, err = sa.db.users.InsertOneWithContext(sessionContext, &refactoredUser)
 		if err != nil {
-			log.Printf("error inserting refactored user %s: %s", newID, err.Error())
+			log.Printf("error inserting user - %s", err.Error())
 			abortTransaction(sessionContext)
 			return err
 		}
@@ -170,6 +170,7 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 		filter := bson.D{primitive.E{Key: "_id", Value: current.ID}, primitive.E{Key: "client_id", Value: clientID}}
 		_, err = sa.db.users.DeleteOne(filter, nil)
 		if err != nil {
+			log.Printf("error deleting user - %s", err.Error())
 			abortTransaction(sessionContext)
 			return err
 		}
@@ -185,6 +186,7 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 		}
 		_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 		if err != nil {
+			log.Printf("error updating groups - %s", err.Error())
 			abortTransaction(sessionContext)
 			return err
 		}
@@ -199,6 +201,7 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 		}
 		_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
 		if err != nil {
+			log.Printf("error updating posts - %s", err.Error())
 			abortTransaction(sessionContext)
 			return err
 		}

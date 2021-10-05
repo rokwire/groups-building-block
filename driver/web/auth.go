@@ -527,7 +527,7 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.Use
 	//2. Check if we have a such user by Core BB Account ID in the application
 	user, err := auth.app.FindUser(clientID, *userData.Sub, false)
 	if err != nil {
-		log.Printf("error finding user for _id %s: %s\n", *userData.Sub, err.Error())
+		log.Printf("error finding user for id %s: %s\n", *userData.Sub, err.Error())
 		return nil, err
 	}
 	if user != nil {
@@ -536,16 +536,17 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.Use
 		return user, nil
 	}
 
+	//3. Check if we have a such user by external ID in the application
 	user, err = auth.app.FindUser(clientID, *userData.UIuceduUIN, true)
 	if err != nil {
-		log.Printf("error finding an for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
+		log.Printf("error finding user for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
 		return nil, err
 	}
 	if user != nil {
-		//replace user document with one having _id = sub (Core BB Account ID)
+		// Refactor user to use Core BB Account ID
 		refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
 		if err != nil {
-			log.Printf("put something here") //TODO: print something useful
+			log.Printf("error refactoring user for id %s, external id %s: %s\n", *userData.Sub, *userData.UIuceduUIN, err.Error())
 		}
 		if refactoredUser != nil {
 			//cache it
@@ -557,7 +558,7 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.Use
 		return user, nil
 	}
 
-	//3. This is the first call for the user, so we need to create it
+	//4. This is the first call for the user, so we need to create it
 	user, err = auth.app.CreateUser(clientID, *userData.Sub, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
 		log.Printf("error creating an user - %s\n", err.Error())
@@ -805,20 +806,37 @@ func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
 func (auth *AdminAuth) getUser(clientID *string, userData userData) (*model.User, error) {
 	var err error
 
-	//2. Check if we have a such user in the application
-	user, err := auth.app.FindUser(*clientID, *userData.UIuceduUIN, true)
+	//2. Check if we have a such user by Core BB Account ID in the application
+	user, err := auth.app.FindUser(*clientID, *userData.Sub, false)
 	if err != nil {
-		log.Printf("error finding an for external id - %s\n", err)
-		return nil, err
+		log.Printf("error finding user for id %s: %s\n", *userData.Sub, err.Error())
 	}
 	if user != nil {
 		return user, nil
 	}
 
-	//3. This is the first call for the user, so we need to create it
+	//3. Check if we have a such user by external ID in the application
+	user, err = auth.app.FindUser(*clientID, *userData.UIuceduUIN, true)
+	if err != nil {
+		log.Printf("error finding user for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
+		return nil, err
+	}
+	if user != nil {
+		// Refactor user to use Core BB Account ID
+		refactoredUser, err := auth.app.RefactorUser(*clientID, user, *userData.Sub)
+		if err != nil {
+			log.Printf("error refactoring user for id %s, external id %s: %s\n", *userData.Sub, *userData.UIuceduUIN, err.Error())
+		}
+		if refactoredUser != nil {
+			return refactoredUser, nil
+		}
+		return user, nil
+	}
+
+	//4. This is the first call for the user, so we need to create it
 	user, err = auth.app.CreateUser(*clientID, *userData.Sub, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
-		log.Printf("error creating an user - %s\n", err)
+		log.Printf("error creating an user - %s\n", err.Error())
 		return nil, err
 	}
 	return user, nil
