@@ -13,23 +13,3 @@ type User struct {
 
 	ClientID string `bson:"client_id"`
 } // @name User
-
-//IsMemberOfGroup says if the user is member of a group
-func (user User) IsMemberOfGroup(group string) bool {
-	if user.IsMemberOf == nil || len(*user.IsMemberOf) == 0 {
-		return false
-	}
-	for _, current := range *user.IsMemberOf {
-		if current == group {
-			return true
-		}
-	}
-	return false
-}
-
-//ShibbolethAuth represents shibboleth auth entity
-type ShibbolethAuth struct {
-	Uin        string    `json:"uiucedu_uin" bson:"uiucedu_uin"`
-	Email      string    `json:"email" bson:"email"`
-	IsMemberOf *[]string `json:"uiucedu_is_member_of" bson:"uiucedu_is_member_of"`
-}
