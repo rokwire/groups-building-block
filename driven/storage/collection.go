@@ -126,7 +126,11 @@ func (collWrapper *collectionWrapper) DeleteMany(filter interface{}, opts *optio
 }
 
 func (collWrapper *collectionWrapper) DeleteOne(filter interface{}, opts *options.DeleteOptions) (*mongo.DeleteResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
+	return collWrapper.DeleteOneWithContext(context.Background(), filter, opts)
+}
+
+func (collWrapper *collectionWrapper) DeleteOneWithContext(ctx context.Context, filter interface{}, opts *options.DeleteOptions) (*mongo.DeleteResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
 	defer cancel()
 
 	result, err := collWrapper.coll.DeleteOne(ctx, filter, opts)

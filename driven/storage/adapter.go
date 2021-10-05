@@ -167,8 +167,9 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 			return err
 		}
 
+		// delete the old user
 		filter := bson.D{primitive.E{Key: "_id", Value: current.ID}, primitive.E{Key: "client_id", Value: clientID}}
-		_, err = sa.db.users.DeleteOne(filter, nil)
+		_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
 		if err != nil {
 			log.Printf("error deleting user - %s", err.Error())
 			abortTransaction(sessionContext)
