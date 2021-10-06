@@ -1,6 +1,9 @@
 package core
 
-import "groups/core/model"
+import (
+	"errors"
+	"groups/core/model"
+)
 
 //Application represents the core application code based on hexagonal architecture
 type Application struct {
@@ -21,8 +24,16 @@ func (app *Application) Start() {
 }
 
 //FindUser finds an user for the provided external id
-func (app *Application) FindUser(clientID string, id string, external bool) (*model.User, error) {
-	user, err := app.storage.FindUser(clientID, id, external)
+func (app *Application) FindUser(clientID string, id *string, external bool) (*model.User, error) {
+	if clientID == "" {
+		return nil, errors.New("clientID cannot be empty")
+	}
+
+	if id == nil || *id == "" {
+		return nil, errors.New("id cannot be empty")
+	}
+
+	user, err := app.storage.FindUser(clientID, *id, external)
 	if err != nil {
 		return nil, err
 	}
@@ -30,8 +41,18 @@ func (app *Application) FindUser(clientID string, id string, external bool) (*mo
 }
 
 //CreateUser creates an user
-func (app *Application) CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
-	user, err := app.storage.CreateUser(clientID, id, externalID, email, isMemberOf)
+func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string, isMemberOf *[]string) (*model.User, error) {
+	externalIDVal := ""
+	if externalID != nil {
+		externalIDVal = *externalID
+	}
+
+	emailVal := ""
+	if email != nil {
+		emailVal = *email
+	}
+
+	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal, isMemberOf)
 	if err != nil {
 		return nil, err
 	}
