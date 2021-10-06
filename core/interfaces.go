@@ -15,11 +15,11 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
-	GetGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error)
+	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
@@ -34,6 +34,11 @@ type Services interface {
 	GetEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(clientID string, current model.User, eventID string, groupID string) error
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
+
+	GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
 
 type servicesImpl struct {
@@ -60,13 +65,13 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError) {
 	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
 		imageURL, webURL)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) error {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError {
 	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
 }
 
@@ -74,8 +79,8 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 	return s.app.deleteGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, title *string) ([]map[string]interface{}, error) {
-	return s.app.getGroups(clientID, current, category, title)
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error) {
+	return s.app.getGroups(clientID, current, category, privacy, title, offset, limit, order)
 }
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
@@ -122,17 +127,33 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return s.app.getPosts(clientID, current, groupID, offset, limit, order)
+}
+
+func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	return s.app.createPost(clientID, current, post)
+}
+
+func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+	return s.app.updatePost(clientID, current, post)
+}
+
+func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
+	return s.app.deletePost(clientID, current, groupID, postID)
+}
+
 //Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetTODO() error
+	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 }
 
 type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) GetTODO() error {
-	return s.app.getTODO()
+func (s *administrationImpl) GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order)
 }
 
 //Storage is used by core to storage data - DB storage adapter, file storage adapter etc
@@ -147,13 +168,13 @@ type Storage interface {
 	FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, error)
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) error
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
-	FindGroups(clientID string, category *string, title *string) ([]model.Group, error)
+	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
@@ -167,6 +188,13 @@ type Storage interface {
 	FindEvents(clientID string, groupID string) ([]model.Event, error)
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
+
+	FindPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error)
+	FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error)
+	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
 
 //StorageListener listenes for change data storage events

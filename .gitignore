@@ -2,3 +2,4 @@ vendor/
 bin/
 go.sum
 .vscode/
+*.sh
