@@ -65,7 +65,7 @@ func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, b
 	}
 
 	apiKey := auth.getAPIKey(r)
-	authenticated := auth.apiKeysAuth.check(apiKey, w)
+	authenticated := auth.apiKeysAuth.check(apiKey, r, w)
 
 	return *clientID, authenticated
 }
@@ -114,7 +114,7 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
-		authenticated := auth.apiKeysAuth.check(apiKey, w)
+		authenticated := auth.apiKeysAuth.check(apiKey, r, w)
 		return *clientID, authenticated, nil
 	}
 
@@ -189,7 +189,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 		}
 	}
 
-	apiKeysAuth := newAPIKeysAuth(appKeys)
+	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, tokenAuth)
 	internalAuth := newInternalAuth(internalAPIKeys)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
@@ -205,11 +205,25 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 //APIKeysAuth entity
 type APIKeysAuth struct {
 	appKeys []string
+
+	coreTokenAuth *tokenauth.TokenAuth
 }
 
-func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
+func (auth *APIKeysAuth) check(apiKey *string, r *http.Request, w http.ResponseWriter) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
+		if auth.coreTokenAuth != nil {
+			_, err := auth.coreTokenAuth.CheckRequestTokens(r)
+			if err == nil {
+				return true
+			}
+
+			log.Printf("401 - Invalid API key and token: %v", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			w.Write([]byte("Unauthorized"))
+			return false
+		}
+
 		//no key, so return 400
 		log.Println(fmt.Sprintf("400 - Bad Request"))
 
@@ -229,7 +243,7 @@ func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
 	}
 	if !exist {
 		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *apiKey))
+		log.Printf("401 - Unauthorized for key %s\n", *apiKey)
 
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte("Unauthorized"))
@@ -239,8 +253,8 @@ func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
 }
 
 //NewAPIKeysAuth creates new api keys auth
-func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
-	auth := APIKeysAuth{appKeys}
+func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKeysAuth {
+	auth := APIKeysAuth{appKeys, coreTokenAuth}
 	return &auth
 }
 
@@ -373,7 +387,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, r *http.Request, 
 
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		if err == nil && claims != nil && claims.UID != "" && claims.AuthType == "illinois_oidc" {
+		if err == nil && claims != nil && !claims.Anonymous && claims.UID != "" && claims.AuthType == "illinois_oidc" {
 			err = auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
 				log.Printf("Scope error: %v\n", err)
@@ -612,7 +626,7 @@ func (auth *AdminAuth) check(clientID *string, w http.ResponseWriter, r *http.Re
 
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		if err == nil && claims != nil && claims.UID != "" && claims.AuthType == "illinois_oidc" {
+		if err == nil && claims != nil && !claims.Anonymous && claims.UID != "" && claims.AuthType == "illinois_oidc" {
 			err = auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {
 				log.Printf("Permission error: %v\n", err)
