@@ -397,7 +397,8 @@ func (auth *IDTokenAuth) check(clientID string, token *string, r *http.Request, 
 			}
 
 			log.Printf("Authentication successful for user: %v", claims)
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email}
+			permissions := strings.Split(claims.Permissions, ",")
+			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions}
 			if claims.UID != "" && claims.AuthType == "illinois_oidc" {
 				data.UIuceduUIN = &claims.UID
 			}
