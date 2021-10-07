@@ -176,7 +176,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 	if coreBBHost != "" {
 		serviceID := "groups"
 		// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-		serviceLoader := authservice.NewRemoteServiceRegLoader(coreBBHost, nil)
+		serviceLoader := authservice.NewRemoteServiceRegLoader(coreBBHost+"/bbs/service-regs", nil)
 
 		// Instantiate AuthService instance
 		authService, err := authservice.NewAuthService(serviceID, host, serviceLoader)
