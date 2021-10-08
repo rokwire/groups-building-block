@@ -180,7 +180,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 
 		// Instantiate AuthService instance
 		authService, err := authservice.NewAuthService(serviceID, groupServiceUrl, serviceLoader)
-		if err != nil{
+		if err != nil {
 			log.Fatal("error instancing tokenAuth: %s", err)
 		}
 
@@ -189,7 +189,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 
 		// Instantiate TokenAuth instance to perform token validation
 		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
-		if err != nil{
+		if err != nil {
 			log.Fatal("error instancing tokenAuth: %s", err)
 		}
 	}
