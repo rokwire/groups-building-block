@@ -171,7 +171,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string,
-	oidcAdminClientID string, oidcAdminWebClientID string, coreBBHost string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, coreBBHost string, groupServiceUrl string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if coreBBHost != "" {
 		serviceID := "groups"
@@ -179,13 +179,18 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 		serviceLoader := authservice.NewRemoteServiceRegLoader(coreBBHost, nil)
 
 		// Instantiate AuthService instance
-		authService, err := authservice.NewAuthService(serviceID, host, serviceLoader)
-		if err == nil {
-			permissionAuth := authorization.NewCasbinAuthorization("driver/web/permissions_authorization_policy.csv")
-			scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceID)
+		authService, err := authservice.NewAuthService(serviceID, groupServiceUrl, serviceLoader)
+		if err != nil{
+			log.Fatal("error instancing tokenAuth: %s", err)
+		}
 
-			// Instantiate TokenAuth instance to perform token validation
-			tokenAuth, _ = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
+		permissionAuth := authorization.NewCasbinAuthorization("driver/web/permissions_authorization_policy.csv")
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceID)
+
+		// Instantiate TokenAuth instance to perform token validation
+		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
+		if err != nil{
+			log.Fatal("error instancing tokenAuth: %s", err)
 		}
 	}
 
