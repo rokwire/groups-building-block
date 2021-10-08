@@ -171,7 +171,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string,
-	oidcAdminClientID string, oidcAdminWebClientID string, coreBBHost string, groupServiceUrl string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, coreBBHost string, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if coreBBHost != "" {
 		serviceID := "groups"
@@ -179,9 +179,9 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 		serviceLoader := authservice.NewRemoteServiceRegLoader(coreBBHost+"/bbs/service-regs", nil)
 
 		// Instantiate AuthService instance
-		authService, err := authservice.NewAuthService(serviceID, groupServiceUrl, serviceLoader)
+		authService, err := authservice.NewAuthService(serviceID, groupServiceURL, serviceLoader)
 		if err != nil {
-			log.Fatal("error instancing tokenAuth: %s", err)
+			log.Fatalf("error instancing tokenAuth: %s", err)
 		}
 
 		permissionAuth := authorization.NewCasbinAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -190,7 +190,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 		// Instantiate TokenAuth instance to perform token validation
 		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
 		if err != nil {
-			log.Fatal("error instancing tokenAuth: %s", err)
+			log.Fatalf("error instancing tokenAuth: %s", err)
 		}
 	}
 
