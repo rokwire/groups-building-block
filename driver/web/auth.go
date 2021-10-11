@@ -595,6 +595,9 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData, isCoreUser 
 			auth.cacheUser(*userData.Sub+"_"+clientID, user)
 			return user, nil
 		}
+	} else if !isCoreUser {
+		log.Println("non core token missing external id")
+		return nil, errors.New("non core token missing external id")
 	}
 
 	//4. This is the first call for the user, so we need to create it
@@ -887,6 +890,9 @@ func (auth *AdminAuth) getUser(clientID string, userData userData, isCoreUser bo
 			}
 			return user, nil
 		}
+	} else if !isCoreUser {
+		log.Println("non core token missing external id")
+		return nil, errors.New("non core token missing external id")
 	}
 
 	//4. This is the first call for the user, so we need to create it
