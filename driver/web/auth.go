@@ -181,7 +181,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 		// Instantiate AuthService instance
 		authService, err := authservice.NewAuthService(serviceID, groupServiceURL, serviceLoader)
 		if err != nil {
-			log.Fatalf("error instancing tokenAuth: %s", err)
+			log.Fatalf("error instancing auth service: %s", err)
 		}
 
 		permissionAuth := authorization.NewCasbinAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -190,7 +190,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 		// Instantiate TokenAuth instance to perform token validation
 		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
 		if err != nil {
-			log.Fatalf("error instancing tokenAuth: %s", err)
+			log.Fatalf("error instancing token auth: %s", err)
 		}
 	}
 
@@ -570,29 +570,31 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData, isCoreUser 
 		}
 	}
 
-	//3. Check if we have a such user by external ID in the application
-	user, err = auth.app.FindUser(clientID, userData.UIuceduUIN, true)
-	if err != nil {
-		log.Printf("error finding user for external id %v: %s\n", userData.UIuceduUIN, err.Error())
-		return nil, err
-	}
-	if user != nil {
-		if isCoreUser {
-			// Refactor user to use Core BB Account ID
-			refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
-			if err != nil {
-				log.Printf("error refactoring user for id %s, external id %v: %s\n", *userData.Sub, userData.UIuceduUIN, err.Error())
-			}
-			if refactoredUser != nil {
-				//cache it
-				auth.cacheUser(*userData.Sub+"_"+clientID, user)
-				return refactoredUser, nil
-			}
+	if userData.UIuceduUIN != nil {
+		//3. Check if we have a such user by external ID in the application
+		user, err = auth.app.FindUser(clientID, userData.UIuceduUIN, true)
+		if err != nil {
+			log.Printf("error finding user for external id %v: %s\n", userData.UIuceduUIN, err.Error())
+			return nil, err
 		}
+		if user != nil {
+			if isCoreUser {
+				// Refactor user to use Core BB Account ID
+				refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
+				if err != nil {
+					log.Printf("error refactoring user for id %s, external id %v: %s\n", *userData.Sub, userData.UIuceduUIN, err.Error())
+				}
+				if refactoredUser != nil {
+					//cache it
+					auth.cacheUser(*userData.Sub+"_"+clientID, user)
+					return refactoredUser, nil
+				}
+			}
 
-		//cache it
-		auth.cacheUser(*userData.Sub+"_"+clientID, user)
-		return user, nil
+			//cache it
+			auth.cacheUser(*userData.Sub+"_"+clientID, user)
+			return user, nil
+		}
 	}
 
 	//4. This is the first call for the user, so we need to create it
@@ -865,24 +867,26 @@ func (auth *AdminAuth) getUser(clientID string, userData userData, isCoreUser bo
 		}
 	}
 
-	//3. Check if we have a such user by external ID in the application
-	user, err = auth.app.FindUser(clientID, userData.UIuceduUIN, true)
-	if err != nil {
-		log.Printf("error finding user for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
-		return nil, err
-	}
-	if user != nil {
-		if isCoreUser {
-			// Refactor user to use Core BB Account ID
-			refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
-			if err != nil {
-				log.Printf("error refactoring user for id %s, external id %s: %s\n", *userData.Sub, *userData.UIuceduUIN, err.Error())
-			}
-			if refactoredUser != nil {
-				return refactoredUser, nil
-			}
+	if userData.UIuceduUIN != nil {
+		//3. Check if we have a such user by external ID in the application
+		user, err = auth.app.FindUser(clientID, userData.UIuceduUIN, true)
+		if err != nil {
+			log.Printf("error finding user for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
+			return nil, err
 		}
-		return user, nil
+		if user != nil {
+			if isCoreUser {
+				// Refactor user to use Core BB Account ID
+				refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
+				if err != nil {
+					log.Printf("error refactoring user for id %s, external id %s: %s\n", *userData.Sub, *userData.UIuceduUIN, err.Error())
+				}
+				if refactoredUser != nil {
+					return refactoredUser, nil
+				}
+			}
+			return user, nil
+		}
 	}
 
 	//4. This is the first call for the user, so we need to create it
