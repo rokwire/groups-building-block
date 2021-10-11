@@ -126,7 +126,11 @@ func (collWrapper *collectionWrapper) DeleteMany(filter interface{}, opts *optio
 }
 
 func (collWrapper *collectionWrapper) DeleteOne(filter interface{}, opts *options.DeleteOptions) (*mongo.DeleteResult, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
+	return collWrapper.DeleteOneWithContext(context.Background(), filter, opts)
+}
+
+func (collWrapper *collectionWrapper) DeleteOneWithContext(ctx context.Context, filter interface{}, opts *options.DeleteOptions) (*mongo.DeleteResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
 	defer cancel()
 
 	result, err := collWrapper.coll.DeleteOne(ctx, filter, opts)
@@ -146,6 +150,22 @@ func (collWrapper *collectionWrapper) UpdateOneWithContext(ctx context.Context, 
 	defer cancel()
 
 	updateResult, err := collWrapper.coll.UpdateOne(ctx, filter, update, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return updateResult, nil
+}
+
+func (collWrapper *collectionWrapper) UpdateMany(filter interface{}, update interface{}, opts *options.UpdateOptions) (*mongo.UpdateResult, error) {
+	return collWrapper.UpdateManyWithContext(context.Background(), filter, update, opts)
+}
+
+func (collWrapper *collectionWrapper) UpdateManyWithContext(ctx context.Context, filter interface{}, update interface{}, opts *options.UpdateOptions) (*mongo.UpdateResult, error) {
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	defer cancel()
+
+	updateResult, err := collWrapper.coll.UpdateMany(ctx, filter, update, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"groups/core"
 	"groups/core/model"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -94,15 +95,20 @@ func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
 }
 
 //FindUser finds the user for the provided external id and client id
-func (sa *Adapter) FindUser(clientID string, externalID string) (*model.User, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "external_id", Value: externalID}}
+func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.User, error) {
+	var filter bson.D
+	if external {
+		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "external_id", Value: id}}
+	} else {
+		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: id}}
+	}
+
 	var result []*model.User
 	err := sa.db.users.Find(filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}
-	if result == nil || len(result) == 0 {
+	if result == nil {
 		//not found
 		return nil, nil
 	}
@@ -110,16 +116,11 @@ func (sa *Adapter) FindUser(clientID string, externalID string) (*model.User, er
 }
 
 //CreateUser creates an user
-func (sa *Adapter) CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
-	id, err := uuid.NewUUID()
-	if err != nil {
-		return nil, err
-	}
-
+func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
 	dateCreated := time.Now()
-	user := model.User{ID: id.String(), ClientID: clientID, ExternalID: externalID, Email: email,
-		IsMemberOf: isMemberOf, DateCreated: dateCreated}
-	_, err = sa.db.users.InsertOne(&user)
+	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, IsMemberOf: isMemberOf,
+		DateCreated: dateCreated}
+	_, err := sa.db.users.InsertOne(&user)
 	if err != nil {
 		return nil, err
 	}
@@ -142,6 +143,83 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 		return err
 	}
 	return nil
+}
+
+//RefactorUser updates a user's _id field and all associated user_id fields in storage
+func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID string) (*model.User, error) {
+	now := time.Now()
+	refactoredUser := model.User{ID: newID, ClientID: clientID, ExternalID: current.ExternalID, Email: current.Email,
+		IsMemberOf: current.IsMemberOf, DateCreated: current.DateCreated, DateUpdated: &now}
+
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		// delete the old user
+		filter := bson.D{primitive.E{Key: "_id", Value: current.ID}, primitive.E{Key: "client_id", Value: clientID}}
+		_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
+		if err != nil {
+			log.Printf("error deleting user - %s", err.Error())
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		// insert the new user
+		_, err = sa.db.users.InsertOneWithContext(sessionContext, &refactoredUser)
+		if err != nil {
+			log.Printf("error inserting user - %s", err.Error())
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		// update all user's groups
+		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.user_id", Value: current.ID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members.$.user_id", Value: newID},
+				primitive.E{Key: "members.$.date_updated", Value: now},
+				primitive.E{Key: "date_updated", Value: now},
+			}},
+		}
+		_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+		if err != nil {
+			log.Printf("error updating groups - %s", err.Error())
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		// update all user's posts
+		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "member.user_id", Value: current.ID}}
+		update = bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "member.user_id", Value: newID},
+				primitive.E{Key: "date_updated", Value: now},
+			}},
+		}
+		_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
+		if err != nil {
+			log.Printf("error updating posts - %s", err.Error())
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, core.NewServerError()
+	}
+
+	return &refactoredUser, nil
 }
 
 //FindUserGroupsMemberships stores user group membership
