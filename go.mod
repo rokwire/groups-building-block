@@ -8,7 +8,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
-	github.com/rokmetro/auth-library v0.1.19
+	github.com/rokmetro/auth-library v0.1.20
 	github.com/swaggo/http-swagger v1.1.1
 	github.com/swaggo/swag v1.7.3
 	go.mongodb.org/mongo-driver v1.7.3
