@@ -17,9 +17,9 @@ import (
 	"gopkg.in/ericchiang/go-oidc.v2"
 
 	"github.com/casbin/casbin"
-	"github.com/rokmetro/auth-library/authorization"
-	"github.com/rokmetro/auth-library/authservice"
-	"github.com/rokmetro/auth-library/tokenauth"
+	"github.com/rokwire/core-auth-library-go/authorization"
+	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/core-auth-library-go/tokenauth"
 )
 
 //Auth handler
@@ -184,7 +184,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 			log.Fatalf("error instancing auth service: %s", err)
 		}
 
-		permissionAuth := authorization.NewCasbinAuthorization("driver/web/permissions_authorization_policy.csv")
+		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
 		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceID)
 
 		// Instantiate TokenAuth instance to perform token validation
