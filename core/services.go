@@ -62,8 +62,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 				if current.Status == "admin" || current.Status == "member" {
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
+					mItem["user_id"] = current.User.ID
 					mItem["name"] = current.Name
-					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
 					mItem["status"] = current.Status
 					membersItems = append(membersItems, mItem)
@@ -100,8 +100,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 				if current.Status == "admin" {
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
+					mItem["user_id"] = current.User.ID
 					mItem["name"] = current.Name
-					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
 					mItem["status"] = current.Status
 					membersItems = append(membersItems, mItem)
@@ -139,8 +139,8 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 		for _, current := range group.Members {
 			mItem := make(map[string]interface{})
 			mItem["id"] = current.ID
+			mItem["user_id"] = current.User.ID
 			mItem["name"] = current.Name
-			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
 			mItem["status"] = current.Status
 			mItem["rejected_reason"] = current.RejectReason
@@ -194,8 +194,8 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 			if current.Status == "admin" || current.Status == "member" {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
+				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
-				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
@@ -233,8 +233,8 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 			if current.User.ID == user.ID {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
+				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
-				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
@@ -271,8 +271,8 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 			if current.User.ID == user.ID {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
+				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
-				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				mItem["rejected_reason"] = current.RejectReason
@@ -406,8 +406,8 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return res, nil
 }
 
-func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, email, photoURL, memberAnswers)
+func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, photoURL, memberAnswers)
 	if err != nil {
 		return err
 	}

@@ -1,6 +1,9 @@
 package core
 
-import "groups/core/model"
+import (
+	"errors"
+	"groups/core/model"
+)
 
 //Application represents the core application code based on hexagonal architecture
 type Application struct {
@@ -22,8 +25,16 @@ func (app *Application) Start() {
 }
 
 //FindUser finds an user for the provided external id
-func (app *Application) FindUser(clientID string, externalID string) (*model.User, error) {
-	user, err := app.storage.FindUser(clientID, externalID)
+func (app *Application) FindUser(clientID string, id *string, external bool) (*model.User, error) {
+	if clientID == "" {
+		return nil, errors.New("clientID cannot be empty")
+	}
+
+	if id == nil || *id == "" {
+		return nil, errors.New("id cannot be empty")
+	}
+
+	user, err := app.storage.FindUser(clientID, *id, external)
 	if err != nil {
 		return nil, err
 	}
@@ -31,8 +42,13 @@ func (app *Application) FindUser(clientID string, externalID string) (*model.Use
 }
 
 //CreateUser creates an user
-func (app *Application) CreateUser(clientID string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
-	user, err := app.storage.CreateUser(clientID, externalID, email, isMemberOf)
+func (app *Application) CreateUser(clientID string, id string, externalID *string, isMemberOf *[]string) (*model.User, error) {
+	externalIDVal := ""
+	if externalID != nil {
+		externalIDVal = *externalID
+	}
+
+	user, err := app.storage.CreateUser(clientID, id, externalIDVal, isMemberOf)
 	if err != nil {
 		return nil, err
 	}
@@ -46,6 +62,15 @@ func (app *Application) UpdateUser(clientID string, user *model.User) error {
 		return err
 	}
 	return nil
+}
+
+//RefactorUser refactors the user using the new id
+func (app *Application) RefactorUser(clientID string, current *model.User, newID string) (*model.User, error) {
+	refactoredUser, err := app.storage.RefactorUser(clientID, current, newID)
+	if err != nil {
+		return nil, err
+	}
+	return refactoredUser, nil
 }
 
 //NewApplication creates new Application
