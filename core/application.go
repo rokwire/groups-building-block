@@ -13,7 +13,8 @@ type Application struct {
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
 
-	storage Storage
+	storage       Storage
+	notifications Notifications
 }
 
 //Start starts the core part of the application
@@ -73,9 +74,9 @@ func (app *Application) RefactorUser(clientID string, current *model.User, newID
 }
 
 //NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage) *Application {
+func NewApplication(version string, build string, storage Storage, notifications Notifications) *Application {
 
-	application := Application{version: version, build: build, storage: storage}
+	application := Application{version: version, build: build, storage: storage, notifications: notifications}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

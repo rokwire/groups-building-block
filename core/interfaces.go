@@ -2,9 +2,10 @@ package core
 
 import (
 	"groups/core/model"
+	"groups/driven/notifications"
 )
 
-//Services exposes APIs for the driver adapters
+// Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
 
@@ -143,7 +144,7 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current, groupID, postID)
 }
 
-//Administration exposes administration APIs for the driver adapters
+// Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 }
@@ -156,7 +157,7 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order)
 }
 
-//Storage is used by core to storage data - DB storage adapter, file storage adapter etc
+// Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
@@ -209,4 +210,17 @@ type storageListenerImpl struct {
 
 func (a *storageListenerImpl) OnConfigsChanged() {
 	//do nothing for now
+}
+
+// Notifications exposes Notifications BB APIs for the driver adapters
+type Notifications interface {
+	SendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error
+}
+
+type notificationsImpl struct {
+	app *Application
+}
+
+func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error {
+	return n.app.sendNotification(recipients, title, text, data)
 }
