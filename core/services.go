@@ -420,7 +420,7 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 			for _, member := range members {
 				if member.Status == "admin" {
 					recipients = append(recipients, notifications.Recipient{
-						UserID: member.Email,
+						UserID: member.User.ID,
 						Name:   member.Name,
 					})
 				}
@@ -478,7 +478,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 				app.notifications.SendNotification(
 					[]notifications.Recipient{
 						notifications.Recipient{
-							UserID: member.Email,
+							UserID: member.User.ID,
 							Name:   member.Name,
 						},
 					},
@@ -496,7 +496,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 				app.notifications.SendNotification(
 					[]notifications.Recipient{
 						notifications.Recipient{
-							UserID: member.Email,
+							UserID: member.User.ID,
 							Name:   member.Name,
 						},
 					},
