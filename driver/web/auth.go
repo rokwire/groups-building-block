@@ -733,7 +733,7 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 
 		hasAccess := false
 		for _, s := range *data.UIuceduIsMemberOf {
-			hasAccess := auth.authorization.Enforce(s, obj, act)
+			hasAccess = auth.authorization.Enforce(s, obj, act)
 			if hasAccess {
 				break
 			}
