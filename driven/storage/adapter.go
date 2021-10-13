@@ -48,7 +48,6 @@ type member struct {
 	ID            string         `bson:"id"`
 	UserID        string         `bson:"user_id"`
 	Name          string         `bson:"name"`
-	Email         string         `bson:"email"`
 	PhotoURL      string         `bson:"photo_url"`
 	Status        string         `bson:"status"` //pending, member, admin, reject
 	RejectReason  string         `bson:"reject_reason"`
@@ -116,9 +115,9 @@ func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.U
 }
 
 //CreateUser creates an user
-func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
+func (sa *Adapter) CreateUser(clientID string, id string, externalID string, isMemberOf *[]string) (*model.User, error) {
 	dateCreated := time.Now()
-	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, IsMemberOf: isMemberOf,
+	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, IsMemberOf: isMemberOf,
 		DateCreated: dateCreated}
 	_, err := sa.db.users.InsertOne(&user)
 	if err != nil {
@@ -138,7 +137,8 @@ func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
 	dateUpdated := time.Now()
 	user.DateUpdated = &dateUpdated
 
-	err := sa.db.users.ReplaceOne(filter, user, nil)
+	opts := options.Replace().SetUpsert(true)
+	err := sa.db.users.ReplaceOne(filter, user, opts)
 	if err != nil {
 		return err
 	}
@@ -303,7 +303,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		now := time.Now()
 
 		memberID, _ := uuid.NewUUID()
-		adminMember := member{ID: memberID.String(), UserID: creatorUserID, Name: creatorName, Email: creatorEmail,
+		adminMember := member{ID: memberID.String(), UserID: creatorUserID, Name: creatorName,
 			PhotoURL: creatorPhotoURL, Status: "admin", DateCreated: now}
 
 		members := []member{adminMember}
@@ -531,7 +531,7 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group
 }
 
 //CreatePendingMember creates a pending member for a specific group
-func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -590,7 +590,7 @@ func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID s
 				memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
 			}
 		}
-		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email,
+		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name,
 			PhotoURL: photoURL, Status: "pending", MemberAnswers: memberAns, DateCreated: now}
 		groupMembers := group.Members
 		groupMembers = append(groupMembers, pendingMember)
@@ -1326,7 +1326,6 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
 		post.Member = model.PostCreator{
 			UserID: current.ID,
-			Email:  current.Email,
 			Name:   *name,
 		}
 	} else {
@@ -1504,7 +1503,6 @@ func constructMember(groupID string, member member) model.Member {
 	id := member.ID
 	user := model.User{ID: member.UserID}
 	name := member.Name
-	email := member.Email
 	photoURL := member.PhotoURL
 	status := member.Status
 	rejectReason := member.RejectReason
@@ -1517,6 +1515,6 @@ func constructMember(groupID string, member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, User: user, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, User: user, Name: name, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }

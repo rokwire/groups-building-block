@@ -41,18 +41,13 @@ func (app *Application) FindUser(clientID string, id *string, external bool) (*m
 }
 
 //CreateUser creates an user
-func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string, isMemberOf *[]string) (*model.User, error) {
+func (app *Application) CreateUser(clientID string, id string, externalID *string, isMemberOf *[]string) (*model.User, error) {
 	externalIDVal := ""
 	if externalID != nil {
 		externalIDVal = *externalID
 	}
 
-	emailVal := ""
-	if email != nil {
-		emailVal = *email
-	}
-
-	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal, isMemberOf)
+	user, err := app.storage.CreateUser(clientID, id, externalIDVal, isMemberOf)
 	if err != nil {
 		return nil, err
 	}
