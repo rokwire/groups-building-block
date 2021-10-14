@@ -63,16 +63,16 @@ func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter,
 }
 
 type createGroupRequest struct {
-	Title           string   `json:"title" validate:"required"`
-	Description     *string  `json:"description"`
-	Category        string   `json:"category" validate:"required"`
-	Tags            []string `json:"tags"`
-	Privacy         string   `json:"privacy" validate:"required,oneof=public private"`
-	CreatorName     string   `json:"creator_name"`
-	CreatorEmail    string   `json:"creator_email"`
-	CreatorPhotoURL string   `json:"creator_photo_url"`
-	ImageURL        *string  `json:"image_url"`
-	WebURL          *string  `json:"web_url"`
+	Title               string   `json:"title" validate:"required"`
+	Description         *string  `json:"description"`
+	Category            string   `json:"category" validate:"required"`
+	Tags                []string `json:"tags"`
+	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
+	CreatorName         string   `json:"creator_name"`
+	CreatorPhotoURL     string   `json:"creator_photo_url"`
+	ImageURL            *string  `json:"image_url"`
+	WebURL              *string  `json:"web_url"`
+	MembershipQuestions []string `json:"membership_questions"`
 } //@name createGroupRequest
 
 //GetUserGroupMemberships gets the user groups memberships
@@ -189,13 +189,13 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	tags := requestData.Tags
 	privacy := requestData.Privacy
 	creatorName := requestData.CreatorName
-	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
+	membershipQuestions := requestData.MembershipQuestions
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
+		creatorName, creatorPhotoURL, imageURL, webURL, membershipQuestions)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -215,13 +215,13 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 }
 
 type updateGroupRequest struct {
-	Category            string   `json:"category" validate:"required"`
 	Title               string   `json:"title" validate:"required"`
-	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
 	Description         *string  `json:"description"`
+	Category            string   `json:"category" validate:"required"`
+	Tags                []string `json:"tags"`
+	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 

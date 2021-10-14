@@ -480,11 +480,11 @@ func (auth *IDTokenAuth) check(clientID string, token *string, r *http.Request, 
 }
 
 func (auth *IDTokenAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
-	currentList := current.IsMemberOf
-	newList := userData.UIuceduIsMemberOf
+	//currentList := current.IsMemberOf
+	//newList := userData.UIuceduIsMemberOf
 
-	isEqual := utils.EqualPointers(currentList, newList)
-	if !isEqual {
+	//isEqual := reflect.DeepEqual(currentList, newList)
+	if true {
 		log.Println("updateUserIfNeeded -> need to update user")
 
 		//1. remove it from the cache
