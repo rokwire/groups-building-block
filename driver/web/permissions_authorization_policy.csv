@@ -1,2 +1,3 @@
+p, all_core, /gr/api/*, (GET)|(POST)|(PUT)|(DELETE)
 p, admin_app, /gr/api/admin*, (GET)|(POST)|(PUT)|(DELETE)
 p, groups_access, /gr/api/groups, (POST)
