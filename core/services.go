@@ -1,7 +1,10 @@
 package core
 
 import (
+	"fmt"
 	"groups/core/model"
+	"groups/driven/notifications"
+	"log"
 	"strings"
 )
 
@@ -59,8 +62,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 				if current.Status == "admin" || current.Status == "member" {
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
+					mItem["user_id"] = current.User.ID
 					mItem["name"] = current.Name
-					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
 					mItem["status"] = current.Status
 					membersItems = append(membersItems, mItem)
@@ -97,8 +100,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 				if current.Status == "admin" {
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
+					mItem["user_id"] = current.User.ID
 					mItem["name"] = current.Name
-					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
 					mItem["status"] = current.Status
 					membersItems = append(membersItems, mItem)
@@ -136,8 +139,8 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 		for _, current := range group.Members {
 			mItem := make(map[string]interface{})
 			mItem["id"] = current.ID
+			mItem["user_id"] = current.User.ID
 			mItem["name"] = current.Name
-			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
 			mItem["status"] = current.Status
 			mItem["rejected_reason"] = current.RejectReason
@@ -191,8 +194,8 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 			if current.Status == "admin" || current.Status == "member" {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
+				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
-				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
@@ -230,8 +233,8 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 			if current.User.ID == user.ID {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
+				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
-				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
@@ -268,8 +271,8 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 			if current.User.ID == user.ID {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
+				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
-				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				mItem["rejected_reason"] = current.RejectReason
@@ -320,10 +323,9 @@ func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Gro
 	return getUserGroupMemberships, user, nil
 }
 
-func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError) {
+func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
-		current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
+		current.ID, creatorName, creatorPhotoURL, imageURL, webURL, membershipQuestions)
 	if err != nil {
 		return nil, err
 	}
@@ -403,11 +405,45 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return res, nil
 }
 
-func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, email, photoURL, memberAnswers)
+func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, photoURL, memberAnswers)
 	if err != nil {
 		return err
 	}
+
+	group, err := app.storage.FindGroup(clientID, groupID)
+	if err == nil && group != nil {
+		members := group.Members
+		if len(members) > 0 {
+			recipients := []notifications.Recipient{}
+			for _, member := range members {
+				if member.Status == "admin" {
+					recipients = append(recipients, notifications.Recipient{
+						UserID: member.User.ID,
+						Name:   member.Name,
+					})
+				}
+			}
+			if len(recipients) > 0 {
+				app.notifications.SendNotification(
+					recipients,
+					"Illinois",
+					fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title),
+					map[string]string{
+						"type":        "group",
+						"operation":   "membership_approve",
+						"entity_type": "group",
+						"entity_id":   group.ID,
+						"entity_name": group.Title,
+					},
+				)
+			}
+		}
+	} else {
+		log.Printf("Unable to retrieve group by membership id: %s\n", err)
+		// return err // No reason to fail if the main part succeeds
+	}
+
 	return nil
 }
 
@@ -430,8 +466,56 @@ func (app *Application) deleteMember(clientID string, current model.User, groupI
 func (app *Application) applyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error {
 	err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
 	if err != nil {
-		return err
+		return fmt.Errorf("error applying membership approval: %s", err)
 	}
+
+	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
+	if err == nil && group != nil {
+		member := group.GetMemberByID(membershipID)
+		if member != nil {
+			if approve {
+				app.notifications.SendNotification(
+					[]notifications.Recipient{
+						notifications.Recipient{
+							UserID: member.User.ID,
+							Name:   member.Name,
+						},
+					},
+					"Illinois",
+					fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
+					map[string]string{
+						"type":        "group",
+						"operation":   "membership_approve",
+						"entity_type": "group",
+						"entity_id":   group.ID,
+						"entity_name": group.Title,
+					},
+				)
+			} else {
+				app.notifications.SendNotification(
+					[]notifications.Recipient{
+						notifications.Recipient{
+							UserID: member.User.ID,
+							Name:   member.Name,
+						},
+					},
+					"Illinois",
+					fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
+					map[string]string{
+						"type":        "group",
+						"operation":   "membership_reject",
+						"entity_type": "group",
+						"entity_id":   group.ID,
+						"entity_name": group.Title,
+					},
+				)
+			}
+		}
+	} else {
+		log.Printf("Unable to retrieve group by membership id: %s\n", err)
+		// return err // No reason to fail if the main part succeeds
+	}
+
 	return nil
 }
 
@@ -489,4 +573,8 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 
 func (app *Application) deletePost(clientID string, current *model.User, groupID string, postID string) error {
 	return app.storage.DeletePost(clientID, current, groupID, postID)
+}
+
+func (app *Application) sendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error {
+	return app.notifications.SendNotification(recipients, title, text, data)
 }
