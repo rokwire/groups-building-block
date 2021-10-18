@@ -75,15 +75,15 @@ type createGroupRequest struct {
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name createGroupRequest
 
-//GetUserGroupMemberships gets the user groups memberships
+//IntGetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
-// @ID GetUserGroupMemberships
+// @ID IntGetUserGroupMemberships
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupMembership
 // @Security IntAPIKeyAuth
 // @Router /api/int/user/{identifier}/groups [get]
-func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -93,7 +93,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 	}
 	externalID := identifier
 
-	userGroupMemberships, user, err := h.app.Services.GetUserGroupMemberships(externalID)
+	userGroupMemberships, user, err := h.app.Services.GetUserGroupMembershipsByExternalID(externalID)
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -519,6 +519,56 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the user groups items")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+//GetUserGroupMemberships gets the user groups memberships
+// @Description Gives the user groups memberships
+// @ID GetUserGroupMemberships
+// @Accept json
+// @Param identifier path string true "Identifier"
+// @Success 200 {object} userGroupMembership
+// @Security AppUserAuth
+// @Router /api/user/group-memberships [get]
+func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	userGroupMemberships, err := h.app.Services.GetUserGroupMembershipsByID(current.ID)
+	if err != nil {
+		log.Println("The user has no group memberships")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	userGroups := make([]userGroupMembership, len(userGroupMemberships))
+	for i, group := range userGroupMemberships {
+
+		memberStatus := ""
+
+		members := group.Members
+		for _, member := range members {
+			if member.User.ID == current.ID {
+				memberStatus = member.Status
+			}
+		}
+
+		ugm := userGroupMembership{
+			ID:               group.ID,
+			Title:            group.Title,
+			Privacy:          group.Privacy,
+			MembershipStatus: memberStatus,
+		}
+
+		userGroups[i] = ugm
+	}
+
+	data, err := json.Marshal(userGroups)
+	if err != nil {
+		log.Println("Error on marshal the user group membership")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
