@@ -16,7 +16,8 @@ type Services interface {
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
-	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
+	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
@@ -24,7 +25,7 @@ type Services interface {
 	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
-	CreatePendingMember(clientID string, current model.User, groupID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, current model.User, groupID string) error
 	DeleteMember(clientID string, current model.User, groupID string) error
 
@@ -71,8 +72,9 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
-func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
-	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorPhotoURL,
+func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
+	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
 		imageURL, webURL, membershipQuestions)
 }
 
@@ -97,8 +99,8 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 	return s.app.getGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) CreatePendingMember(clientID string, current model.User, groupID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	return s.app.createPendingMember(clientID, current, groupID, name, photoURL, memberAnswers)
+func (s *servicesImpl) CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	return s.app.createPendingMember(clientID, current, groupID, name, email, photoURL, memberAnswers)
 }
 
 func (s *servicesImpl) DeletePendingMember(clientID string, current model.User, groupID string) error {
@@ -167,14 +169,15 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
-	CreateUser(clientID string, id string, externalID string, isMemberOf *[]string) (*model.User, error)
+	CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error)
 	SaveUser(clientID string, user *model.User) error
 	RefactorUser(clientID string, current *model.User, newID string) (*model.User, error)
 
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
-	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string, creatorUserID string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
+	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, id string) error
@@ -183,7 +186,7 @@ type Storage interface {
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
-	CreatePendingMember(clientID string, groupID string, userID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
 	DeleteMember(clientID string, groupID string, userID string) error
 

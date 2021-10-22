@@ -601,7 +601,7 @@ func (auth *IDTokenAuth) getUser(clientID string, userData userData, isCoreUser 
 	}
 
 	//4. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(clientID, *userData.Sub, userData.UIuceduUIN, userData.UIuceduIsMemberOf)
+	user, err = auth.app.CreateUser(clientID, *userData.Sub, userData.UIuceduUIN, userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
 		log.Printf("error creating an user - %s\n", err.Error())
 		return nil, err
@@ -896,7 +896,7 @@ func (auth *AdminAuth) getUser(clientID string, userData userData, isCoreUser bo
 	}
 
 	//4. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(clientID, *userData.Sub, userData.UIuceduUIN, userData.UIuceduIsMemberOf)
+	user, err = auth.app.CreateUser(clientID, *userData.Sub, userData.UIuceduUIN, userData.Email, userData.UIuceduIsMemberOf)
 	if err != nil {
 		log.Printf("error creating an user - %s\n", err.Error())
 		return nil, err

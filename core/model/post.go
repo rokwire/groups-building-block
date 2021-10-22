@@ -22,5 +22,6 @@ type Post struct {
 type PostCreator struct {
 	UserID   string `json:"user_id" bson:"user_id"`
 	Name     string `json:"name" bson:"name"`
+	Email    string `json:"email" bson:"email"`
 	PhotoURL string `json:"photo_url" bson:"photo_url"`
 } //@name PostCreator
