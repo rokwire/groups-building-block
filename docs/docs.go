@@ -511,10 +511,7 @@ var doc = `{
                 "consumes": [
                     "application/json"
                 ],
-                "tags": [
-                    "Admin"
-                ],
-                "operationId": "GetAllGroups",
+                "operationId": "GetGroups",
                 "parameters": [
                     {
                         "type": "string",
@@ -531,7 +528,7 @@ var doc = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title - case insensitive",
+                        "description": "Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     }
@@ -958,6 +955,9 @@ var doc = `{
                 "category": {
                     "type": "string"
                 },
+                "creator_email": {
+                    "type": "string"
+                },
                 "creator_name": {
                     "type": "string"
                 },
@@ -995,7 +995,13 @@ var doc = `{
         },
         "createMemberRequest": {
             "type": "object",
+            "required": [
+                "email"
+            ],
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "member_answers": {
                     "type": "array",
                     "items": {
@@ -1056,6 +1062,9 @@ var doc = `{
                                 "type": "string"
                             },
                             "date_updated": {
+                                "type": "string"
+                            },
+                            "email": {
                                 "type": "string"
                             },
                             "id": {
@@ -1148,6 +1157,9 @@ var doc = `{
                             "date_updated": {
                                 "type": "string"
                             },
+                            "email": {
+                                "type": "string"
+                            },
                             "id": {
                                 "type": "string"
                             },
@@ -1236,6 +1248,9 @@ var doc = `{
                                 "type": "string"
                             },
                             "date_updated": {
+                                "type": "string"
+                            },
+                            "email": {
                                 "type": "string"
                             },
                             "id": {

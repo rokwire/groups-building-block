@@ -499,10 +499,7 @@
                 "consumes": [
                     "application/json"
                 ],
-                "tags": [
-                    "Admin"
-                ],
-                "operationId": "GetAllGroups",
+                "operationId": "GetGroups",
                 "parameters": [
                     {
                         "type": "string",
@@ -519,7 +516,7 @@
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title - case insensitive",
+                        "description": "Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     }
@@ -946,6 +943,9 @@
                 "category": {
                     "type": "string"
                 },
+                "creator_email": {
+                    "type": "string"
+                },
                 "creator_name": {
                     "type": "string"
                 },
@@ -983,7 +983,13 @@
         },
         "createMemberRequest": {
             "type": "object",
+            "required": [
+                "email"
+            ],
             "properties": {
+                "email": {
+                    "type": "string"
+                },
                 "member_answers": {
                     "type": "array",
                     "items": {
@@ -1044,6 +1050,9 @@
                                 "type": "string"
                             },
                             "date_updated": {
+                                "type": "string"
+                            },
+                            "email": {
                                 "type": "string"
                             },
                             "id": {
@@ -1136,6 +1145,9 @@
                             "date_updated": {
                                 "type": "string"
                             },
+                            "email": {
+                                "type": "string"
+                            },
                             "id": {
                                 "type": "string"
                             },
@@ -1224,6 +1236,9 @@
                                 "type": "string"
                             },
                             "date_updated": {
+                                "type": "string"
+                            },
+                            "email": {
                                 "type": "string"
                             },
                             "id": {
