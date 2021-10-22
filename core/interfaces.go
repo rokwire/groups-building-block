@@ -2,20 +2,21 @@ package core
 
 import (
 	"groups/core/model"
+	"groups/driven/notifications"
 )
 
-//Services exposes APIs for the driver adapters
+// Services exposes APIs for the driver adapters
 type Services interface {
 	GetVersion() string
 
 	GetGroupCategories() ([]string, error)
-	GetUserGroupMemberships(externalID string) ([]*model.Group, *model.User, error)
+	GetUserGroupMembershipsByID(id string) ([]*model.Group, error)
+	GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error)
 
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
-	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError)
+	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
@@ -52,8 +53,14 @@ func (s *servicesImpl) GetVersion() string {
 func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
-func (s *servicesImpl) GetUserGroupMemberships(externalID string) ([]*model.Group, *model.User, error) {
-	return s.app.getUserGroupMemberships(externalID)
+
+func (s *servicesImpl) GetUserGroupMembershipsByID(id string) ([]*model.Group, error) {
+	memberships, _, err := s.app.getUserGroupMemberships(id, false)
+	return memberships, err
+}
+
+func (s *servicesImpl) GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error) {
+	return s.app.getUserGroupMemberships(externalID, true)
 }
 
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
@@ -64,10 +71,9 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
-func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError) {
-	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
-		imageURL, webURL)
+func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
+	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorPhotoURL,
+		imageURL, webURL, membershipQuestions)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
@@ -143,7 +149,7 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current, groupID, postID)
 }
 
-//Administration exposes administration APIs for the driver adapters
+// Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 }
@@ -156,7 +162,7 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order)
 }
 
-//Storage is used by core to storage data - DB storage adapter, file storage adapter etc
+// Storage is used by core to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
@@ -166,10 +172,9 @@ type Storage interface {
 	RefactorUser(clientID string, current *model.User, newID string) (*model.User, error)
 
 	ReadAllGroupCategories() ([]string, error)
-	FindUserGroupsMemberships(externalID string) ([]*model.Group, *model.User, error)
+	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
-	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string) (*string, *GroupError)
+	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string, creatorUserID string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, id string) error
@@ -209,4 +214,17 @@ type storageListenerImpl struct {
 
 func (a *storageListenerImpl) OnConfigsChanged() {
 	//do nothing for now
+}
+
+// Notifications exposes Notifications BB APIs for the driver adapters
+type Notifications interface {
+	SendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error
+}
+
+type notificationsImpl struct {
+	app *Application
+}
+
+func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error {
+	return n.app.sendNotification(recipients, title, text, data)
 }

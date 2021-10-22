@@ -11,8 +11,6 @@ definitions:
     properties:
       category:
         type: string
-      creator_email:
-        type: string
       creator_name:
         type: string
       creator_photo_url:
@@ -21,6 +19,10 @@ definitions:
         type: string
       image_url:
         type: string
+      membership_questions:
+        items:
+          type: string
+        type: array
       privacy:
         type: string
       tags:
@@ -38,8 +40,6 @@ definitions:
     type: object
   createMemberRequest:
     properties:
-      email:
-        type: string
       member_answers:
         items:
           properties:
@@ -53,8 +53,6 @@ definitions:
         type: string
       photo_url:
         type: string
-    required:
-    - email
     type: object
   createResponse:
     properties:
@@ -81,8 +79,6 @@ definitions:
             date_created:
               type: string
             date_updated:
-              type: string
-            email:
               type: string
             id:
               type: string
@@ -143,8 +139,6 @@ definitions:
               type: string
             date_updated:
               type: string
-            email:
-              type: string
             id:
               type: string
             member_answers:
@@ -203,8 +197,6 @@ definitions:
             date_created:
               type: string
             date_updated:
-              type: string
-            email:
               type: string
             id:
               type: string
@@ -619,7 +611,7 @@ paths:
       consumes:
       - application/json
       description: Gives the groups list. It can be filtered by category
-      operationId: GetGroups
+      operationId: GetAllGroups
       parameters:
       - description: APP
         in: header
@@ -630,7 +622,7 @@ paths:
         in: query
         name: category
         type: string
-      - description: Filtering by group's title (case-insensitive)
+      - description: Filtering by group's title - case insensitive
         in: query
         name: title
         type: string
@@ -644,6 +636,8 @@ paths:
       security:
       - APIKeyAuth: []
       - AppUserAuth: []
+      tags:
+      - Admin
     post:
       consumes:
       - application/json
@@ -733,7 +727,7 @@ paths:
       consumes:
       - application/json
       description: Gives the user groups memberships
-      operationId: GetUserGroupMemberships
+      operationId: IntGetUserGroupMemberships
       parameters:
       - description: Identifier
         in: path
@@ -834,6 +828,25 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+  /api/user/group-memberships:
+    get:
+      consumes:
+      - application/json
+      description: Gives the user groups memberships
+      operationId: GetUserGroupMemberships
+      parameters:
+      - description: Identifier
+        in: path
+        name: identifier
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.userGroupMembership'
       security:
       - AppUserAuth: []
   /api/user/groups:

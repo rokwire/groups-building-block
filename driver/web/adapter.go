@@ -68,15 +68,16 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 
 	//internal key protection
-	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.IntGetUserGroupMemberships)).Methods("GET")
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
 
 	//id token protection
-	restSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
+	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/user/group-memberships", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")

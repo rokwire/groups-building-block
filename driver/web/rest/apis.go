@@ -63,27 +63,27 @@ func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter,
 }
 
 type createGroupRequest struct {
-	Title           string   `json:"title" validate:"required"`
-	Description     *string  `json:"description"`
-	Category        string   `json:"category" validate:"required"`
-	Tags            []string `json:"tags"`
-	Privacy         string   `json:"privacy" validate:"required,oneof=public private"`
-	CreatorName     string   `json:"creator_name"`
-	CreatorEmail    string   `json:"creator_email"`
-	CreatorPhotoURL string   `json:"creator_photo_url"`
-	ImageURL        *string  `json:"image_url"`
-	WebURL          *string  `json:"web_url"`
+	Title               string   `json:"title" validate:"required"`
+	Description         *string  `json:"description"`
+	Category            string   `json:"category" validate:"required"`
+	Tags                []string `json:"tags"`
+	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
+	CreatorName         string   `json:"creator_name"`
+	CreatorPhotoURL     string   `json:"creator_photo_url"`
+	ImageURL            *string  `json:"image_url"`
+	WebURL              *string  `json:"web_url"`
+	MembershipQuestions []string `json:"membership_questions"`
 } //@name createGroupRequest
 
-//GetUserGroupMemberships gets the user groups memberships
+//IntGetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
-// @ID GetUserGroupMemberships
+// @ID IntGetUserGroupMemberships
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupMembership
 // @Security IntAPIKeyAuth
 // @Router /api/int/user/{identifier}/groups [get]
-func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -93,7 +93,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 	}
 	externalID := identifier
 
-	userGroupMemberships, user, err := h.app.Services.GetUserGroupMemberships(externalID)
+	userGroupMemberships, user, err := h.app.Services.GetUserGroupMembershipsByExternalID(externalID)
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -189,13 +189,13 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	tags := requestData.Tags
 	privacy := requestData.Privacy
 	creatorName := requestData.CreatorName
-	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
+	membershipQuestions := requestData.MembershipQuestions
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL)
+		creatorName, creatorPhotoURL, imageURL, webURL, membershipQuestions)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -215,13 +215,13 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 }
 
 type updateGroupRequest struct {
-	Category            string   `json:"category" validate:"required"`
 	Title               string   `json:"title" validate:"required"`
-	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
 	Description         *string  `json:"description"`
+	Category            string   `json:"category" validate:"required"`
+	Tags                []string `json:"tags"`
+	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name updateGroupRequest
 
@@ -521,6 +521,56 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the user groups items")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+//GetUserGroupMemberships gets the user groups memberships
+// @Description Gives the user groups memberships
+// @ID GetUserGroupMemberships
+// @Accept json
+// @Param identifier path string true "Identifier"
+// @Success 200 {object} userGroupMembership
+// @Security AppUserAuth
+// @Router /api/user/group-memberships [get]
+func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	userGroupMemberships, err := h.app.Services.GetUserGroupMembershipsByID(current.ID)
+	if err != nil {
+		log.Println("The user has no group memberships")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	userGroups := make([]userGroupMembership, len(userGroupMemberships))
+	for i, group := range userGroupMemberships {
+
+		memberStatus := ""
+
+		members := group.Members
+		for _, member := range members {
+			if member.User.ID == current.ID {
+				memberStatus = member.Status
+			}
+		}
+
+		ugm := userGroupMembership{
+			ID:               group.ID,
+			Title:            group.Title,
+			Privacy:          group.Privacy,
+			MembershipStatus: memberStatus,
+		}
+
+		userGroups[i] = ugm
+	}
+
+	data, err := json.Marshal(userGroups)
+	if err != nil {
+		log.Println("Error on marshal the user group membership")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
