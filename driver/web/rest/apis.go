@@ -377,6 +377,7 @@ type getGroupsResponse struct {
 	Members []struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
+		Email          string `json:"email"`
 		PhotoURL       string `json:"photo_url"`
 		Status         string `json:"status"`
 		RejectedReason string `json:"rejected_reason"`
@@ -482,6 +483,7 @@ type getUserGroupsResponse struct {
 	Members []struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
+		Email          string `json:"email"`
 		PhotoURL       string `json:"photo_url"`
 		Status         string `json:"status"`
 		RejectedReason string `json:"rejected_reason"`
@@ -543,6 +545,7 @@ type getGroupResponse struct {
 	Members []struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
+		Email          string `json:"email"`
 		PhotoURL       string `json:"photo_url"`
 		Status         string `json:"status"`
 		RejectedReason string `json:"rejected_reason"`
@@ -600,6 +603,7 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 
 type createMemberRequest struct {
 	Name          string `json:"name"`
+	Email         string `json:"email" validate:"required"`
 	PhotoURL      string `json:"photo_url"`
 	MemberAnswers []struct {
 		Question string `json:"question"`
@@ -652,6 +656,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 	}
 
 	name := requestData.Name
+	email := requestData.Email
 	photoURL := requestData.PhotoURL
 	memberAnswers := requestData.MemberAnswers
 	mAnswers := make([]model.MemberAnswer, len(memberAnswers))
@@ -661,7 +666,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		}
 	}
 
-	err = h.app.Services.CreatePendingMember(clientID, *current, groupID, name, photoURL, mAnswers)
+	err = h.app.Services.CreatePendingMember(clientID, *current, groupID, name, email, photoURL, mAnswers)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
