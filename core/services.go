@@ -323,9 +323,9 @@ func (app *Application) getUserGroupMemberships(id string, external bool) ([]*mo
 	return getUserGroupMemberships, user, nil
 }
 
-func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
-		current.ID, creatorName, creatorPhotoURL, imageURL, webURL, membershipQuestions)
+func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
+	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions)
 	if err != nil {
 		return nil, err
 	}
