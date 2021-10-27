@@ -64,6 +64,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 					mItem["id"] = current.ID
 					mItem["user_id"] = current.User.ID
 					mItem["name"] = current.Name
+					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
 					mItem["status"] = current.Status
 					membersItems = append(membersItems, mItem)
@@ -102,6 +103,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 					mItem["id"] = current.ID
 					mItem["user_id"] = current.User.ID
 					mItem["name"] = current.Name
+					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
 					mItem["status"] = current.Status
 					membersItems = append(membersItems, mItem)
@@ -141,6 +143,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem["id"] = current.ID
 			mItem["user_id"] = current.User.ID
 			mItem["name"] = current.Name
+			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
 			mItem["status"] = current.Status
 			mItem["rejected_reason"] = current.RejectReason
@@ -196,6 +199,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
+				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
@@ -235,6 +239,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
+				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
@@ -273,6 +278,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
 				mItem["name"] = current.Name
+				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				mItem["rejected_reason"] = current.RejectReason
@@ -315,17 +321,17 @@ func (app *Application) getGroupCategories() ([]string, error) {
 	}
 	return groupCategories, nil
 }
-func (app *Application) getUserGroupMemberships(externalID string) ([]*model.Group, *model.User, error) {
-	getUserGroupMemberships, user, err := app.storage.FindUserGroupsMemberships(externalID)
+func (app *Application) getUserGroupMemberships(id string, external bool) ([]*model.Group, *model.User, error) {
+	getUserGroupMemberships, user, err := app.storage.FindUserGroupsMemberships(id, external)
 	if err != nil {
 		return nil, nil, err
 	}
 	return getUserGroupMemberships, user, nil
 }
 
-func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string, creatorName string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy,
-		current.ID, creatorName, creatorPhotoURL, imageURL, webURL, membershipQuestions)
+func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
+	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions)
 	if err != nil {
 		return nil, err
 	}
@@ -405,8 +411,8 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return res, nil
 }
 
-func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, photoURL, memberAnswers)
+func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, email, photoURL, memberAnswers)
 	if err != nil {
 		return err
 	}

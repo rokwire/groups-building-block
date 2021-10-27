@@ -687,7 +687,7 @@ var doc = `{
                 "consumes": [
                     "application/json"
                 ],
-                "operationId": "GetUserGroupMemberships",
+                "operationId": "IntGetUserGroupMemberships",
                 "parameters": [
                     {
                         "type": "string",
@@ -846,6 +846,37 @@ var doc = `{
                 }
             }
         },
+        "/api/user/group-memberships": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the user groups memberships",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "GetUserGroupMemberships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.userGroupMembership"
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/groups": {
             "get": {
                 "security": [
@@ -938,6 +969,12 @@ var doc = `{
                 },
                 "image_url": {
                     "type": "string"
+                },
+                "membership_questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "privacy": {
                     "type": "string"

@@ -69,21 +69,22 @@ type createGroupRequest struct {
 	Tags                []string `json:"tags"`
 	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
 	CreatorName         string   `json:"creator_name"`
+	CreatorEmail        string   `json:"creator_email"`
 	CreatorPhotoURL     string   `json:"creator_photo_url"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	MembershipQuestions []string `json:"membership_questions"`
 } //@name createGroupRequest
 
-//GetUserGroupMemberships gets the user groups memberships
+//IntGetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
-// @ID GetUserGroupMemberships
+// @ID IntGetUserGroupMemberships
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupMembership
 // @Security IntAPIKeyAuth
 // @Router /api/int/user/{identifier}/groups [get]
-func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -93,7 +94,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, w http.ResponseWr
 	}
 	externalID := identifier
 
-	userGroupMemberships, user, err := h.app.Services.GetUserGroupMemberships(externalID)
+	userGroupMemberships, user, err := h.app.Services.GetUserGroupMembershipsByExternalID(externalID)
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -189,13 +190,14 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	tags := requestData.Tags
 	privacy := requestData.Privacy
 	creatorName := requestData.CreatorName
+	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	membershipQuestions := requestData.MembershipQuestions
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorPhotoURL, imageURL, webURL, membershipQuestions)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -377,6 +379,7 @@ type getGroupsResponse struct {
 	Members []struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
+		Email          string `json:"email"`
 		PhotoURL       string `json:"photo_url"`
 		Status         string `json:"status"`
 		RejectedReason string `json:"rejected_reason"`
@@ -482,6 +485,7 @@ type getUserGroupsResponse struct {
 	Members []struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
+		Email          string `json:"email"`
 		PhotoURL       string `json:"photo_url"`
 		Status         string `json:"status"`
 		RejectedReason string `json:"rejected_reason"`
@@ -528,6 +532,56 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 	w.Write(data)
 }
 
+//GetUserGroupMemberships gets the user groups memberships
+// @Description Gives the user groups memberships
+// @ID GetUserGroupMemberships
+// @Accept json
+// @Param identifier path string true "Identifier"
+// @Success 200 {object} userGroupMembership
+// @Security AppUserAuth
+// @Router /api/user/group-memberships [get]
+func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	userGroupMemberships, err := h.app.Services.GetUserGroupMembershipsByID(current.ID)
+	if err != nil {
+		log.Println("The user has no group memberships")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	userGroups := make([]userGroupMembership, len(userGroupMemberships))
+	for i, group := range userGroupMemberships {
+
+		memberStatus := ""
+
+		members := group.Members
+		for _, member := range members {
+			if member.User.ID == current.ID {
+				memberStatus = member.Status
+			}
+		}
+
+		ugm := userGroupMembership{
+			ID:               group.ID,
+			Title:            group.Title,
+			Privacy:          group.Privacy,
+			MembershipStatus: memberStatus,
+		}
+
+		userGroups[i] = ugm
+	}
+
+	data, err := json.Marshal(userGroups)
+	if err != nil {
+		log.Println("Error on marshal the user group membership")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 type getGroupResponse struct {
 	ID                  string   `json:"id"`
 	Category            string   `json:"category"`
@@ -543,6 +597,7 @@ type getGroupResponse struct {
 	Members []struct {
 		ID             string `json:"id"`
 		Name           string `json:"name"`
+		Email          string `json:"email"`
 		PhotoURL       string `json:"photo_url"`
 		Status         string `json:"status"`
 		RejectedReason string `json:"rejected_reason"`
@@ -600,6 +655,7 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 
 type createMemberRequest struct {
 	Name          string `json:"name"`
+	Email         string `json:"email" validate:"required"`
 	PhotoURL      string `json:"photo_url"`
 	MemberAnswers []struct {
 		Question string `json:"question"`
@@ -652,6 +708,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 	}
 
 	name := requestData.Name
+	email := requestData.Email
 	photoURL := requestData.PhotoURL
 	memberAnswers := requestData.MemberAnswers
 	mAnswers := make([]model.MemberAnswer, len(memberAnswers))
@@ -661,7 +718,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		}
 	}
 
-	err = h.app.Services.CreatePendingMember(clientID, *current, groupID, name, photoURL, mAnswers)
+	err = h.app.Services.CreatePendingMember(clientID, *current, groupID, name, email, photoURL, mAnswers)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

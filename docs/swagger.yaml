@@ -21,6 +21,10 @@ definitions:
         type: string
       image_url:
         type: string
+      membership_questions:
+        items:
+          type: string
+        type: array
       privacy:
         type: string
       tags:
@@ -733,7 +737,7 @@ paths:
       consumes:
       - application/json
       description: Gives the user groups memberships
-      operationId: GetUserGroupMemberships
+      operationId: IntGetUserGroupMemberships
       parameters:
       - description: Identifier
         in: path
@@ -834,6 +838,25 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+  /api/user/group-memberships:
+    get:
+      consumes:
+      - application/json
+      description: Gives the user groups memberships
+      operationId: GetUserGroupMemberships
+      parameters:
+      - description: Identifier
+        in: path
+        name: identifier
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.userGroupMembership'
       security:
       - AppUserAuth: []
   /api/user/groups:
