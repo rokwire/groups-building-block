@@ -19,6 +19,7 @@ import (
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/authorization"
 	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/core-auth-library-go/authutils"
 	"github.com/rokwire/core-auth-library-go/tokenauth"
 )
 
@@ -77,7 +78,18 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, 
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, r, w)
+	user := auth.idTokenAuth.check(clientID, idToken, nil, r, w)
+	return clientID, user
+}
+
+func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCClientIDs []string) (string, *model.User) {
+	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	if !clientIDOK {
+		return "", nil
+	}
+
+	idToken := auth.getIDToken(r)
+	user := auth.idTokenAuth.check(clientID, idToken, allowedOIDCClientIDs, r, w)
 	return clientID, user
 }
 
@@ -104,7 +116,7 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(clientID, idToken, r, w)
+		user := auth.idTokenAuth.check(clientID, idToken, nil, r, w)
 		if user != nil {
 			authenticated = true
 		}
@@ -170,7 +182,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string,
+func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
 	oidcAdminClientID string, oidcAdminWebClientID string, coreBBHost string, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if coreBBHost != "" {
@@ -195,7 +207,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 	}
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
-	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, tokenAuth)
+	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
 	internalAuth := newInternalAuth(internalAPIKeys)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
@@ -268,6 +280,7 @@ func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKe
 type userData struct {
 	UIuceduUIN        *string   `json:"uiucedu_uin"`
 	Sub               *string   `json:"sub"`
+	Aud               *string   `json:"aud"`
 	Email             *string   `json:"email"`
 	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 }
@@ -327,8 +340,11 @@ func newInternalAuth(internalAPIKeys []string) *InternalAuth {
 type IDTokenAuth struct {
 	app *core.Application
 
-	idTokenVerifier *oidc.IDTokenVerifier
-	coreTokenAuth   *tokenauth.TokenAuth
+	idTokenVerifier   *oidc.IDTokenVerifier
+	appClientIDs      []string
+	extendedClientIDs []string
+
+	coreTokenAuth *tokenauth.TokenAuth
 
 	cachedUsers     *syncmap.Map //cache users while active - 5 minutes timeout
 	cachedUsersLock *sync.RWMutex
@@ -387,7 +403,7 @@ func (auth *IDTokenAuth) cleanCacheUser() {
 	auth.cleanCacheUser()
 }
 
-func (auth *IDTokenAuth) check(clientID string, token *string, r *http.Request, w http.ResponseWriter) *model.User {
+func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs []string, r *http.Request, w http.ResponseWriter) *model.User {
 	var data *userData
 	isCoreUser := false
 
@@ -403,10 +419,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, r *http.Request, 
 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions}
-			if claims.UID != "" && claims.AuthType == "illinois_oidc" {
-				data.UIuceduUIN = &claims.UID
-			}
+			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
 
 			isCoreUser = true
 		}
@@ -436,6 +449,21 @@ func (auth *IDTokenAuth) check(clientID string, token *string, r *http.Request, 
 			auth.responseUnauthorized(rawIDToken, w)
 			return nil
 		}
+
+		if allowedClientIDs == nil {
+			allowedClientIDs = auth.appClientIDs
+		}
+
+		validAud := false
+		if data.Aud != nil {
+			validAud = authutils.ContainsString(allowedClientIDs, *data.Aud)
+		}
+		if !validAud {
+			log.Printf("invalid audience in token: expected %v, got %s\n", allowedClientIDs, *data.Aud)
+			auth.responseUnauthorized(rawIDToken, w)
+			return nil
+		}
+
 		//we must have UIuceduUIN
 		if data.UIuceduUIN == nil {
 			log.Printf("missing uiuceuin data in the token - %s\n", err)
@@ -633,17 +661,21 @@ func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
 }
 
 //newIDTokenAuth creates new id token auth
-func newIDTokenAuth(app *core.Application, oidcProvider string, oidcClientID string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
+func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
 	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
+	idTokenVerifier := provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
+	appClientIDList := strings.Split(appClientIDs, ",")
+	extendedClientIDList := strings.Split(extendedClientIDs, ",")
+
 	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
+		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList,
 		cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }
@@ -686,10 +718,7 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 			}
 
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions}
-			if claims.UID != "" && claims.AuthType == "illinois_oidc" {
-				data.UIuceduUIN = &claims.UID
-			}
+			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
 
 			isCoreUser = true
 		}

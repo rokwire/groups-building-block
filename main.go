@@ -46,12 +46,13 @@ func main() {
 	host := getEnvKey("GR_HOST", true)
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
+	oidcExtendedClientIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID, oidcAdminClientID, oidcAdminWebClientID, internalAPIKeys, coreBBHost, groupServiceURL)
+	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, internalAPIKeys, coreBBHost, groupServiceURL)
 	webAdapter.Start()
 }
 
