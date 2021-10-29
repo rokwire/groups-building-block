@@ -554,6 +554,23 @@ func (app *Application) createEvent(clientID string, current model.User, eventID
 	if err != nil {
 		return err
 	}
+
+	recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+	err = app.notifications.SendNotification(
+		recipients,
+		"Illinois",
+		fmt.Sprintf("New event has been published in '%s' group", group.Title),
+		map[string]string{
+			"type":        "group",
+			"operation":   "event_created",
+			"entity_type": "group",
+			"entity_id":   group.ID,
+			"entity_name": group.Title,
+		},
+	)
+	if err != nil {
+		log.Printf("error while sending notification for new event: %s", err) // dont fail
+	}
 	return nil
 }
 
@@ -569,8 +586,30 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 	return app.storage.FindPosts(clientID, current, groupID, offset, limit, order)
 }
 
-func (app *Application) createPost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	return app.storage.CreatePost(clientID, current, post)
+func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+	post, err := app.storage.CreatePost(clientID, current, post)
+	if err != nil {
+		return nil, err
+	}
+	if post.ParentID == nil {
+		recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+		err = app.notifications.SendNotification(
+			recipients,
+			"Illinois",
+			fmt.Sprintf("New post has been published in '%s' group", group.Title),
+			map[string]string{
+				"type":        "group",
+				"operation":   "event_created",
+				"entity_type": "group",
+				"entity_id":   group.ID,
+				"entity_name": group.Title,
+			},
+		)
+		if err != nil {
+			log.Printf("error while sending notification for new post: %s", err) // dont fail
+		}
+	}
+	return post, nil
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {

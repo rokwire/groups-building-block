@@ -38,7 +38,7 @@ type Services interface {
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
 
 	GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
-	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string) error
 }
@@ -139,8 +139,8 @@ func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID st
 	return s.app.getPosts(clientID, current, groupID, offset, limit, order)
 }
 
-func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	return s.app.createPost(clientID, current, post)
+func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+	return s.app.createPost(clientID, current, post, group)
 }
 
 func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {

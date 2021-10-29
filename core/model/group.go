@@ -117,13 +117,13 @@ func (gr Group) GetMemberByID(userID string) *Member {
 }
 
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
-func (gr Group) GetMembersAsNotificationRecipients() []notifications.Recipient {
+func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 
 	recipients := []notifications.Recipient{}
 
-	if len(recipients) > 0 {
+	if len(gr.Members) > 0 {
 		for _, member := range gr.Members {
-			if member.IsAdminOrMember() {
+			if member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.User.ID) {
 				recipients = append(recipients, notifications.Recipient{
 					UserID: member.User.ID,
 					Name:   member.Name,
