@@ -34,7 +34,7 @@ type Services interface {
 	UpdateMembership(clientID string, current model.User, membershipID string, status string) error
 
 	GetEvents(clientID string, groupID string) ([]model.Event, error)
-	CreateEvent(clientID string, current model.User, eventID string, groupID string) error
+	CreateEvent(clientID string, current model.User, eventID string, group *model.Group) error
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
 
 	GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
@@ -127,8 +127,8 @@ func (s *servicesImpl) GetEvents(clientID string, groupID string) ([]model.Event
 	return s.app.getEvents(clientID, groupID)
 }
 
-func (s *servicesImpl) CreateEvent(clientID string, current model.User, eventID string, groupID string) error {
-	return s.app.createEvent(clientID, current, eventID, groupID)
+func (s *servicesImpl) CreateEvent(clientID string, current model.User, eventID string, group *model.Group) error {
+	return s.app.createEvent(clientID, current, eventID, group)
 }
 
 func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID string, groupID string) error {

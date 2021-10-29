@@ -1,8 +1,11 @@
 package model
 
-import "time"
+import (
+	"groups/driven/notifications"
+	"time"
+)
 
-//Group represents group entity
+// Group represents group entity
 type Group struct {
 	ID                  string   `json:"id"`
 	Category            string   `json:"category"` //one of the enums categories list
@@ -21,65 +24,65 @@ type Group struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name Group
 
-//IsGroupAdminOrMember says if the user is an admin or a member of the group
+// IsGroupAdminOrMember says if the user is an admin or a member of the group
 func (gr Group) IsGroupAdminOrMember(userID string) bool {
 	if gr.Members == nil {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && (item.Status == "admin" || item.Status == "member") {
+		if item.User.ID == userID && item.IsAdminOrMember() {
 			return true
 		}
 	}
 	return false
 }
 
-//IsGroupAdmin says if the user is admin of the group
+// IsGroupAdmin says if the user is admin of the group
 func (gr Group) IsGroupAdmin(userID string) bool {
 	if gr.Members == nil {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.Status == "admin" {
+		if item.User.ID == userID && item.IsAdmin() {
 			return true
 		}
 	}
 	return false
 }
 
-//IsGroupMember says if the user is a group member
+// IsGroupMember says if the user is a group member
 func (gr Group) IsGroupMember(userID string) bool {
 	if gr.Members == nil {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.Status == "member" {
+		if item.User.ID == userID && item.IsMember() {
 			return true
 		}
 	}
 	return false
 }
 
-//IsGroupPending says if the user is a group pending
+// IsGroupPending says if the user is a group pending
 func (gr Group) IsGroupPending(userID string) bool {
 	if gr.Members == nil {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.Status == "pending" {
+		if item.User.ID == userID && item.IsPendingMember() {
 			return true
 		}
 	}
 	return false
 }
 
-//IsGroupRejected says if the user is a group rejected
+// IsGroupRejected says if the user is a group rejected
 func (gr Group) IsGroupRejected(userID string) bool {
 	if gr.Members == nil {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.Status == "rejected" {
+		if item.User.ID == userID && item.IsRejected() {
 			return true
 		}
 	}
@@ -112,3 +115,22 @@ func (gr Group) GetMemberByID(userID string) *Member {
 	}
 	return nil
 }
+
+// GetMembersAsNotificationRecipients constructs all official members as notification recipients
+func (gr Group) GetMembersAsNotificationRecipients() []notifications.Recipient {
+
+	recipients := []notifications.Recipient{}
+
+	if len(recipients) > 0 {
+		for _, member := range gr.Members {
+			if member.IsAdminOrMember() {
+				recipients = append(recipients, notifications.Recipient{
+					UserID: member.User.ID,
+					Name: member.Name,
+				})
+			}
+		}
+	}
+	return recipients
+}
+
