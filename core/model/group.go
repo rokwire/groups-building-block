@@ -126,11 +126,10 @@ func (gr Group) GetMembersAsNotificationRecipients() []notifications.Recipient {
 			if member.IsAdminOrMember() {
 				recipients = append(recipients, notifications.Recipient{
 					UserID: member.User.ID,
-					Name: member.Name,
+					Name:   member.Name,
 				})
 			}
 		}
 	}
 	return recipients
 }
-
