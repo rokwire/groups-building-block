@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-//Member represents group member entity
+// Member represents group member entity
 type Member struct {
 	ID            string         `json:"id"`
 	User          User           `json:"user"`
@@ -18,7 +18,7 @@ type Member struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } //@name Member
 
-//MemberAnswer represents member answer entity
+// MemberAnswer represents member answer entity
 type MemberAnswer struct {
 	Question string `json:"question"`
 	Answer   string `json:"answer"`
