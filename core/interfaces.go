@@ -221,13 +221,13 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error
 }
 
 type notificationsImpl struct {
 	app *Application
 }
 
-func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error {
-	return n.app.sendNotification(recipients, title, text, data)
+func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
+	return n.app.sendNotification(recipients, topic, title, text, data)
 }
