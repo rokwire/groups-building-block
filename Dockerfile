@@ -15,8 +15,12 @@ COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml
 
 COPY --from=builder /groups-app/driver/web/authorization_model.conf /driver/web/authorization_model.conf
 COPY --from=builder /groups-app/driver/web/authorization_policy.csv /driver/web/authorization_policy.csv
+
 COPY --from=builder /groups-app/driver/web/permissions_authorization_policy.csv /driver/web/permissions_authorization_policy.csv
 COPY --from=builder /groups-app/driver/web/scope_authorization_policy.csv /driver/web/scope_authorization_policy.csv
+
+COPY --from=builder /core-app/vendor/github.com/rokwire/core-auth-library-go/authorization/authorization_model_scope.conf /core-app/vendor/github.com/rokwire/core-auth-library-go/authorization/authorization_model_scope.conf
+COPY --from=builder /core-app/vendor/github.com/rokwire/core-auth-library-go/authorization/authorization_model_string.conf /core-app/vendor/github.com/rokwire/core-auth-library-go/authorization/authorization_model_string.conf
 
 COPY --from=builder /etc/passwd /etc/passwd
 
