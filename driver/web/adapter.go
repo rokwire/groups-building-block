@@ -77,7 +77,6 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
-	restSubrouter.HandleFunc("/user/group-memberships", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
@@ -87,6 +86,9 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateMembership)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupEvent)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupEvent)).Methods("DELETE")
+
+	//extended client id token protection (eg. allow event managers)
+	restSubrouter.HandleFunc("/user/group-memberships", we.idTokenExtendedClientAuthWrapFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
 
 	// Client Post APIs
 	restSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupPosts)).Methods("GET")
@@ -150,6 +152,19 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 	}
 }
 
+func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
+		if user == nil {
+			return
+		}
+
+		handler(clientID, user, w, req)
+	}
+}
+
 type internalKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
@@ -195,10 +210,11 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 }
 
 //NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider string, oidcClientID string, oidcAdminClientID string, oidcAdminWebClientID string, internalAPIKeys []string, coreBBHost string, groupServiceURL string) *Adapter {
+func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string, oidcAdminClientID string,
+	oidcAdminWebClientID string, internalAPIKeys []string, coreBBHost string, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, appKeys, internalAPIKeys, oidcProvider, oidcClientID, oidcAdminClientID, oidcAdminWebClientID, coreBBHost, groupServiceURL, authorization)
+	auth := NewAuth(app, host, appKeys, internalAPIKeys, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, coreBBHost, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 

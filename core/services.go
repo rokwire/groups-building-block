@@ -431,8 +431,10 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 				}
 			}
 			if len(recipients) > 0 {
+				topic := "groups.invitations"
 				app.notifications.SendNotification(
 					recipients,
+					&topic,
 					"Illinois",
 					fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title),
 					map[string]string{
@@ -477,6 +479,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 
 	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
 	if err == nil && group != nil {
+		topic := "groups.invitations"
 		member := group.GetMemberByID(membershipID)
 		if member != nil {
 			if approve {
@@ -487,6 +490,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 							Name:   member.Name,
 						},
 					},
+					&topic,
 					"Illinois",
 					fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
 					map[string]string{
@@ -498,6 +502,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 					},
 				)
 			} else {
+				topic := "groups.invitations"
 				app.notifications.SendNotification(
 					[]notifications.Recipient{
 						notifications.Recipient{
@@ -505,6 +510,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 							Name:   member.Name,
 						},
 					},
+					&topic,
 					"Illinois",
 					fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
 					map[string]string{
@@ -549,10 +555,29 @@ func (app *Application) getEvents(clientID string, groupID string) ([]model.Even
 	return events, nil
 }
 
-func (app *Application) createEvent(clientID string, current model.User, eventID string, groupID string) error {
-	err := app.storage.CreateEvent(clientID, eventID, groupID)
+func (app *Application) createEvent(clientID string, current model.User, eventID string, group *model.Group) error {
+	err := app.storage.CreateEvent(clientID, eventID, group.ID)
 	if err != nil {
 		return err
+	}
+
+	recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+	topic := "groups.events"
+	err = app.notifications.SendNotification(
+		recipients,
+		&topic,
+		"Illinois",
+		fmt.Sprintf("New event has been published in '%s' group", group.Title),
+		map[string]string{
+			"type":        "group",
+			"operation":   "event_created",
+			"entity_type": "group",
+			"entity_id":   group.ID,
+			"entity_name": group.Title,
+		},
+	)
+	if err != nil {
+		log.Printf("error while sending notification for new event: %s", err) // dont fail
 	}
 	return nil
 }
@@ -569,8 +594,32 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 	return app.storage.FindPosts(clientID, current, groupID, offset, limit, order)
 }
 
-func (app *Application) createPost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	return app.storage.CreatePost(clientID, current, post)
+func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+	post, err := app.storage.CreatePost(clientID, current, post)
+	if err != nil {
+		return nil, err
+	}
+	if post.ParentID == nil {
+		recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+		topic := "groups.posts"
+		err = app.notifications.SendNotification(
+			recipients,
+			&topic,
+			"Illinois",
+			fmt.Sprintf("New post has been published in '%s' group", group.Title),
+			map[string]string{
+				"type":        "group",
+				"operation":   "event_created",
+				"entity_type": "group",
+				"entity_id":   group.ID,
+				"entity_name": group.Title,
+			},
+		)
+		if err != nil {
+			log.Printf("error while sending notification for new post: %s", err) // dont fail
+		}
+	}
+	return post, nil
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
@@ -581,6 +630,6 @@ func (app *Application) deletePost(clientID string, current *model.User, groupID
 	return app.storage.DeletePost(clientID, current, groupID, postID)
 }
 
-func (app *Application) sendNotification(recipients []notifications.Recipient, title string, text string, data map[string]string) error {
-	return app.notifications.SendNotification(recipients, title, text, data)
+func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
+	return app.notifications.SendNotification(recipients, topic, title, text, data)
 }

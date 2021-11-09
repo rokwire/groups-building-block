@@ -26,12 +26,13 @@ func NewNotificationsAdapter(internalAPIKey string, baseURL string) *Adapter {
 }
 
 // SendNotification sends notification to a user
-func (na *Adapter) SendNotification(recipients []Recipient, title string, text string, data map[string]string) error {
+func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string) error {
 	url := fmt.Sprintf("%s/api/int/message", na.baseURL)
 
 	bodyData := map[string]interface{}{
 		"priority":   10,
 		"recipients": recipients,
+		"topic":      topic,
 		"subject":    title,
 		"body":       text,
 		"data":       data,

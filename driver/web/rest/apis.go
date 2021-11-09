@@ -1156,7 +1156,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 
 	eventID := requestData.EventID
 
-	err = h.app.Services.CreateEvent(clientID, *current, eventID, groupID)
+	err = h.app.Services.CreateEvent(clientID, *current, eventID, group)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1322,9 +1322,23 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
+	// check if allowed to create
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil || !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("the user is not member of the group - %s", id)
+		// do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	post.GroupID = id // Set group id from the query param
 
-	post, err = h.app.Services.CreatePost(clientID, current, post)
+	post, err = h.app.Services.CreatePost(clientID, current, post, group)
 	if err != nil {
 		log.Printf("error getting posts for group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
