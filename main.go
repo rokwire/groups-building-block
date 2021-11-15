@@ -20,6 +20,7 @@ func main() {
 	if len(Version) == 0 {
 		Version = "dev"
 	}
+	Version = "1.4.18-hotfix.1"
 
 	//mongoDB adapter
 	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
