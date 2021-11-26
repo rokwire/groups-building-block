@@ -42,7 +42,7 @@ func (app *Application) FindUser(clientID string, id *string, external bool) (*m
 }
 
 // LoginUser refactors the user using the new id
-func (app *Application) LoginUser(clientID string, current *model.User, newID string)  error {
+func (app *Application) LoginUser(clientID string, current *model.User, newID string) error {
 	return app.storage.LoginUser(clientID, current)
 }
 

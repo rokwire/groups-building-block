@@ -289,7 +289,7 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 			primitive.E{Key: "event_id", Value: 1},
 			primitive.E{Key: "group_id", Value: 1},
 			primitive.E{Key: "client_id", Value: 1}},
-			true,)
+			true)
 		if err != nil {
 			return err
 		}

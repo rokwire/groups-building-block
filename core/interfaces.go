@@ -96,7 +96,7 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]ma
 	return s.app.getUserGroups(clientID, current)
 }
 
-func (s *servicesImpl) LoginUser(clientID string, current *model.User) error{
+func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
 	return s.app.loginUser(clientID, current)
 }
 

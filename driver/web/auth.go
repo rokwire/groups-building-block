@@ -410,7 +410,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 	}
 
 	//4. Get the user for the provided external id.
-	user := &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email,}
+	user := &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email}
 
 	//5. Return the user
 	return user
@@ -453,7 +453,7 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs str
 
 	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
 		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList,
-		cachedUsers: cacheUsers, cachedUsersLock: lock,}
+		cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }
 
@@ -555,7 +555,7 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 		return nil
 	}
 
-	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email,}
+	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email}
 }
 
 //gets the token from the request - as cookie or as Authorization header.

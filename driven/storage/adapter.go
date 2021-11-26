@@ -80,7 +80,7 @@ type comment struct {
 
 //Adapter implements the Storage interface
 type Adapter struct {
-	db            *database
+	db *database
 }
 
 //Start starts the storage
@@ -122,7 +122,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 
 	now := time.Now()
 
-	if legacyUser != nil && legacyUser.ID != current.ID{
+	if legacyUser != nil && legacyUser.ID != current.ID {
 		// transaction
 		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 			err := sessionContext.StartTransaction()
@@ -234,7 +234,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 		}
 	} else {
 		coreUser, _ := sa.FindUser(clientID, current.ID, false)
-		if coreUser == nil{
+		if coreUser == nil {
 			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
 				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now}
 
