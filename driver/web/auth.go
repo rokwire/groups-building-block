@@ -4,17 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/syncmap"
+	"gopkg.in/ericchiang/go-oidc.v2"
 	"groups/core"
 	"groups/core/model"
-	"groups/utils"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
-
-	"golang.org/x/sync/syncmap"
-	"gopkg.in/ericchiang/go-oidc.v2"
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/authorization"
@@ -31,13 +28,6 @@ type Auth struct {
 	adminAuth    *AdminAuth
 
 	supportedClients []string
-}
-
-//Start starts the auth module
-func (auth *Auth) Start() error {
-	auth.idTokenAuth.start()
-
-	return nil
 }
 
 func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, string) {
@@ -285,11 +275,6 @@ type userData struct {
 	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 }
 
-type cacheUser struct {
-	user      *model.User
-	lastUsage time.Time
-}
-
 ////////////////////////////////////
 
 //InternalAuth entity
@@ -346,66 +331,13 @@ type IDTokenAuth struct {
 
 	coreTokenAuth *tokenauth.TokenAuth
 
-	cachedUsers     *syncmap.Map //cache users while active - 5 minutes timeout
-	cachedUsersLock *sync.RWMutex
-}
-
-func (auth *IDTokenAuth) start() {
-	go auth.cleanCacheUser()
-}
-
-//cleanChacheUser cleans all users from the cache with no activity > 5 minutes
-func (auth *IDTokenAuth) cleanCacheUser() {
-	log.Println("IDTokenAuth -> cleanCacheUser -> start")
-
-	toRemove := []string{}
-
-	//find all users to remove - more than 5 minutes period from their last usage
-	now := time.Now().Unix()
-	auth.cachedUsers.Range(func(key, value interface{}) bool {
-		cacheUser, ok := value.(*cacheUser)
-		if !ok {
-			return false //break the iteration
-		}
-		identifier, ok := key.(string)
-		if !ok {
-			return false //break the iteration
-		}
-
-		difference := now - cacheUser.lastUsage.Unix()
-		//5 minutes
-		if difference > 300 {
-			toRemove = append(toRemove, identifier)
-		}
-
-		// this will continue iterating
-		return true
-	})
-
-	//remove the selected ones
-	count := len(toRemove)
-	if count > 0 {
-		log.Printf("IDTokenAuth -> cleanCacheUser -> %d items to remove\n", count)
-
-		for _, key := range toRemove {
-			auth.deleteCacheUser(key)
-		}
-	} else {
-		log.Println("IDTokenAuth -> cleanCacheUser -> nothing to remove")
-	}
-
-	nextLoad := time.Minute * 5
-	log.Printf("IDTokenAuth -> cleanCacheUser() -> next exec after %s\n", nextLoad)
-	timer := time.NewTimer(nextLoad)
-	<-timer.C
-	log.Println("IDTokenAuth -> cleanCacheUser() -> timer expired")
-
-	auth.cleanCacheUser()
+	cachedUsers            *syncmap.Map //cache users while active - 5 minutes timeout
+	cachedUsersLock        *sync.RWMutex
+	cachedUsersLockMapping map[string]*sync.Mutex
 }
 
 func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs []string, r *http.Request, w http.ResponseWriter) *model.User {
 	var data *userData
-	isCoreUser := false
 
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
@@ -420,8 +352,6 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
-
-			isCoreUser = true
 		}
 	}
 
@@ -480,163 +410,10 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 	}
 
 	//4. Get the user for the provided external id.
-	user, err := auth.getUser(clientID, *data, isCoreUser)
-	if err != nil {
-		log.Printf("error getting an user for external id - %s\n", err)
+	user := &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email,}
 
-		auth.responseInternalServerError(w)
-		return nil
-	}
-	if user == nil {
-		log.Printf("for some reasons the user for external id - %s is nil\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-
-	//5. Update the user if needed
-	user, err = auth.updateUserIfNeeded(clientID, *user, *data)
-	if err != nil {
-		log.Printf("error updating an user for external id - %s\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-
-	//6. Return the user
+	//5. Return the user
 	return user
-}
-
-func (auth *IDTokenAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
-	currentList := current.IsMemberOf
-	newList := userData.UIuceduIsMemberOf
-
-	isEqual := utils.EqualPointers(currentList, newList)
-	if !isEqual {
-		log.Println("updateUserIfNeeded -> need to update user")
-
-		//1. remove it from the cache
-		auth.deleteCacheUser(current.ExternalID + "_" + clientID)
-
-		//2. update it
-		current.IsMemberOf = userData.UIuceduIsMemberOf
-		err := auth.app.UpdateUser(clientID, &current)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &current, nil
-}
-
-//the identifier is externalID_clientID
-func (auth *IDTokenAuth) getCachedUser(identifier string) *cacheUser {
-	auth.cachedUsersLock.RLock()
-	defer auth.cachedUsersLock.RUnlock()
-
-	var cachedUser *cacheUser //to return
-
-	item, _ := auth.cachedUsers.Load(identifier)
-	if item != nil {
-		cachedUser = item.(*cacheUser)
-	}
-
-	//keep the last get time
-	if cachedUser != nil {
-		cachedUser.lastUsage = time.Now()
-		auth.cachedUsers.Store(identifier, cachedUser)
-	}
-
-	return cachedUser
-}
-
-//the identifier is externalID_clientID
-func (auth *IDTokenAuth) cacheUser(identifier string, user *model.User) {
-	auth.cachedUsersLock.RLock()
-
-	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
-	auth.cachedUsers.Store(identifier, cacheUser)
-
-	auth.cachedUsersLock.RUnlock()
-}
-
-//the identifier is externalID_clientID
-func (auth *IDTokenAuth) deleteCacheUser(identifier string) {
-	auth.cachedUsersLock.RLock()
-
-	auth.cachedUsers.Delete(identifier)
-
-	auth.cachedUsersLock.RUnlock()
-}
-
-func (auth *IDTokenAuth) getUser(clientID string, userData userData, isCoreUser bool) (*model.User, error) {
-	if userData.Sub == nil {
-		return nil, errors.New("user sub cannot be nil")
-	}
-
-	var err error
-
-	//1. First check if cached
-	cachedUser := auth.getCachedUser(*userData.Sub + "_" + clientID)
-	if cachedUser != nil {
-		return cachedUser.user, nil
-	}
-
-	var user *model.User
-
-	//2. Check if we have a such user by Core BB Account ID in the application
-	if isCoreUser {
-		user, err := auth.app.FindUser(clientID, userData.Sub, false)
-		if err != nil {
-			log.Printf("error finding user for id %s: %s\n", *userData.Sub, err.Error())
-			return nil, err
-		}
-		if user != nil {
-			//cache it
-			auth.cacheUser(*userData.Sub+"_"+clientID, user)
-			return user, nil
-		}
-	}
-
-	if userData.UIuceduUIN != nil {
-		//3. Check if we have a such user by external ID in the application
-		user, err = auth.app.FindUser(clientID, userData.UIuceduUIN, true)
-		if err != nil {
-			log.Printf("error finding user for external id %v: %s\n", userData.UIuceduUIN, err.Error())
-			return nil, err
-		}
-		if user != nil {
-			if isCoreUser {
-				// Refactor user to use Core BB Account ID
-				refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
-				if err != nil {
-					log.Printf("error refactoring user for id %s, external id %v: %s\n", *userData.Sub, userData.UIuceduUIN, err.Error())
-				}
-				if refactoredUser != nil {
-					//cache it
-					auth.cacheUser(*userData.Sub+"_"+clientID, user)
-					return refactoredUser, nil
-				}
-			}
-
-			//cache it
-			auth.cacheUser(*userData.Sub+"_"+clientID, user)
-			return user, nil
-		}
-	} else if !isCoreUser {
-		log.Println("non core token missing external id")
-		return nil, errors.New("non core token missing external id")
-	}
-
-	//4. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(clientID, *userData.Sub, userData.UIuceduUIN, userData.Email, userData.UIuceduIsMemberOf)
-	if err != nil {
-		log.Printf("error creating an user - %s\n", err.Error())
-		return nil, err
-	}
-	//cache it
-	auth.cacheUser(*userData.Sub+"_"+clientID, user)
-	return user, nil
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
@@ -676,7 +453,7 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs str
 
 	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
 		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList,
-		cachedUsers: cacheUsers, cachedUsersLock: lock}
+		cachedUsers: cacheUsers, cachedUsersLock: lock,}
 	return &auth
 }
 
@@ -705,7 +482,6 @@ func (auth *AdminAuth) start() {
 
 func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Request) *model.User {
 	var data *userData
-	isCoreUser := false
 
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
@@ -719,8 +495,6 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
-
-			isCoreUser = true
 		}
 	}
 
@@ -781,31 +555,7 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 		return nil
 	}
 
-	//4. Get the user for the provided external id.
-	user, err := auth.getUser(clientID, *data, isCoreUser)
-	if err != nil {
-		log.Printf("error getting an user for external id - %s\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-	if user == nil {
-		log.Printf("for some reasons the user for external id - %s is nil\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-
-	//5. Update the user if needed
-	user, err = auth.updateUserIfNeeded(clientID, *user, *data)
-	if err != nil {
-		log.Printf("error updating an user for external id - %s\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-
-	return user
+	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email,}
 }
 
 //gets the token from the request - as cookie or as Authorization header.
@@ -878,78 +628,6 @@ func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
 
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal Server Error"))
-}
-
-func (auth *AdminAuth) getUser(clientID string, userData userData, isCoreUser bool) (*model.User, error) {
-	if userData.Sub == nil {
-		return nil, errors.New("user sub cannot be nil")
-	}
-
-	var err error
-	var user *model.User
-
-	//2. Check if we have a such user by Core BB Account ID in the application
-	if isCoreUser {
-		user, err = auth.app.FindUser(clientID, userData.Sub, false)
-		if err != nil {
-			log.Printf("error finding user for id %s: %s\n", *userData.Sub, err.Error())
-		}
-		if user != nil {
-			return user, nil
-		}
-	}
-
-	if userData.UIuceduUIN != nil {
-		//3. Check if we have a such user by external ID in the application
-		user, err = auth.app.FindUser(clientID, userData.UIuceduUIN, true)
-		if err != nil {
-			log.Printf("error finding user for external id %s: %s\n", *userData.UIuceduUIN, err.Error())
-			return nil, err
-		}
-		if user != nil {
-			if isCoreUser {
-				// Refactor user to use Core BB Account ID
-				refactoredUser, err := auth.app.RefactorUser(clientID, user, *userData.Sub)
-				if err != nil {
-					log.Printf("error refactoring user for id %s, external id %s: %s\n", *userData.Sub, *userData.UIuceduUIN, err.Error())
-				}
-				if refactoredUser != nil {
-					return refactoredUser, nil
-				}
-			}
-			return user, nil
-		}
-	} else if !isCoreUser {
-		log.Println("non core token missing external id")
-		return nil, errors.New("non core token missing external id")
-	}
-
-	//4. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(clientID, *userData.Sub, userData.UIuceduUIN, userData.Email, userData.UIuceduIsMemberOf)
-	if err != nil {
-		log.Printf("error creating an user - %s\n", err.Error())
-		return nil, err
-	}
-	return user, nil
-}
-
-func (auth *AdminAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
-	currentList := current.IsMemberOf
-	newList := userData.UIuceduIsMemberOf
-
-	isEqual := utils.EqualPointers(currentList, newList)
-	if !isEqual {
-		log.Println("updateUserIfNeeded -> need to update user")
-
-		//2. update it
-		current.IsMemberOf = userData.UIuceduIsMemberOf
-		err := auth.app.UpdateUser(clientID, &current)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &current, nil
 }
 
 func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string, coreTokenAuth *tokenauth.TokenAuth, authorization *casbin.Enforcer) *AdminAuth {

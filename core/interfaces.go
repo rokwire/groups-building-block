@@ -22,7 +22,8 @@ type Services interface {
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
-	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
+	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
+	LoginUser(clientID string, currentGetUserGroups *model.User) error
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
@@ -93,6 +94,10 @@ func (s *servicesImpl) GetGroups(clientID string, current *model.User, category 
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
 	return s.app.getUserGroups(clientID, current)
+}
+
+func (s *servicesImpl) LoginUser(clientID string, current *model.User) error{
+	return s.app.loginUser(clientID, current)
 }
 
 func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
@@ -169,9 +174,7 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
-	CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error)
-	SaveUser(clientID string, user *model.User) error
-	RefactorUser(clientID string, current *model.User, newID string) (*model.User, error)
+	LoginUser(clientID string, current *model.User) error
 
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)

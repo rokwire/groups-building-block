@@ -106,24 +106,44 @@ func (m *database) start() error {
 func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	log.Println("apply users checks.....")
 
-	//drop the previous index - external_id
-	err := users.DropIndex("external_id_1")
-	if err != nil {
-		//just log
-		log.Printf("%s", err.Error())
+	indexes, _ := users.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
 	}
 
-	//drop the previous index - client_id
-	err = users.DropIndex("client_id_1")
-	if err != nil {
-		//just log
-		log.Printf("%s", err.Error())
+	if indexMapping["external_id_1"] == nil {
+		err := users.AddIndex(
+			bson.D{
+				primitive.E{Key: "external_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
 	}
 
-	//create compound index
-	err = users.AddIndex(bson.D{primitive.E{Key: "external_id", Value: 1}, primitive.E{Key: "client_id", Value: 1}}, true)
-	if err != nil {
-		return err
+	if indexMapping["client_id_1"] == nil {
+		err := users.AddIndex(
+			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["external_id_1_client_id_1"] == nil {
+		err := users.AddIndex(
+			bson.D{
+				primitive.E{Key: "external_id", Value: 1},
+				primitive.E{Key: "client_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Println("users checks passed")
@@ -140,53 +160,58 @@ func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
 func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	log.Println("apply groups checks.....")
 
-	//drop the previous index - title
-	err := groups.DropIndex("title_1")
-	if err != nil {
-		//just log
-		log.Printf("%s", err.Error())
-	}
-	//drop the previous index - client_id
-	err = groups.DropIndex("client_id_1")
-	if err != nil {
-		//just log
-		log.Printf("%s", err.Error())
-	}
-
-	//create compound index
-	err = groups.AddIndex(bson.D{primitive.E{Key: "title", Value: 1}, primitive.E{Key: "client_id", Value: 1}}, true)
-	if err != nil {
-		return err
-	}
-
-	err = groups.AddIndex(bson.D{primitive.E{Key: "category", Value: 1}}, false)
-	if err != nil {
-		return err
-	}
-
-	err = groups.AddIndex(bson.D{primitive.E{Key: "members.id", Value: 1}}, false)
-	if err != nil {
-		return err
-	}
-
-	err = groups.AddIndex(bson.D{primitive.E{Key: "members.user_id", Value: 1}}, false)
-	if err != nil {
-		return err
-	}
-
 	indexes, _ := groups.ListIndexes()
 	indexMapping := map[string]interface{}{}
 	if indexes != nil {
-
 		for _, index := range indexes {
 			name := index["name"].(string)
 			indexMapping[name] = index
 		}
 	}
-	if indexMapping["date_created_1"] == nil {
+
+	if indexMapping["title_1"] == nil {
 		err := groups.AddIndex(
 			bson.D{
-				primitive.E{Key: "date_created", Value: 1},
+				primitive.E{Key: "title", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1_title_1_"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
+				primitive.E{Key: "title", Value: 1},
+			}, true)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["title_1_client_id_1"] != nil {
+		// Drop the old one
+		err := groups.DropIndex("title_1_client_id_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["category_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "category", Value: 1},
 			}, false)
 		if err != nil {
 			return err
@@ -203,6 +228,46 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["privacy_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "privacy", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_created_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_created", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["members.id_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "members.id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["members.user_id_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "members.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("groups checks passed")
 	return nil
 }
@@ -210,25 +275,64 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 func (m *database) applyEventsChecks(events *collectionWrapper) error {
 	log.Println("apply events checks.....")
 
-	//drop the previous compound index
-	err := events.DropIndex("event_id_1_group_id_1")
-	if err != nil {
-		//just log
-		log.Printf("%s", err.Error())
-	}
-	//drop the previous index - client_id
-	err = events.DropIndex("client_id_1")
-	if err != nil {
-		//just log
-		log.Printf("%s", err.Error())
+	indexes, _ := events.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
 	}
 
-	//create compound index
-	err = events.AddIndex(bson.D{primitive.E{Key: "event_id", Value: 1},
-		primitive.E{Key: "group_id", Value: 1},
-		primitive.E{Key: "client_id", Value: 1}}, true)
-	if err != nil {
-		return err
+	if indexMapping["event_id_1_group_id_1_client_id_1"] == nil {
+		err := events.AddIndex(bson.D{
+			primitive.E{Key: "event_id", Value: 1},
+			primitive.E{Key: "group_id", Value: 1},
+			primitive.E{Key: "client_id", Value: 1}},
+			true,)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["title_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "title", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["event_id_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "event_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["group_id_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "group_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
 	}
 
 	log.Println("events checks passed")

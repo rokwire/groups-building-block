@@ -395,6 +395,10 @@ func (app *Application) getUserGroups(clientID string, current *model.User) ([]m
 	return groupsList, nil
 }
 
+func (app *Application) loginUser(clientID string, current *model.User) error {
+	return app.storage.LoginUser(clientID, current)
+}
+
 func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
 	// find the group
 	group, err := app.storage.FindGroup(clientID, id)

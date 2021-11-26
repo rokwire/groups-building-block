@@ -914,6 +914,25 @@ var doc = `{
                 }
             }
         },
+        "/api/user/login": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Logs in the user and refactor the user record and linked data if need",
+                "operationId": "LoginUser",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",

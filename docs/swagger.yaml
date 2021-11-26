@@ -881,6 +881,17 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+  /api/user/login:
+    get:
+      description: Logs in the user and refactor the user record and linked data if
+        need
+      operationId: LoginUser
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /version:
     get:
       description: Gives the service version.
