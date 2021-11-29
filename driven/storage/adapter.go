@@ -250,7 +250,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 }
 
 // DeleteUser Deletes a user with all information
-func (sa *Adapter) DeleteUser(clientID string, userID string) error{
+func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -281,8 +281,8 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error{
 			abortTransaction(sessionContext)
 			return err
 		}
-		if len(posts) > 0{
-			for _, post := range posts{
+		if len(posts) > 0 {
+			for _, post := range posts {
 				sa.deletePost(sessionContext, clientID, userID, post.GroupID, *post.ID)
 			}
 		}
@@ -1276,7 +1276,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 // FindAllUserPosts Retrieves all user posts across all existing groups
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindAllUserPosts(clientID string, userID string,) ([]model.Post, error) {
+func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Post, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "member.user_id", Value: userID},
