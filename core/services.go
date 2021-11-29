@@ -443,7 +443,7 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 					fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title),
 					map[string]string{
 						"type":        "group",
-						"operation":   "membership_approve",
+						"operation":   "pending_member",
 						"entity_type": "group",
 						"entity_id":   group.ID,
 						"entity_name": group.Title,
@@ -613,7 +613,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			fmt.Sprintf("New post has been published in '%s' group", group.Title),
 			map[string]string{
 				"type":        "group",
-				"operation":   "event_created",
+				"operation":   "post_created",
 				"entity_type": "group",
 				"entity_id":   group.ID,
 				"entity_name": group.Title,
