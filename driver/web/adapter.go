@@ -46,12 +46,6 @@ type Adapter struct {
 
 //Start starts the web server
 func (we *Adapter) Start() {
-	//start the auth module
-	err := we.auth.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	router := mux.NewRouter().StrictSlash(true)
 
 	subrouter := router.PathPrefix("/gr").Subrouter()
@@ -65,6 +59,7 @@ func (we *Adapter) Start() {
 
 	// Admin APIs
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/user/login", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.LoginUser)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 
 	//internal key protection
@@ -77,6 +72,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/user/login", we.idTokenAuthWrapFunc(we.apisHandler.LoginUser)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")

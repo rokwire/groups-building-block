@@ -25,7 +25,7 @@ type AdminApisHandler struct {
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
-// @Router /api/groups [get]
+// @Router /api/admin/groups [get]
 func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var category *string
 	catogies, ok := r.URL.Query()["category"]
@@ -99,7 +99,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
-// @Router /api/groups [get]
+// @Router /api/admin/groups [get]
 func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var category *string
 	catogies, ok := r.URL.Query()["category"]
@@ -160,4 +160,21 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+// LoginUser Logs in the user and refactor the user record and linked data if need
+// @Description Logs in the user and refactor the user record and linked data if need
+// @ID LoginAdminUser
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/admin/user/login [get]
+func (h *AdminApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.LoginUser(clientID, current)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

@@ -395,6 +395,10 @@ func (app *Application) getUserGroups(clientID string, current *model.User) ([]m
 	return groupsList, nil
 }
 
+func (app *Application) loginUser(clientID string, current *model.User) error {
+	return app.storage.LoginUser(clientID, current)
+}
+
 func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
 	// find the group
 	group, err := app.storage.FindGroup(clientID, id)
@@ -439,7 +443,7 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 					fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title),
 					map[string]string{
 						"type":        "group",
-						"operation":   "membership_approve",
+						"operation":   "pending_member",
 						"entity_type": "group",
 						"entity_id":   group.ID,
 						"entity_name": group.Title,
@@ -609,7 +613,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			fmt.Sprintf("New post has been published in '%s' group", group.Title),
 			map[string]string{
 				"type":        "group",
-				"operation":   "event_created",
+				"operation":   "post_created",
 				"entity_type": "group",
 				"entity_id":   group.ID,
 				"entity_name": group.Title,

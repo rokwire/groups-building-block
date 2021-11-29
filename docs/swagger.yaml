@@ -324,6 +324,49 @@ info:
   title: Rokwire Groups Building Block API
   version: 1.4.10
 paths:
+  /api/admin/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category
+      operationId: GetAllGroups
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title - case insensitive
+        in: query
+        name: title
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getGroupsResponse'
+            type: array
+      security:
+      - APIKeyAuth: []
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/user/login:
+    get:
+      description: Logs in the user and refactor the user record and linked data if
+        need
+      operationId: LoginAdminUser
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /api/group-categories:
     get:
       consumes:
@@ -878,6 +921,17 @@ paths:
             items:
               $ref: '#/definitions/getUserGroupsResponse'
             type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+  /api/user/login:
+    get:
+      description: Logs in the user and refactor the user record and linked data if
+        need
+      operationId: LoginUser
+      responses:
+        "200":
+          description: ""
       security:
       - AppUserAuth: []
       - APIKeyAuth: []

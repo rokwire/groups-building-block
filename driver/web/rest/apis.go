@@ -503,7 +503,7 @@ type getUserGroupsResponse struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getUserGroupsResponse
 
-//GetUserGroups gets the user groups.
+// GetUserGroups gets the user groups.
 // @Description Gives the user groups.
 // @ID GetUserGroups
 // @Accept  json
@@ -532,7 +532,24 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 	w.Write(data)
 }
 
-//GetUserGroupMemberships gets the user groups memberships
+// LoginUser Logs in the user and refactor the user record and linked data if need
+// @Description Logs in the user and refactor the user record and linked data if need
+// @ID LoginUser
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/user/login [get]
+func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.LoginUser(clientID, current)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
 // @ID GetUserGroupMemberships
 // @Accept json
