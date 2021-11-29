@@ -24,6 +24,77 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/groups": {
+            "get": {
+                "security": [
+                    {
+                        "APIKeyAuth": []
+                    },
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetAllGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title - case insensitive",
+                        "name": "title",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getGroupsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/user/login": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Logs in the user and refactor the user record and linked data if need",
+                "operationId": "LoginAdminUser",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/group-categories": {
             "get": {
                 "security": [
