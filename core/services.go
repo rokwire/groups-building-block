@@ -399,6 +399,10 @@ func (app *Application) loginUser(clientID string, current *model.User) error {
 	return app.storage.LoginUser(clientID, current)
 }
 
+func (app *Application) deleteUser(clientID string, current *model.User) error {
+	return app.storage.LoginUser(clientID, current)
+}
+
 func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
 	// find the group
 	group, err := app.storage.FindGroup(clientID, id)
@@ -627,11 +631,11 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	return app.storage.UpdatePost(clientID, current, post)
+	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
-func (app *Application) deletePost(clientID string, current *model.User, groupID string, postID string) error {
-	return app.storage.DeletePost(clientID, current, groupID, postID)
+func (app *Application) deletePost(clientID string, userID string, groupID string, postID string) error {
+	return app.storage.DeletePost(clientID, userID, groupID, postID)
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {

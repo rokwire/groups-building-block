@@ -549,6 +549,23 @@ func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.Res
 	w.WriteHeader(http.StatusOK)
 }
 
+// DeleteUser Deletes a user with all the involved information from the Notifications BB
+// @Description Deletes a user with all the involved information from the Notifications BB
+// @ID DeleteUser
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/user [delete]
+func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.DeleteUser(clientID, current)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 // GetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
 // @ID GetUserGroupMemberships
