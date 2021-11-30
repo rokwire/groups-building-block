@@ -338,7 +338,7 @@ type IDTokenAuth struct {
 
 func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs []string, r *http.Request, w http.ResponseWriter) *model.User {
 	var data *userData
-
+	var isCoreUser = false
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
 		if err == nil && claims != nil && !claims.Anonymous {
@@ -352,6 +352,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+			isCoreUser = true
 		}
 	}
 
@@ -409,11 +410,25 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		return nil
 	}
 
-	//4. Get the user for the provided external id.
-	user := &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email}
+	// 4. Use core user id or legacy user id
+	// NOTE: In general we assume the core user is already refactored e.g the login API has been invoked at least once.
+	// The difference would be only the user ID.
+	var userID string
+	if isCoreUser {
+		userID = *data.Sub
+	} else {
+		persistedUser, err := auth.app.FindUser(clientID, data.UIuceduUIN, true)
+		if err != nil{
+			log.Printf("error retriving user (UIuceduUIN: %s): %s", data.UIuceduUIN, err)
+		}
+		if persistedUser != nil{
+			isCoreUser = persistedUser.IsCoreUser
+			userID = persistedUser.ID
+		}
+	}
 
-	//5. Return the user
-	return user
+	//5. Get the user for the provided external id.
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, IsCoreUser: isCoreUser}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
