@@ -144,7 +144,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 
 			// insert the new user
 			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
-				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now}
+				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
 			if err != nil {
 				log.Printf("error inserting user - %s", err.Error())
