@@ -418,10 +418,10 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		userID = *data.Sub
 	} else {
 		persistedUser, err := auth.app.FindUser(clientID, data.UIuceduUIN, true)
-		if err != nil{
-			log.Printf("error retriving user (UIuceduUIN: %s): %s", data.UIuceduUIN, err)
+		if err != nil {
+			log.Printf("error retriving user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
 		}
-		if persistedUser != nil{
+		if persistedUser != nil {
 			isCoreUser = persistedUser.IsCoreUser
 			userID = persistedUser.ID
 		}
