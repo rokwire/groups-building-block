@@ -400,7 +400,7 @@ func (app *Application) loginUser(clientID string, current *model.User) error {
 }
 
 func (app *Application) deleteUser(clientID string, current *model.User) error {
-	return app.storage.LoginUser(clientID, current)
+	return app.storage.DeleteUser(clientID, current.ID)
 }
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
@@ -439,7 +439,7 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 				}
 			}
 			if len(recipients) > 0 {
-				topic := "groups.invitations"
+				topic := "group.invitations"
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
@@ -487,7 +487,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 
 	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
 	if err == nil && group != nil {
-		topic := "groups.invitations"
+		topic := "group.invitations"
 		member := group.GetMemberByID(membershipID)
 		if member != nil {
 			if approve {
@@ -510,7 +510,6 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 					},
 				)
 			} else {
-				topic := "groups.invitations"
 				app.notifications.SendNotification(
 					[]notifications.Recipient{
 						notifications.Recipient{
@@ -570,7 +569,7 @@ func (app *Application) createEvent(clientID string, current model.User, eventID
 	}
 
 	recipients := group.GetMembersAsNotificationRecipients(&current.ID)
-	topic := "groups.events"
+	topic := "group.events"
 	err = app.notifications.SendNotification(
 		recipients,
 		&topic,
@@ -609,7 +608,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	}
 	if post.ParentID == nil {
 		recipients := group.GetMembersAsNotificationRecipients(&current.ID)
-		topic := "groups.posts"
+		topic := "group.posts"
 		err = app.notifications.SendNotification(
 			recipients,
 			&topic,

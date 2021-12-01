@@ -549,8 +549,8 @@ func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.Res
 	w.WriteHeader(http.StatusOK)
 }
 
-// DeleteUser Deletes a user with all the involved information from the Notifications BB
-// @Description Deletes a user with all the involved information from the Notifications BB
+// DeleteUser Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
+// @Description Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
 // @ID DeleteUser
 // @Success 200
 // @Security AppUserAuth
