@@ -249,6 +249,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 	return nil
 }
 
+// CreateUser creates a new user
 func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string) (*model.User, error) {
 	dateCreated := time.Now()
 	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, DateCreated: dateCreated}

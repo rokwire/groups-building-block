@@ -430,7 +430,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 			if err != nil {
 				log.Printf("error creating legacy user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
 			}
-			if legacyUser != nil{
+			if legacyUser != nil {
 				userID = legacyUser.ID
 			}
 		}
