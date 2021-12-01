@@ -883,6 +883,18 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/user:
+    delete:
+      description: Deletes a user with all the involved information from the Notifications
+        BB (this includes - group membership & posts (and child posts - no matter
+        of the creator))
+      operationId: DeleteUser
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /api/user/group-memberships:
     get:
       consumes:

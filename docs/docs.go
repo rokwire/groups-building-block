@@ -917,6 +917,25 @@ var doc = `{
                 }
             }
         },
+        "/api/user": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a user with all the involved information from the Notifications BB (this includes - group membership \u0026 posts (and child posts - no matter of the creator))",
+                "operationId": "DeleteUser",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/user/group-memberships": {
             "get": {
                 "security": [
