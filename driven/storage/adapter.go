@@ -249,6 +249,16 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 	return nil
 }
 
+func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string) (*model.User, error) {
+	dateCreated := time.Now()
+	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, DateCreated: dateCreated}
+	_, err := sa.db.users.InsertOne(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
 //FindUserGroupsMemberships stores user group membership
 func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error) {
 	userID := ""

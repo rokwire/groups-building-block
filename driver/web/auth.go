@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"golang.org/x/sync/syncmap"
 	"gopkg.in/ericchiang/go-oidc.v2"
 	"groups/core"
@@ -424,6 +425,14 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		if persistedUser != nil {
 			isCoreUser = persistedUser.IsCoreUser
 			userID = persistedUser.ID
+		} else {
+			legacyUser, err := auth.app.CreateUser(clientID, uuid.NewString(), data.UIuceduUIN, data.Email)
+			if err != nil {
+				log.Printf("error creating legacy user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
+			}
+			if legacyUser != nil{
+				userID = legacyUser.ID
+			}
 		}
 	}
 

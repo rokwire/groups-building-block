@@ -175,6 +175,7 @@ type Storage interface {
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
 	LoginUser(clientID string, current *model.User) error
+	CreateUser(clientID string, id string, externalID string, email string) (*model.User, error)
 
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
