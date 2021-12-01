@@ -317,7 +317,6 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 	})
 
 	return err
->>>>>>> develop
 }
 
 //FindUserGroupsMemberships stores user group membership
