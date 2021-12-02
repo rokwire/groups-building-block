@@ -257,6 +257,9 @@ definitions:
     required:
     - approve
     type: object
+  rest.getUserStats:
+    additionalProperties: true
+    type: object
   rest.postResponse:
     properties:
       body:
@@ -947,6 +950,23 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+  /api/user/stats:
+    get:
+      description: 'Gets user stat information. Responds with {"posts_count": xxx}'
+      operationId: GetUserStats
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.getUserStats'
+      security:
+      - AppUserAuth: []
   /version:
     get:
       description: Gives the service version.

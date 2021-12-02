@@ -260,6 +260,26 @@ func (sa *Adapter) CreateUser(clientID string, id string, externalID string, ema
 	return &user, nil
 }
 
+// GetUserPostCount gets the number of posts for the specified user
+func (sa *Adapter) GetUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+	pipeline := []primitive.M{
+		primitive.M{"$match": primitive.M{
+			"client_id":      clientID,
+			"member.user_id": userID,
+		}},
+		primitive.M{"$count": "posts_count"},
+	}
+	result := []map[string]interface{}{}
+	err := sa.db.posts.Aggregate(pipeline, &result, &options.AggregateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result[0], nil
+	}
+	return nil, nil
+}
+
 // DeleteUser Deletes a user with all information
 func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
