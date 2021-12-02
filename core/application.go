@@ -46,6 +46,25 @@ func (app *Application) LoginUser(clientID string, current *model.User, newID st
 	return app.storage.LoginUser(clientID, current)
 }
 
+//CreateUser creates an user
+func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string) (*model.User, error) {
+	externalIDVal := ""
+	if externalID != nil {
+		externalIDVal = *externalID
+	}
+
+	emailVal := ""
+	if email != nil {
+		emailVal = *email
+	}
+
+	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications) *Application {
 

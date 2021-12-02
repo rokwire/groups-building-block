@@ -144,7 +144,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 
 			// insert the new user
 			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
-				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now}
+				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
 			if err != nil {
 				log.Printf("error inserting user - %s", err.Error())
@@ -247,6 +247,17 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 	}
 
 	return nil
+}
+
+// CreateUser creates a new user
+func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string) (*model.User, error) {
+	dateCreated := time.Now()
+	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, DateCreated: dateCreated}
+	_, err := sa.db.users.InsertOne(&user)
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 // DeleteUser Deletes a user with all information
