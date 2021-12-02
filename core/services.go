@@ -601,6 +601,10 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 	return app.storage.FindPosts(clientID, current, groupID, offset, limit, order)
 }
 
+func (app *Application) getUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+	return app.storage.GetUserPostCount(clientID, userID)
+}
+
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
 	post, err := app.storage.CreatePost(clientID, current, post)
 	if err != nil {

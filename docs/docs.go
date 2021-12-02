@@ -1023,6 +1023,34 @@ var doc = `{
                 }
             }
         },
+        "/api/user/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets user stat information. Responds with {\"posts_count\": xxx}",
+                "operationId": "GetUserStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.getUserStats"
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -1433,6 +1461,10 @@ var doc = `{
                     "type": "string"
                 }
             }
+        },
+        "rest.getUserStats": {
+            "type": "object",
+            "additionalProperties": true
         },
         "rest.postResponse": {
             "type": "object",

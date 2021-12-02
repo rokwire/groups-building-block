@@ -40,6 +40,7 @@ type Services interface {
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
 
 	GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string) error
@@ -149,6 +150,10 @@ func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID st
 	return s.app.getPosts(clientID, current, groupID, offset, limit, order)
 }
 
+func (s *servicesImpl) GetUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+	return s.app.getUserPostCount(clientID, userID)
+}
+
 func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
 	return s.app.createPost(clientID, current, post, group)
 }
@@ -179,6 +184,7 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
+	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	LoginUser(clientID string, current *model.User) error
 	CreateUser(clientID string, id string, externalID string, email string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
