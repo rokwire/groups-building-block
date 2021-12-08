@@ -31,7 +31,7 @@ type Auth struct {
 	supportedClients []string
 }
 
-func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, string) {
+func (auth *Auth) clientIDCheck(r *http.Request) (bool, string) {
 	clientID := r.Header.Get("APP")
 	if len(clientID) == 0 {
 		clientID = "edu.illinois.rokwire"
@@ -43,49 +43,45 @@ func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, s
 			return true, clientID
 		}
 	}
-
-	log.Println(fmt.Sprintf("400 - Bad Request"))
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("Bad Request"))
 	return false, ""
 }
 
-func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", false
 	}
 
 	apiKey := auth.getAPIKey(r)
-	authenticated := auth.apiKeysAuth.check(apiKey, r, w)
+	authenticated := auth.apiKeysAuth.check(apiKey, r)
 
 	return clientID, authenticated
 }
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, nil, r, w)
+	user := auth.idTokenAuth.check(clientID, idToken, nil, r)
 	return clientID, user
 }
 
 func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCClientIDs []string) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, allowedOIDCClientIDs, r, w)
+	user := auth.idTokenAuth.check(clientID, idToken, allowedOIDCClientIDs, r)
 	return clientID, user
 }
 
 func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", false
 	}
@@ -96,9 +92,9 @@ func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (str
 	return clientID, authenticated
 }
 
-func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bool, *model.User) {
+func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
 	//get client ID
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", false, nil
 	}
@@ -107,7 +103,7 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(clientID, idToken, nil, r, w)
+		user := auth.idTokenAuth.check(clientID, idToken, nil, r)
 		if user != nil {
 			authenticated = true
 		}
@@ -117,25 +113,20 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
-		authenticated := auth.apiKeysAuth.check(apiKey, r, w)
+		authenticated := auth.apiKeysAuth.check(apiKey, r)
 		return clientID, authenticated, nil
 	}
-
-	//neither id token nor api key - so bad request
-	log.Println("400 - Bad Request")
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("Bad Request"))
 	return clientID, false, nil
 }
 
-func (auth *Auth) adminCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+func (auth *Auth) adminCheck(r *http.Request) (string, *model.User, bool) {
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
-		return "", nil
+		return "", nil, false
 	}
 
-	user := auth.adminAuth.check(clientID, w, r)
-	return clientID, user
+	user, forbidden := auth.adminAuth.check(clientID, r)
+	return clientID, user, forbidden
 }
 
 func (auth *Auth) getAPIKey(r *http.Request) *string {
@@ -217,7 +208,7 @@ type APIKeysAuth struct {
 	coreTokenAuth *tokenauth.TokenAuth
 }
 
-func (auth *APIKeysAuth) check(apiKey *string, r *http.Request, w http.ResponseWriter) bool {
+func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		if auth.coreTokenAuth != nil {
@@ -225,18 +216,8 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request, w http.ResponseW
 			if err == nil {
 				return true
 			}
-
-			log.Printf("401 - Invalid API key and token: %v", err)
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte("Unauthorized"))
 			return false
 		}
-
-		//no key, so return 400
-		log.Println(fmt.Sprintf("400 - Bad Request"))
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
 		return false
 	}
 
@@ -250,11 +231,6 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request, w http.ResponseW
 		}
 	}
 	if !exist {
-		//not exist, so return 401
-		log.Printf("401 - Unauthorized for key %s\n", *apiKey)
-
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
 		return false
 	}
 	return true
@@ -337,7 +313,7 @@ type IDTokenAuth struct {
 	cachedUsersLockMapping map[string]*sync.Mutex
 }
 
-func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs []string, r *http.Request, w http.ResponseWriter) *model.User {
+func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs []string, r *http.Request) *model.User {
 	var data *userData
 	var isCoreUser = false
 	if auth.coreTokenAuth != nil {
@@ -345,8 +321,6 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		if err == nil && claims != nil && !claims.Anonymous {
 			err = auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
-				log.Printf("Scope error: %v\n", err)
-				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 				return nil
 			}
 
@@ -360,7 +334,6 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 	if data == nil {
 		//1. Check if there is a token
 		if token == nil || len(*token) == 0 {
-			auth.responseBadRequest(w)
 			return nil
 		}
 		rawIDToken := *token
@@ -369,16 +342,12 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)
 		if err != nil {
 			log.Printf("error validating token - %s\n", err)
-
-			auth.responseUnauthorized(rawIDToken, w)
 			return nil
 		}
 
 		//3. Get the user data from the token
 		if err := idToken.Claims(&data); err != nil {
 			log.Printf("error getting user data from token - %s\n", err)
-
-			auth.responseUnauthorized(rawIDToken, w)
 			return nil
 		}
 
@@ -392,22 +361,18 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		}
 		if !validAud {
 			log.Printf("invalid audience in token: expected %v, got %s\n", allowedClientIDs, *data.Aud)
-			auth.responseUnauthorized(rawIDToken, w)
 			return nil
 		}
 
 		//we must have UIuceduUIN
 		if data.UIuceduUIN == nil {
 			log.Printf("missing uiuceuin data in the token - %s\n", err)
-
-			auth.responseUnauthorized(rawIDToken, w)
 			return nil
 		}
 	}
 
 	if data == nil {
 		log.Println("nil user data")
-		auth.responseInternalServerError(w)
 		return nil
 	}
 
@@ -504,7 +469,7 @@ func (auth *AdminAuth) start() {
 
 }
 
-func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Request) *model.User {
+func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, bool) {
 	var data *userData
 
 	if auth.coreTokenAuth != nil {
@@ -512,9 +477,7 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 		if err == nil && claims != nil && !claims.Anonymous {
 			err = auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {
-				log.Printf("Permission error: %v\n", err)
-				http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-				return nil
+				return nil, true
 			}
 
 			permissions := strings.Split(claims.Permissions, ",")
@@ -526,33 +489,26 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 		//1. Get the token from the request
 		rawIDToken, tokenType, err := auth.getIDToken(r)
 		if err != nil {
-			auth.responseBadRequest(w)
-			return nil
+			return nil, false
 		}
 
 		//3. Validate the token
 		idToken, err := auth.verify(*rawIDToken, *tokenType)
 		if err != nil {
 			log.Printf("error validating token - %s\n", err)
-
-			auth.responseUnauthorized(*rawIDToken, w)
-			return nil
+			return nil, false
 		}
 
 		//4. Get the user data from the token
 		if err := idToken.Claims(&data); err != nil {
 			log.Printf("error getting user data from token - %s\n", err)
-
-			auth.responseUnauthorized(*rawIDToken, w)
-			return nil
+			return nil, false
 		}
 
 		//we must have UIuceduUIN
 		if data.UIuceduUIN == nil {
 			log.Printf("error - missing uiuceuin data in the token - %s\n", err)
-
-			auth.responseUnauthorized(*rawIDToken, w)
-			return nil
+			return nil, false
 		}
 
 		obj := r.URL.Path // the resource that is going to be accessed.
@@ -568,18 +524,16 @@ func (auth *AdminAuth) check(clientID string, w http.ResponseWriter, r *http.Req
 
 		if !hasAccess {
 			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", *data.UIuceduUIN, act, obj)
-			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-			return nil
+			return nil, true
 		}
 	}
 
 	if data == nil {
 		log.Println("nil user data")
-		auth.responseInternalServerError(w)
-		return nil
+		return nil, false
 	}
 
-	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email}
+	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email}, false
 }
 
 //gets the token from the request - as cookie or as Authorization header.
