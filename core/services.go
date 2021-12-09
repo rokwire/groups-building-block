@@ -50,7 +50,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["description"] = group.Description
 		item["image_url"] = group.ImageURL
 		item["web_url"] = group.WebURL
-		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
 		item["membership_questions"] = group.MembershipQuestions
 
@@ -89,7 +88,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["description"] = group.Description
 		item["image_url"] = group.ImageURL
 		item["web_url"] = group.WebURL
-		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
 		item["membership_questions"] = group.MembershipQuestions
 
@@ -130,7 +128,6 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -185,7 +182,6 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -225,7 +221,6 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -264,7 +259,6 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 

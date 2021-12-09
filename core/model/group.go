@@ -14,7 +14,6 @@ type Group struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"` //to be supported up to date
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 

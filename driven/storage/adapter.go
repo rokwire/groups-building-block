@@ -32,7 +32,6 @@ type group struct {
 	Description         *string  `bson:"description"`
 	ImageURL            *string  `bson:"image_url"`
 	WebURL              *string  `bson:"web_url"`
-	MembersCount        int      `bson:"members_count"` //to be supported up to date
 	Tags                []string `bson:"tags"`
 	MembershipQuestions []string `bson:"membership_questions"`
 
@@ -314,7 +313,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 		}
 		if len(posts) > 0 {
 			for _, post := range posts {
-				sa.deletePost(sessionContext, clientID, userID, post.GroupID, *post.ID)
+				sa.deletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, false)
 			}
 		}
 
@@ -435,7 +434,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, MembersCount: 1, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
+			Tags: tags, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
 			MembershipQuestions: membershipQuestions,
 		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
@@ -841,9 +840,8 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 			{"$match": bson.M{"_id": groupID, "members.user_id": userID, "client_id": clientID}},
 		}
 		var result []struct {
-			ID           string `bson:"_id"`
-			MembersCount int    `bson:"members_count"`
-			Member       member `bson:"members"`
+			ID     string `bson:"_id"`
+			Member member `bson:"members"`
 		}
 		err = sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
 		if err != nil {
@@ -855,7 +853,6 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 			return errors.New("there is an issue processing the item")
 		}
 		resultItem := result[0]
-		membersCount := resultItem.MembersCount
 		member := resultItem.Member
 		if !(member.Status == "admin" || member.Status == "member") {
 			abortTransaction(sessionContext)
@@ -876,11 +873,9 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 		}
 
 		// delete the member, also keep the group members count updated
-		membersCount-- //keep the members count updated
 		changeFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
 		change := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "members_count", Value: membersCount},
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
 			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
@@ -948,14 +943,12 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 		}
 
 		//3. apply approve/deny
-		membersCount := group.MembersCount
 		groupMembers := group.Members
 		now := time.Now()
 		if approve {
 			//apply approve
 			member.DateUpdated = &now
 			member.Status = "member"
-			membersCount = membersCount + 1
 			groupMembers[memberIndex] = member
 		} else {
 			//apply deny
@@ -969,7 +962,6 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "members", Value: groupMembers},
-				primitive.E{Key: "members_count", Value: membersCount},
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			},
 			},
@@ -1011,9 +1003,8 @@ func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membe
 			{"$match": bson.M{"members.id": membershipID, "client_id": clientID}},
 		}
 		var result []struct {
-			GroupID      string `bson:"_id"`
-			MembersCount int    `bson:"members_count"`
-			Member       member `bson:"members"`
+			GroupID string `bson:"_id"`
+			Member  member `bson:"members"`
 		}
 		err = sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
 		if err != nil {
@@ -1026,7 +1017,6 @@ func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membe
 		}
 		resultItem := result[0]
 		groupID := resultItem.GroupID
-		membersCount := resultItem.MembersCount
 		member := resultItem.Member
 		if member.UserID == currentUserID {
 			abortTransaction(sessionContext)
@@ -1038,11 +1028,9 @@ func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membe
 		}
 
 		// delete the membership, also keep the group members count updated
-		membersCount-- //keep the members count updated
 		changeFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
 		change := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "members_count", Value: membersCount},
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			}},
 			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"id": member.ID}}}},
@@ -1536,23 +1524,26 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 
 // DeletePost Deletes a post
 func (sa *Adapter) DeletePost(clientID string, userID string, groupID string, postID string) error {
-	return sa.deletePost(context.Background(), clientID, userID, groupID, postID)
+	return sa.deletePost(context.Background(), clientID, userID, groupID, postID, false)
 }
 
-func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID string, groupID string, postID string) error {
+func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID string, groupID string, postID string, replies bool) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	group, _ := sa.FindGroup(clientID, groupID)
 	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true)
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}
-	if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
+	if !replies || group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
 		return fmt.Errorf("only creator of the post or group admin can delete it")
 	}
 
 	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, false, nil)
 	if len(childPosts) > 0 && err == nil {
 		for _, post := range childPosts {
-			sa.DeletePost(clientID, userID, groupID, *post.ID)
+			sa.deletePost(ctx, clientID, userID, groupID, *post.ID, true)
 		}
 	}
 
@@ -1635,7 +1626,6 @@ func constructGroup(gr group) model.Group {
 	description := gr.Description
 	imageURL := gr.ImageURL
 	webURL := gr.WebURL
-	membersCount := gr.MembersCount
 	tags := gr.Tags
 	membershipQuestions := gr.MembershipQuestions
 
@@ -1648,7 +1638,7 @@ func constructGroup(gr group) model.Group {
 	}
 
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
-		Description: description, ImageURL: imageURL, WebURL: webURL, MembersCount: membersCount,
+		Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members}
 }
