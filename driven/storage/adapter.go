@@ -1215,15 +1215,14 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 }
 
 //FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "group_id", Value: groupID},
 	}
 
-	group, err := sa.FindGroup(clientID, groupID)
-	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
-		filter = append(filter, primitive.E{Key: "private", Value: false})
+	if filterPrivatePostsValue != nil {
+		filter = append(filter, primitive.E{Key: "private", Value: *filterPrivatePostsValue})
 	}
 
 	paging := false
@@ -1247,7 +1246,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	}
 
 	var list []*model.Post
-	err = sa.db.posts.Find(filter, &list, findOptions)
+	err := sa.db.posts.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}

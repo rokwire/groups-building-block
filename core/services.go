@@ -591,8 +591,8 @@ func (app *Application) deleteEvent(clientID string, current model.User, eventID
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID, offset, limit, order)
+func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, offset, limit, order)
 }
 
 func (app *Application) getUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
