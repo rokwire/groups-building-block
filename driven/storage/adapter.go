@@ -115,41 +115,173 @@ func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.U
 	return result[0], nil
 }
 
-//CreateUser creates an user
-func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error) {
+// LoginUser Login a user's and refactor legacy record if need
+func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
+
+	legacyUser, _ := sa.FindUser(clientID, current.ExternalID, true)
+
+	now := time.Now()
+
+	if legacyUser != nil && legacyUser.ID != current.ID {
+		// transaction
+		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+			err := sessionContext.StartTransaction()
+			if err != nil {
+				log.Printf("error starting a transaction - %s", err)
+				return err
+			}
+
+			if legacyUser != nil {
+				// delete the old user
+				filter := bson.D{primitive.E{Key: "_id", Value: legacyUser.ID}, primitive.E{Key: "client_id", Value: clientID}}
+				_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
+				if err != nil {
+					log.Printf("error deleting user - %s", err.Error())
+					abortTransaction(sessionContext)
+					return err
+				}
+			}
+
+			// insert the new user
+			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
+				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
+			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
+			if err != nil {
+				log.Printf("error inserting user - %s", err.Error())
+				abortTransaction(sessionContext)
+				return err
+			}
+
+			if legacyUser != nil {
+				// Guess it may use $or but didnt managed to succeed with two positional arguments
+				// 1.1 update all user's groups
+				filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.user_id", Value: legacyUser.ID}}
+				update := bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "members.$.user_id", Value: current.ID},
+						primitive.E{Key: "members.$.date_updated", Value: now},
+						primitive.E{Key: "date_updated", Value: now},
+					}},
+				}
+				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+				if err != nil {
+					log.Printf("error updating groups - %s", err.Error())
+					abortTransaction(sessionContext)
+					return err
+				}
+
+				// 1.2 update all user's groups again for the email
+				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.email", Value: legacyUser.Email}}
+				update = bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "members.$.email", Value: legacyUser.Email},
+						primitive.E{Key: "members.$.user_id", Value: current.ID},
+						primitive.E{Key: "members.$.date_updated", Value: now},
+						primitive.E{Key: "date_updated", Value: now},
+					}},
+				}
+				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+				if err != nil {
+					log.Printf("error updating groups - %s", err.Error())
+					abortTransaction(sessionContext)
+					return err
+				}
+
+				// 1.3. update all user's posts
+				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "member.user_id", Value: current.ID}}
+				update = bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "member.user_id", Value: current.ID},
+						primitive.E{Key: "date_updated", Value: now},
+					}},
+				}
+				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
+				if err != nil {
+					log.Printf("error updating posts - %s", err.Error())
+					abortTransaction(sessionContext)
+					return err
+				}
+
+				// 1.4. update all user's posts again but for the email
+				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.email", Value: legacyUser.Email}}
+				update = bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "members.$.email", Value: legacyUser.Email},
+						primitive.E{Key: "members.$.user_id", Value: current.ID},
+						primitive.E{Key: "members.$.date_updated", Value: now},
+						primitive.E{Key: "date_updated", Value: now},
+					}},
+				}
+				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
+				if err != nil {
+					log.Printf("error updating posts - %s", err.Error())
+					abortTransaction(sessionContext)
+					return err
+				}
+			}
+
+			//commit the transaction
+			err = sessionContext.CommitTransaction(sessionContext)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			return nil
+		})
+
+		if err != nil {
+			return core.NewServerError()
+		}
+	} else {
+		coreUser, _ := sa.FindUser(clientID, current.ID, false)
+		if coreUser == nil {
+			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
+				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now}
+
+			_, err := sa.db.users.InsertOneWithContext(context.Background(), &coreUser)
+			if err != nil {
+				log.Printf("error inserting user - %s", err)
+				return fmt.Errorf("error inserting user - %s", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// CreateUser creates a new user
+func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string) (*model.User, error) {
 	dateCreated := time.Now()
-	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, IsMemberOf: isMemberOf,
-		DateCreated: dateCreated}
+	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, DateCreated: dateCreated}
 	_, err := sa.db.users.InsertOne(&user)
 	if err != nil {
 		return nil, err
 	}
-
-	//return the inserted item
 	return &user, nil
 }
 
-//SaveUser saves the user
-func (sa *Adapter) SaveUser(clientID string, user *model.User) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: user.ID}}
-
-	//clientID - no need ...
-
-	dateUpdated := time.Now()
-	user.DateUpdated = &dateUpdated
-
-	err := sa.db.users.ReplaceOne(filter, user, nil)
-	if err != nil {
-		return err
+// GetUserPostCount gets the number of posts for the specified user
+func (sa *Adapter) GetUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+	pipeline := []primitive.M{
+		primitive.M{"$match": primitive.M{
+			"client_id":      clientID,
+			"member.user_id": userID,
+		}},
+		primitive.M{"$count": "posts_count"},
 	}
-	return nil
+	result := []map[string]interface{}{}
+	err := sa.db.posts.Aggregate(pipeline, &result, &options.AggregateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return result[0], nil
+	}
+	return nil, nil
 }
 
-//RefactorUser updates a user's _id field and all associated user_id fields in storage
-func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID string) (*model.User, error) {
-	now := time.Now()
-	refactoredUser := model.User{ID: newID, ClientID: clientID, ExternalID: current.ExternalID, Email: current.Email,
-		IsMemberOf: current.IsMemberOf, DateCreated: current.DateCreated, DateUpdated: &now}
+// DeleteUser Deletes a user with all information
+func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -159,50 +291,38 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 			return err
 		}
 
-		// delete the old user
-		filter := bson.D{primitive.E{Key: "_id", Value: current.ID}, primitive.E{Key: "client_id", Value: clientID}}
+		filter := bson.D{primitive.E{Key: "members.user_id", Value: userID},
+			primitive.E{Key: "client_id", Value: clientID}}
+		change := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
+			primitive.E{Key: "$pull", Value: bson.D{primitive.E{Key: "members", Value: bson.M{"user_id": userID}}}},
+		}
+		_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, change, nil)
+		if err != nil {
+			log.Printf("error unlinking user membership(user_id: %s) - %s", userID, err)
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		posts, err := sa.FindAllUserPosts(clientID, userID)
+		if err != nil {
+			log.Printf("error on find all posts for user (%s) - %s", userID, err.Error())
+			abortTransaction(sessionContext)
+			return err
+		}
+		if len(posts) > 0 {
+			for _, post := range posts {
+				sa.deletePost(sessionContext, clientID, userID, post.GroupID, *post.ID)
+			}
+		}
+
+		// delete the user
+		filter = bson.D{primitive.E{Key: "_id", Value: userID}, primitive.E{Key: "client_id", Value: clientID}}
 		_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
 		if err != nil {
 			log.Printf("error deleting user - %s", err.Error())
-			abortTransaction(sessionContext)
-			return err
-		}
-
-		// insert the new user
-		_, err = sa.db.users.InsertOneWithContext(sessionContext, &refactoredUser)
-		if err != nil {
-			log.Printf("error inserting user - %s", err.Error())
-			abortTransaction(sessionContext)
-			return err
-		}
-
-		// update all user's groups
-		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.user_id", Value: current.ID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "members.$.user_id", Value: newID},
-				primitive.E{Key: "members.$.date_updated", Value: now},
-				primitive.E{Key: "date_updated", Value: now},
-			}},
-		}
-		_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
-		if err != nil {
-			log.Printf("error updating groups - %s", err.Error())
-			abortTransaction(sessionContext)
-			return err
-		}
-
-		// update all user's posts
-		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "member.user_id", Value: current.ID}}
-		update = bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "member.user_id", Value: newID},
-				primitive.E{Key: "date_updated", Value: now},
-			}},
-		}
-		_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
-		if err != nil {
-			log.Printf("error updating posts - %s", err.Error())
 			abortTransaction(sessionContext)
 			return err
 		}
@@ -215,11 +335,8 @@ func (sa *Adapter) RefactorUser(clientID string, current *model.User, newID stri
 		}
 		return nil
 	})
-	if err != nil {
-		return nil, core.NewServerError()
-	}
 
-	return &refactoredUser, nil
+	return err
 }
 
 //FindUserGroupsMemberships stores user group membership
@@ -441,6 +558,10 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 
 //FindGroup finds group by id and client id
 func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
+	return sa.findGroupWithContext(context.Background(), clientID, id)
+}
+
+func (sa *Adapter) findGroupWithContext(ctx context.Context, clientID string, id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id},
 		primitive.E{Key: "client_id", Value: clientID}}
 	var result []*group
@@ -1184,13 +1305,34 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	return resultList, nil
 }
 
+// FindAllUserPosts Retrieves all user posts across all existing groups
+// This method doesn't construct tree hierarchy!
+func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Post, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "member.user_id", Value: userID},
+	}
+
+	var posts []model.Post
+	err := sa.db.posts.Find(filter, &posts, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
 //FindPost Retrieves a post by groupID and postID
-func (sa *Adapter) FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
+func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
+	return sa.findPostWithContext(context.Background(), clientID, userID, groupID, postID, skipMembershipCheck)
+}
+
+func (sa *Adapter) findPostWithContext(ctx context.Context, clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
 	if !skipMembershipCheck {
-		group, err := sa.FindGroup(clientID, groupID)
-		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		group, err := sa.findGroupWithContext(ctx, clientID, groupID)
+		if group == nil || err != nil || !(group.IsGroupMember(userID) || group.IsGroupAdmin(userID)) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1230,12 +1372,12 @@ func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, g
 
 // FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error) {
+func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
 
 	if !skipMembershipCheck {
 		group, err := sa.FindGroup(clientID, groupID)
-		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		if group == nil || err != nil || !(group.IsGroupMember(userID) || group.IsGroupAdmin(userID)) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1256,7 +1398,7 @@ func (sa *Adapter) FindPostsByParentID(clientID string, current *model.User, gro
 	if recursive {
 		if len(posts) > 0 {
 			for _, post := range posts {
-				childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, *post.ID, true, recursive, order)
+				childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, *post.ID, true, recursive, order)
 				if err == nil && childPosts != nil {
 					for _, childPost := range childPosts {
 						posts = append(posts, childPost)
@@ -1351,13 +1493,13 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 }
 
 // UpdatePost Updates a post
-func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 
-	originalPost, _ := sa.FindPost(clientID, current, post.GroupID, *post.ID, true)
+	originalPost, _ := sa.FindPost(clientID, userID, post.GroupID, *post.ID, true)
 	if originalPost == nil {
 		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
-	if originalPost.Member.UserID != current.ID {
+	if originalPost.Member.UserID != userID {
 		return nil, fmt.Errorf("only creator of the post can update it")
 	}
 
@@ -1393,21 +1535,24 @@ func (sa *Adapter) UpdatePost(clientID string, current *model.User, post *model.
 }
 
 // DeletePost Deletes a post
-func (sa *Adapter) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
+func (sa *Adapter) DeletePost(clientID string, userID string, groupID string, postID string) error {
+	return sa.deletePost(context.Background(), clientID, userID, groupID, postID)
+}
 
+func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID string, groupID string, postID string) error {
 	group, _ := sa.FindGroup(clientID, groupID)
-	originalPost, _ := sa.FindPost(clientID, current, groupID, postID, true)
+	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true)
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}
-	if group == nil || originalPost == nil || (!group.IsGroupAdmin(current.ID) && originalPost.Member.UserID != current.ID) {
+	if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
 		return fmt.Errorf("only creator of the post or group admin can delete it")
 	}
 
-	childPosts, err := sa.FindPostsByParentID(clientID, current, groupID, postID, true, false, nil)
+	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, false, nil)
 	if len(childPosts) > 0 && err == nil {
 		for _, post := range childPosts {
-			sa.DeletePost(clientID, current, groupID, *post.ID)
+			sa.DeletePost(clientID, userID, groupID, *post.ID)
 		}
 	}
 

@@ -24,6 +24,77 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/groups": {
+            "get": {
+                "security": [
+                    {
+                        "APIKeyAuth": []
+                    },
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetAllGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title - case insensitive",
+                        "name": "title",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getGroupsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/user/login": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Logs in the user and refactor the user record and linked data if need",
+                "operationId": "LoginAdminUser",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/group-categories": {
             "get": {
                 "security": [
@@ -846,6 +917,25 @@ var doc = `{
                 }
             }
         },
+        "/api/user": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a user with all the involved information from the Notifications BB (this includes - group membership \u0026 posts (and child posts - no matter of the creator))",
+                "operationId": "DeleteUser",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/user/group-memberships": {
             "get": {
                 "security": [
@@ -909,6 +999,53 @@ var doc = `{
                             "items": {
                                 "$ref": "#/definitions/getUserGroupsResponse"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/user/login": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Logs in the user and refactor the user record and linked data if need",
+                "operationId": "LoginUser",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/user/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets user stat information. Responds with {\"posts_count\": xxx}",
+                "operationId": "GetUserStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.getUserStats"
                         }
                     }
                 }
@@ -1324,6 +1461,10 @@ var doc = `{
                     "type": "string"
                 }
             }
+        },
+        "rest.getUserStats": {
+            "type": "object",
+            "additionalProperties": true
         },
         "rest.postResponse": {
             "type": "object",

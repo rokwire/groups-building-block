@@ -22,7 +22,9 @@ type Services interface {
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
-	GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error)
+	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
+	LoginUser(clientID string, currentGetUserGroups *model.User) error
+	DeleteUser(clientID string, current *model.User) error
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
 	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
@@ -38,6 +40,7 @@ type Services interface {
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
 
 	GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string) error
@@ -95,6 +98,14 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]ma
 	return s.app.getUserGroups(clientID, current)
 }
 
+func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
+	return s.app.loginUser(clientID, current)
+}
+
+func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
+	return s.app.deleteUser(clientID, current)
+}
+
 func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
 	return s.app.getGroup(clientID, current, id)
 }
@@ -139,6 +150,10 @@ func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID st
 	return s.app.getPosts(clientID, current, groupID, offset, limit, order)
 }
 
+func (s *servicesImpl) GetUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+	return s.app.getUserPostCount(clientID, userID)
+}
+
 func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
 	return s.app.createPost(clientID, current, post, group)
 }
@@ -148,7 +163,7 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 }
 
 func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
-	return s.app.deletePost(clientID, current, groupID, postID)
+	return s.app.deletePost(clientID, current.ID, groupID, postID)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -169,9 +184,10 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
-	CreateUser(clientID string, id string, externalID string, email string, isMemberOf *[]string) (*model.User, error)
-	SaveUser(clientID string, user *model.User) error
-	RefactorUser(clientID string, current *model.User, newID string) (*model.User, error)
+	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
+	LoginUser(clientID string, current *model.User) error
+	CreateUser(clientID string, id string, externalID string, email string) (*model.User, error)
+	DeleteUser(clientID string, userID string) error
 
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
@@ -199,11 +215,11 @@ type Storage interface {
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
 	FindPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
-	FindPost(clientID string, current *model.User, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error)
-	FindPostsByParentID(clientID string, current *model.User, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error)
+	FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error)
+	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, current *model.User, groupID string, postID string) error
+	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
+	DeletePost(clientID string, userID string, groupID string, postID string) error
 }
 
 //StorageListener listenes for change data storage events

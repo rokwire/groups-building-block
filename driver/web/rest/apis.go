@@ -503,7 +503,7 @@ type getUserGroupsResponse struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getUserGroupsResponse
 
-//GetUserGroups gets the user groups.
+// GetUserGroups gets the user groups.
 // @Description Gives the user groups.
 // @ID GetUserGroups
 // @Accept  json
@@ -532,7 +532,70 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 	w.Write(data)
 }
 
-//GetUserGroupMemberships gets the user groups memberships
+// LoginUser Logs in the user and refactor the user record and linked data if need
+// @Description Logs in the user and refactor the user record and linked data if need
+// @ID LoginUser
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/user/login [get]
+func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.LoginUser(clientID, current)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+type getUserStats map[string]interface{}
+
+// GetUserStats Gets user stat information. Responds with {"posts_count": xxx}
+// @Description Gets user stat information. Responds with {"posts_count": xxx}
+// @ID GetUserStats
+// @Param APP header string true "APP"
+// @Success 200 {object} getUserStats
+// @Security AppUserAuth
+// @Router /api/user/stats [get]
+func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	stats, err := h.app.Services.GetUserPostCount(clientID, current.ID)
+	if err != nil {
+		log.Printf("error getting user(%s) post count:  %s", current.ID, err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(stats)
+	if err != nil {
+		log.Printf("error on marshal user(%s) stats: %s", current.ID, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// DeleteUser Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
+// @Description Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
+// @ID DeleteUser
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/user [delete]
+func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.DeleteUser(clientID, current)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
 // @ID GetUserGroupMemberships
 // @Accept json

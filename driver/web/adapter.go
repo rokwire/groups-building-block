@@ -46,12 +46,6 @@ type Adapter struct {
 
 //Start starts the web server
 func (we *Adapter) Start() {
-	//start the auth module
-	err := we.auth.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	router := mux.NewRouter().StrictSlash(true)
 
 	subrouter := router.PathPrefix("/gr").Subrouter()
@@ -65,6 +59,7 @@ func (we *Adapter) Start() {
 
 	// Admin APIs
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/user/login", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.LoginUser)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 
 	//internal key protection
@@ -77,6 +72,9 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
+	restSubrouter.HandleFunc("/user/login", we.idTokenAuthWrapFunc(we.apisHandler.LoginUser)).Methods("GET")
+	restSubrouter.HandleFunc("/user/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetUserStats)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
@@ -128,8 +126,10 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated := we.auth.apiKeyCheck(w, req)
+		clientID, authenticated := we.auth.apiKeyCheck(req)
 		if !authenticated {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
@@ -145,6 +145,8 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 
 		clientID, user := we.auth.idTokenCheck(w, req)
 		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
@@ -158,6 +160,8 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 
 		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
 		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
@@ -165,14 +169,14 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 	}
 }
 
-type internalKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
-
 func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
 		clientID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
+			log.Printf("Unauthorized - Internal Key")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
@@ -184,8 +188,10 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated, user := we.auth.mixedCheck(w, req)
+		clientID, authenticated, user := we.auth.mixedCheck(req)
 		if !authenticated {
+			log.Printf("Unauthorized - Mixed Check")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
@@ -200,8 +206,15 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user := we.auth.adminCheck(w, req)
+		clientID, user, forbidden := we.auth.adminCheck(req)
 		if user == nil {
+			if forbidden {
+				log.Printf("Forbidden - Admin")
+				w.WriteHeader(http.StatusForbidden)
+			} else {
+				log.Printf("Unauthorized - Admin")
+				w.WriteHeader(http.StatusUnauthorized)
+			}
 			return
 		}
 
