@@ -313,7 +313,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 		}
 		if len(posts) > 0 {
 			for _, post := range posts {
-				sa.deletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, false)
+				sa.deletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
 			}
 		}
 
@@ -1522,11 +1522,11 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 }
 
 // DeletePost Deletes a post
-func (sa *Adapter) DeletePost(clientID string, userID string, groupID string, postID string) error {
-	return sa.deletePost(context.Background(), clientID, userID, groupID, postID, false)
+func (sa *Adapter) DeletePost(clientID string, userID string, groupID string, postID string, force bool) error {
+	return sa.deletePost(context.Background(), clientID, userID, groupID, postID, force)
 }
 
-func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID string, groupID string, postID string, replies bool) error {
+func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID string, groupID string, postID string, force bool) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -1535,8 +1535,11 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}
-	if !replies || group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
-		return fmt.Errorf("only creator of the post or group admin can delete it")
+
+	if !force {
+		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
+			return fmt.Errorf("only creator of the post or group admin can delete it")
+		}
 	}
 
 	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, false, nil)

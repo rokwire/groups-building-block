@@ -1585,7 +1585,7 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	err = h.app.Services.DeletePost(clientID, current, groupID, postID)
+	err = h.app.Services.DeletePost(clientID, current, groupID, postID, false)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

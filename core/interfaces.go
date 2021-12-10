@@ -43,7 +43,7 @@ type Services interface {
 	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, current *model.User, groupID string, postID string) error
+	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 }
 
 type servicesImpl struct {
@@ -162,8 +162,8 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 	return s.app.updatePost(clientID, current, post)
 }
 
-func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
-	return s.app.deletePost(clientID, current.ID, groupID, postID)
+func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error {
+	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -219,7 +219,7 @@ type Storage interface {
 	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, userID string, groupID string, postID string) error
+	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 }
 
 //StorageListener listenes for change data storage events

@@ -631,8 +631,8 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
-func (app *Application) deletePost(clientID string, userID string, groupID string, postID string) error {
-	return app.storage.DeletePost(clientID, userID, groupID, postID)
+func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
+	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
