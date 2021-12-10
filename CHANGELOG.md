@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.4.41] - 2021-12-10
+### Fixed
+- Additional fix for delete admin APIs [#94](https://github.com/rokwire/groups-building-block/issues/94)
+
 ## [1.4.40] - 2021-12-09
 ### Added
 - Added admin APIs for getting/deleting group posts and events and security improvements [#94](https://github.com/rokwire/groups-building-block/issues/94)
