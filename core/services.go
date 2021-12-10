@@ -50,7 +50,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["description"] = group.Description
 		item["image_url"] = group.ImageURL
 		item["web_url"] = group.WebURL
-		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
 		item["membership_questions"] = group.MembershipQuestions
 
@@ -89,7 +88,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["description"] = group.Description
 		item["image_url"] = group.ImageURL
 		item["web_url"] = group.WebURL
-		item["members_count"] = group.MembersCount
 		item["tags"] = group.Tags
 		item["membership_questions"] = group.MembershipQuestions
 
@@ -130,7 +128,6 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -185,7 +182,6 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -225,7 +221,6 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -264,7 +259,6 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
-	item["members_count"] = group.MembersCount
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
 
@@ -597,8 +591,8 @@ func (app *Application) deleteEvent(clientID string, current model.User, eventID
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID, offset, limit, order)
+func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, offset, limit, order)
 }
 
 func (app *Application) getUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
@@ -637,8 +631,8 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
-func (app *Application) deletePost(clientID string, userID string, groupID string, postID string) error {
-	return app.storage.DeletePost(clientID, userID, groupID, postID)
+func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
+	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {

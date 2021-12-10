@@ -6,8 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.4.40] - 2021-12-09
+### Added
+- Added admin APIs for getting/deleting group posts and events and security improvements [#94](https://github.com/rokwire/groups-building-block/issues/94)
+
 ## [1.4.39] - 2021-12-08
-Fail with error 401 or 403 during the authentication & authorization phase [#91](https://github.com/rokwire/groups-building-block/issues/91)
+### Fixed
+- Fail with error 401 or 403 during the authentication & authorization phase [#91](https://github.com/rokwire/groups-building-block/issues/91)
 
 ## [1.4.38] - 2021-12-06
 ### Fixed
