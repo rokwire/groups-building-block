@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.4.42] - 2021-12-08
+### Added
+- Add image_url in the Post model[#96](https://github.com/rokwire/groups-building-block/issues/96)
+
+## [1.4.41] - 2021-12-10
+## [1.4.40] - 2021-12-09
+
 ## [1.4.39] - 2021-12-08
 Fail with error 401 or 403 during the authentication & authorization phase [#91](https://github.com/rokwire/groups-building-block/issues/91)
 
