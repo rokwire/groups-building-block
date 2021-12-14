@@ -372,7 +372,6 @@ type getGroupsResponse struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 
@@ -478,7 +477,6 @@ type getUserGroupsResponse struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 
@@ -653,7 +651,6 @@ type getGroupResponse struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 
@@ -1332,7 +1329,34 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, offset, limit, order)
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", id)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	var filterPrivatePostsValue *bool
+	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		filter := false
+		filterPrivatePostsValue = &filter
+	}
+
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1475,6 +1499,27 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
 	post, err = h.app.Services.UpdatePost(clientID, current, post)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
@@ -1519,7 +1564,28 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	err := h.app.Services.DeletePost(clientID, current, groupID, postID)
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.DeletePost(clientID, current, groupID, postID, false)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

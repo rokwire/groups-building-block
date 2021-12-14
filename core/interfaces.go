@@ -39,11 +39,11 @@ type Services interface {
 	CreateEvent(clientID string, current model.User, eventID string, group *model.Group) error
 	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
 
-	GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, current *model.User, groupID string, postID string) error
+	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 }
 
 type servicesImpl struct {
@@ -146,8 +146,8 @@ func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID 
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
-func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return s.app.getPosts(clientID, current, groupID, offset, limit, order)
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return s.app.getPosts(clientID, current, groupID, filterPrivatePostsValue, offset, limit, order)
 }
 
 func (s *servicesImpl) GetUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
@@ -162,8 +162,8 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 	return s.app.updatePost(clientID, current, post)
 }
 
-func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string) error {
-	return s.app.deletePost(clientID, current.ID, groupID, postID)
+func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error {
+	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -214,12 +214,12 @@ type Storage interface {
 	CreateEvent(clientID string, eventID string, groupID string) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
-	FindPosts(clientID string, current *model.User, groupID string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error)
 	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	DeletePost(clientID string, userID string, groupID string, postID string) error
+	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 }
 
 //StorageListener listenes for change data storage events
