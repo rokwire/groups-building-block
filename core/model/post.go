@@ -14,6 +14,7 @@ type Post struct {
 	Body        string      `json:"body" bson:"body"`
 	Private     bool        `json:"private" bson:"private"`
 	Replies     []*Post     `json:"replies,omitempty"` // This is constructed by the code (ParentID)
+	ImageURL    *string     `json:"image_url" bson:"image_url"`
 	DateCreated *time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time  `json:"date_updated" bson:"date_updated"`
 }
