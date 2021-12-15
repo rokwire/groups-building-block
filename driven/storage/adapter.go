@@ -235,12 +235,28 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 		coreUser, _ := sa.FindUser(clientID, current.ID, false)
 		if coreUser == nil {
 			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
-				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now}
+				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 
 			_, err := sa.db.users.InsertOneWithContext(context.Background(), &coreUser)
 			if err != nil {
 				log.Printf("error inserting user - %s", err)
 				return fmt.Errorf("error inserting user - %s", err)
+			}
+		} else if coreUser.ID == legacyUser.ID && !coreUser.IsCoreUser {
+			filter := bson.D{
+				primitive.E{Key: "client_id", Value: clientID},
+				primitive.E{Key: "_id", Value: current.ID},
+			}
+			update := bson.D{
+				primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "is_core_user", Value: true},
+					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+				}},
+			}
+			_, err := sa.db.users.UpdateOne(filter, update, nil)
+			if err != nil {
+				log.Printf("unable to set is_core_user to true for user(%s): %s", current.ID, err)
+				return fmt.Errorf("unable to set is_core_user to true for user(%s): %s", current.ID, err)
 			}
 		}
 	}
