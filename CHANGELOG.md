@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.4.43] - 2021-12-15
+### Fixed
+- Fix inconsistent is_core_user flag for core user[#100](https://github.com/rokwire/groups-building-block/issues/100)
+
 ## [1.4.42] - 2021-12-08
 ### Added
 - Add image_url in the Post model[#96](https://github.com/rokwire/groups-building-block/issues/96)
