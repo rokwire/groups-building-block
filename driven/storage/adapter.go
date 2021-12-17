@@ -1335,7 +1335,7 @@ func (sa *Adapter) findPostWithContext(ctx context.Context, clientID string, use
 
 	if !skipMembershipCheck {
 		group, err := sa.findGroupWithContext(ctx, clientID, groupID)
-		if group == nil || err != nil || !(group.IsGroupMember(userID) || group.IsGroupAdmin(userID)) {
+		if group == nil || err != nil || !group.IsGroupAdminOrMember(userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1355,7 +1355,7 @@ func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, g
 
 	if !skipMembershipCheck {
 		group, err := sa.FindGroup(clientID, groupID)
-		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1380,7 +1380,7 @@ func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID s
 
 	if !skipMembershipCheck {
 		group, err := sa.FindGroup(clientID, groupID)
-		if group == nil || err != nil || !(group.IsGroupMember(userID) || group.IsGroupAdmin(userID)) {
+		if group == nil || err != nil || !group.IsGroupAdminOrMember(userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1421,7 +1421,7 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 
 	if !skipMembershipCheck {
 		group, err := sa.FindGroup(clientID, groupID)
-		if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+		if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1446,7 +1446,7 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 
 	group, err := sa.FindGroup(clientID, post.GroupID)
-	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+	if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 		return nil, fmt.Errorf("the user is not member or admin of the group")
 	}
 
@@ -1475,7 +1475,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	post.DateUpdated = &now
 
 	group, err = sa.FindGroup(clientID, post.GroupID)
-	if group != nil && err == nil && (group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+	if group != nil && err == nil && group.IsGroupAdminOrMember(current.ID) {
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
 		post.Member = model.PostCreator{
 			UserID: current.ID,
