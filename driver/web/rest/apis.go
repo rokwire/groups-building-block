@@ -1288,7 +1288,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 	w.Write([]byte("Successfully deleted"))
 }
 
-//GetGroupPosts gets all posts for the desired group.
+// GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID GetGroupPosts
 // @Param APP header string true "APP"
@@ -1342,8 +1342,8 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
-		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to get posts for group %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
@@ -1351,7 +1351,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	var filterPrivatePostsValue *bool
-	if group == nil || err != nil || !(group.IsGroupMember(current.ID) || group.IsGroupAdmin(current.ID)) {
+	if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 		filter := false
 		filterPrivatePostsValue = &filter
 	}

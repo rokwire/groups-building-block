@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.4.44] - 2021-12-17
+### Fixed
+- Fix wrong check for admin while getting posts for group [#103](https://github.com/rokwire/groups-building-block/issues/103)
+
 ## [1.4.43] - 2021-12-15
 ### Fixed
 - Fix inconsistent is_core_user flag for core user[#100](https://github.com/rokwire/groups-building-block/issues/100)
