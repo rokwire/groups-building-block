@@ -249,3 +249,11 @@ type notificationsImpl struct {
 func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
 	return n.app.sendNotification(recipients, topic, title, text, data)
 }
+
+// Authman exposes Authman APIs for the driver adapters
+type Authman interface {
+}
+
+type autnmanImpl struct {
+	app *Application
+}

@@ -15,6 +15,7 @@ type Application struct {
 
 	storage       Storage
 	notifications Notifications
+	authman       Authman
 }
 
 //Start starts the core part of the application
@@ -66,9 +67,9 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, notifications Notifications) *Application {
+func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman) *Application {
 
-	application := Application{version: version, build: build, storage: storage, notifications: notifications}
+	application := Application{version: version, build: build, storage: storage, notifications: notifications, authman: authman}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

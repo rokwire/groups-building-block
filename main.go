@@ -2,6 +2,7 @@ package main
 
 import (
 	core "groups/core"
+	"groups/driven/authman"
 	"groups/driven/notifications"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
@@ -32,12 +33,20 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
+	// Notification adapter
 	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
 
+	authmanUrl := getEnvKey("AUTHMAN_URL", false)
+	authmanUsername := getEnvKey("AUTHMAN_USERNAME", false)
+	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", false)
+
+	// Authman adapter
+	authmanAdapter := authman.NewAuthmanAdapter(authmanUrl, authmanUsername, authmanPassword)
+
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter)
 	application.Start()
 
 	//web adapter
@@ -52,7 +61,9 @@ func main() {
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, internalAPIKeys, coreBBHost, groupServiceURL)
+	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider,
+		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
+		internalAPIKeys, coreBBHost, groupServiceURL)
 	webAdapter.Start()
 }
 
