@@ -38,12 +38,12 @@ func main() {
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
 
-	authmanUrl := getEnvKey("AUTHMAN_URL", false)
+	authmanURL := getEnvKey("AUTHMAN_URL", false)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", false)
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", false)
 
 	// Authman adapter
-	authmanAdapter := authman.NewAuthmanAdapter(authmanUrl, authmanUsername, authmanPassword)
+	authmanAdapter := authman.NewAuthmanAdapter(authmanURL, authmanUsername, authmanPassword)
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter)
