@@ -1644,7 +1644,6 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 
 func constructGroup(gr group) model.Group {
 	id := gr.ID
-	authmanGroup := gr.AuthmanGroup
 	category := gr.Category
 	title := gr.Title
 	privacy := gr.Privacy
@@ -1653,6 +1652,8 @@ func constructGroup(gr group) model.Group {
 	webURL := gr.WebURL
 	tags := gr.Tags
 	membershipQuestions := gr.MembershipQuestions
+	authmanEnabled := gr.AuthmanEnabled
+	authmanGroup := gr.AuthmanGroup
 
 	dateCreated := gr.DateCreated
 	dateUpdated := gr.DateUpdated
@@ -1665,7 +1666,7 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members, AuthmanGroup: authmanGroup}
+		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup}
 }
 
 func constructMember(groupID string, member member) model.Member {

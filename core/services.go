@@ -52,6 +52,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["web_url"] = group.WebURL
 		item["tags"] = group.Tags
 		item["membership_questions"] = group.MembershipQuestions
+		item["authman_enabled"] = group.AuthmanEnabled
+		item["authman_group"] = group.AuthmanGroup
 
 		//members
 		membersCount := len(group.Members)
@@ -227,6 +229,8 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["web_url"] = group.WebURL
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
+	item["authman_enabled"] = group.AuthmanEnabled
+	item["authman_group"] = group.AuthmanGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -265,6 +269,8 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["web_url"] = group.WebURL
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
+	item["authman_enabled"] = group.AuthmanEnabled
+	item["authman_group"] = group.AuthmanGroup
 
 	//members
 	membersCount := len(group.Members)
