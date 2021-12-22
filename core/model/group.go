@@ -21,6 +21,9 @@ type Group struct {
 
 	DateCreated time.Time  `json:"date_created"`
 	DateUpdated *time.Time `json:"date_updated"`
+
+	AuthmanEnabled bool    `json:"authman_enabled"`
+	AuthmanGroup   *string `json:"authman_group"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group

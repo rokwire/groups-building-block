@@ -17,9 +17,9 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
@@ -76,14 +76,16 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
+	authmanEnabled bool, authmanGroup *string) (*string, *GroupError) {
 	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
-		imageURL, webURL, membershipQuestions)
+		imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError {
-	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError {
+	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags,
+		membershipQuestions, authmanEnabled, authmanGroup)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -193,9 +195,9 @@ type Storage interface {
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) (*string, *GroupError)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)

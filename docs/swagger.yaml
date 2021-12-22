@@ -9,6 +9,10 @@ definitions:
     type: object
   createGroupRequest:
     properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
       category:
         type: string
       creator_email:
@@ -282,6 +286,10 @@ definitions:
     type: object
   updateGroupRequest:
     properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
       category:
         type: string
       description:

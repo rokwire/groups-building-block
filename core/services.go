@@ -130,6 +130,8 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["web_url"] = group.WebURL
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
+	item["authman_enabled"] = group.AuthmanEnabled
+	item["authman_group"] = group.AuthmanGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -184,6 +186,8 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["web_url"] = group.WebURL
 	item["tags"] = group.Tags
 	item["membership_questions"] = group.MembershipQuestions
+	item["authman_enabled"] = group.AuthmanEnabled
+	item["authman_group"] = group.AuthmanGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -324,8 +328,9 @@ func (app *Application) getUserGroupMemberships(id string, external bool) ([]*mo
 }
 
 func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, current.ID, creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions)
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) (*string, *GroupError) {
+	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, current.ID, creatorName,
+		creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -333,8 +338,8 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 }
 
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError {
-	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError {
+	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, authmanEnabled, authmanGroup)
 	if err != nil {
 		return err
 	}

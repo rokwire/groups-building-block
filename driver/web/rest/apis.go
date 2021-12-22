@@ -74,6 +74,8 @@ type createGroupRequest struct {
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	MembershipQuestions []string `json:"membership_questions"`
+	AuthmanEnabled      bool     `json:"authman_enabled"`
+	AuthmanGroup        *string  `json:"authman_group"`
 } //@name createGroupRequest
 
 //IntGetUserGroupMemberships gets the user groups memberships
@@ -195,9 +197,11 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	membershipQuestions := requestData.MembershipQuestions
+	authmanGroup := requestData.AuthmanGroup
+	authmanEnabled := requestData.AuthmanEnabled
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -225,6 +229,8 @@ type updateGroupRequest struct {
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
 	MembershipQuestions []string `json:"membership_questions"`
+	AuthmanEnabled      bool     `json:"authman_enabled"`
+	AuthmanGroup        *string  `json:"authman_group"`
 } //@name updateGroupRequest
 
 //UpdateGroup updates a group
@@ -298,8 +304,11 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	webURL := requestData.WebURL
 	tags := requestData.Tags
 	membershipQuestions := requestData.MembershipQuestions
+	authmanGroup := requestData.AuthmanGroup
+	authmanEnabled := requestData.AuthmanEnabled
 
-	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL,
+		tags, membershipQuestions, authmanEnabled, authmanGroup)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
