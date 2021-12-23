@@ -1622,6 +1622,32 @@ func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
 	return nil
 }
 
+// FindAuthmanGroups finds all groups that are associated with Authman
+func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "authman_enabled", Value: true},
+	}
+
+	findOptions := options.Find()
+
+	var list []group
+	err := sa.db.groups.Find(filter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]model.Group, len(list))
+	if list != nil {
+		for i, current := range list {
+			item := constructGroup(current)
+			result[i] = item
+		}
+	}
+
+	return result, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)

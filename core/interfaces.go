@@ -9,6 +9,8 @@ import (
 type Services interface {
 	GetVersion() string
 
+	LoginUser(clientID string, currentGetUserGroups *model.User) error
+
 	GetGroupCategories() ([]string, error)
 	GetUserGroupMembershipsByID(id string) ([]*model.Group, error)
 	GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error)
@@ -23,7 +25,6 @@ type Services interface {
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
-	LoginUser(clientID string, currentGetUserGroups *model.User) error
 	DeleteUser(clientID string, current *model.User) error
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
@@ -181,7 +182,7 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order)
 }
 
-// Storage is used by core to storage data - DB storage adapter, file storage adapter etc
+// Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
@@ -222,6 +223,8 @@ type Storage interface {
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+
+	FindAuthmanGroups(clientID string) ([]model.Group, error)
 }
 
 //StorageListener listenes for change data storage events
@@ -252,8 +255,18 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 
 // Authman exposes Authman APIs for the driver adapters
 type Authman interface {
+	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
 }
 
 type autnmanImpl struct {
+	app *Application
+}
+
+// Core exposes Core APIs for the driver adapters
+type Core interface {
+	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
+}
+
+type coreImpl struct {
 	app *Application
 }

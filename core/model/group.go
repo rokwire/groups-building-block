@@ -91,7 +91,7 @@ func (gr Group) IsGroupRejected(userID string) bool {
 	return false
 }
 
-//UserNameByID Get name of the user
+// UserNameByID Get name of the user
 func (gr Group) UserNameByID(userID string) *string {
 	if gr.Members == nil {
 		return nil
