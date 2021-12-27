@@ -477,7 +477,7 @@ func (app *Application) deletePendingMember(clientID string, current model.User,
 }
 
 func (app *Application) deleteMember(clientID string, current model.User, groupID string) error {
-	err := app.storage.DeleteMember(clientID, groupID, current.ID)
+	err := app.storage.DeleteMember(clientID, groupID, current.ID, false)
 	if err != nil {
 		return err
 	}
@@ -644,6 +644,80 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
+}
+
+func (app *Application) synchronizeAuthman(clientID string) error {
+	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
+	if err != nil {
+		return err
+	}
+
+	if len(authmanGroups) > 0 {
+		for _, authmanGroup := range authmanGroups {
+			if authmanGroup.AuthmanGroup != nil {
+				authmanExternalIDs, authmanErr := app.authman.RetrieveAuthmanGroupMembers(*authmanGroup.AuthmanGroup)
+				if authmanErr != nil {
+					log.Printf("Error on requesting Authman for %s: %s", *authmanGroup.AuthmanGroup, authmanErr)
+					continue
+				}
+
+				userIDMapping := map[string]interface{}{}
+				for _, externalID := range authmanExternalIDs {
+					user, userErr := app.storage.FindUser(clientID, externalID, true)
+					if authmanErr != nil {
+						log.Printf("Error on getting user %s for Authman %s: %s", externalID, *authmanGroup.AuthmanGroup, userErr)
+						continue
+					}
+
+					if user != nil {
+						// Add missed members
+						member := authmanGroup.GetMemberByUserID(user.ID)
+						if member != nil {
+							if member.IsPendingMember() || member.IsRejected() {
+								delErr := app.storage.DeleteMember(clientID, authmanGroup.ID, member.User.ID, true)
+								if delErr != nil {
+									log.Printf("Error on deleting user %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, delErr)
+									continue
+								}
+
+								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, "", user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+								if memberErr != nil {
+									log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+									continue
+								}
+							} else {
+								log.Printf("User %s is already a member or admin of '%s'", user.ID, authmanGroup.Title)
+							}
+						} else {
+							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, "", user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+							if memberErr != nil {
+								log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+								continue
+							}
+						}
+
+						userIDMapping[user.ID] = true
+					}
+				}
+
+				// Delete the rest of non mapped members
+				if len(authmanGroup.Members) > 0 {
+					for _, member := range authmanGroup.Members {
+						val := userIDMapping[member.User.ID]
+						if val == nil && !member.IsAdmin() {
+							err := app.storage.DeleteMember(clientID, authmanGroup.ID, member.User.ID, true)
+							if err != nil {
+								log.Printf("Error on deleting user as member %s from group %s for Authman %s: %s", member.User.ID, authmanGroup.Title, *authmanGroup.AuthmanGroup, err)
+								continue
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {

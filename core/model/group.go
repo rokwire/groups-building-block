@@ -118,6 +118,19 @@ func (gr Group) GetMemberByID(userID string) *Member {
 	return nil
 }
 
+// GetMemberByUserID gets member by UserID field
+func (gr Group) GetMemberByUserID(userID string) *Member {
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.User.ID == userID {
+			return &item
+		}
+	}
+	return nil
+}
+
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
 func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 
@@ -134,4 +147,20 @@ func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notific
 		}
 	}
 	return recipients
+}
+
+// CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
+func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
+
+	var answers []MemberAnswer
+	if len(gr.MembershipQuestions) > 0 {
+		for _, question := range gr.MembershipQuestions {
+			answers = append(answers, MemberAnswer{
+				Question: question,
+				Answer:   "",
+			})
+		}
+	}
+
+	return answers
 }

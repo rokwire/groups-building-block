@@ -31,6 +31,8 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 			return nil, err
 		}
 
+		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
+
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("RetrieveAuthmanGroupMembers: error loading user data - %s", err)
@@ -56,7 +58,7 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 		}
 
 		response := []string{}
-		for _, subjects := range authmanData.wsGetMembersLiteResult.wsSubjects {
+		for _, subjects := range authmanData.WsGetMembersLiteResult.WsSubjects {
 			response = append(response, subjects.ID)
 		}
 
@@ -66,13 +68,13 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 }
 
 type authmanResponse struct {
-	wsGetMembersLiteResult struct {
+	WsGetMembersLiteResult struct {
 		ResultMetadata struct {
 			Success       string `json:"success"`
 			ResultCode    string `json:"resultCode"`
 			ResultMessage string `json:"resultMessage"`
 		} `json:"resultMetadata"`
-		wsGroup struct {
+		WsGroup struct {
 			Extension        string `json:"extension"`
 			DisplayName      string `json:"displayName"`
 			Description      string `json:"description"`
@@ -87,7 +89,7 @@ type authmanResponse struct {
 			ServerVersion string `json:"serverVersion"`
 			Millis        string `json:"millis"`
 		} `json:"responseMetadata"`
-		wsSubjects []struct {
+		WsSubjects []struct {
 			SourceID   string `json:"sourceId"`
 			Success    string `json:"success"`
 			ResultCode string `json:"resultCode"`

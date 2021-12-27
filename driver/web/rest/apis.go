@@ -1605,6 +1605,26 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 	w.WriteHeader(http.StatusOK)
 }
 
+//SynchronizeAuthman Synchronizes Authman groups memberhip
+// @Description Synchronizes Authman groups memberhip
+// @ID SynchronizeAuthman
+// @Accept json
+// @Success 200
+// @Security IntAPIKeyAuth
+// @Router /int/authman/synchronize [get]
+func (h *ApisHandler) SynchronizeAuthman(clientID string, w http.ResponseWriter, r *http.Request) {
+
+	err := h.app.Services.SynchronizeAuthman(clientID)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
 //NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}

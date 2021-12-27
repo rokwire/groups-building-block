@@ -45,6 +45,8 @@ type Services interface {
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
+
+	SynchronizeAuthman(clientID string) error
 }
 
 type servicesImpl struct {
@@ -169,6 +171,10 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
+func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
+	return s.app.synchronizeAuthman(clientID)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
@@ -205,9 +211,10 @@ type Storage interface {
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
+	CreateMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
-	DeleteMember(clientID string, groupID string, userID string) error
+	DeleteMember(clientID string, groupID string, userID string, force bool) error
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(clientID string, currentUserID string, membershipID string) error
