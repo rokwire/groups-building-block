@@ -44,6 +44,10 @@ type Services interface {
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
+
+	FindPolls(clientID string, groupID string) ([]model.Poll, error)
+	CreatePoll(clientID string, current *model.User, pollID string, groupID string) error
+	DeletePoll(clientID string, current *model.User, pollID string, groupID string) error
 }
 
 type servicesImpl struct {
@@ -166,6 +170,20 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
+// Poll Mapping APIs
+
+func (s *servicesImpl) FindPolls(clientID string, groupID string) ([]model.Poll, error) {
+	return s.app.findPolls(clientID, groupID)
+}
+
+func (s *servicesImpl) CreatePoll(clientID string, current *model.User, pollID string, groupID string) error {
+	return s.app.createPoll(clientID, pollID, groupID)
+}
+
+func (s *servicesImpl) DeletePoll(clientID string, current *model.User, pollID string, groupID string) error {
+	return s.app.deletePoll(clientID, pollID, groupID)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
@@ -220,6 +238,10 @@ type Storage interface {
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+
+	FindPolls(clientID string, groupID string) ([]model.Poll, error)
+	CreatePoll(clientID string, pollID string, groupID string) error
+	DeletePoll(clientID string, pollID string, groupID string) error
 }
 
 //StorageListener listenes for change data storage events

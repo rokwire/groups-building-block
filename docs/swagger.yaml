@@ -7,6 +7,13 @@ definitions:
     required:
     - event_id
     type: object
+  createGroupPollRequest:
+    properties:
+      poll_id:
+        type: string
+    required:
+    - poll_id
+    type: object
   createGroupRequest:
     properties:
       category:
@@ -547,6 +554,37 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/group/{group-id}/event/{poll-id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a group poll
+      operationId: DeleteGroupPoll
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: Poll ID
+        in: path
+        name: poll-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
   /api/group/{group-id}/events:
     get:
       consumes:
@@ -670,6 +708,64 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/createMemberRequest'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+  /api/group/{group-id}/polls:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all polls for the group
+      operationId: GetGroupPolls
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+    post:
+      consumes:
+      - application/json
+      description: Creates a group poll
+      operationId: CreateGroupPoll
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createGroupPollRequest'
       - description: Group ID
         in: path
         name: group-id

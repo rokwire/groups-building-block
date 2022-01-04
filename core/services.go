@@ -638,3 +638,17 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
 	return app.notifications.SendNotification(recipients, topic, title, text, data)
 }
+
+// Polls Mapping APIs
+
+func (app *Application) findPolls(clientID string, groupID string) ([]model.Poll, error) {
+	return app.storage.FindPolls(clientID, groupID)
+}
+
+func (app *Application) createPoll(clientID string, pollID string, groupID string) error {
+	return app.storage.CreatePoll(clientID, pollID, groupID)
+}
+
+func (app *Application) deletePoll(clientID string, pollID string, groupID string) error {
+	return app.storage.DeletePoll(clientID, pollID, groupID)
+}

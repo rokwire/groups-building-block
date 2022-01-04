@@ -71,6 +71,13 @@ type event struct {
 	ClientID string `bson:"client_id"`
 }
 
+type poll struct {
+	PollID      string    `bson:"poll_id"`
+	GroupID     string    `bson:"group_id"`
+	DateCreated time.Time `bson:"date_created"`
+	ClientID    string    `bson:"client_id"`
+}
+
 type comment struct {
 	MemberID    string    `bson:"member_id"`
 	Text        string    `bson:"text"`
@@ -1192,6 +1199,62 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 	deletedCount := result.DeletedCount
 	if deletedCount != 1 {
 		return errors.New("error occured while deleting an event with event id " + eventID)
+	}
+
+	sa.resetGroupUpdatedDate(clientID, groupID)
+
+	return nil
+}
+
+// FindPolls finds the polls for a group
+func (sa *Adapter) FindPolls(clientID string, groupID string) ([]model.Poll, error) {
+	filter := bson.D{primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID}}
+	var result []poll
+	err := sa.db.polls.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil || len(result) == 0 {
+		//not found
+		return make([]model.Poll, 0), nil
+	}
+
+	resList := make([]model.Poll, len(result))
+	for i, e := range result {
+		resList[i] = model.Poll{PollID: e.PollID, GroupID: groupID, DateCreated: e.DateCreated}
+	}
+
+	return resList, nil
+}
+
+// CreatePoll creates a poll mapping
+func (sa *Adapter) CreatePoll(clientID string, pollID string, groupID string) error {
+	poll := poll{ClientID: clientID, PollID: pollID, GroupID: groupID, DateCreated: time.Now()}
+	_, err := sa.db.polls.InsertOne(poll)
+
+	if err == nil {
+		sa.resetGroupUpdatedDate(clientID, groupID)
+	}
+
+	return err
+}
+
+// DeletePoll deletes a poll mapping
+func (sa *Adapter) DeletePoll(clientID string, pollID string, groupID string) error {
+	filter := bson.D{primitive.E{Key: "poll_id", Value: pollID},
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID}}
+	result, err := sa.db.polls.DeleteOne(filter, nil)
+	if err != nil {
+		return err
+	}
+	if result == nil {
+		return errors.New("result is nil for poll with poll id " + pollID)
+	}
+	deletedCount := result.DeletedCount
+	if deletedCount != 1 {
+		return errors.New("error occured while deleting an poll with poll id " + pollID)
 	}
 
 	sa.resetGroupUpdatedDate(clientID, groupID)
