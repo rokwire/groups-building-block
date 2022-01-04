@@ -16,6 +16,10 @@ definitions:
     type: object
   createGroupRequest:
     properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
       category:
         type: string
       creator_email:
@@ -289,6 +293,10 @@ definitions:
     type: object
   updateGroupRequest:
     properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
       category:
         type: string
       description:
@@ -1188,6 +1196,17 @@ paths:
             $ref: '#/definitions/rest.getUserStats'
       security:
       - AppUserAuth: []
+  /int/authman/synchronize:
+    get:
+      consumes:
+      - application/json
+      description: Synchronizes Authman groups memberhip
+      operationId: SynchronizeAuthman
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
   /version:
     get:
       description: Gives the service version.

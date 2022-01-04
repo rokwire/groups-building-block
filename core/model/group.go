@@ -21,6 +21,9 @@ type Group struct {
 
 	DateCreated time.Time  `json:"date_created"`
 	DateUpdated *time.Time `json:"date_updated"`
+
+	AuthmanEnabled bool    `json:"authman_enabled"`
+	AuthmanGroup   *string `json:"authman_group"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group
@@ -88,7 +91,7 @@ func (gr Group) IsGroupRejected(userID string) bool {
 	return false
 }
 
-//UserNameByID Get name of the user
+// UserNameByID Get name of the user
 func (gr Group) UserNameByID(userID string) *string {
 	if gr.Members == nil {
 		return nil
@@ -115,6 +118,19 @@ func (gr Group) GetMemberByID(userID string) *Member {
 	return nil
 }
 
+// GetMemberByUserID gets member by UserID field
+func (gr Group) GetMemberByUserID(userID string) *Member {
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.User.ID == userID {
+			return &item
+		}
+	}
+	return nil
+}
+
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
 func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 
@@ -131,4 +147,20 @@ func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notific
 		}
 	}
 	return recipients
+}
+
+// CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
+func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
+
+	var answers []MemberAnswer
+	if len(gr.MembershipQuestions) > 0 {
+		for _, question := range gr.MembershipQuestions {
+			answers = append(answers, MemberAnswer{
+				Question: question,
+				Answer:   "",
+			})
+		}
+	}
+
+	return answers
 }

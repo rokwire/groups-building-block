@@ -1398,6 +1398,25 @@ var doc = `{
                 }
             }
         },
+        "/int/authman/synchronize": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman groups memberhip",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "SynchronizeAuthman",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -1447,6 +1466,12 @@ var doc = `{
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },
@@ -1863,6 +1888,12 @@ var doc = `{
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },

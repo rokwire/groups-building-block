@@ -69,6 +69,7 @@ func (we *Adapter) Start() {
 
 	//internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.IntGetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.apisHandler.SynchronizeAuthman)).Methods("GET")
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
