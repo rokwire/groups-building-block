@@ -1766,14 +1766,14 @@ func (h *ApisHandler) CreateGroupPoll(clientID string, current *model.User, w ht
 func (h *ApisHandler) DeleteGroupPoll(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
-	groupID := params["poll-id"]
+	groupID := params["group-id"]
 	if len(groupID) <= 0 {
 		log.Println("Group id is required")
 		http.Error(w, "Group id is required", http.StatusBadRequest)
 		return
 	}
-	eventID := params["poll-id"]
-	if len(eventID) <= 0 {
+	pollID := params["poll-id"]
+	if len(pollID) <= 0 {
 		log.Println("Poll id is required")
 		http.Error(w, "Poll id is required", http.StatusBadRequest)
 		return
@@ -1800,7 +1800,7 @@ func (h *ApisHandler) DeleteGroupPoll(clientID string, current *model.User, w ht
 		return
 	}
 
-	err = h.app.Services.DeletePoll(clientID, current, eventID, groupID)
+	err = h.app.Services.DeletePoll(clientID, current, pollID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an poll - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

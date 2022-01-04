@@ -1242,7 +1242,8 @@ func (sa *Adapter) CreatePoll(clientID string, pollID string, groupID string) er
 
 // DeletePoll deletes a poll mapping
 func (sa *Adapter) DeletePoll(clientID string, pollID string, groupID string) error {
-	filter := bson.D{primitive.E{Key: "poll_id", Value: pollID},
+	filter := bson.D{
+		primitive.E{Key: "poll_id", Value: pollID},
 		primitive.E{Key: "group_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID}}
 	result, err := sa.db.polls.DeleteOne(filter, nil)

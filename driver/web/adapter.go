@@ -104,8 +104,9 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 
-	restSubrouter.HandleFunc("/group/{group-id}/polls", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupEvent)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{group-id}/polls/{poll-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupEvent)).Methods("DELETE")
+	restSubrouter.HandleFunc("/group/{group-id}/polls", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupPolls)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/polls", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupPoll)).Methods("POST")
+	restSubrouter.HandleFunc("/group/{group-id}/polls/{poll-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPoll)).Methods("DELETE")
 
 	log.Fatal(http.ListenAndServe(":80", router))
 }
