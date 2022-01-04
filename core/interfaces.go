@@ -9,6 +9,8 @@ import (
 type Services interface {
 	GetVersion() string
 
+	LoginUser(clientID string, currentGetUserGroups *model.User) error
+
 	GetGroupCategories() ([]string, error)
 	GetUserGroupMembershipsByID(id string) ([]*model.Group, error)
 	GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error)
@@ -17,13 +19,12 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
 	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
+		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
-	LoginUser(clientID string, currentGetUserGroups *model.User) error
 	DeleteUser(clientID string, current *model.User) error
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
@@ -44,6 +45,8 @@ type Services interface {
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
+
+	SynchronizeAuthman(clientID string) error
 }
 
 type servicesImpl struct {
@@ -76,14 +79,16 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError) {
+	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
+	authmanEnabled bool, authmanGroup *string) (*string, *GroupError) {
 	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
-		imageURL, webURL, membershipQuestions)
+		imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError {
-	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError {
+	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags,
+		membershipQuestions, authmanEnabled, authmanGroup)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -166,6 +171,10 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
+func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
+	return s.app.synchronizeAuthman(clientID)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
@@ -179,7 +188,7 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order)
 }
 
-// Storage is used by core to storage data - DB storage adapter, file storage adapter etc
+// Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
@@ -193,18 +202,19 @@ type Storage interface {
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *GroupError)
+		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) (*string, *GroupError)
 	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string) *GroupError
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
+	CreateMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
-	DeleteMember(clientID string, groupID string, userID string) error
+	DeleteMember(clientID string, groupID string, userID string, force bool) error
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(clientID string, currentUserID string, membershipID string) error
@@ -220,6 +230,8 @@ type Storage interface {
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+
+	FindAuthmanGroups(clientID string) ([]model.Group, error)
 }
 
 //StorageListener listenes for change data storage events
@@ -246,4 +258,22 @@ type notificationsImpl struct {
 
 func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
 	return n.app.sendNotification(recipients, topic, title, text, data)
+}
+
+// Authman exposes Authman APIs for the driver adapters
+type Authman interface {
+	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
+}
+
+type autnmanImpl struct {
+	app *Application
+}
+
+// Core exposes Core APIs for the driver adapters
+type Core interface {
+	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
+}
+
+type coreImpl struct {
+	app *Application
 }

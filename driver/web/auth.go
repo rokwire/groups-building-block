@@ -376,8 +376,8 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 		return nil
 	}
 
-	// 4. Use core user id or legacy user id
-	// NOTE: In general we assume the core user is already refactored e.g the login API has been invoked at least once.
+	// 4. Use corebb user id or legacy user id
+	// NOTE: In general we assume the corebb user is already refactored e.g the login API has been invoked at least once.
 	// The difference would be only the user ID.
 	var userID string
 	if isCoreUser {

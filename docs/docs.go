@@ -1296,6 +1296,12 @@ var doc = `{
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },
@@ -1712,6 +1718,12 @@ var doc = `{
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },

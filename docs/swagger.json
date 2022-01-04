@@ -1284,6 +1284,12 @@
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },
@@ -1700,6 +1706,12 @@
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },

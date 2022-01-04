@@ -40,7 +40,9 @@ type group struct {
 	DateCreated time.Time  `bson:"date_created"`
 	DateUpdated *time.Time `bson:"date_updated"`
 
-	ClientID string `bson:"client_id"`
+	ClientID       string  `bson:"client_id"`
+	AuthmanEnabled bool    `bson:"authman_enabled"`
+	AuthmanGroup   *string `bson:"authman_group"`
 }
 
 type member struct {
@@ -418,7 +420,8 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string) (*string, *core.GroupError) {
+	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
+	authmanEnabled bool, authmanGroup *string) (*string, *core.GroupError) {
 	var insertedID string
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
@@ -451,7 +454,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
 			Tags: tags, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
-			MembershipQuestions: membershipQuestions,
+			MembershipQuestions: membershipQuestions, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
@@ -476,7 +479,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string) *core.GroupError {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *core.GroupError {
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
@@ -509,6 +512,8 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "tags", Value: tags},
 				primitive.E{Key: "membership_questions", Value: membershipQuestions},
 				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "authman_enabled", Value: authmanEnabled},
+				primitive.E{Key: "authman_group", Value: authmanGroup},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -672,6 +677,99 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group
 		}
 	}
 	return result, nil
+}
+
+//CreateMember creates a normal member for a specific group
+func (sa *Adapter) CreateMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		//1. first check if there is a group for the prvoided group id
+		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}, primitive.E{Key: "client_id", Value: clientID}}
+		var result []*group
+		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+		if result == nil || len(result) == 0 {
+			//there is no a group for the provided id
+			abortTransaction(sessionContext)
+			return errors.New("there is no a group for the provided id")
+		}
+		group := result[0]
+
+		//2. check if the user is already a member of this group - pending or member or admin or rejected
+		members := group.Members
+		if members != nil {
+			for _, cMember := range members {
+				if cMember.UserID == userID {
+					switch cMember.Status {
+					case "admin":
+						return errors.New("the user is an admin for the group")
+					case "member":
+						return errors.New("the user is a member for the group")
+					case "pending":
+						return errors.New("the user is pending for the group")
+					case "rejected":
+						return errors.New("the user is rejected for the group")
+					default:
+						return errors.New("error creating a pending user")
+					}
+				}
+			}
+		}
+
+		//3. check if the answers match the group questions
+		if len(group.MembershipQuestions) != len(memberAnswers) {
+			return errors.New("member answers mismatch")
+		}
+
+		//4. now we can add the pending member
+		now := time.Now()
+		memberID, _ := uuid.NewUUID()
+		var memberAns []memberAnswer
+		if len(memberAnswers) > 0 {
+			for _, cAns := range memberAnswers {
+				memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
+			}
+		}
+		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email,
+			PhotoURL: photoURL, Status: "member", MemberAnswers: memberAns, DateCreated: now}
+		groupMembers := group.Members
+		groupMembers = append(groupMembers, pendingMember)
+		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "members", Value: groupMembers},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			},
+			},
+		}
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 //CreatePendingMember creates a pending member for a specific group
@@ -841,7 +939,7 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 }
 
 //DeleteMember deletes a member membership from a specific group
-func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) error {
+func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string, force bool) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -870,13 +968,13 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string) 
 		}
 		resultItem := result[0]
 		member := resultItem.Member
-		if !(member.Status == "admin" || member.Status == "member") {
+		if !(member.Status == "admin" || member.Status == "member") && !force {
 			abortTransaction(sessionContext)
 			return errors.New("you are not member/admin to the group")
 		}
 
 		//check if the member is admin, do not allow the group to become with 0 admins
-		if member.Status == "admin" {
+		if member.Status == "admin" && !force {
 			adminsCount, err := sa.findAdminsCount(sessionContext, groupID)
 			if err != nil {
 				abortTransaction(sessionContext)
@@ -1617,6 +1715,32 @@ func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
 	return nil
 }
 
+// FindAuthmanGroups finds all groups that are associated with Authman
+func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "authman_enabled", Value: true},
+	}
+
+	findOptions := options.Find()
+
+	var list []group
+	err := sa.db.groups.Find(filter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]model.Group, len(list))
+	if list != nil {
+		for i, current := range list {
+			item := constructGroup(current)
+			result[i] = item
+		}
+	}
+
+	return result, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
@@ -1647,6 +1771,8 @@ func constructGroup(gr group) model.Group {
 	webURL := gr.WebURL
 	tags := gr.Tags
 	membershipQuestions := gr.MembershipQuestions
+	authmanEnabled := gr.AuthmanEnabled
+	authmanGroup := gr.AuthmanGroup
 
 	dateCreated := gr.DateCreated
 	dateUpdated := gr.DateUpdated
@@ -1659,7 +1785,7 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members}
+		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup}
 }
 
 func constructMember(groupID string, member member) model.Member {

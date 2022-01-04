@@ -3,9 +3,10 @@ package core
 import (
 	"errors"
 	"groups/core/model"
+	"groups/driven/corebb"
 )
 
-//Application represents the core application code based on hexagonal architecture
+// Application represents the corebb application code based on hexagonal architecture
 type Application struct {
 	version string
 	build   string
@@ -15,16 +16,18 @@ type Application struct {
 
 	storage       Storage
 	notifications Notifications
+	authman       Authman
+	corebb        Core
 }
 
-//Start starts the core part of the application
+// Start starts the corebb part of the application
 func (app *Application) Start() {
-	//set storage listener
+	// set storage listener
 	storageListener := storageListenerImpl{app: app}
 	app.storage.SetStorageListener(&storageListener)
 }
 
-//FindUser finds an user for the provided external id
+// FindUser finds an user for the provided external id
 func (app *Application) FindUser(clientID string, id *string, external bool) (*model.User, error) {
 	if clientID == "" {
 		return nil, errors.New("clientID cannot be empty")
@@ -46,7 +49,7 @@ func (app *Application) LoginUser(clientID string, current *model.User, newID st
 	return app.storage.LoginUser(clientID, current)
 }
 
-//CreateUser creates an user
+// CreateUser creates an user
 func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string) (*model.User, error) {
 	externalIDVal := ""
 	if externalID != nil {
@@ -66,9 +69,10 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, notifications Notifications) *Application {
+func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter) *Application {
 
-	application := Application{version: version, build: build, storage: storage, notifications: notifications}
+	application := Application{version: version, build: build, storage: storage, notifications: notifications,
+		authman: authman, corebb: core}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
