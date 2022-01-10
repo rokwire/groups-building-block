@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/logs"
 	"golang.org/x/sync/syncmap"
 	"gopkg.in/ericchiang/go-oidc.v2"
 	"groups/core"
@@ -169,8 +170,13 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 	var tokenAuth *tokenauth.TokenAuth
 	if coreBBHost != "" {
 		serviceID := "groups"
+
+		remoteConfig := authservice.RemoteAuthDataLoaderConfig{
+			AuthServicesHost: coreBBHost,
+		}
+
 		// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-		serviceLoader := authservice.NewRemoteServiceRegLoader(coreBBHost+"/bbs/service-regs", nil)
+		serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{coreBBHost + "/bbs/service-regs"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
 
 		// Instantiate AuthService instance
 		authService, err := authservice.NewAuthService(serviceID, groupServiceURL, serviceLoader)
@@ -249,6 +255,7 @@ type userData struct {
 	Sub               *string   `json:"sub"`
 	Aud               *string   `json:"aud"`
 	Email             *string   `json:"email"`
+	Name              *string   `json:"name"`
 	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 }
 
@@ -326,7 +333,8 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
+				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
 			isCoreUser = true
 		}
 	}
@@ -402,7 +410,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 	}
 
 	//5. Get the user for the provided external id.
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, IsCoreUser: isCoreUser}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: *data.Name, IsCoreUser: isCoreUser}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
@@ -471,6 +479,7 @@ func (auth *AdminAuth) start() {
 
 func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, bool) {
 	var data *userData
+	var isCoreUser = false
 
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
@@ -481,7 +490,9 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 			}
 
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
+				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+			isCoreUser = true
 		}
 	}
 
@@ -533,7 +544,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		return nil, false
 	}
 
-	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email}, false
+	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: *data.Name, IsCoreUser: isCoreUser}, false
 }
 
 //gets the token from the request - as cookie or as Authorization header.

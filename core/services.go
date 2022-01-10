@@ -680,7 +680,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 									continue
 								}
 
-								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, "", user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 								if memberErr != nil {
 									log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
 									continue
@@ -689,7 +689,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 								log.Printf("User %s is already a member or admin of '%s'", user.ID, authmanGroup.Title)
 							}
 						} else {
-							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, "", user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 							if memberErr != nil {
 								log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
 								continue
