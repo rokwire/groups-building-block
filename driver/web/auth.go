@@ -410,7 +410,11 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 	}
 
 	//5. Get the user for the provided external id.
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: *data.Name, IsCoreUser: isCoreUser}
+	var name = ""
+	if data.Name != nil {
+		name = *data.Name
+	}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: name, IsCoreUser: isCoreUser}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
@@ -544,7 +548,11 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		return nil, false
 	}
 
-	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: *data.Name, IsCoreUser: isCoreUser}, false
+	var name = ""
+	if data.Name != nil {
+		name = *data.Name
+	}
+	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: name, IsCoreUser: isCoreUser}, false
 }
 
 //gets the token from the request - as cookie or as Authorization header.

@@ -1258,6 +1258,25 @@ var doc = `{
                 }
             }
         },
+        "/int/authman/synchronize": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman groups memberhip",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "SynchronizeAuthman",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -1798,7 +1817,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.4.10",
+	Version:     "1.5.7",
 	Host:        "localhost",
 	BasePath:    "/gr",
 	Schemes:     []string{"https"},

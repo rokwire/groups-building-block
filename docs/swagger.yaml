@@ -327,7 +327,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.4.10
+  version: 1.5.7
 paths:
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
@@ -1100,6 +1100,17 @@ paths:
             $ref: '#/definitions/rest.getUserStats'
       security:
       - AppUserAuth: []
+  /int/authman/synchronize:
+    get:
+      consumes:
+      - application/json
+      description: Synchronizes Authman groups memberhip
+      operationId: SynchronizeAuthman
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
   /version:
     get:
       description: Gives the service version.
