@@ -144,7 +144,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 			}
 
 			// insert the new user
-			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
+			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email, Name: current.Name,
 				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
 			if err != nil {
@@ -236,7 +236,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 	} else {
 		coreUser, _ := sa.FindUser(clientID, current.ID, false)
 		if coreUser == nil {
-			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email,
+			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email, Name: current.Name,
 				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 
 			_, err := sa.db.users.InsertOneWithContext(context.Background(), &coreUser)
@@ -244,14 +244,16 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				log.Printf("error inserting user - %s", err)
 				return fmt.Errorf("error inserting user - %s", err)
 			}
-		} else if coreUser.ID == legacyUser.ID && !coreUser.IsCoreUser {
+		} else if coreUser.ID == legacyUser.ID && (!coreUser.IsCoreUser || coreUser.Name != current.Name) {
 			filter := bson.D{
 				primitive.E{Key: "client_id", Value: clientID},
 				primitive.E{Key: "_id", Value: current.ID},
 			}
+
 			update := bson.D{
 				primitive.E{Key: "$set", Value: bson.D{
 					primitive.E{Key: "is_core_user", Value: true},
+					primitive.E{Key: "name", Value: current.Name},
 					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
 				}},
 			}

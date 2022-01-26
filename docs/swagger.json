@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.4.10"
+        "version": "1.5.7"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -1242,6 +1242,25 @@
                         "schema": {
                             "$ref": "#/definitions/rest.getUserStats"
                         }
+                    }
+                }
+            }
+        },
+        "/int/authman/synchronize": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman groups memberhip",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "SynchronizeAuthman",
+                "responses": {
+                    "200": {
+                        "description": ""
                     }
                 }
             }
