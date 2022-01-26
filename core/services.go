@@ -666,6 +666,13 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					user, userErr := app.storage.FindUser(clientID, externalID, true)
 					if authmanErr != nil {
 						log.Printf("Error on getting user %s for Authman %s: %s", externalID, *authmanGroup.AuthmanGroup, userErr)
+
+						memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
+						if memberErr != nil {
+							log.Printf("Error on creating dummy member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+							continue
+						}
+
 						continue
 					}
 
@@ -680,7 +687,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 									continue
 								}
 
-								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 								if memberErr != nil {
 									log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
 									continue
@@ -689,7 +696,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 								log.Printf("User %s is already a member or admin of '%s'", user.ID, authmanGroup.Title)
 							}
 						} else {
-							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 							if memberErr != nil {
 								log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
 								continue
