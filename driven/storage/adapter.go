@@ -138,7 +138,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				filter := bson.D{primitive.E{Key: "_id", Value: legacyUser.ID}, primitive.E{Key: "client_id", Value: clientID}}
 				_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
 				if err != nil {
-					log.Printf("error deleting user - %s", err.Error())
+					log.Printf("error deleting user - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -149,7 +149,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
 			if err != nil {
-				log.Printf("error inserting user - %s", err.Error())
+				log.Printf("error inserting user - %s", err)
 				abortTransaction(sessionContext)
 				return err
 			}
@@ -167,7 +167,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating groups - %s", err.Error())
+					log.Printf("error updating groups - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -184,7 +184,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating groups - %s", err.Error())
+					log.Printf("error updating groups - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -199,7 +199,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating posts - %s", err.Error())
+					log.Printf("error updating posts - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -216,7 +216,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating posts - %s", err.Error())
+					log.Printf("error updating posts - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -255,11 +255,10 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 			}
 		}
 
-		if current.IsCoreUser{
+		if current.IsCoreUser {
 			filter := bson.D{
 				primitive.E{Key: "client_id", Value: clientID},
 				primitive.E{Key: "members.external_id", Value: current.ExternalID},
-				primitive.E{Key: "members.user_id", Value: ""},
 			}
 			update := bson.D{
 				primitive.E{Key: "$set", Value: bson.D{
@@ -273,7 +272,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 			}
 			_, err := sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 			if err != nil {
-				log.Printf("error updating dummy member records for user(%s | %s) - %s", current.ID, current.ExternalID, err.Error())
+				log.Printf("error updating dummy member records for user(%s | %s) - %s", current.ID, current.ExternalID, err)
 				return err
 			}
 		}

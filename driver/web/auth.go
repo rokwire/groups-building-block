@@ -572,7 +572,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	if data.Email != nil {
 		email = *data.Email
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email:email, Name: name, IsCoreUser: isCoreUser}, false
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser}, false
 }
 
 //gets the token from the request - as cookie or as Authorization header.

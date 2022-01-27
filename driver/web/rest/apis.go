@@ -549,7 +549,7 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	err := h.app.Services.LoginUser(clientID, current)
 	if err != nil {
-		log.Printf("error getting user groups - %s", err.Error())
+		log.Printf("error login user - %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

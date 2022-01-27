@@ -647,6 +647,9 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 }
 
 func (app *Application) synchronizeAuthman(clientID string) error {
+	log.Printf("Authman synchronization started")
+	defer log.Printf("Authman synchronization finished")
+
 	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
 	if err != nil {
 		return err
@@ -666,13 +669,6 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					user, userErr := app.storage.FindUser(clientID, externalID, true)
 					if authmanErr != nil {
 						log.Printf("Error on getting user %s for Authman %s: %s", externalID, *authmanGroup.AuthmanGroup, userErr)
-
-						memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
-						if memberErr != nil {
-							log.Printf("Error on creating dummy member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
-							continue
-						}
-
 						continue
 					}
 
@@ -704,6 +700,12 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 						}
 
 						userIDMapping[user.ID] = true
+					} else {
+						memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
+						if memberErr != nil {
+							log.Printf("Error on creating dummy member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+							continue
+						}
 					}
 				}
 
