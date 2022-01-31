@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.9] - 2022-01-31
+- Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
+
+## [1.5.8] - 2022-01-27
+- Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
+
+## [1.5.7] - 2022-01-12
+- Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
+
+## [1.5.6] - 2022-01-10
+- Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
+
 ## [1.5.6] - 2022-01-10
 - Update core auth library and cache the name of the user for Authman sync pupronse [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
