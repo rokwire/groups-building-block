@@ -6,6 +6,7 @@ import "time"
 type Member struct {
 	ID            string         `json:"id"`
 	User          User           `json:"user"`
+	ExternalID    string         `json:"external_id"`
 	Name          string         `json:"name"`
 	Email         string         `json:"email"`
 	PhotoURL      string         `json:"photo_url"`

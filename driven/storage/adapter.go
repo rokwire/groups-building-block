@@ -48,9 +48,9 @@ type group struct {
 type member struct {
 	ID            string         `bson:"id"`
 	UserID        string         `bson:"user_id"`
+	ExternalID    string         `bson:"external_id"`
 	Name          string         `bson:"name"`
 	Email         string         `bson:"email"`
-	ExternalID    string         `bson:"external_id"`
 	PhotoURL      string         `bson:"photo_url"`
 	Status        string         `bson:"status"` //pending, member, admin, reject
 	RejectReason  string         `bson:"reject_reason"`
@@ -256,6 +256,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 		}
 
 		if current.IsCoreUser {
+			// Repopulate and keep sync of external_id & user_id. Part 1
 			filter := bson.D{
 				primitive.E{Key: "client_id", Value: clientID},
 				primitive.E{Key: "members.external_id", Value: current.ExternalID},
@@ -272,7 +273,28 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 			}
 			_, err := sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 			if err != nil {
-				log.Printf("error updating dummy member records for user(%s | %s) - %s", current.ID, current.ExternalID, err)
+				log.Printf("error updating dummy member records for user(%s | %s) Part 1: %s", current.ID, current.ExternalID, err)
+				return err
+			}
+
+			// Repopulate and keep sync of external_id & user_id. Part 2
+			filter = bson.D{
+				primitive.E{Key: "client_id", Value: clientID},
+				primitive.E{Key: "members.user_id", Value: current.ID},
+			}
+			update = bson.D{
+				primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "members.$.name", Value: current.Name},
+					primitive.E{Key: "members.$.email", Value: current.Email},
+					primitive.E{Key: "members.$.user_id", Value: current.ID},
+					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.date_updated", Value: now},
+					primitive.E{Key: "date_updated", Value: now},
+				}},
+			}
+			_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+			if err != nil {
+				log.Printf("error updating dummy member records for user(%s | %s) Part 2: %s", current.ID, current.ExternalID, err)
 				return err
 			}
 		}
@@ -419,7 +441,9 @@ func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model
 		newMembers := make([]model.Member, len(members))
 		for i, c := range members {
 			memberUser := model.User{ID: c.UserID}
-			newMembers[i] = model.Member{ID: c.ID, Status: c.Status, User: memberUser}
+			newMembers[i] = model.Member{
+				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, User: memberUser,
+			}
 		}
 		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
 	}
@@ -1818,6 +1842,7 @@ func constructGroup(gr group) model.Group {
 func constructMember(groupID string, member member) model.Member {
 	id := member.ID
 	user := model.User{ID: member.UserID}
+	externalID := member.ExternalID
 	name := member.Name
 	email := member.Email
 	photoURL := member.PhotoURL
@@ -1832,6 +1857,6 @@ func constructMember(groupID string, member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, User: user, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, User: user, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }

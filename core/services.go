@@ -64,6 +64,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
 					mItem["user_id"] = current.User.ID
+					mItem["external_id"] = current.ExternalID
 					mItem["name"] = current.Name
 					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
@@ -102,6 +103,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
 					mItem["user_id"] = current.User.ID
+					mItem["external_id"] = current.ExternalID
 					mItem["name"] = current.Name
 					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
@@ -143,6 +145,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem := make(map[string]interface{})
 			mItem["id"] = current.ID
 			mItem["user_id"] = current.User.ID
+			mItem["external_id"] = current.ExternalID
 			mItem["name"] = current.Name
 			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
@@ -200,6 +203,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
+				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -241,6 +245,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
+				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -281,6 +286,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
+				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
