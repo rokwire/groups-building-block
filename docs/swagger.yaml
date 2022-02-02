@@ -349,7 +349,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.7
+  version: 1.5.10
 paths:
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
