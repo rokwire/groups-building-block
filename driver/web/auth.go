@@ -411,10 +411,18 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 
 	//5. Get the user for the provided external id.
 	var name = ""
+	var externalID = ""
+	var email = ""
 	if data.Name != nil {
 		name = *data.Name
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: name, IsCoreUser: isCoreUser}
+	if data.UIuceduUIN != nil {
+		externalID = *data.UIuceduUIN
+	}
+	if data.Email != nil {
+		email = *data.Email
+	}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
@@ -549,10 +557,22 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	}
 
 	var name = ""
+	var externalID = ""
+	var email = ""
+	var userID = ""
+	if data.Sub != nil {
+		userID = *data.Sub
+	}
 	if data.Name != nil {
 		name = *data.Name
 	}
-	return &model.User{ID: *data.Sub, ClientID: clientID, ExternalID: *data.UIuceduUIN, Email: *data.Email, Name: name, IsCoreUser: isCoreUser}, false
+	if data.UIuceduUIN != nil {
+		externalID = *data.UIuceduUIN
+	}
+	if data.Email != nil {
+		email = *data.Email
+	}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser}, false
 }
 
 //gets the token from the request - as cookie or as Authorization header.

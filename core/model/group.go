@@ -131,6 +131,19 @@ func (gr Group) GetMemberByUserID(userID string) *Member {
 	return nil
 }
 
+// GetMemberByExternalID gets member by ExternalID field
+func (gr Group) GetMemberByExternalID(userID string) *Member {
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.User.ExternalID == userID {
+			return &item
+		}
+	}
+	return nil
+}
+
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
 func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 

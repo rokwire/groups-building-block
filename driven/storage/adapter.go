@@ -48,6 +48,7 @@ type group struct {
 type member struct {
 	ID            string         `bson:"id"`
 	UserID        string         `bson:"user_id"`
+	ExternalID    string         `bson:"external_id"`
 	Name          string         `bson:"name"`
 	Email         string         `bson:"email"`
 	PhotoURL      string         `bson:"photo_url"`
@@ -123,21 +124,21 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 
 	now := time.Now()
 
-	if legacyUser != nil && legacyUser.ID != current.ID {
-		// transaction
-		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-			err := sessionContext.StartTransaction()
-			if err != nil {
-				log.Printf("error starting a transaction - %s", err)
-				return err
-			}
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
 
+		if legacyUser != nil && legacyUser.ID != current.ID {
 			if legacyUser != nil {
 				// delete the old user
 				filter := bson.D{primitive.E{Key: "_id", Value: legacyUser.ID}, primitive.E{Key: "client_id", Value: clientID}}
 				_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
 				if err != nil {
-					log.Printf("error deleting user - %s", err.Error())
+					log.Printf("error deleting user - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -148,7 +149,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
 			if err != nil {
-				log.Printf("error inserting user - %s", err.Error())
+				log.Printf("error inserting user - %s", err)
 				abortTransaction(sessionContext)
 				return err
 			}
@@ -166,7 +167,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating groups - %s", err.Error())
+					log.Printf("error updating groups - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -183,7 +184,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating groups - %s", err.Error())
+					log.Printf("error updating groups - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -198,7 +199,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating posts - %s", err.Error())
+					log.Printf("error updating posts - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
@@ -215,54 +216,100 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
 				if err != nil {
-					log.Printf("error updating posts - %s", err.Error())
+					log.Printf("error updating posts - %s", err)
 					abortTransaction(sessionContext)
 					return err
 				}
 			}
+		} else {
+			coreUser, _ := sa.FindUser(clientID, current.ID, false)
+			if coreUser == nil {
+				coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email, Name: current.Name,
+					ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 
-			//commit the transaction
-			err = sessionContext.CommitTransaction(sessionContext)
-			if err != nil {
-				fmt.Println(err)
-				return err
+				_, err := sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
+				if err != nil {
+					abortTransaction(sessionContext)
+					log.Printf("error inserting user - %s", err)
+					return fmt.Errorf("error inserting user - %s", err)
+				}
+			} else if coreUser.ID == legacyUser.ID && (!coreUser.IsCoreUser || coreUser.Name != current.Name) {
+				filter := bson.D{
+					primitive.E{Key: "client_id", Value: clientID},
+					primitive.E{Key: "_id", Value: current.ID},
+				}
+
+				update := bson.D{
+					primitive.E{Key: "$set", Value: bson.D{
+						primitive.E{Key: "is_core_user", Value: true},
+						primitive.E{Key: "name", Value: current.Name},
+						primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+					}},
+				}
+				_, err := sa.db.users.UpdateOneWithContext(sessionContext, filter, update, nil)
+				if err != nil {
+					abortTransaction(sessionContext)
+					log.Printf("unable to set is_core_user to true for user(%s): %s", current.ID, err)
+					return fmt.Errorf("unable to set is_core_user to true for user(%s): %s", current.ID, err)
+				}
 			}
-			return nil
-		})
-
-		if err != nil {
-			return core.NewServerError()
 		}
-	} else {
-		coreUser, _ := sa.FindUser(clientID, current.ID, false)
-		if coreUser == nil {
-			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email, Name: current.Name,
-				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
 
-			_, err := sa.db.users.InsertOneWithContext(context.Background(), &coreUser)
-			if err != nil {
-				log.Printf("error inserting user - %s", err)
-				return fmt.Errorf("error inserting user - %s", err)
-			}
-		} else if coreUser.ID == legacyUser.ID && (!coreUser.IsCoreUser || coreUser.Name != current.Name) {
+		if current.IsCoreUser {
+			// Repopulate and keep sync of external_id & user_id. Part 1
 			filter := bson.D{
 				primitive.E{Key: "client_id", Value: clientID},
-				primitive.E{Key: "_id", Value: current.ID},
+				primitive.E{Key: "members.external_id", Value: current.ExternalID},
 			}
-
 			update := bson.D{
 				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "is_core_user", Value: true},
-					primitive.E{Key: "name", Value: current.Name},
-					primitive.E{Key: "date_updated", Value: time.Now().UTC()},
+					primitive.E{Key: "members.$.name", Value: current.Name},
+					primitive.E{Key: "members.$.email", Value: current.Email},
+					primitive.E{Key: "members.$.user_id", Value: current.ID},
+					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.date_updated", Value: now},
+					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
-			_, err := sa.db.users.UpdateOne(filter, update, nil)
+			_, err := sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
 			if err != nil {
-				log.Printf("unable to set is_core_user to true for user(%s): %s", current.ID, err)
-				return fmt.Errorf("unable to set is_core_user to true for user(%s): %s", current.ID, err)
+				log.Printf("error updating dummy member records for user(%s | %s) Part 1: %s", current.ID, current.ExternalID, err)
+				return err
+			}
+
+			// Repopulate and keep sync of external_id & user_id. Part 2
+			filter = bson.D{
+				primitive.E{Key: "client_id", Value: clientID},
+				primitive.E{Key: "members.user_id", Value: current.ID},
+			}
+			update = bson.D{
+				primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "members.$.name", Value: current.Name},
+					primitive.E{Key: "members.$.email", Value: current.Email},
+					primitive.E{Key: "members.$.user_id", Value: current.ID},
+					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.date_updated", Value: now},
+					primitive.E{Key: "date_updated", Value: now},
+				}},
+			}
+			_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+			if err != nil {
+				log.Printf("error updating dummy member records for user(%s | %s) Part 2: %s", current.ID, current.ExternalID, err)
+				return err
 			}
 		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return core.NewServerError()
 	}
 
 	return nil
@@ -394,7 +441,9 @@ func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model
 		newMembers := make([]model.Member, len(members))
 		for i, c := range members {
 			memberUser := model.User{ID: c.UserID}
-			newMembers[i] = model.Member{ID: c.ID, Status: c.Status, User: memberUser}
+			newMembers[i] = model.Member{
+				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, User: memberUser,
+			}
 		}
 		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
 	}
@@ -682,7 +731,7 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group
 }
 
 //CreateMember creates a normal member for a specific group
-func (sa *Adapter) CreateMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+func (sa *Adapter) CreateMember(clientID string, groupID string, userID string, externalID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -741,7 +790,7 @@ func (sa *Adapter) CreateMember(clientID string, groupID string, userID string, 
 				memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
 			}
 		}
-		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email,
+		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email, ExternalID: externalID,
 			PhotoURL: photoURL, Status: "member", MemberAnswers: memberAns, DateCreated: now}
 		groupMembers := group.Members
 		groupMembers = append(groupMembers, pendingMember)
@@ -1793,6 +1842,7 @@ func constructGroup(gr group) model.Group {
 func constructMember(groupID string, member member) model.Member {
 	id := member.ID
 	user := model.User{ID: member.UserID}
+	externalID := member.ExternalID
 	name := member.Name
 	email := member.Email
 	photoURL := member.PhotoURL
@@ -1807,6 +1857,6 @@ func constructMember(groupID string, member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, User: user, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, User: user, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }

@@ -64,6 +64,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
 					mItem["user_id"] = current.User.ID
+					mItem["external_id"] = current.ExternalID
 					mItem["name"] = current.Name
 					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
@@ -102,6 +103,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
 					mItem["user_id"] = current.User.ID
+					mItem["external_id"] = current.ExternalID
 					mItem["name"] = current.Name
 					mItem["email"] = current.Email
 					mItem["photo_url"] = current.PhotoURL
@@ -143,6 +145,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem := make(map[string]interface{})
 			mItem["id"] = current.ID
 			mItem["user_id"] = current.User.ID
+			mItem["external_id"] = current.ExternalID
 			mItem["name"] = current.Name
 			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
@@ -200,6 +203,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
+				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -241,6 +245,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
+				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -281,6 +286,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.User.ID
+				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -647,6 +653,9 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 }
 
 func (app *Application) synchronizeAuthman(clientID string) error {
+	log.Printf("Authman synchronization started")
+	defer log.Printf("Authman synchronization finished")
+
 	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
 	if err != nil {
 		return err
@@ -676,27 +685,41 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 							if member.IsPendingMember() || member.IsRejected() {
 								delErr := app.storage.DeleteMember(clientID, authmanGroup.ID, member.User.ID, true)
 								if delErr != nil {
-									log.Printf("Error on deleting user %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, delErr)
+									log.Printf("Error on deleting user %s from group '%s' for Authman '%s': %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, delErr)
 									continue
+								} else {
+									log.Printf("User(%s) has been deleted from '%s' successfully", member.User.ID, authmanGroup.Title)
 								}
 
-								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 								if memberErr != nil {
-									log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+									log.Printf("Error on creating user as member %s from group '%s' for Authman %s: %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, memberErr)
 									continue
+								} else {
+									log.Printf("User(%s, %s, %s) has been recreated as regular member of '%s' successfully", member.User.ID, user.ExternalID, user.Email, authmanGroup.Title)
 								}
 							} else {
-								log.Printf("User %s is already a member or admin of '%s'", user.ID, authmanGroup.Title)
+								log.Printf("User(%s, %s, %s) is already a member or admin of '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
 							}
 						} else {
-							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 							if memberErr != nil {
-								log.Printf("Error on creating user as member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+								log.Printf("Error on creating user as member %s from group '%s' for Authman %s: %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, memberErr)
 								continue
+							} else {
+								log.Printf("User(%s, %s, %s) has been created as regular member of '%s' successfully", externalID, user.Name, user.Email, authmanGroup.Title)
 							}
 						}
 
 						userIDMapping[user.ID] = true
+					} else {
+						memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
+						if memberErr != nil {
+							log.Printf("Error on creating dummy member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
+							continue
+						} else {
+							log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s' successfully", externalID, authmanGroup.Title)
+						}
 					}
 				}
 

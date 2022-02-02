@@ -211,7 +211,7 @@ type Storage interface {
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
-	CreateMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreateMember(clientID string, groupID string, userID string, externalID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
 	DeleteMember(clientID string, groupID string, userID string, force bool) error
