@@ -390,6 +390,16 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 	return groupsList, nil
 }
 
+func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
+	// find the groups objects
+	groups, err := app.storage.FindGroups(clientID, nil, nil, nil, nil, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return groups, nil
+}
+
 func (app *Application) getUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
 	// find the user groups
 	groups, err := app.storage.FindUserGroups(clientID, current.ID)

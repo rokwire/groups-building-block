@@ -23,6 +23,7 @@ type Services interface {
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
+	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
 	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
 	DeleteUser(clientID string, current *model.User) error
@@ -97,6 +98,10 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 
 func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error) {
 	return s.app.getGroups(clientID, current, category, privacy, title, offset, limit, order)
+}
+
+func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
+	return s.app.getAllGroups(clientID)
 }
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {

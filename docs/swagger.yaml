@@ -1,5 +1,27 @@
 basePath: /gr
 definitions:
+  GroupStat:
+    properties:
+      authman_enabled:
+        type: boolean
+      members_added_last_24:
+        type: integer
+      members_count:
+        type: integer
+      privacy:
+        type: string
+      title:
+        type: string
+    type: object
+  GroupsStats:
+    properties:
+      groups_count:
+        type: integer
+      groups_list:
+        items:
+          $ref: '#/definitions/GroupStat'
+        type: array
+    type: object
   createGroupEventRequest:
     properties:
       event_id:
@@ -1109,6 +1131,19 @@ paths:
       responses:
         "200":
           description: ""
+      security:
+      - IntAPIKeyAuth: []
+  /int/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve group stats
+      operationId: IntGroupStats
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupsStats'
       security:
       - IntAPIKeyAuth: []
   /version:

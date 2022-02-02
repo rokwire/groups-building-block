@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.10] - 2022-02-02
+- Add internal stats API [#112](https://github.com/rokwire/groups-building-block/issues/112)
+
 ## [1.5.9] - 2022-01-31
 - Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
 

@@ -1277,6 +1277,28 @@ var doc = `{
                 }
             }
         },
+        "/int/stats": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Retrieve group stats",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "IntGroupStats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupsStats"
+                        }
+                    }
+                }
+            }
+        },
         "/version": {
             "get": {
                 "description": "Gives the service version.",
@@ -1296,6 +1318,40 @@ var doc = `{
         }
     },
     "definitions": {
+        "GroupStat": {
+            "type": "object",
+            "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "members_added_last_24": {
+                    "type": "integer"
+                },
+                "members_count": {
+                    "type": "integer"
+                },
+                "privacy": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupsStats": {
+            "type": "object",
+            "properties": {
+                "groups_count": {
+                    "type": "integer"
+                },
+                "groups_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GroupStat"
+                    }
+                }
+            }
+        },
         "createGroupEventRequest": {
             "type": "object",
             "required": [

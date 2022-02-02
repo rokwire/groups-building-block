@@ -21,8 +21,9 @@ type Adapter struct {
 	host string
 	auth *Auth
 
-	apisHandler      *rest.ApisHandler
-	adminApisHandler *rest.AdminApisHandler
+	apisHandler         *rest.ApisHandler
+	adminApisHandler    *rest.AdminApisHandler
+	internalApisHandler *rest.InternalApisHandler
 }
 
 // @title Rokwire Groups Building Block API
@@ -68,8 +69,9 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
 
 	//internal key protection
-	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.IntGetUserGroupMemberships)).Methods("GET")
-	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.apisHandler.SynchronizeAuthman)).Methods("GET")
+	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.internalApisHandler.SynchronizeAuthman)).Methods("GET")
+	restSubrouter.HandleFunc("/int/stats", we.internalKeyAuthFunc(we.internalApisHandler.GroupStats)).Methods("GET")
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
@@ -236,6 +238,7 @@ func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcPro
 	auth := NewAuth(app, host, appKeys, internalAPIKeys, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, coreBBHost, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
+	internalApisHandler := rest.NewInternalApisHandler(app)
 
-	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler}
+	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
 }
