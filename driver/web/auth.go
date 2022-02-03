@@ -399,7 +399,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 			isCoreUser = persistedUser.IsCoreUser
 			userID = persistedUser.ID
 		} else {
-			legacyUser, err := auth.app.CreateUser(clientID, uuid.NewString(), data.UIuceduUIN, data.Email)
+			legacyUser, err := auth.app.CreateUser(clientID, uuid.NewString(), data.UIuceduUIN, data.Email, data.Name)
 			if err != nil {
 				log.Printf("error creating legacy user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
 			}

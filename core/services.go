@@ -701,7 +701,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 									log.Printf("User(%s) has been deleted from '%s' successfully", member.User.ID, authmanGroup.Title)
 								}
 
-								memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+								memberErr := app.storage.CreateAuthmanMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 								if memberErr != nil {
 									log.Printf("Error on creating user as member %s from group '%s' for Authman %s: %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, memberErr)
 									continue
@@ -712,7 +712,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 								log.Printf("User(%s, %s, %s) is already a member or admin of '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
 							}
 						} else {
-							memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
+							memberErr := app.storage.CreateAuthmanMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
 							if memberErr != nil {
 								log.Printf("Error on creating user as member %s from group '%s' for Authman %s: %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, memberErr)
 								continue
@@ -723,7 +723,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 
 						userIDMapping[user.ID] = true
 					} else {
-						memberErr := app.storage.CreateMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
+						memberErr := app.storage.CreateAuthmanMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
 						if memberErr != nil {
 							log.Printf("Error on creating dummy member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
 							continue
