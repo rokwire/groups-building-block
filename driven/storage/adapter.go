@@ -731,7 +731,7 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group
 	return result, nil
 }
 
-//CreateMember creates a normal member for a specific group
+//CreateAuthmanMember creates an Authman normal member for a specific group
 func (sa *Adapter) CreateAuthmanMember(clientID string, groupID string, userID string, externalID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
