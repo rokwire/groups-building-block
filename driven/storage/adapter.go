@@ -761,7 +761,7 @@ func (sa *Adapter) CreateAuthmanMember(clientID string, groupID string, userID s
 		if members != nil {
 			for _, cMember := range members {
 				if (cMember.UserID != "" && cMember.UserID == userID) ||
-					(cMember.ExternalID != "" && cMember.ExternalID == externalID){
+					(cMember.ExternalID != "" && cMember.ExternalID == externalID) {
 					switch cMember.Status {
 					case "admin":
 						return errors.New("the user is an admin for the group")
