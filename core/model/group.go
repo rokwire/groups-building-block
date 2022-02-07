@@ -7,23 +7,23 @@ import (
 
 // Group represents group entity
 type Group struct {
-	ID                  string   `json:"id"`
-	Category            string   `json:"category"` //one of the enums categories list
-	Title               string   `json:"title"`
-	Privacy             string   `json:"privacy"` //public or private
-	Description         *string  `json:"description"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	Tags                []string `json:"tags"`
-	MembershipQuestions []string `json:"membership_questions"`
+	ID                  string   `json:"id" bson:"_id"`
+	ClientID            string   `json:"client_id" bson:"client_id"`
+	Category            string   `json:"category" bson:"category"` //one of the enums categories list
+	Title               string   `json:"title" bson:"title"`
+	Privacy             string   `json:"privacy" bson:"privacy"` //public or private
+	Description         *string  `json:"description" bson:"description"`
+	ImageURL            *string  `json:"image_url" bson:"image_url"`
+	WebURL              *string  `json:"web_url" bson:"web_url"`
+	Tags                []string `json:"tags" bson:"tags"`
+	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Members []Member `json:"members"`
+	Members []Member `json:"members" bson:"members"`
 
-	DateCreated time.Time  `json:"date_created"`
-	DateUpdated *time.Time `json:"date_updated"`
-
-	AuthmanEnabled bool    `json:"authman_enabled"`
-	AuthmanGroup   *string `json:"authman_group"`
+	DateCreated    time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated    *time.Time `json:"date_updated" bson:"date_updated"`
+	AuthmanEnabled bool       `json:"authman_enabled" bson:"authman_enabled"`
+	AuthmanGroup   *string    `json:"authman_group" bson:"authman_group"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group

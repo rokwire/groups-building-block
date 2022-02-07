@@ -2,9 +2,14 @@ package core
 
 import (
 	"fmt"
+	"github.com/google/uuid"
+	"sort"
+	"time"
+
 	"groups/core/model"
 	"groups/driven/notifications"
 	"log"
+
 	"strings"
 )
 
@@ -679,72 +684,113 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					log.Printf("Error on requesting Authman for %s: %s", *authmanGroup.AuthmanGroup, authmanErr)
 					continue
 				}
+				externalIDMapping := map[string]model.Member{}
+				duplications := 0
+				for _, member := range authmanGroup.Members {
+					if _, ok := externalIDMapping[member.ExternalID]; ok {
+						duplications++
+					} else {
+						externalIDMapping[member.ExternalID] = member
+					}
+				}
 
+				members := []model.Member{}
 				userIDMapping := map[string]interface{}{}
 				for _, externalID := range authmanExternalIDs {
+					if mappedMember, ok := externalIDMapping[externalID]; ok {
+						members = append(members, mappedMember)
+						if mappedMember.UserID != "" {
+							userIDMapping[mappedMember.UserID] = true
+						}
+						continue
+					}
+
 					user, userErr := app.storage.FindUser(clientID, externalID, true)
 					if authmanErr != nil {
 						log.Printf("Error on getting user %s for Authman %s: %s", externalID, *authmanGroup.AuthmanGroup, userErr)
 						continue
 					}
 
+					now := time.Now().UTC()
 					if user != nil {
 						// Add missed members
 						member := authmanGroup.GetMemberByUserID(user.ID)
 						if member != nil {
-							if member.IsPendingMember() || member.IsRejected() {
-								delErr := app.storage.DeleteMember(clientID, authmanGroup.ID, member.User.ID, true)
-								if delErr != nil {
-									log.Printf("Error on deleting user %s from group '%s' for Authman '%s': %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, delErr)
-									continue
-								} else {
-									log.Printf("User(%s) has been deleted from '%s' successfully", member.User.ID, authmanGroup.Title)
-								}
-
-								memberErr := app.storage.CreateAuthmanMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
-								if memberErr != nil {
-									log.Printf("Error on creating user as member %s from group '%s' for Authman %s: %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, memberErr)
-									continue
-								} else {
-									log.Printf("User(%s, %s, %s) has been recreated as regular member of '%s' successfully", member.User.ID, user.ExternalID, user.Email, authmanGroup.Title)
-								}
+							if member.IsPendingMember() || member.IsRejected() || member.IsMember() {
+								member.Status = "member"
+								member.DateUpdated = &now
+								members = append(members, *member)
+								log.Printf("User(%s, %s, %s) is set as member '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
+							} else if member.IsAdmin() {
+								members = append(members, *member)
 							} else {
 								log.Printf("User(%s, %s, %s) is already a member or admin of '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
 							}
 						} else {
-							memberErr := app.storage.CreateAuthmanMember(clientID, authmanGroup.ID, user.ID, externalID, user.Name, user.Email, "", authmanGroup.CreateMembershipEmptyAnswers())
-							if memberErr != nil {
-								log.Printf("Error on creating user as member %s from group '%s' for Authman %s: %s", externalID, authmanGroup.Title, *authmanGroup.AuthmanGroup, memberErr)
-								continue
-							} else {
-								log.Printf("User(%s, %s, %s) has been created as regular member of '%s' successfully", externalID, user.Name, user.Email, authmanGroup.Title)
-							}
+							members = append(members, model.Member{
+								ID:            uuid.NewString(),
+								UserID:        user.ID,
+								User:          model.User{ID: user.ID},
+								Status:        "member",
+								ExternalID:    externalID,
+								Name:          user.Name,
+								Email:         user.Email,
+								MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
+								DateCreated:   now,
+								DateUpdated:   &now,
+							})
+							log.Printf("User(%s, %s, %s) has been created as regular member of '%s'", externalID, user.Name, user.Email, authmanGroup.Title)
 						}
-
 						userIDMapping[user.ID] = true
 					} else {
-						memberErr := app.storage.CreateAuthmanMember(clientID, authmanGroup.ID, "", externalID, "", "", "", authmanGroup.CreateMembershipEmptyAnswers())
-						if memberErr != nil {
-							log.Printf("Error on creating dummy member %s from group %s for Authman %s: %s", externalID, authmanGroup.ID, *authmanGroup.AuthmanGroup, memberErr)
-							continue
-						} else {
-							log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s' successfully", externalID, authmanGroup.Title)
+						members = append(members, model.Member{
+							ID:            uuid.NewString(),
+							Status:        "member",
+							ExternalID:    externalID,
+							MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
+							DateCreated:   now,
+							DateUpdated:   &now,
+						})
+						log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
+					}
+
+				}
+
+				// Add remaining admins
+				if len(authmanGroup.Members) > 0 {
+					for _, member := range authmanGroup.Members {
+						val := userIDMapping[member.User.ID]
+						if val == nil && member.IsAdmin() {
+							found := false
+							for i, innerMember := range members {
+								if member.ExternalID == innerMember.ExternalID {
+									members[i] = member
+									found = true
+									log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", member.User.ID, member.Name, member.Email, authmanGroup.Title)
+									break
+								}
+							}
+							if !found {
+								members = append(members, member)
+								log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.User.ID, member.Name, member.Email, authmanGroup.Title)
+							}
 						}
 					}
 				}
 
-				// Delete the rest of non mapped members
-				if len(authmanGroup.Members) > 0 {
-					for _, member := range authmanGroup.Members {
-						val := userIDMapping[member.User.ID]
-						if val == nil && !member.IsAdmin() {
-							err := app.storage.DeleteMember(clientID, authmanGroup.ID, member.User.ID, true)
-							if err != nil {
-								log.Printf("Error on deleting user as member %s from group %s for Authman %s: %s", member.User.ID, authmanGroup.Title, *authmanGroup.AuthmanGroup, err)
-								continue
-							}
+				// Sort
+				if len(members) > 1 {
+					sort.SliceStable(members, func(i, j int) bool {
+						if members[j].Status != "admin" && members[i].Status == "admin" {
+							return true
 						}
-					}
+						return false
+					})
+				}
+
+				err := app.storage.UpdateGroupMembers(clientID, authmanGroup.ID, members)
+				if err != nil {
+					log.Printf("error on updating authman group(%s, %s): %s", authmanGroup.ID, authmanGroup.Title, err)
 				}
 			}
 		}

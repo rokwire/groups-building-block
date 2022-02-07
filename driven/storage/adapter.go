@@ -630,24 +630,20 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 
 //FindGroup finds group by id and client id
 func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
-	return sa.findGroupWithContext(context.Background(), clientID, id)
+	return sa.findGroupWithContext(clientID, id)
 }
 
-func (sa *Adapter) findGroupWithContext(ctx context.Context, clientID string, id string) (*model.Group, error) {
+func (sa *Adapter) findGroupWithContext(clientID string, id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id},
 		primitive.E{Key: "client_id", Value: clientID}}
-	var result []*group
-	err := sa.db.groups.Find(filter, &result, nil)
+	var rec group
+	err := sa.db.groups.FindOne(filter, &rec, nil)
 	if err != nil {
 		return nil, err
 	}
-	if result == nil || len(result) == 0 {
-		//not found
-		return nil, nil
-	}
-	group := result[0]
-	resultEntity := constructGroup(*group)
-	return &resultEntity, nil
+
+	group := constructGroup(rec)
+	return &group, nil
 }
 
 //FindGroupByMembership finds group by membership
@@ -710,6 +706,26 @@ func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string
 	return result, nil
 }
 
+// FindOneGroupBtID finds one groups by ID and clientID
+func (sa *Adapter) FindOneGroupBtID(clientID string, groupID string) (*model.Group, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "_id", Value: groupID},
+	}
+
+	findOptions := options.FindOne()
+
+	var rec group
+	err := sa.db.groups.FindOne(filter, &rec, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	group := constructGroup(rec)
+
+	return &group, nil
+}
+
 //FindUserGroups finds the user groups for client id
 func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID},
@@ -731,94 +747,22 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group
 	return result, nil
 }
 
-//CreateAuthmanMember creates an Authman normal member for a specific group
-func (sa *Adapter) CreateAuthmanMember(clientID string, groupID string, userID string, externalID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		//1. first check if there is a group for the prvoided group id
-		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}, primitive.E{Key: "client_id", Value: clientID}}
-		var result []*group
-		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if result == nil || len(result) == 0 {
-			//there is no a group for the provided id
-			abortTransaction(sessionContext)
-			return errors.New("there is no a group for the provided id")
-		}
-		group := result[0]
-
-		//2. check if the user is already a member of this group - pending or member or admin or rejected
-		members := group.Members
-		if members != nil {
-			for _, cMember := range members {
-				if (cMember.UserID != "" && cMember.UserID == userID) ||
-					(cMember.ExternalID != "" && cMember.ExternalID == externalID) {
-					switch cMember.Status {
-					case "admin":
-						return errors.New("the user is an admin for the group")
-					case "member":
-						return errors.New("the user is a member for the group")
-					case "pending":
-						return errors.New("the user is pending for the group")
-					case "rejected":
-						return errors.New("the user is rejected for the group")
-					default:
-						return errors.New("error creating a pending user")
-					}
-				}
-			}
-		}
-
-		//3. check if the answers match the group questions
-		if len(group.MembershipQuestions) != len(memberAnswers) {
-			return errors.New("member answers mismatch")
-		}
-
-		//4. now we can add the pending member
-		now := time.Now()
-		memberID, _ := uuid.NewUUID()
-		var memberAns []memberAnswer
-		if len(memberAnswers) > 0 {
-			for _, cAns := range memberAnswers {
-				memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
-			}
-		}
-		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email, ExternalID: externalID,
-			PhotoURL: photoURL, Status: "member", MemberAnswers: memberAns, DateCreated: now}
-		groupMembers := group.Members
-		groupMembers = append(groupMembers, pendingMember)
-		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "members", Value: groupMembers},
-				primitive.E{Key: "date_updated", Value: time.Now()},
-			},
-			},
-		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		return nil
-	})
+// UpdateGroupMembers Updates members for specific group
+func (sa *Adapter) UpdateGroupMembers(clientID string, groupID string, members []model.Member) error {
+	group, err := sa.FindGroup(clientID, groupID)
 	if err != nil {
+		log.Printf("error on find group %s: %s", groupID, err)
+		return err
+	}
+
+	now := time.Now().UTC()
+	group.Members = members
+	group.DateUpdated = &now
+
+	saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}, primitive.E{Key: "client_id", Value: clientID}}
+	err = sa.db.groups.ReplaceOne(saveFilter, group, nil)
+	if err != nil {
+		log.Printf("error on updating members for group %s: %s", groupID, err)
 		return err
 	}
 
@@ -1478,14 +1422,14 @@ func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Pos
 
 //FindPost Retrieves a post by groupID and postID
 func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
-	return sa.findPostWithContext(context.Background(), clientID, userID, groupID, postID, skipMembershipCheck)
+	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck)
 }
 
-func (sa *Adapter) findPostWithContext(ctx context.Context, clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
+func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
 	if !skipMembershipCheck {
-		group, err := sa.findGroupWithContext(ctx, clientID, groupID)
+		group, err := sa.findGroupWithContext(clientID, groupID)
 		if group == nil || err != nil || !group.IsGroupAdminOrMember(userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -1816,6 +1760,7 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 
 func constructGroup(gr group) model.Group {
 	id := gr.ID
+	clientID := gr.ClientID
 	category := gr.Category
 	title := gr.Title
 	privacy := gr.Privacy
@@ -1832,25 +1777,25 @@ func constructGroup(gr group) model.Group {
 
 	members := make([]model.Member, len(gr.Members))
 	for i, current := range gr.Members {
-		members[i] = constructMember(id, current)
+		members[i] = constructMember(current)
 	}
 
-	return model.Group{ID: id, Category: category, Title: title, Privacy: privacy,
+	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup}
 }
 
-func constructMember(groupID string, member member) model.Member {
+func constructMember(member member) model.Member {
 	id := member.ID
-	user := model.User{ID: member.UserID}
+	userID := member.UserID
+	user := model.User{ID: member.UserID} // deprecated
 	externalID := member.ExternalID
 	name := member.Name
 	email := member.Email
 	photoURL := member.PhotoURL
 	status := member.Status
 	rejectReason := member.RejectReason
-	group := model.Group{ID: groupID}
 	dateCreated := member.DateCreated
 	dateUpdated := member.DateUpdated
 
@@ -1859,6 +1804,6 @@ func constructMember(groupID string, member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, User: user, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
-		Status: status, RejectReason: rejectReason, Group: group, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
+	return model.Member{ID: id, UserID: userID, User: user, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
+		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }
