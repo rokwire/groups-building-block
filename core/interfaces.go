@@ -268,6 +268,7 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 // Authman exposes Authman APIs for the driver adapters
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
+	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
 }
 
 type autnmanImpl struct {

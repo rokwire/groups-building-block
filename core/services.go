@@ -696,11 +696,17 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 
 				members := []model.Member{}
 				userIDMapping := map[string]interface{}{}
+				missingInfoMapping := map[string]interface{}{}
+				missingInfoExternalIDs := []string{}
 				for _, externalID := range authmanExternalIDs {
 					if mappedMember, ok := externalIDMapping[externalID]; ok {
 						members = append(members, mappedMember)
 						if mappedMember.UserID != "" {
 							userIDMapping[mappedMember.UserID] = true
+						}
+						if mappedMember.Name == "" || mappedMember.Email == "" {
+							missingInfoMapping[externalID] = true
+							missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
 						}
 						continue
 					}
@@ -753,7 +759,28 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 						})
 						log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
 					}
+				}
 
+				// Fetch user info for the required users
+				if len(missingInfoExternalIDs) > 0 {
+					userMapping, err := app.authman.RetrieveAuthmanUsers(missingInfoExternalIDs)
+					if err != nil {
+						log.Printf("error on retriving missing user info for(%+v): %s", missingInfoExternalIDs, err)
+					} else {
+						if len(userMapping) > 0 {
+							for i, member := range members {
+								if mappedUser, ok := userMapping[member.ExternalID]; ok {
+									if member.Name == "" || member.Email != "" {
+										member.Name = mappedUser.Name
+										if len(mappedUser.AttributeValues) > 0 {
+											member.Email = mappedUser.AttributeValues[0]
+										}
+									}
+								}
+								members[i] = member
+							}
+						}
+					}
 				}
 
 				// Add remaining admins
