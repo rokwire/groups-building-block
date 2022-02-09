@@ -198,9 +198,10 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
+	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	LoginUser(clientID string, current *model.User) error
-	CreateUser(clientID string, id string, externalID string, email string) (*model.User, error)
+	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
 
 	ReadAllGroupCategories() ([]string, error)
@@ -216,7 +217,7 @@ type Storage interface {
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 
-	CreateMember(clientID string, groupID string, userID string, externalID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
 	DeleteMember(clientID string, groupID string, userID string, force bool) error
@@ -268,6 +269,7 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 // Authman exposes Authman APIs for the driver adapters
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
+	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
 }
 
 type autnmanImpl struct {

@@ -50,7 +50,7 @@ func (app *Application) LoginUser(clientID string, current *model.User, newID st
 }
 
 // CreateUser creates an user
-func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string) (*model.User, error) {
+func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string, name *string) (*model.User, error) {
 	externalIDVal := ""
 	if externalID != nil {
 		externalIDVal = *externalID
@@ -61,7 +61,12 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 		emailVal = *email
 	}
 
-	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal)
+	nameVal := ""
+	if name != nil {
+		nameVal = *name
+	}
+
+	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal, nameVal)
 	if err != nil {
 		return nil, err
 	}
