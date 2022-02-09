@@ -198,6 +198,7 @@ type Storage interface {
 	SetStorageListener(storageListener StorageListener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
+	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (map[string]interface{}, error)
 	LoginUser(clientID string, current *model.User) error
 	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)

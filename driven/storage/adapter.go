@@ -96,7 +96,7 @@ func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
 	sa.db.listener = storageListener
 }
 
-//FindUser finds the user for the provided external id and client id
+// FindUser finds the user for the provided external id and client id
 func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.User, error) {
 	var filter bson.D
 	if external {
@@ -115,6 +115,33 @@ func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.U
 		return nil, nil
 	}
 	return result[0], nil
+}
+
+// FindUsers finds all users for the provided list of (id | external id) and client id
+func (sa *Adapter) FindUsers(clientID string, id []string, external bool) ([]model.User, error) {
+	var filter bson.D
+	if external {
+		filter = bson.D{
+			primitive.E{Key: "client_id", Value: clientID},
+			primitive.E{Key: "external_id", Value: primitive.M{"$in": id},},
+		}
+	} else {
+		filter = bson.D{
+			primitive.E{Key: "client_id", Value: clientID},
+			primitive.E{Key: "_id", Value: primitive.M{"$in": id},},
+		}
+	}
+
+	var result []model.User
+	err := sa.db.users.Find(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		//not found
+		return nil, nil
+	}
+	return result, nil
 }
 
 // LoginUser Login a user's and refactor legacy record if need

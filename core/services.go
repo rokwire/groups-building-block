@@ -694,6 +694,17 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					}
 				}
 
+				localUsersMapping := map[string]model.User{}
+				localUsers, userErr := app.storage.FindUsers(clientID, authmanExternalIDs, true)
+				if authmanErr != nil {
+					log.Printf("Error on getting users(%+v) for Authman %s: %s", authmanExternalIDs, *authmanGroup.AuthmanGroup, userErr)
+					continue
+				} else if len(localUsers) > 0{
+					for _, user := range localUsers {
+						localUsersMapping[user.ExternalID] = user
+					}
+				}
+
 				members := []model.Member{}
 				userIDMapping := map[string]interface{}{}
 				missingInfoMapping := map[string]interface{}{}
@@ -711,14 +722,8 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 						continue
 					}
 
-					user, userErr := app.storage.FindUser(clientID, externalID, true)
-					if authmanErr != nil {
-						log.Printf("Error on getting user %s for Authman %s: %s", externalID, *authmanGroup.AuthmanGroup, userErr)
-						continue
-					}
-
 					now := time.Now().UTC()
-					if user != nil {
+					if user, ok := localUsersMapping[externalID]; ok {
 						// Add missed members
 						member := authmanGroup.GetMemberByUserID(user.ID)
 						if member != nil {
@@ -766,19 +771,17 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					userMapping, err := app.authman.RetrieveAuthmanUsers(missingInfoExternalIDs)
 					if err != nil {
 						log.Printf("error on retriving missing user info for(%+v): %s", missingInfoExternalIDs, err)
-					} else {
-						if len(userMapping) > 0 {
-							for i, member := range members {
-								if mappedUser, ok := userMapping[member.ExternalID]; ok {
-									if member.Name == "" || member.Email != "" {
-										member.Name = mappedUser.Name
-										if len(mappedUser.AttributeValues) > 0 {
-											member.Email = mappedUser.AttributeValues[0]
-										}
+					} else if len(userMapping) > 0 {
+						for i, member := range members {
+							if mappedUser, ok := userMapping[member.ExternalID]; ok {
+								if member.Name == "" || member.Email != "" {
+									member.Name = mappedUser.Name
+									if len(mappedUser.AttributeValues) > 0 {
+										member.Email = mappedUser.AttributeValues[0]
 									}
 								}
-								members[i] = member
 							}
+							members[i] = member
 						}
 					}
 				}
