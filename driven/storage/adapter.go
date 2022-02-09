@@ -189,7 +189,6 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "$set", Value: bson.D{
 						primitive.E{Key: "members.$.user_id", Value: current.ID},
 						primitive.E{Key: "members.$.date_updated", Value: now},
-						primitive.E{Key: "date_updated", Value: now},
 					}},
 				}
 				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
@@ -206,7 +205,6 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 						primitive.E{Key: "members.$.email", Value: legacyUser.Email},
 						primitive.E{Key: "members.$.user_id", Value: current.ID},
 						primitive.E{Key: "members.$.date_updated", Value: now},
-						primitive.E{Key: "date_updated", Value: now},
 					}},
 				}
 				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
@@ -221,7 +219,6 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				update = bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
 						primitive.E{Key: "member.user_id", Value: current.ID},
-						primitive.E{Key: "date_updated", Value: now},
 					}},
 				}
 				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
@@ -232,13 +229,12 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 				}
 
 				// 1.4. update all user's posts again but for the email
-				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.email", Value: legacyUser.Email}}
+				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "member.email", Value: legacyUser.Email}}
 				update = bson.D{
 					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "members.$.email", Value: legacyUser.Email},
-						primitive.E{Key: "members.$.user_id", Value: current.ID},
-						primitive.E{Key: "members.$.date_updated", Value: now},
-						primitive.E{Key: "date_updated", Value: now},
+						primitive.E{Key: "member.email", Value: legacyUser.Email},
+						primitive.E{Key: "member.user_id", Value: current.ID},
+						primitive.E{Key: "member.date_updated", Value: now},
 					}},
 				}
 				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
@@ -276,7 +272,6 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "members.$.user_id", Value: current.ID},
 					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
 					primitive.E{Key: "members.$.date_updated", Value: now},
-					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
 			_, err := sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
@@ -297,7 +292,6 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "members.$.user_id", Value: current.ID},
 					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
 					primitive.E{Key: "members.$.date_updated", Value: now},
-					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
 			_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
