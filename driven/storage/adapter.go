@@ -123,12 +123,12 @@ func (sa *Adapter) FindUsers(clientID string, id []string, external bool) ([]mod
 	if external {
 		filter = bson.D{
 			primitive.E{Key: "client_id", Value: clientID},
-			primitive.E{Key: "external_id", Value: primitive.M{"$in": id},},
+			primitive.E{Key: "external_id", Value: primitive.M{"$in": id}},
 		}
 	} else {
 		filter = bson.D{
 			primitive.E{Key: "client_id", Value: clientID},
-			primitive.E{Key: "_id", Value: primitive.M{"$in": id},},
+			primitive.E{Key: "_id", Value: primitive.M{"$in": id}},
 		}
 	}
 

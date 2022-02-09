@@ -699,7 +699,7 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 				if authmanErr != nil {
 					log.Printf("Error on getting users(%+v) for Authman %s: %s", authmanExternalIDs, *authmanGroup.AuthmanGroup, userErr)
 					continue
-				} else if len(localUsers) > 0{
+				} else if len(localUsers) > 0 {
 					for _, user := range localUsers {
 						localUsersMapping[user.ExternalID] = user
 					}
@@ -773,15 +773,23 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 						log.Printf("error on retriving missing user info for(%+v): %s", missingInfoExternalIDs, err)
 					} else if len(userMapping) > 0 {
 						for i, member := range members {
+							updatedInfo := false
 							if mappedUser, ok := userMapping[member.ExternalID]; ok {
-								if member.Name == "" || member.Email != "" {
+								if member.Name == "" && mappedUser.Name != "" {
 									member.Name = mappedUser.Name
-									if len(mappedUser.AttributeValues) > 0 {
-										member.Email = mappedUser.AttributeValues[0]
-									}
+									updatedInfo = true
+								}
+								if member.Email == "" && len(mappedUser.AttributeValues) > 0 {
+									member.Email = mappedUser.AttributeValues[0]
+									updatedInfo = true
+								}
+								if !updatedInfo {
+									log.Printf("The user has missing info: %+v Group: '%s' Authman Group: '%s'", mappedUser, authmanGroup.Title, *authmanGroup.AuthmanGroup)
 								}
 							}
-							members[i] = member
+							if updatedInfo {
+								members[i] = member
+							}
 						}
 					}
 				}
