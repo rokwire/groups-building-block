@@ -1401,7 +1401,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "only_admins_can_create_posts": {
+                "only_admins_can_create_polls": {
                     "type": "boolean"
                 },
                 "privacy": {
@@ -1817,7 +1817,7 @@ var doc = `{
                         "type": "string"
                     }
                 },
-                "only_admins_can_create_posts": {
+                "only_admins_can_create_polls": {
                     "type": "boolean"
                 },
                 "privacy": {
