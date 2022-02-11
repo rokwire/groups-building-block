@@ -76,7 +76,7 @@ type createGroupRequest struct {
 	MembershipQuestions      []string `json:"membership_questions"`
 	AuthmanEnabled           bool     `json:"authman_enabled"`
 	AuthmanGroup             *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePosts bool     `json:"only_admins_can_create_posts" bson:"only_admins_can_create_posts"`
+	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 } //@name createGroupRequest
 
 type userGroupMembership struct {
@@ -141,11 +141,11 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	membershipQuestions := requestData.MembershipQuestions
 	authmanGroup := requestData.AuthmanGroup
 	authmanEnabled := requestData.AuthmanEnabled
-	onlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePosts
+	onlyAdminsCanCreatePolls := requestData.OnlyAdminsCanCreatePolls
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
 		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
-		onlyAdminsCanCreatePosts)
+		onlyAdminsCanCreatePolls)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -175,7 +175,7 @@ type updateGroupRequest struct {
 	MembershipQuestions      []string `json:"membership_questions"`
 	AuthmanEnabled           bool     `json:"authman_enabled"`
 	AuthmanGroup             *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePosts bool     `json:"only_admins_can_create_posts" bson:"only_admins_can_create_posts"`
+	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 } //@name updateGroupRequest
 
 //UpdateGroup updates a group
@@ -251,7 +251,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	membershipQuestions := requestData.MembershipQuestions
 	authmanGroup := requestData.AuthmanGroup
 	authmanEnabled := requestData.AuthmanEnabled
-	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePosts
+	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL,
 		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts)

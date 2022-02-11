@@ -51,7 +51,7 @@ definitions:
         items:
           type: string
         type: array
-      only_admins_can_create_posts:
+      only_admins_can_create_polls:
         type: boolean
       privacy:
         type: string
@@ -324,7 +324,7 @@ definitions:
         items:
           type: string
         type: array
-      only_admins_can_create_posts:
+      only_admins_can_create_polls:
         type: boolean
       privacy:
         type: string

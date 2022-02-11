@@ -24,7 +24,7 @@ type Group struct {
 	DateUpdated              *time.Time `json:"date_updated" bson:"date_updated"`
 	AuthmanEnabled           bool       `json:"authman_enabled" bson:"authman_enabled"`
 	AuthmanGroup             *string    `json:"authman_group" bson:"authman_group"`
-	OnlyAdminsCanCreatePosts bool       `json:"only_admins_can_create_posts" bson:"only_admins_can_create_posts"`
+	OnlyAdminsCanCreatePolls bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group
