@@ -12,20 +12,20 @@ import (
 
 // Adapter implements the Storage interface
 type Adapter struct {
-	authmanURL      string
+	authmanBaseURL  string
 	authmanUsername string
 	authmanPassword string
 }
 
 // NewAuthmanAdapter creates a new adapter for Authman API
 func NewAuthmanAdapter(authmanURL string, authmanUsername string, authmanPassword string) *Adapter {
-	return &Adapter{authmanURL: authmanURL, authmanUsername: authmanUsername, authmanPassword: authmanPassword}
+	return &Adapter{authmanBaseURL: authmanURL, authmanUsername: authmanUsername, authmanPassword: authmanPassword}
 }
 
 // RetrieveAuthmanGroupMembers retrieves all members for a group
 func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error) {
 	if len(groupName) > 0 {
-		url := fmt.Sprintf(a.authmanURL, groupName)
+		url := fmt.Sprintf("%s/groups/%s/members", a.authmanBaseURL, groupName)
 		client := &http.Client{}
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
@@ -124,7 +124,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 			return nil, err
 		}
 
-		url := "https://authman.illinois.edu/grouper-ws/servicesRest/v2_5_000/subjects"
+		url := fmt.Sprintf("%s/subjects", a.authmanBaseURL)
 		client := &http.Client{}
 		req, err := http.NewRequest("GET", url, strings.NewReader(string(reqBody)))
 		if err != nil {

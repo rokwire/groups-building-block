@@ -41,12 +41,12 @@ func main() {
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
 
-	authmanURL := getEnvKey("AUTHMAN_URL", false)
-	authmanUsername := getEnvKey("AUTHMAN_USERNAME", false)
-	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", false)
+	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
+	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
+	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
 
 	// Authman adapter
-	authmanAdapter := authman.NewAuthmanAdapter(authmanURL, authmanUsername, authmanPassword)
+	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
 	// Core adapter
 	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
