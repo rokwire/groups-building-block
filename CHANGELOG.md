@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+## [1.5.16] - 2022-02-11
+- Add only_admins_can_create_posts flag to the group object [#116](https://github.com/rokwire/groups-building-block/issues/116)
+
+## [1.5.15] - 2022-02-09
+- Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
+
+## [1.5.14] - 2022-02-09
+- Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
+
 ## [1.5.13] - 2022-02-08
 - Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
 

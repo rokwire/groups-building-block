@@ -63,19 +63,20 @@ func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter,
 }
 
 type createGroupRequest struct {
-	Title               string   `json:"title" validate:"required"`
-	Description         *string  `json:"description"`
-	Category            string   `json:"category" validate:"required"`
-	Tags                []string `json:"tags"`
-	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
-	CreatorName         string   `json:"creator_name"`
-	CreatorEmail        string   `json:"creator_email"`
-	CreatorPhotoURL     string   `json:"creator_photo_url"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	MembershipQuestions []string `json:"membership_questions"`
-	AuthmanEnabled      bool     `json:"authman_enabled"`
-	AuthmanGroup        *string  `json:"authman_group"`
+	Title                    string   `json:"title" validate:"required"`
+	Description              *string  `json:"description"`
+	Category                 string   `json:"category" validate:"required"`
+	Tags                     []string `json:"tags"`
+	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	CreatorName              string   `json:"creator_name"`
+	CreatorEmail             string   `json:"creator_email"`
+	CreatorPhotoURL          string   `json:"creator_photo_url"`
+	ImageURL                 *string  `json:"image_url"`
+	WebURL                   *string  `json:"web_url"`
+	MembershipQuestions      []string `json:"membership_questions"`
+	AuthmanEnabled           bool     `json:"authman_enabled"`
+	AuthmanGroup             *string  `json:"authman_group"`
+	OnlyAdminsCanCreatePosts bool     `json:"only_admins_can_create_posts" bson:"only_admins_can_create_posts"`
 } //@name createGroupRequest
 
 type userGroupMembership struct {
@@ -140,9 +141,11 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	membershipQuestions := requestData.MembershipQuestions
 	authmanGroup := requestData.AuthmanGroup
 	authmanEnabled := requestData.AuthmanEnabled
+	onlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePosts
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
+		onlyAdminsCanCreatePosts)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -162,16 +165,17 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 }
 
 type updateGroupRequest struct {
-	Title               string   `json:"title" validate:"required"`
-	Description         *string  `json:"description"`
-	Category            string   `json:"category" validate:"required"`
-	Tags                []string `json:"tags"`
-	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	MembershipQuestions []string `json:"membership_questions"`
-	AuthmanEnabled      bool     `json:"authman_enabled"`
-	AuthmanGroup        *string  `json:"authman_group"`
+	Title                    string   `json:"title" validate:"required"`
+	Description              *string  `json:"description"`
+	Category                 string   `json:"category" validate:"required"`
+	Tags                     []string `json:"tags"`
+	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	ImageURL                 *string  `json:"image_url"`
+	WebURL                   *string  `json:"web_url"`
+	MembershipQuestions      []string `json:"membership_questions"`
+	AuthmanEnabled           bool     `json:"authman_enabled"`
+	AuthmanGroup             *string  `json:"authman_group"`
+	OnlyAdminsCanCreatePosts bool     `json:"only_admins_can_create_posts" bson:"only_admins_can_create_posts"`
 } //@name updateGroupRequest
 
 //UpdateGroup updates a group
@@ -247,9 +251,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	membershipQuestions := requestData.MembershipQuestions
 	authmanGroup := requestData.AuthmanGroup
 	authmanEnabled := requestData.AuthmanEnabled
+	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePosts
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL,
-		tags, membershipQuestions, authmanEnabled, authmanGroup)
+		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)

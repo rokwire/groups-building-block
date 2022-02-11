@@ -40,9 +40,10 @@ type group struct {
 	DateCreated time.Time  `bson:"date_created"`
 	DateUpdated *time.Time `bson:"date_updated"`
 
-	ClientID       string  `bson:"client_id"`
-	AuthmanEnabled bool    `bson:"authman_enabled"`
-	AuthmanGroup   *string `bson:"authman_group"`
+	ClientID                 string  `bson:"client_id"`
+	AuthmanEnabled           bool    `bson:"authman_enabled"`
+	AuthmanGroup             *string `bson:"authman_group"`
+	OnlyAdminsCanCreatePosts bool    `bson:"only_admins_can_create_posts"`
 }
 
 type member struct {
@@ -494,7 +495,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string) (*string, *core.GroupError) {
+	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePosts bool) (*string, *core.GroupError) {
 	var insertedID string
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
@@ -528,6 +529,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
 			Tags: tags, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
 			MembershipQuestions: membershipQuestions, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
+			OnlyAdminsCanCreatePosts: onlyAdminsCanCreatePosts,
 		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
@@ -552,7 +554,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string) *core.GroupError {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePosts bool) *core.GroupError {
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
@@ -587,6 +589,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "date_updated", Value: time.Now()},
 				primitive.E{Key: "authman_enabled", Value: authmanEnabled},
 				primitive.E{Key: "authman_group", Value: authmanGroup},
+				primitive.E{Key: "only_admins_can_create_posts", Value: onlyAdminsCanCreatePosts},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -1792,6 +1795,7 @@ func constructGroup(gr group) model.Group {
 	membershipQuestions := gr.MembershipQuestions
 	authmanEnabled := gr.AuthmanEnabled
 	authmanGroup := gr.AuthmanGroup
+	onlyAdminsCanCreatePosts := gr.OnlyAdminsCanCreatePosts
 
 	dateCreated := gr.DateCreated
 	dateUpdated := gr.DateUpdated
@@ -1804,7 +1808,9 @@ func constructGroup(gr group) model.Group {
 	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,
 		Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup}
+		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
+		OnlyAdminsCanCreatePosts: onlyAdminsCanCreatePosts,
+	}
 }
 
 func constructMember(member member) model.Member {
