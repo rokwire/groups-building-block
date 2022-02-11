@@ -1401,6 +1401,9 @@ var doc = `{
                         "type": "string"
                     }
                 },
+                "only_admins_can_create_posts": {
+                    "type": "boolean"
+                },
                 "privacy": {
                     "type": "string"
                 },
@@ -1813,6 +1816,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "only_admins_can_create_posts": {
+                    "type": "boolean"
                 },
                 "privacy": {
                     "type": "string"

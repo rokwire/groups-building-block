@@ -51,6 +51,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_posts:
+        type: boolean
       privacy:
         type: string
       tags:
@@ -322,6 +324,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_posts:
+        type: boolean
       privacy:
         type: string
       tags:
