@@ -17,6 +17,9 @@ type Adapter struct {
 	authmanPassword string
 }
 
+// SubjectsourceidUofinetid constant for using in authmanSubjectLookup
+const SubjectsourceidUofinetid = "uofinetid"
+
 // NewAuthmanAdapter creates a new adapter for Authman API
 func NewAuthmanAdapter(authmanURL string, authmanUsername string, authmanPassword string) *Adapter {
 	return &Adapter{authmanBaseURL: authmanURL, authmanUsername: authmanUsername, authmanPassword: authmanPassword}
@@ -108,7 +111,8 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 		subjectLookups := make([]authmanSubjectLookup, externalIDCount)
 		for i, externalID := range externalIDs {
 			subjectLookups[i] = authmanSubjectLookup{
-				SubjectID: externalID,
+				SubjectID:       externalID,
+				SubjectSourceID: SubjectsourceidUofinetid,
 			}
 		}
 
@@ -183,7 +187,8 @@ type authmanUserData struct {
 }
 
 type authmanSubjectLookup struct {
-	SubjectID string `json:"subjectId"`
+	SubjectID       string `json:"subjectId"`
+	SubjectSourceID string `json:"subjectSourceId"`
 }
 
 type authmanUserResponse struct {
