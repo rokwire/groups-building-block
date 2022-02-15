@@ -64,7 +64,9 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 
 		response := []string{}
 		for _, subjects := range authmanData.WsGetMembersLiteResult.WsSubjects {
-			response = append(response, subjects.ID)
+			if subjects.SourceID == SubjectsourceidUofinetid {
+				response = append(response, subjects.ID)
+			}
 		}
 
 		return response, nil

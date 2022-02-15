@@ -691,11 +691,8 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					continue
 				}
 				externalIDMapping := map[string]model.Member{}
-				duplications := 0
 				for _, member := range authmanGroup.Members {
-					if _, ok := externalIDMapping[member.ExternalID]; ok {
-						duplications++
-					} else {
+					if _, ok := externalIDMapping[member.ExternalID]; !ok {
 						externalIDMapping[member.ExternalID] = member
 					}
 				}
@@ -713,7 +710,6 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 
 				members := []model.Member{}
 				userIDMapping := map[string]interface{}{}
-				missingInfoMapping := map[string]interface{}{}
 				missingInfoExternalIDs := []string{}
 				for _, externalID := range authmanExternalIDs {
 					if mappedMember, ok := externalIDMapping[externalID]; ok {
@@ -722,7 +718,6 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 							userIDMapping[mappedMember.UserID] = true
 						}
 						if mappedMember.Name == "" || mappedMember.Email == "" {
-							missingInfoMapping[externalID] = true
 							missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
 						}
 						continue
@@ -800,10 +795,15 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					}
 				}
 
+				newExternalMembersMapping := map[string]interface{}{}
+				for _, member := range members {
+					newExternalMembersMapping[member.ExternalID] = true
+				}
+
 				// Add remaining admins
 				if len(authmanGroup.Members) > 0 {
 					for _, member := range authmanGroup.Members {
-						val := userIDMapping[member.User.ID]
+						val := userIDMapping[member.UserID]
 						if val == nil && member.IsAdmin() {
 							found := false
 							for i, innerMember := range members {
@@ -818,6 +818,8 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 								members = append(members, member)
 								log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.User.ID, member.Name, member.Email, authmanGroup.Title)
 							}
+						} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
+							log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)
 						}
 					}
 				}
