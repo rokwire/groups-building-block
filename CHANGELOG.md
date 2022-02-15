@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- Ignore members different from uofinetid [116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.17] - 2022-02-14
 - Add additional parameter within the authman user api [#116](https://github.com/rokwire/groups-building-block/issues/116)
