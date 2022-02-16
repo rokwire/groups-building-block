@@ -63,7 +63,7 @@ func (a *Adapter) CreateUserReward(userID string, rewardType string, description
 			return err
 		}
 
-		url := fmt.Sprintf("%s/api/int/reward_history", "http://192.168.1.20:81/rewards") //fmt.Sprintf("%s/api/int/reward_history", a.rewardsHost)
+		url := fmt.Sprintf("%s/api/int/reward_history", a.rewardsHost)
 		client := &http.Client{}
 		req, err := http.NewRequest("POST", url, strings.NewReader(string(reqBody)))
 		req.Header.Add("INTERNAL-API-KEY", a.internalAPIKey)
