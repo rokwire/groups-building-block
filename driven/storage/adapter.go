@@ -349,8 +349,12 @@ func (sa *Adapter) CreateUser(clientID string, id string, externalID string, ema
 	return &user, nil
 }
 
+type getUserPostCountResult struct {
+	Count int64 `json:"posts_count" bson:"posts_count"`
+}
+
 // GetUserPostCount gets the number of posts for the specified user
-func (sa *Adapter) GetUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+func (sa *Adapter) GetUserPostCount(clientID string, userID string) (*int64, error) {
 	pipeline := []primitive.M{
 		primitive.M{"$match": primitive.M{
 			"client_id":      clientID,
@@ -358,13 +362,13 @@ func (sa *Adapter) GetUserPostCount(clientID string, userID string) (map[string]
 		}},
 		primitive.M{"$count": "posts_count"},
 	}
-	result := []map[string]interface{}{}
+	var result []getUserPostCountResult
 	err := sa.db.posts.Aggregate(pipeline, &result, &options.AggregateOptions{})
 	if err != nil {
 		return nil, err
 	}
 	if len(result) > 0 {
-		return result[0], nil
+		return &result[0].Count, nil
 	}
 	return nil, nil
 }
@@ -748,6 +752,30 @@ func (sa *Adapter) FindOneGroupBtID(clientID string, groupID string) (*model.Gro
 	group := constructGroup(rec)
 
 	return &group, nil
+}
+
+type findUserGroupsCountResult struct {
+	Count int64 `bson:"count"`
+}
+
+// FindUserGroupsCount retrieves the count of current groups that the user is member
+func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, error) {
+	pipeline := []primitive.M{
+		primitive.M{"$match": primitive.M{
+			"client_id":       clientID,
+			"members.user_id": userID,
+		}},
+		primitive.M{"$count": "count"},
+	}
+	var result []findUserGroupsCountResult
+	err := sa.db.groups.Aggregate(pipeline, &result, &options.AggregateOptions{})
+	if err != nil {
+		return nil, err
+	}
+	if len(result) > 0 {
+		return &result[0].Count, nil
+	}
+	return nil, nil
 }
 
 //FindUserGroups finds the user groups for client id

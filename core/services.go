@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"github.com/google/uuid"
+	"groups/driven/rewards"
 	"sort"
 	"time"
 
@@ -357,6 +358,19 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 	if err != nil {
 		return nil, err
 	}
+
+	handleRewardsAsync := func(clientID, userID string) {
+		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
+		if grErr != nil {
+			log.Printf("Error createGroup(): %s", grErr)
+		} else {
+			if count != nil && *count == 1 {
+				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserCreatedFirstGroup, "")
+			}
+		}
+	}
+	go handleRewardsAsync(clientID, current.ID)
+
 	return insertedID, nil
 }
 
@@ -633,7 +647,7 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, offset, limit, order)
 }
 
-func (app *Application) getUserPostCount(clientID string, userID string) (map[string]interface{}, error) {
+func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
 	return app.storage.GetUserPostCount(clientID, userID)
 }
 
@@ -642,26 +656,45 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	if err != nil {
 		return nil, err
 	}
-	if post.ParentID == nil {
-		recipients := group.GetMembersAsNotificationRecipients(&current.ID)
-		topic := "group.posts"
-		err = app.notifications.SendNotification(
-			recipients,
-			&topic,
-			"Illinois",
-			fmt.Sprintf("New post has been published in '%s' group", group.Title),
-			map[string]string{
-				"type":        "group",
-				"operation":   "post_created",
-				"entity_type": "group",
-				"entity_id":   group.ID,
-				"entity_name": group.Title,
-			},
-		)
-		if err != nil {
-			log.Printf("error while sending notification for new post: %s", err) // dont fail
+
+	handleRewardsAsync := func(clientID, userID string) {
+		count, grErr := app.storage.GetUserPostCount(clientID, current.ID)
+		if grErr != nil {
+			log.Printf("Error createPost(): %s", grErr)
+		} else if count != nil {
+			if *count > 1 {
+				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserSubmittedPost, "")
+			} else if *count == 1 {
+				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserSubmittedFirstPost, "")
+			}
 		}
 	}
+	go handleRewardsAsync(clientID, current.ID)
+
+	handleNotification := func() {
+		if post.ParentID == nil {
+			recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+			topic := "group.posts"
+			err = app.notifications.SendNotification(
+				recipients,
+				&topic,
+				"Illinois",
+				fmt.Sprintf("New post has been published in '%s' group", group.Title),
+				map[string]string{
+					"type":        "group",
+					"operation":   "post_created",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+			)
+			if err != nil {
+				log.Printf("error while sending notification for new post: %s", err) // dont fail
+			}
+		}
+	}
+	go handleNotification()
+
 	return post, nil
 }
 

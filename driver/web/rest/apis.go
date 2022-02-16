@@ -502,13 +502,15 @@ func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.Res
 	w.WriteHeader(http.StatusOK)
 }
 
-type getUserStats map[string]interface{}
+type getUserStatsResponse struct {
+	Count int64 `json:"posts_count" bson:"posts_count"`
+} // @name getUserStatsResponse
 
 // GetUserStats Gets user stat information. Responds with {"posts_count": xxx}
 // @Description Gets user stat information. Responds with {"posts_count": xxx}
 // @ID GetUserStats
 // @Param APP header string true "APP"
-// @Success 200 {object} getUserStats
+// @Success 200 {object} getUserStatsResponse
 // @Security AppUserAuth
 // @Router /api/user/stats [get]
 func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
@@ -519,7 +521,14 @@ func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.
 		return
 	}
 
-	data, err := json.Marshal(stats)
+	response := getUserStatsResponse{
+		Count: 0,
+	}
+	if stats != nil {
+		response.Count = *stats
+	}
+
+	data, err := json.Marshal(response)
 	if err != nil {
 		log.Printf("error on marshal user(%s) stats: %s", current.ID, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
