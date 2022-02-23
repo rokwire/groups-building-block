@@ -6,7 +6,6 @@ import "time"
 type Member struct {
 	ID            string         `json:"id" bson:"id"`
 	UserID        string         `json:"user_id" bson:"user_id"`
-	User          User           `json:"user,omitempty"` // deprecated
 	ExternalID    string         `json:"external_id" bson:"external_id"`
 	Name          string         `json:"name" bson:"name"`
 	Email         string         `json:"email" bson:"email"`

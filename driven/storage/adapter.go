@@ -467,9 +467,8 @@ func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model
 		members := current.Members
 		newMembers := make([]model.Member, len(members))
 		for i, c := range members {
-			memberUser := model.User{ID: c.UserID}
 			newMembers[i] = model.Member{
-				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, User: memberUser,
+				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, UserID: c.ID,
 			}
 		}
 		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
@@ -1844,7 +1843,6 @@ func constructGroup(gr group) model.Group {
 func constructMember(member member) model.Member {
 	id := member.ID
 	userID := member.UserID
-	user := model.User{ID: member.UserID} // deprecated
 	externalID := member.ExternalID
 	name := member.Name
 	email := member.Email
@@ -1859,6 +1857,6 @@ func constructMember(member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, UserID: userID, User: user, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, UserID: userID, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }

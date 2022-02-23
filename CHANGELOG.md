@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [1.5.18] - 2022-02-23
+- Deprecate and remove member.user.id and use member.user_id #[122](https://github.com/rokwire/groups-building-block/issues/122)
 - Ignore members different from uofinetid [116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.17] - 2022-02-14
