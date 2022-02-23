@@ -1252,7 +1252,7 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.getUserStats"
+                            "$ref": "#/definitions/getUserStatsResponse"
                         }
                     }
                 }
@@ -1730,6 +1730,14 @@ var doc = `{
                 }
             }
         },
+        "getUserStatsResponse": {
+            "type": "object",
+            "properties": {
+                "posts_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "membershipApprovalRequest": {
             "type": "object",
             "required": [
@@ -1743,10 +1751,6 @@ var doc = `{
                     "type": "string"
                 }
             }
-        },
-        "rest.getUserStats": {
-            "type": "object",
-            "additionalProperties": true
         },
         "rest.postResponse": {
             "type": "object",

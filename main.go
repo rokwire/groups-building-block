@@ -5,6 +5,7 @@ import (
 	"groups/driven/authman"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
+	"groups/driven/rewards"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
 	"log"
@@ -25,6 +26,8 @@ func main() {
 	}
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
+
+	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 
 	//mongoDB adapter
 	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
@@ -51,8 +54,11 @@ func main() {
 	// Core adapter
 	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
 
+	// Rewards adapter
+	rewardsAdapter := rewards.NewRewardsAdapter(intrernalAPIKey, coreAdapter)
+
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter, coreAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter, coreAdapter, rewardsAdapter)
 	application.Start()
 
 	//web adapter

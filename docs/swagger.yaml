@@ -270,6 +270,11 @@ definitions:
       web_url:
         type: string
     type: object
+  getUserStatsResponse:
+    properties:
+      posts_count:
+        type: integer
+    type: object
   membershipApprovalRequest:
     properties:
       approve:
@@ -278,9 +283,6 @@ definitions:
         type: string
     required:
     - approve
-    type: object
-  rest.getUserStats:
-    additionalProperties: true
     type: object
   rest.postResponse:
     properties:
@@ -1123,7 +1125,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.getUserStats'
+            $ref: '#/definitions/getUserStatsResponse'
       security:
       - AppUserAuth: []
   /int/authman/synchronize:
