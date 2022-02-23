@@ -6,9 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [1.5.18] - 2022-02-23
+## [1.5.20] - 2022-02-23
 - Deprecate and remove member.user.id and use member.user_id #[122](https://github.com/rokwire/groups-building-block/issues/122)
+
+## [1.5.19] - 2022-02-16
 - Ignore members different from uofinetid [116](https://github.com/rokwire/groups-building-block/issues/116)
+
+## [1.5.18] - 2022-02-15
+- Additional improvements for Authman sync [#116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.17] - 2022-02-14
 - Add additional parameter within the authman user api [#116](https://github.com/rokwire/groups-building-block/issues/116)
