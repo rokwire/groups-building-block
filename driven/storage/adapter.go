@@ -468,7 +468,7 @@ func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model
 		newMembers := make([]model.Member, len(members))
 		for i, c := range members {
 			newMembers[i] = model.Member{
-				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, UserID: c.ID,
+				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, UserID: c.UserID,
 			}
 		}
 		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
