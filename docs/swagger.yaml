@@ -1,5 +1,27 @@
 basePath: /gr
 definitions:
+  GroupStat:
+    properties:
+      authman_enabled:
+        type: boolean
+      members_added_last_24:
+        type: integer
+      members_count:
+        type: integer
+      privacy:
+        type: string
+      title:
+        type: string
+    type: object
+  GroupsStats:
+    properties:
+      groups_count:
+        type: integer
+      groups_list:
+        items:
+          $ref: '#/definitions/GroupStat'
+        type: array
+    type: object
   createGroupEventRequest:
     properties:
       event_id:
@@ -9,6 +31,10 @@ definitions:
     type: object
   createGroupRequest:
     properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
       category:
         type: string
       creator_email:
@@ -25,6 +51,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_polls:
+        type: boolean
       privacy:
         type: string
       tags:
@@ -109,8 +137,6 @@ definitions:
               type: string
           type: object
         type: array
-      members_count:
-        type: integer
       membership_questions:
         items:
           type: string
@@ -170,8 +196,6 @@ definitions:
               type: string
           type: object
         type: array
-      members_count:
-        type: integer
       membership_questions:
         items:
           type: string
@@ -231,8 +255,6 @@ definitions:
               type: string
           type: object
         type: array
-      members_count:
-        type: integer
       membership_questions:
         items:
           type: string
@@ -248,6 +270,11 @@ definitions:
       web_url:
         type: string
     type: object
+  getUserStatsResponse:
+    properties:
+      posts_count:
+        type: integer
+    type: object
   membershipApprovalRequest:
     properties:
       approve:
@@ -256,9 +283,6 @@ definitions:
         type: string
     required:
     - approve
-    type: object
-  rest.getUserStats:
-    additionalProperties: true
     type: object
   rest.postResponse:
     properties:
@@ -288,6 +312,10 @@ definitions:
     type: object
   updateGroupRequest:
     properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
       category:
         type: string
       description:
@@ -298,6 +326,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_polls:
+        type: boolean
       privacy:
         type: string
       tags:
@@ -325,8 +355,138 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.4.10
+  version: 1.5.10
 paths:
+  /api/admin/group/{group-id}/event/{event-id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a group event
+      operationId: AdminDeleteGroupEvent
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/group/{group-id}/events:
+    get:
+      consumes:
+      - application/json
+      description: Gives the group events.
+      operationId: AdminGetGroupEvents
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              type: string
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/group/{groupID}/posts:
+    get:
+      description: gets all posts for the desired group.
+      operationId: AdminGetGroupPosts
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.postResponse'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/group/{groupId}/posts/{postId}:
+    delete:
+      consumes:
+      - application/json
+      description: Updates a post within the desired group.
+      operationId: AdminDeleteGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin
+  /api/admin/group/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a group.
+      operationId: AdminDeleteGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /api/admin/groups:
     get:
       consumes:
@@ -363,13 +523,14 @@ paths:
     get:
       description: Logs in the user and refactor the user record and linked data if
         need
-      operationId: LoginAdminUser
+      operationId: AdminLoginUser
       responses:
         "200":
           description: ""
       security:
       - AppUserAuth: []
-      - APIKeyAuth: []
+      tags:
+      - Admin
   /api/group-categories:
     get:
       consumes:
@@ -964,9 +1125,33 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.getUserStats'
+            $ref: '#/definitions/getUserStatsResponse'
       security:
       - AppUserAuth: []
+  /int/authman/synchronize:
+    get:
+      consumes:
+      - application/json
+      description: Synchronizes Authman groups memberhip
+      operationId: SynchronizeAuthman
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+  /int/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve group stats
+      operationId: IntGroupStats
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupsStats'
+      security:
+      - IntAPIKeyAuth: []
   /version:
     get:
       description: Gives the service version.

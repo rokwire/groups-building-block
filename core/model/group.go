@@ -7,21 +7,24 @@ import (
 
 // Group represents group entity
 type Group struct {
-	ID                  string   `json:"id"`
-	Category            string   `json:"category"` //one of the enums categories list
-	Title               string   `json:"title"`
-	Privacy             string   `json:"privacy"` //public or private
-	Description         *string  `json:"description"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"` //to be supported up to date
-	Tags                []string `json:"tags"`
-	MembershipQuestions []string `json:"membership_questions"`
+	ID                  string   `json:"id" bson:"_id"`
+	ClientID            string   `json:"client_id" bson:"client_id"`
+	Category            string   `json:"category" bson:"category"` //one of the enums categories list
+	Title               string   `json:"title" bson:"title"`
+	Privacy             string   `json:"privacy" bson:"privacy"` //public or private
+	Description         *string  `json:"description" bson:"description"`
+	ImageURL            *string  `json:"image_url" bson:"image_url"`
+	WebURL              *string  `json:"web_url" bson:"web_url"`
+	Tags                []string `json:"tags" bson:"tags"`
+	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Members []Member `json:"members"`
+	Members []Member `json:"members" bson:"members"`
 
-	DateCreated time.Time  `json:"date_created"`
-	DateUpdated *time.Time `json:"date_updated"`
+	DateCreated              time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated              *time.Time `json:"date_updated" bson:"date_updated"`
+	AuthmanEnabled           bool       `json:"authman_enabled" bson:"authman_enabled"`
+	AuthmanGroup             *string    `json:"authman_group" bson:"authman_group"`
+	OnlyAdminsCanCreatePolls bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group
@@ -89,7 +92,7 @@ func (gr Group) IsGroupRejected(userID string) bool {
 	return false
 }
 
-//UserNameByID Get name of the user
+// UserNameByID Get name of the user
 func (gr Group) UserNameByID(userID string) *string {
 	if gr.Members == nil {
 		return nil
@@ -116,6 +119,32 @@ func (gr Group) GetMemberByID(userID string) *Member {
 	return nil
 }
 
+// GetMemberByUserID gets member by UserID field
+func (gr Group) GetMemberByUserID(userID string) *Member {
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.User.ID == userID {
+			return &item
+		}
+	}
+	return nil
+}
+
+// GetMemberByExternalID gets member by ExternalID field
+func (gr Group) GetMemberByExternalID(userID string) *Member {
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.User.ExternalID == userID {
+			return &item
+		}
+	}
+	return nil
+}
+
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
 func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 
@@ -132,4 +161,20 @@ func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notific
 		}
 	}
 	return recipients
+}
+
+// CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
+func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
+
+	var answers []MemberAnswer
+	if len(gr.MembershipQuestions) > 0 {
+		for _, question := range gr.MembershipQuestions {
+			answers = append(answers, MemberAnswer{
+				Question: question,
+				Answer:   "",
+			})
+		}
+	}
+
+	return answers
 }

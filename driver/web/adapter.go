@@ -21,13 +21,14 @@ type Adapter struct {
 	host string
 	auth *Auth
 
-	apisHandler      *rest.ApisHandler
-	adminApisHandler *rest.AdminApisHandler
+	apisHandler         *rest.ApisHandler
+	adminApisHandler    *rest.AdminApisHandler
+	internalApisHandler *rest.InternalApisHandler
 }
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.4.10
+// @version 1.5.10
 // @host localhost
 // @BasePath /gr
 // @schemes https
@@ -61,9 +62,16 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/user/login", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.LoginUser)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
 
 	//internal key protection
-	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.apisHandler.IntGetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.internalApisHandler.SynchronizeAuthman)).Methods("GET")
+	restSubrouter.HandleFunc("/int/stats", we.internalKeyAuthFunc(we.internalApisHandler.GroupStats)).Methods("GET")
 
 	//api key protection
 	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
@@ -230,6 +238,7 @@ func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcPro
 	auth := NewAuth(app, host, appKeys, internalAPIKeys, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, coreBBHost, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
+	internalApisHandler := rest.NewInternalApisHandler(app)
 
-	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler}
+	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
 }

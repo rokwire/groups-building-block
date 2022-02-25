@@ -268,6 +268,16 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["authman_enabled_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "authman_enabled", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("groups checks passed")
 	return nil
 }

@@ -63,77 +63,21 @@ func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter,
 }
 
 type createGroupRequest struct {
-	Title               string   `json:"title" validate:"required"`
-	Description         *string  `json:"description"`
-	Category            string   `json:"category" validate:"required"`
-	Tags                []string `json:"tags"`
-	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
-	CreatorName         string   `json:"creator_name"`
-	CreatorEmail        string   `json:"creator_email"`
-	CreatorPhotoURL     string   `json:"creator_photo_url"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	MembershipQuestions []string `json:"membership_questions"`
+	Title                    string   `json:"title" validate:"required"`
+	Description              *string  `json:"description"`
+	Category                 string   `json:"category" validate:"required"`
+	Tags                     []string `json:"tags"`
+	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	CreatorName              string   `json:"creator_name"`
+	CreatorEmail             string   `json:"creator_email"`
+	CreatorPhotoURL          string   `json:"creator_photo_url"`
+	ImageURL                 *string  `json:"image_url"`
+	WebURL                   *string  `json:"web_url"`
+	MembershipQuestions      []string `json:"membership_questions"`
+	AuthmanEnabled           bool     `json:"authman_enabled"`
+	AuthmanGroup             *string  `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 } //@name createGroupRequest
-
-//IntGetUserGroupMemberships gets the user groups memberships
-// @Description Gives the user groups memberships
-// @ID IntGetUserGroupMemberships
-// @Accept json
-// @Param identifier path string true "Identifier"
-// @Success 200 {object} userGroupMembership
-// @Security IntAPIKeyAuth
-// @Router /api/int/user/{identifier}/groups [get]
-func (h *ApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	identifier := params["identifier"]
-	if len(identifier) <= 0 {
-		log.Println("Identifier is required")
-		http.Error(w, "identifier is required", http.StatusBadRequest)
-		return
-	}
-	externalID := identifier
-
-	userGroupMemberships, user, err := h.app.Services.GetUserGroupMembershipsByExternalID(externalID)
-	if err != nil {
-		log.Println("The user has no group memberships")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	userGroups := make([]userGroupMembership, len(userGroupMemberships))
-	for i, group := range userGroupMemberships {
-
-		memberStatus := ""
-
-		members := group.Members
-		for _, member := range members {
-			if member.User.ID == user.ID {
-				memberStatus = member.Status
-			}
-		}
-
-		ugm := userGroupMembership{
-			ID:               group.ID,
-			Title:            group.Title,
-			Privacy:          group.Privacy,
-			MembershipStatus: memberStatus,
-		}
-
-		userGroups[i] = ugm
-	}
-
-	data, err := json.Marshal(userGroups)
-	if err != nil {
-		log.Println("Error on marshal the user group membership")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-}
 
 type userGroupMembership struct {
 	ID               string `json:"id"`
@@ -156,7 +100,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	// NOTE: Permissions should be handled using the admin auth wrap function and the associated authorization policy
 	// if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
 	// 	log.Printf("%s is not allowed to create a group", current.Email)
-	// 	http.Error(w, core.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+	// 	http.Error(w, corebb.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 	// 	return
 	// }
 
@@ -195,9 +139,13 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
 	membershipQuestions := requestData.MembershipQuestions
+	authmanGroup := requestData.AuthmanGroup
+	authmanEnabled := requestData.AuthmanEnabled
+	onlyAdminsCanCreatePolls := requestData.OnlyAdminsCanCreatePolls
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions)
+		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
+		onlyAdminsCanCreatePolls)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -217,14 +165,17 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 }
 
 type updateGroupRequest struct {
-	Title               string   `json:"title" validate:"required"`
-	Description         *string  `json:"description"`
-	Category            string   `json:"category" validate:"required"`
-	Tags                []string `json:"tags"`
-	Privacy             string   `json:"privacy" validate:"required,oneof=public private"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	MembershipQuestions []string `json:"membership_questions"`
+	Title                    string   `json:"title" validate:"required"`
+	Description              *string  `json:"description"`
+	Category                 string   `json:"category" validate:"required"`
+	Tags                     []string `json:"tags"`
+	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	ImageURL                 *string  `json:"image_url"`
+	WebURL                   *string  `json:"web_url"`
+	MembershipQuestions      []string `json:"membership_questions"`
+	AuthmanEnabled           bool     `json:"authman_enabled"`
+	AuthmanGroup             *string  `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 } //@name updateGroupRequest
 
 //UpdateGroup updates a group
@@ -298,8 +249,12 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	webURL := requestData.WebURL
 	tags := requestData.Tags
 	membershipQuestions := requestData.MembershipQuestions
+	authmanGroup := requestData.AuthmanGroup
+	authmanEnabled := requestData.AuthmanEnabled
+	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
 
-	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions)
+	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL,
+		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -372,7 +327,6 @@ type getGroupsResponse struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 
@@ -478,7 +432,6 @@ type getUserGroupsResponse struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 
@@ -542,20 +495,22 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	err := h.app.Services.LoginUser(clientID, current)
 	if err != nil {
-		log.Printf("error getting user groups - %s", err.Error())
+		log.Printf("error login user - %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
 }
 
-type getUserStats map[string]interface{}
+type getUserStatsResponse struct {
+	Count int64 `json:"posts_count" bson:"posts_count"`
+} // @name getUserStatsResponse
 
 // GetUserStats Gets user stat information. Responds with {"posts_count": xxx}
 // @Description Gets user stat information. Responds with {"posts_count": xxx}
 // @ID GetUserStats
 // @Param APP header string true "APP"
-// @Success 200 {object} getUserStats
+// @Success 200 {object} getUserStatsResponse
 // @Security AppUserAuth
 // @Router /api/user/stats [get]
 func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
@@ -566,7 +521,14 @@ func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.
 		return
 	}
 
-	data, err := json.Marshal(stats)
+	response := getUserStatsResponse{
+		Count: 0,
+	}
+	if stats != nil {
+		response.Count = *stats
+	}
+
+	data, err := json.Marshal(response)
 	if err != nil {
 		log.Printf("error on marshal user(%s) stats: %s", current.ID, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -653,7 +615,6 @@ type getGroupResponse struct {
 	Description         *string  `json:"description"`
 	ImageURL            *string  `json:"image_url"`
 	WebURL              *string  `json:"web_url"`
-	MembersCount        int      `json:"members_count"`
 	Tags                []string `json:"tags"`
 	MembershipQuestions []string `json:"membership_questions"`
 
@@ -1291,7 +1252,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 	w.Write([]byte("Successfully deleted"))
 }
 
-//GetGroupPosts gets all posts for the desired group.
+// GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID GetGroupPosts
 // @Param APP header string true "APP"
@@ -1332,7 +1293,34 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, offset, limit, order)
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", id)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to get posts for group %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	var filterPrivatePostsValue *bool
+	if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
+		filter := false
+		filterPrivatePostsValue = &filter
+	}
+
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1475,6 +1463,27 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
 	post, err = h.app.Services.UpdatePost(clientID, current, post)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
@@ -1519,7 +1528,28 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	err := h.app.Services.DeletePost(clientID, current, groupID, postID)
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.DeletePost(clientID, current, groupID, postID, false)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1538,4 +1568,9 @@ func NewApisHandler(app *core.Application) *ApisHandler {
 //NewAdminApisHandler creates new rest Handler instance
 func NewAdminApisHandler(app *core.Application) *AdminApisHandler {
 	return &AdminApisHandler{app: app}
+}
+
+//NewInternalApisHandler creates new rest Handler instance
+func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
+	return &InternalApisHandler{app: app}
 }

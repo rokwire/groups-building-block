@@ -4,24 +4,25 @@ import "time"
 
 // Member represents group member entity
 type Member struct {
-	ID            string         `json:"id"`
-	User          User           `json:"user"`
-	Name          string         `json:"name"`
-	Email         string         `json:"email"`
-	PhotoURL      string         `json:"photo_url"`
-	Status        string         `json:"status"` //pending, member, admin, rejected
-	RejectReason  string         `json:"reject_reason"`
-	Group         Group          `json:"group"`
-	MemberAnswers []MemberAnswer `json:"member_answers"`
+	ID            string         `json:"id" bson:"id"`
+	UserID        string         `json:"user_id" bson:"user_id"`
+	User          User           `json:"user,omitempty"` // deprecated
+	ExternalID    string         `json:"external_id" bson:"external_id"`
+	Name          string         `json:"name" bson:"name"`
+	Email         string         `json:"email" bson:"email"`
+	PhotoURL      string         `json:"photo_url" bson:"photo_url"`
+	Status        string         `json:"status" bson:"status"` //pending, member, admin, rejected
+	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
+	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
 
-	DateCreated time.Time  `json:"date_created"`
-	DateUpdated *time.Time `json:"date_updated"`
+	DateCreated time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 } //@name Member
 
 // MemberAnswer represents member answer entity
 type MemberAnswer struct {
-	Question string `json:"question"`
-	Answer   string `json:"answer"`
+	Question string `json:"question" bson:"question"`
+	Answer   string `json:"answer" bson:"answer"`
 } //@name MemberAnswer
 
 // IsAdmin says if the user is admin of the group

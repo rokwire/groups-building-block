@@ -24,6 +24,213 @@ var doc = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/api/admin/group/{group-id}/event/{event-id}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a group event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminDeleteGroupEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/group/{group-id}/events": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the group events.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetGroupEvents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/group/{groupID}/posts": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "gets all posts for the desired group.",
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetGroupPosts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.postResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/group/{groupId}/posts/{postId}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Updates a post within the desired group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminDeleteGroupPost",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/admin/group/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminDeleteGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/groups": {
             "get": {
                 "security": [
@@ -81,13 +288,13 @@ var doc = `{
                 "security": [
                     {
                         "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
                     }
                 ],
                 "description": "Logs in the user and refactor the user record and linked data if need",
-                "operationId": "LoginAdminUser",
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminLoginUser",
                 "responses": {
                     "200": {
                         "description": ""
@@ -1045,7 +1252,48 @@ var doc = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.getUserStats"
+                            "$ref": "#/definitions/getUserStatsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/int/authman/synchronize": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman groups memberhip",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "SynchronizeAuthman",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/int/stats": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Retrieve group stats",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "IntGroupStats",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupsStats"
                         }
                     }
                 }
@@ -1070,6 +1318,40 @@ var doc = `{
         }
     },
     "definitions": {
+        "GroupStat": {
+            "type": "object",
+            "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "members_added_last_24": {
+                    "type": "integer"
+                },
+                "members_count": {
+                    "type": "integer"
+                },
+                "privacy": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupsStats": {
+            "type": "object",
+            "properties": {
+                "groups_count": {
+                    "type": "integer"
+                },
+                "groups_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GroupStat"
+                    }
+                }
+            }
+        },
         "createGroupEventRequest": {
             "type": "object",
             "required": [
@@ -1089,6 +1371,12 @@ var doc = `{
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },
@@ -1112,6 +1400,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
                 },
                 "privacy": {
                     "type": "string"
@@ -1236,9 +1527,6 @@ var doc = `{
                         }
                     }
                 },
-                "members_count": {
-                    "type": "integer"
-                },
                 "membership_questions": {
                     "type": "array",
                     "items": {
@@ -1328,9 +1616,6 @@ var doc = `{
                             }
                         }
                     }
-                },
-                "members_count": {
-                    "type": "integer"
                 },
                 "membership_questions": {
                     "type": "array",
@@ -1422,9 +1707,6 @@ var doc = `{
                         }
                     }
                 },
-                "members_count": {
-                    "type": "integer"
-                },
                 "membership_questions": {
                     "type": "array",
                     "items": {
@@ -1448,6 +1730,14 @@ var doc = `{
                 }
             }
         },
+        "getUserStatsResponse": {
+            "type": "object",
+            "properties": {
+                "posts_count": {
+                    "type": "integer"
+                }
+            }
+        },
         "membershipApprovalRequest": {
             "type": "object",
             "required": [
@@ -1461,10 +1751,6 @@ var doc = `{
                     "type": "string"
                 }
             }
-        },
-        "rest.getUserStats": {
-            "type": "object",
-            "additionalProperties": true
         },
         "rest.postResponse": {
             "type": "object",
@@ -1514,6 +1800,12 @@ var doc = `{
                 "title"
             ],
             "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
                 "category": {
                     "type": "string"
                 },
@@ -1528,6 +1820,9 @@ var doc = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
                 },
                 "privacy": {
                     "type": "string"
@@ -1588,7 +1883,7 @@ type swaggerInfo struct {
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = swaggerInfo{
-	Version:     "1.4.10",
+	Version:     "1.5.10",
 	Host:        "localhost",
 	BasePath:    "/gr",
 	Schemes:     []string{"https"},

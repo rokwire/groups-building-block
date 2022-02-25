@@ -2,7 +2,10 @@ package main
 
 import (
 	core "groups/core"
+	"groups/driven/authman"
+	"groups/driven/corebb"
 	"groups/driven/notifications"
+	"groups/driven/rewards"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
 	"log"
@@ -21,6 +24,10 @@ func main() {
 	if len(Version) == 0 {
 		Version = "dev"
 	}
+	// core bb host
+	coreBBHost := getEnvKey("CORE_BB_HOST", false)
+
+	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 
 	//mongoDB adapter
 	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
@@ -32,12 +39,26 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
+	// Notification adapter
 	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
 
+	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
+	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
+	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
+
+	// Authman adapter
+	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
+
+	// Core adapter
+	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
+
+	// Rewards adapter
+	rewardsAdapter := rewards.NewRewardsAdapter(intrernalAPIKey, coreAdapter)
+
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter, coreAdapter, rewardsAdapter)
 	application.Start()
 
 	//web adapter
@@ -49,10 +70,11 @@ func main() {
 	oidcExtendedClientIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
-	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, internalAPIKeys, coreBBHost, groupServiceURL)
+	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider,
+		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
+		internalAPIKeys, coreBBHost, groupServiceURL)
 	webAdapter.Start()
 }
 
