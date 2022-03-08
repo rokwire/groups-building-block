@@ -1378,9 +1378,20 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 
 //FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+
+	group, _ := sa.FindGroup(clientID, groupID)
+	if group == nil {
+		log.Printf("unable to find group with id %s: %s", groupID)
+	}
+
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "$or", Value: bson.D{
+			primitive.E{Key: "members", Value: primitive.Null{}},
+			primitive.E{Key: "members", Value: primitive.M{"$exists": true, "$size": 0}},
+			primitive.E{Key: "members.user_id", Value: current.ID},
+		}},
 	}
 
 	if filterPrivatePostsValue != nil {
@@ -1418,7 +1429,9 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, *post.ID, true, order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
-					list = append(list, childPost)
+					if childPost.UserCanSeePost(current.ID) {
+						list = append(list, childPost)
+					}
 				}
 			}
 		}
@@ -1623,7 +1636,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	group, err = sa.FindGroup(clientID, post.GroupID)
 	if group != nil && err == nil && group.IsGroupAdminOrMember(current.ID) {
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
-		post.Member = model.PostCreator{
+		post.Creator = model.PostCreator{
 			UserID: current.ID,
 			Email:  current.Email,
 			Name:   *name,
@@ -1648,7 +1661,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 	if originalPost == nil {
 		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
-	if originalPost.Member.UserID != userID {
+	if originalPost.Creator.UserID != userID {
 		return nil, fmt.Errorf("only creator of the post can update it")
 	}
 
@@ -1672,6 +1685,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 			primitive.E{Key: "private", Value: post.Private},
 			primitive.E{Key: "image_url", Value: post.ImageURL},
 			primitive.E{Key: "date_updated", Value: post.DateUpdated},
+			primitive.E{Key: "to_members", Value: post.ToMembersList},
 		},
 		},
 	}
@@ -1700,7 +1714,7 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 	}
 
 	if !force {
-		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
+		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Creator.UserID != userID) {
 			return fmt.Errorf("only creator of the post or group admin can delete it")
 		}
 	}
