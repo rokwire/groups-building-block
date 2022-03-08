@@ -70,7 +70,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 				if current.Status == "admin" || current.Status == "member" {
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
-					mItem["user_id"] = current.User.ID
+					mItem["user_id"] = current.UserID
 					mItem["external_id"] = current.ExternalID
 					mItem["name"] = current.Name
 					mItem["email"] = current.Email
@@ -109,7 +109,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 				if current.Status == "admin" {
 					mItem := make(map[string]interface{})
 					mItem["id"] = current.ID
-					mItem["user_id"] = current.User.ID
+					mItem["user_id"] = current.UserID
 					mItem["external_id"] = current.ExternalID
 					mItem["name"] = current.Name
 					mItem["email"] = current.Email
@@ -152,7 +152,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 		for _, current := range group.Members {
 			mItem := make(map[string]interface{})
 			mItem["id"] = current.ID
-			mItem["user_id"] = current.User.ID
+			mItem["user_id"] = current.UserID
 			mItem["external_id"] = current.ExternalID
 			mItem["name"] = current.Name
 			mItem["email"] = current.Email
@@ -211,7 +211,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 			if current.Status == "admin" || current.Status == "member" {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
-				mItem["user_id"] = current.User.ID
+				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
@@ -251,10 +251,10 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	var membersItems []map[string]interface{}
 	if membersCount > 0 {
 		for _, current := range group.Members {
-			if current.User.ID == user.ID {
+			if current.UserID == user.ID {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
-				mItem["user_id"] = current.User.ID
+				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
@@ -293,10 +293,10 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	var membersItems []map[string]interface{}
 	if membersCount > 0 {
 		for _, current := range group.Members {
-			if current.User.ID == user.ID {
+			if current.UserID == user.ID {
 				mItem := make(map[string]interface{})
 				mItem["id"] = current.ID
-				mItem["user_id"] = current.User.ID
+				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
@@ -479,7 +479,7 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 			for _, member := range members {
 				if member.Status == "admin" {
 					recipients = append(recipients, notifications.Recipient{
-						UserID: member.User.ID,
+						UserID: member.UserID,
 						Name:   member.Name,
 					})
 				}
@@ -540,7 +540,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 				app.notifications.SendNotification(
 					[]notifications.Recipient{
 						notifications.Recipient{
-							UserID: member.User.ID,
+							UserID: member.UserID,
 							Name:   member.Name,
 						},
 					},
@@ -559,7 +559,7 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 				app.notifications.SendNotification(
 					[]notifications.Recipient{
 						notifications.Recipient{
-							UserID: member.User.ID,
+							UserID: member.UserID,
 							Name:   member.Name,
 						},
 					},
@@ -775,7 +775,6 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 							members = append(members, model.Member{
 								ID:            uuid.NewString(),
 								UserID:        user.ID,
-								User:          model.User{ID: user.ID},
 								Status:        "member",
 								ExternalID:    externalID,
 								Name:          user.Name,
@@ -843,13 +842,13 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 								if member.ExternalID == innerMember.ExternalID {
 									members[i] = member
 									found = true
-									log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", member.User.ID, member.Name, member.Email, authmanGroup.Title)
+									log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
 									break
 								}
 							}
 							if !found {
 								members = append(members, member)
-								log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.User.ID, member.Name, member.Email, authmanGroup.Title)
+								log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
 							}
 						} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
 							log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)

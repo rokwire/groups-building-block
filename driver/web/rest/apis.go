@@ -580,7 +580,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.Us
 
 		members := group.Members
 		for _, member := range members {
-			if member.User.ID == current.ID {
+			if member.UserID == current.ID {
 				memberStatus = member.Status
 			}
 		}
