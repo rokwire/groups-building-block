@@ -1376,12 +1376,17 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
-//FindPosts Retrieves posts for a group
+// FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 
-	group, _ := sa.FindGroup(clientID, groupID)
+	group, errGr := sa.FindGroup(clientID, groupID)
 	if group == nil {
-		log.Printf("unable to find group with id %s: %s", groupID)
+		if errGr != nil {
+			log.Printf("unable to find group with id %s: %s", groupID, errGr)
+		} else {
+			log.Printf("group does not exists %s", groupID)
+		}
+		return nil, errGr
 	}
 
 	filter := bson.D{
