@@ -15,7 +15,7 @@ type Post struct {
 	Private       bool        `json:"private" bson:"private"`
 	Replies       []*Post     `json:"replies,omitempty"` // This is constructed by the code (ParentID)
 	ImageURL      *string     `json:"image_url" bson:"image_url"`
-	ToMembersList []Member    `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
+	ToMembersList []ToMember  `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 	DateCreated   *time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated   *time.Time  `json:"date_updated" bson:"date_updated"`
 }

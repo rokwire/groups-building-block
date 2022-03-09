@@ -408,6 +408,37 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 			return err
 		}
 	}
+
+	if indexMapping["to_members.user_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.external_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.external_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.email_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.email", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("posts checks passed")
 	return nil
 }

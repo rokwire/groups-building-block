@@ -1392,10 +1392,10 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "$or", Value: bson.D{
-			primitive.E{Key: "members", Value: primitive.Null{}},
-			primitive.E{Key: "members", Value: primitive.M{"$exists": true, "$size": 0}},
-			primitive.E{Key: "members.user_id", Value: current.ID},
+		primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
 		}},
 	}
 
