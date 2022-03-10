@@ -1376,11 +1376,30 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
-//FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+// FindPosts Retrieves posts for a group
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+
+	group, errGr := sa.FindGroup(clientID, groupID)
+	if group == nil {
+		if errGr != nil {
+			log.Printf("unable to find group with id %s: %s", groupID, errGr)
+		} else {
+			log.Printf("group does not exists %s", groupID)
+		}
+		return nil, errGr
+	}
+
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "group_id", Value: groupID},
+	}
+
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
+		}})
 	}
 
 	if filterPrivatePostsValue != nil {
@@ -1418,7 +1437,9 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, *post.ID, true, order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
-					list = append(list, childPost)
+					if childPost.UserCanSeePost(current.ID) {
+						list = append(list, childPost)
+					}
 				}
 			}
 		}
@@ -1472,12 +1493,23 @@ func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Pos
 }
 
 //FindPost Retrieves a post by groupID and postID
-func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
-	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck)
+func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
-func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
+func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "_id", Value: postID},
+	}
+
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": userID},
+		}})
+	}
 
 	if !skipMembershipCheck {
 		group, err := sa.findGroupWithContext(clientID, groupID)
@@ -1521,8 +1553,11 @@ func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, g
 
 // FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
+func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "parent_id", Value: parentID},
+	}
 
 	if !skipMembershipCheck {
 		group, err := sa.FindGroup(clientID, groupID)
@@ -1547,7 +1582,7 @@ func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID s
 	if recursive {
 		if len(posts) > 0 {
 			for _, post := range posts {
-				childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, *post.ID, true, recursive, order)
+				childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, *post.ID, true, filterByToMembers, recursive, order)
 				if err == nil && childPosts != nil {
 					for _, childPost := range childPosts {
 						posts = append(posts, childPost)
@@ -1623,7 +1658,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	group, err = sa.FindGroup(clientID, post.GroupID)
 	if group != nil && err == nil && group.IsGroupAdminOrMember(current.ID) {
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
-		post.Member = model.PostCreator{
+		post.Creator = model.PostCreator{
 			UserID: current.ID,
 			Email:  current.Email,
 			Name:   *name,
@@ -1644,11 +1679,11 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 
-	originalPost, _ := sa.FindPost(clientID, userID, post.GroupID, *post.ID, true)
+	originalPost, _ := sa.FindPost(clientID, userID, post.GroupID, *post.ID, true, true)
 	if originalPost == nil {
 		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
-	if originalPost.Member.UserID != userID {
+	if originalPost.Creator.UserID != userID {
 		return nil, fmt.Errorf("only creator of the post can update it")
 	}
 
@@ -1672,6 +1707,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 			primitive.E{Key: "private", Value: post.Private},
 			primitive.E{Key: "image_url", Value: post.ImageURL},
 			primitive.E{Key: "date_updated", Value: post.DateUpdated},
+			primitive.E{Key: "to_members", Value: post.ToMembersList},
 		},
 		},
 	}
@@ -1694,18 +1730,18 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 		ctx = context.Background()
 	}
 	group, _ := sa.FindGroup(clientID, groupID)
-	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true)
+	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true, !group.IsGroupAdmin(userID))
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}
 
 	if !force {
-		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
+		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Creator.UserID != userID) {
 			return fmt.Errorf("only creator of the post or group admin can delete it")
 		}
 	}
 
-	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, false, nil)
+	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, !group.IsGroupAdmin(userID), false, nil)
 	if len(childPosts) > 0 && err == nil {
 		for _, post := range childPosts {
 			sa.deletePost(ctx, clientID, userID, groupID, *post.ID, true)

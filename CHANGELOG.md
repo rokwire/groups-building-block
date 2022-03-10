@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.23] - 2022-03-09
+- More fixes and improvements for post destination members restriction [#123](https://github.com/rokwire/groups-building-block/issues/123)
+
+## [1.5.22] - 2022-03-08
+- Limit reply to a specific subset of members [#123](https://github.com/rokwire/groups-building-block/issues/123)
+
 ## [1.5.21] - 2022-02-24
 - Additional fix of wrong membership initialization [#122](https://github.com/rokwire/groups-building-block/issues/122)
 

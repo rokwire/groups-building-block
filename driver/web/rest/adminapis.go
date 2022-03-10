@@ -221,7 +221,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

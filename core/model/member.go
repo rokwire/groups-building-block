@@ -18,6 +18,14 @@ type Member struct {
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 } //@name Member
 
+// ToMember represents to(destination) member entity
+type ToMember struct {
+	UserID     string `json:"user_id" bson:"user_id"`
+	ExternalID string `json:"external_id" bson:"external_id"`
+	Name       string `json:"name" bson:"name"`
+	Email      string `json:"email" bson:"email"`
+} //@name ToMember
+
 // MemberAnswer represents member answer entity
 type MemberAnswer struct {
 	Question string `json:"question" bson:"question"`

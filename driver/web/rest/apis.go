@@ -1320,7 +1320,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		filterPrivatePostsValue = &filter
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, !group.IsGroupAdmin(current.ID), offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
