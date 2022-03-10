@@ -100,6 +100,9 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["web_url"] = group.WebURL
 		item["tags"] = group.Tags
 		item["membership_questions"] = group.MembershipQuestions
+		item["authman_enabled"] = group.AuthmanEnabled
+		item["authman_group"] = group.AuthmanGroup
+		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 
 		//members
 		membersCount := len(group.Members)
