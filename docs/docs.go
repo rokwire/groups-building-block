@@ -433,14 +433,14 @@ var doc = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Creates a group event",
+                "description": "Updates a group event",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "operationId": "CreateGroupEvent",
+                "operationId": "UpdateGroupEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -455,7 +455,7 @@ var doc = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/createGroupEventRequest"
+                            "$ref": "#/definitions/groupEventRequest"
                         }
                     },
                     {
@@ -1352,13 +1352,19 @@ var doc = `{
                 }
             }
         },
-        "createGroupEventRequest": {
+        "ToMember": {
             "type": "object",
-            "required": [
-                "event_id"
-            ],
             "properties": {
-                "event_id": {
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -1735,6 +1741,24 @@ var doc = `{
             "properties": {
                 "posts_count": {
                     "type": "integer"
+                }
+            }
+        },
+        "groupEventRequest": {
+            "type": "object",
+            "required": [
+                "event_id"
+            ],
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
                 }
             }
         },

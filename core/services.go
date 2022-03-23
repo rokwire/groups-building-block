@@ -603,16 +603,16 @@ func (app *Application) updateMembership(clientID string, current model.User, me
 	return nil
 }
 
-func (app *Application) getEvents(clientID string, groupID string) ([]model.Event, error) {
-	events, err := app.storage.FindEvents(clientID, groupID)
+func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
 	if err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-func (app *Application) createEvent(clientID string, current model.User, eventID string, group *model.Group) error {
-	err := app.storage.CreateEvent(clientID, eventID, group.ID)
+func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error {
+	err := app.storage.CreateEvent(clientID, current, eventID, group.ID, toMemberList)
 	if err != nil {
 		return err
 	}
@@ -638,8 +638,12 @@ func (app *Application) createEvent(clientID string, current model.User, eventID
 	return nil
 }
 
-func (app *Application) deleteEvent(clientID string, current model.User, eventID string, groupID string) error {
-	err := app.storage.DeleteEvent(clientID, eventID, groupID)
+func (app *Application) updateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	return app.storage.UpdateEvent(clientID, current, eventID, groupID, toMemberList)
+}
+
+func (app *Application) deleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
+	err := app.storage.DeleteEvent(clientID, current, eventID, groupID)
 	if err != nil {
 		return err
 	}

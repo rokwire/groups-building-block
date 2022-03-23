@@ -38,9 +38,10 @@ type Services interface {
 	DeleteMembership(clientID string, current model.User, membershipID string) error
 	UpdateMembership(clientID string, current model.User, membershipID string, status string) error
 
-	GetEvents(clientID string, groupID string) ([]model.Event, error)
-	CreateEvent(clientID string, current model.User, eventID string, group *model.Group) error
-	DeleteEvent(clientID string, current model.User, eventID string, groupID string) error
+	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
+	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error
+	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
+	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
 	GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
@@ -145,15 +146,19 @@ func (s *servicesImpl) UpdateMembership(clientID string, current model.User, mem
 	return s.app.updateMembership(clientID, current, membershipID, status)
 }
 
-func (s *servicesImpl) GetEvents(clientID string, groupID string) ([]model.Event, error) {
-	return s.app.getEvents(clientID, groupID)
+func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	return s.app.getEvents(clientID, current, groupID, filterByToMembers)
 }
 
-func (s *servicesImpl) CreateEvent(clientID string, current model.User, eventID string, group *model.Group) error {
-	return s.app.createEvent(clientID, current, eventID, group)
+func (s *servicesImpl) CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error {
+	return s.app.createEvent(clientID, current, eventID, group, toMemberList)
 }
 
-func (s *servicesImpl) DeleteEvent(clientID string, current model.User, eventID string, groupID string) error {
+func (s *servicesImpl) UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	return s.app.updateEvent(clientID, current, eventID, groupID, toMemberList)
+}
+
+func (s *servicesImpl) DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
@@ -229,9 +234,10 @@ type Storage interface {
 	DeleteMembership(clientID string, currentUserID string, membershipID string) error
 	UpdateMembership(clientID string, currentUserID string, membershipID string, status string) error
 
-	FindEvents(clientID string, groupID string) ([]model.Event, error)
-	CreateEvent(clientID string, eventID string, groupID string) error
-	DeleteEvent(clientID string, eventID string, groupID string) error
+	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
+	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
+	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
+	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
 	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
