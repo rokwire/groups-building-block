@@ -22,12 +22,16 @@ definitions:
           $ref: '#/definitions/GroupStat'
         type: array
     type: object
-  createGroupEventRequest:
+  ToMember:
     properties:
-      event_id:
+      email:
         type: string
-    required:
-    - event_id
+      external_id:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
     type: object
   createGroupRequest:
     properties:
@@ -54,6 +58,9 @@ definitions:
       only_admins_can_create_polls:
         type: boolean
       privacy:
+        enum:
+        - public
+        - private
         type: string
       tags:
         items:
@@ -275,6 +282,19 @@ definitions:
       posts_count:
         type: integer
     type: object
+  groupEventRequest:
+    properties:
+      event_id:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    required:
+    - event_id
+    type: object
   membershipApprovalRequest:
     properties:
       approve:
@@ -329,6 +349,9 @@ definitions:
       only_admins_can_create_polls:
         type: boolean
       privacy:
+        enum:
+        - public
+        - private
         type: string
       tags:
         items:
@@ -346,6 +369,9 @@ definitions:
   updateMembershipRequest:
     properties:
       status:
+        enum:
+        - member
+        - admin
         type: string
     required:
     - status
@@ -613,8 +639,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a group event
-      operationId: CreateGroupEvent
+      description: Updates a group event
+      operationId: UpdateGroupEvent
       parameters:
       - description: APP
         in: header
@@ -626,7 +652,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/createGroupEventRequest'
+          $ref: '#/definitions/groupEventRequest'
       - description: Group ID
         in: path
         name: group-id
