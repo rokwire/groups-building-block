@@ -66,21 +66,6 @@ type memberAnswer struct {
 	Answer   string `bson:"answer"`
 }
 
-type event struct {
-	EventID     string    `bson:"event_id"`
-	GroupID     string    `bson:"group_id"`
-	DateCreated time.Time `bson:"date_created"`
-	Comments    []comment `bson:"comments"`
-
-	ClientID string `bson:"client_id"`
-}
-
-type comment struct {
-	MemberID    string    `bson:"member_id"`
-	Text        string    `bson:"text"`
-	DateCreated time.Time `bson:"date_created"`
-}
-
 //Adapter implements the Storage interface
 type Adapter struct {
 	db *database
@@ -1289,31 +1274,39 @@ func (sa *Adapter) UpdateMembership(clientID string, currentUserID string, membe
 }
 
 //FindEvents finds the events for a group
-func (sa *Adapter) FindEvents(clientID string, groupID string) ([]model.Event, error) {
-	filter := bson.D{primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID}}
-	var result []event
+func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	filter := bson.D{
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
+			primitive.M{"member.user_id": current.ID},
+		}})
+	}
+
+	var result []model.Event
 	err := sa.db.events.Find(filter, &result, nil)
-	if err != nil {
-		return nil, err
-	}
-	if result == nil || len(result) == 0 {
-		//not found
-		return make([]model.Event, 0), nil
-	}
-
-	resList := make([]model.Event, len(result))
-	for i, e := range result {
-		group := model.Group{ID: groupID}
-		resList[i] = model.Event{EventID: e.EventID, Group: group, DateCreated: e.DateCreated}
-	}
-
-	return resList, nil
+	return result, err
 }
 
 //CreateEvent creates a group event
-func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string) error {
-	event := event{ClientID: clientID, EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
+func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	event := model.Event{
+		ClientID:      clientID,
+		EventID:       eventID,
+		GroupID:       groupID,
+		DateCreated:   time.Now().UTC(),
+		ToMembersList: toMemberList,
+		Creator: model.Creator{
+			UserID: current.ID,
+			Name:   current.Name,
+			Email:  current.Email,
+		},
+	}
 	_, err := sa.db.events.InsertOne(event)
 
 	if err == nil {
@@ -1323,8 +1316,28 @@ func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string) 
 	return err
 }
 
+// UpdateEvent updates a group event
+func (sa *Adapter) UpdateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	filter := bson.D{
+		primitive.E{Key: "event_id", Value: eventID},
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	change := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "to_members", Value: toMemberList},
+		}},
+	}
+	_, err := sa.db.events.UpdateOne(filter, change, nil)
+	if err == nil {
+		sa.resetGroupUpdatedDate(clientID, groupID)
+	}
+	return err
+}
+
 //DeleteEvent deletes a group event
-func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) error {
+func (sa *Adapter) DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
 	filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
 		primitive.E{Key: "group_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID}}
@@ -1399,6 +1412,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 			primitive.M{"to_members": primitive.Null{}},
 			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
 			primitive.M{"to_members.user_id": current.ID},
+			primitive.M{"member.user_id": current.ID},
 		}})
 	}
 
@@ -1658,7 +1672,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	group, err = sa.FindGroup(clientID, post.GroupID)
 	if group != nil && err == nil && group.IsGroupAdminOrMember(current.ID) {
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
-		post.Creator = model.PostCreator{
+		post.Creator = model.Creator{
 			UserID: current.ID,
 			Email:  current.Email,
 			Name:   *name,

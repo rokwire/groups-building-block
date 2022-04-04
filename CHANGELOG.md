@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.26] - 2022-04-04
+- Implement additional GET /group/{group-id}/events/v2 api to avoid breaking existing clients [#128](https://github.com/rokwire/groups-building-block/issues/126)
+
+## [1.5.25] - 2022-03-23
+- Add support of members_to for events [#128](https://github.com/rokwire/groups-building-block/issues/126)
+
+## [1.5.24] - 2022-03-10
+- Authman settings are not serialised if the group is private and the user is not a member [#126](https://github.com/rokwire/groups-building-block/issues/126)
+
 ## [1.5.24] - 2022-03-10
 - Authman settings are not serialised if the group is private and the user is not a member [#126](https://github.com/rokwire/groups-building-block/issues/126)
 
