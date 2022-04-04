@@ -1275,9 +1275,10 @@ func (sa *Adapter) UpdateMembership(clientID string, currentUserID string, membe
 
 //FindEvents finds the events for a group
 func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
-	filter := bson.D{primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID}}
-
+	filter := bson.D{
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
 	if filterByToMembers {
 		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
 			primitive.M{"to_members": primitive.Null{}},

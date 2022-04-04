@@ -1109,6 +1109,82 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	w.Write(data)
 }
 
+//GetGroupEventsV2 gives the group events V2
+// @Description Gives the group events.
+// @ID GetGroupEventsV2
+// @Accept json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.Event
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/events/v2 [get]
+func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if group.Privacy == "private" {
+		if current == nil {
+			log.Println("Anonymous user cannot see the events for a private group")
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+		if !group.IsGroupAdminOrMember(current.ID) {
+			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+	}
+
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
+	if err != nil {
+		log.Printf("error getting group events - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Remove  ToMembersList for non-admins
+	if len(events) > 0 && !group.IsGroupAdmin(current.ID) {
+		for i, event := range events {
+			event.ToMembersList = nil
+			events[i] = event
+		}
+	}
+
+	data, err := json.Marshal(events)
+	if err != nil {
+		log.Println("Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 type groupEventRequest struct {
 	EventID       string           `json:"event_id" validate:"required"`
 	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins

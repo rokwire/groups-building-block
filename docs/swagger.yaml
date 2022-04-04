@@ -1,5 +1,46 @@
 basePath: /gr
 definitions:
+  Comment:
+    properties:
+      date_created:
+        type: string
+      member:
+        $ref: '#/definitions/Member'
+      text:
+        type: string
+    type: object
+  Creator:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  Event:
+    properties:
+      client_id:
+        type: string
+      comments:
+        items:
+          $ref: '#/definitions/Comment'
+        type: array
+      creator:
+        $ref: '#/definitions/Creator'
+      date_created:
+        type: string
+      event_id:
+        type: string
+      group_id:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    type: object
   GroupStat:
     properties:
       authman_enabled:
@@ -21,6 +62,41 @@ definitions:
         items:
           $ref: '#/definitions/GroupStat'
         type: array
+    type: object
+  Member:
+    properties:
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      email:
+        type: string
+      external_id:
+        type: string
+      id:
+        type: string
+      member_answers:
+        items:
+          $ref: '#/definitions/MemberAnswer'
+        type: array
+      name:
+        type: string
+      photo_url:
+        type: string
+      reject_reason:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
+  MemberAnswer:
+    properties:
+      answer:
+        type: string
+      question:
+        type: string
     type: object
   ToMember:
     properties:
@@ -665,6 +741,32 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+  /api/group/{group-id}/events/v2:
+    get:
+      consumes:
+      - application/json
+      description: Gives the group events.
+      operationId: GetGroupEventsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Event'
+            type: array
       security:
       - AppUserAuth: []
   /api/group/{group-id}/members:
