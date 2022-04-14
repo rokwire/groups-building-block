@@ -16,7 +16,7 @@ import (
 
 func (app *Application) applyDataProtection(current *model.User, group model.Group) map[string]interface{} {
 	//1 apply data protection for "anonymous"
-	if current == nil {
+	if current == nil || current.IsAnonymous {
 		return app.protectDataForAnonymous(group)
 	}
 
@@ -62,25 +62,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 
-		//members
-		membersCount := len(group.Members)
-		var membersItems []map[string]interface{}
-		if membersCount > 0 {
-			for _, current := range group.Members {
-				if current.Status == "admin" || current.Status == "member" {
-					mItem := make(map[string]interface{})
-					mItem["id"] = current.ID
-					mItem["user_id"] = current.UserID
-					mItem["external_id"] = current.ExternalID
-					mItem["name"] = current.Name
-					mItem["email"] = current.Email
-					mItem["photo_url"] = current.PhotoURL
-					mItem["status"] = current.Status
-					membersItems = append(membersItems, mItem)
-				}
-			}
-		}
-		item["members"] = membersItems
+		// Unauthenticated users must not see members
+		item["members"] = []map[string]interface{}{}
 
 		item["date_created"] = group.DateCreated
 		item["date_updated"] = group.DateUpdated
@@ -104,25 +87,8 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 
-		//members
-		membersCount := len(group.Members)
-		var membersItems []map[string]interface{}
-		if membersCount > 0 {
-			for _, current := range group.Members {
-				if current.Status == "admin" {
-					mItem := make(map[string]interface{})
-					mItem["id"] = current.ID
-					mItem["user_id"] = current.UserID
-					mItem["external_id"] = current.ExternalID
-					mItem["name"] = current.Name
-					mItem["email"] = current.Email
-					mItem["photo_url"] = current.PhotoURL
-					mItem["status"] = current.Status
-					membersItems = append(membersItems, mItem)
-				}
-			}
-		}
-		item["members"] = membersItems
+		// Unauthenticated users must not see members
+		item["members"] = []map[string]interface{}{}
 
 		item["date_created"] = group.DateCreated
 		item["date_updated"] = group.DateUpdated
@@ -264,6 +230,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem["photo_url"] = current.PhotoURL
 				mItem["status"] = current.Status
 				membersItems = append(membersItems, mItem)
+				break
 			}
 		}
 	}
@@ -307,6 +274,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 				mItem["status"] = current.Status
 				mItem["rejected_reason"] = current.RejectReason
 				membersItems = append(membersItems, mItem)
+				break
 			}
 		}
 	}
