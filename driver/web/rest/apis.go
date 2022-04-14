@@ -658,11 +658,29 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	//check if allowed to see the events for this group
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	if group.Privacy == "private" {
+		if current == nil || current.IsAnonymous {
+			log.Println("Anonymous user cannot see the events for a private group")
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+		if !group.IsGroupAdminOrMember(current.ID) {
+			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
 	}
 
 	data, err := json.Marshal(group)
@@ -1069,7 +1087,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 		return
 	}
 	if group.Privacy == "private" {
-		if current == nil {
+		if current == nil || current.IsAnonymous {
 			log.Println("Anonymous user cannot see the events for a private group")
 
 			w.WriteHeader(http.StatusForbidden)
@@ -1142,7 +1160,7 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 		return
 	}
 	if group.Privacy == "private" {
-		if current == nil {
+		if current == nil || current.IsAnonymous {
 			log.Println("Anonymous user cannot see the events for a private group")
 
 			w.WriteHeader(http.StatusForbidden)

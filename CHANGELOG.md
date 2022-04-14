@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.27] - 2022-04-14
+- Anonymous users need access /groups API too [#130](https://github.com/rokwire/groups-building-block/issues/130)
+
 ## [1.5.26] - 2022-04-04
 - Implement additional GET /group/{group-id}/events/v2 api to avoid breaking existing clients [#128](https://github.com/rokwire/groups-building-block/issues/126)
 
