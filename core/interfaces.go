@@ -18,10 +18,12 @@ type Services interface {
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
-	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+	CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string,
+		privacy string, hiddenForSearch bool,
 		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
 		authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError)
-	UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
+	UpdateGroup(clientID string, current *model.User, id string, category string, title string,
+		privacy string, hiddenForSearch bool, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
@@ -81,16 +83,18 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
-func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+func (s *servicesImpl) CreateGroup(clientID string, current model.User, title string, description *string, category string, tags []string,
+	privacy string, hiddenForSearch bool,
 	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
 	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError) {
-	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, creatorName, creatorEmail, creatorPhotoURL,
+	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, hiddenForSearch, creatorName, creatorEmail, creatorPhotoURL,
 		imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
 }
 
-func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
+func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string,
+	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError {
-	return s.app.updateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL, tags,
+	return s.app.updateGroup(clientID, current, id, category, title, privacy, hiddenForSearch, description, imageURL, webURL, tags,
 		membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
 }
 
@@ -213,10 +217,12 @@ type Storage interface {
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
-	CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
+	CreateGroup(clientID string, title string, description *string, category string, tags []string,
+		privacy string, hiddenForSearch bool,
 		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string,
 		membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError)
-	UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
+	UpdateGroup(clientID string, id string, category string, title string,
+		privacy string, hiddenForSearch bool, description *string,
 		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)

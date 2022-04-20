@@ -12,6 +12,7 @@ type Group struct {
 	Category            string   `json:"category" bson:"category"` //one of the enums categories list
 	Title               string   `json:"title" bson:"title"`
 	Privacy             string   `json:"privacy" bson:"privacy"` //public or private
+	HiddenForSearch     bool     `json:"hidden_for_search" bson:"hidden_for_search"`
 	Description         *string  `json:"description" bson:"description"`
 	ImageURL            *string  `json:"image_url" bson:"image_url"`
 	WebURL              *string  `json:"web_url" bson:"web_url"`
