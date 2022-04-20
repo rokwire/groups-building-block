@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.5.10"
+        "version": "1.5.28"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -1541,6 +1541,9 @@
                 "description": {
                     "type": "string"
                 },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
                 "image_url": {
                     "type": "string"
                 },
@@ -1982,6 +1985,9 @@
                 },
                 "description": {
                     "type": "string"
+                },
+                "hidden_for_search": {
+                    "type": "boolean"
                 },
                 "image_url": {
                     "type": "string"
