@@ -68,6 +68,7 @@ type createGroupRequest struct {
 	Category                 string   `json:"category" validate:"required"`
 	Tags                     []string `json:"tags"`
 	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool     `json:"hidden_for_search"`
 	CreatorName              string   `json:"creator_name"`
 	CreatorEmail             string   `json:"creator_email"`
 	CreatorPhotoURL          string   `json:"creator_photo_url"`
@@ -133,6 +134,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	category := requestData.Category
 	tags := requestData.Tags
 	privacy := requestData.Privacy
+	hidden := requestData.Hidden
 	creatorName := requestData.CreatorName
 	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
@@ -143,7 +145,8 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	authmanEnabled := requestData.AuthmanEnabled
 	onlyAdminsCanCreatePolls := requestData.OnlyAdminsCanCreatePolls
 
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags,
+		privacy, hidden,
 		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
 		onlyAdminsCanCreatePolls)
 	if groupErr != nil {
@@ -170,6 +173,7 @@ type updateGroupRequest struct {
 	Category                 string   `json:"category" validate:"required"`
 	Tags                     []string `json:"tags"`
 	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool     `json:"hidden_for_search"`
 	ImageURL                 *string  `json:"image_url"`
 	WebURL                   *string  `json:"web_url"`
 	MembershipQuestions      []string `json:"membership_questions"`
@@ -244,6 +248,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	category := requestData.Category
 	title := requestData.Title
 	privacy := requestData.Privacy
+	hidden := requestData.Hidden
 	description := requestData.Description
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
@@ -253,7 +258,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	authmanEnabled := requestData.AuthmanEnabled
 	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
 
-	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL,
+	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, hidden, description, imageURL, webURL,
 		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)

@@ -29,6 +29,7 @@ type group struct {
 	Category            string   `bson:"category"` //one of the enums categories list
 	Title               string   `bson:"title"`
 	Privacy             string   `bson:"privacy"` //public or private
+	HiddenForSearch     bool     `bson:"hidden_for_search"`
 	Description         *string  `bson:"description"`
 	ImageURL            *string  `bson:"image_url"`
 	WebURL              *string  `bson:"web_url"`
@@ -482,7 +483,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
+	hiddenForSearch bool, creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
 	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *core.GroupError) {
 	var insertedID string
 
@@ -515,7 +516,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
+			Tags: tags, HiddenForSearch: hiddenForSearch, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
 			MembershipQuestions: membershipQuestions, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 			OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls,
 		}
@@ -541,7 +542,8 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 }
 
 //UpdateGroup updates a group.
-func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
+func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string,
+	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *core.GroupError {
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
@@ -569,6 +571,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "category", Value: category},
 				primitive.E{Key: "title", Value: title},
 				primitive.E{Key: "privacy", Value: privacy},
+				primitive.E{Key: "hidden_for_search", Value: hiddenForSearch},
 				primitive.E{Key: "description", Value: description},
 				primitive.E{Key: "image_url", Value: imageURL},
 				primitive.E{Key: "web_url", Value: webURL},
@@ -1865,6 +1868,7 @@ func constructGroup(gr group) model.Group {
 	category := gr.Category
 	title := gr.Title
 	privacy := gr.Privacy
+	hiddenForSearch := gr.HiddenForSearch
 	description := gr.Description
 	imageURL := gr.ImageURL
 	webURL := gr.WebURL
@@ -1883,7 +1887,7 @@ func constructGroup(gr group) model.Group {
 	}
 
 	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,
-		Description: description, ImageURL: imageURL, WebURL: webURL,
+		HiddenForSearch: hiddenForSearch, Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls,

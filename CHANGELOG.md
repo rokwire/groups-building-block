@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.28] - 2022-04-20
+- Hide groups from search queries with additional flag [#132](https://github.com/rokwire/groups-building-block/issues/132)
+
 ## [1.5.27] - 2022-04-14
 - Anonymous users need access /groups API too [#130](https://github.com/rokwire/groups-building-block/issues/130)
 

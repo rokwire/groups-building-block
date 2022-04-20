@@ -53,6 +53,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["category"] = group.Category
 		item["title"] = group.Title
 		item["privacy"] = group.Privacy
+		item["hidden_for_search"] = group.HiddenForSearch
 		item["description"] = group.Description
 		item["image_url"] = group.ImageURL
 		item["web_url"] = group.WebURL
@@ -78,6 +79,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["category"] = group.Category
 		item["title"] = group.Title
 		item["privacy"] = group.Privacy
+		item["hidden_for_search"] = group.HiddenForSearch
 		item["description"] = group.Description
 		item["image_url"] = group.ImageURL
 		item["web_url"] = group.WebURL
@@ -105,6 +107,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["category"] = group.Category
 	item["title"] = group.Title
 	item["privacy"] = group.Privacy
+	item["hidden_for_search"] = group.HiddenForSearch
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
@@ -163,6 +166,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["category"] = group.Category
 	item["title"] = group.Title
 	item["privacy"] = group.Privacy
+	item["hidden_for_search"] = group.HiddenForSearch
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
@@ -206,6 +210,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["category"] = group.Category
 	item["title"] = group.Title
 	item["privacy"] = group.Privacy
+	item["hidden_for_search"] = group.HiddenForSearch
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
@@ -249,6 +254,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["category"] = group.Category
 	item["title"] = group.Title
 	item["privacy"] = group.Privacy
+	item["hidden_for_search"] = group.HiddenForSearch
 	item["description"] = group.Description
 	item["image_url"] = group.ImageURL
 	item["web_url"] = group.WebURL
@@ -321,10 +327,11 @@ func (app *Application) getUserGroupMemberships(id string, external bool) ([]*mo
 	return getUserGroupMemberships, user, nil
 }
 
-func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string, privacy string,
+func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string,
+	privacy string, hiddenForSearch bool,
 	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool,
 	authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, current.ID, creatorName,
+	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, hiddenForSearch, current.ID, creatorName,
 		creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
 	if err != nil {
 		return nil, err
@@ -345,9 +352,14 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 	return insertedID, nil
 }
 
-func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string, privacy string, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError {
-	err := app.storage.UpdateGroup(clientID, id, category, title, privacy, description, imageURL, webURL, tags, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
+func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string,
+	privacy string, hiddenForSearch bool, description *string,
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string,
+	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError {
+
+	err := app.storage.UpdateGroup(clientID, id, category, title,
+		privacy, hiddenForSearch, description, imageURL, webURL, tags, membershipQuestions,
+		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
 	if err != nil {
 		return err
 	}
@@ -372,7 +384,9 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 	visibleGroups := make([]model.Group, 0)
 	for _, group := range groups {
 
-		if group.Privacy != "private" || group.IsGroupAdminOrMember(current.ID) || (title != nil && strings.EqualFold(group.Title, *title)) {
+		if group.Privacy != "private" ||
+			group.IsGroupAdminOrMember(current.ID) ||
+			(title != nil && strings.EqualFold(group.Title, *title) && !group.HiddenForSearch) {
 			visibleGroups = append(visibleGroups, group)
 		}
 	}
