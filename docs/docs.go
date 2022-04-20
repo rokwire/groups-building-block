@@ -1545,6 +1545,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
                 "image_url": {
                     "type": "string"
                 },
@@ -1987,6 +1990,9 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
                 "image_url": {
                     "type": "string"
                 },
@@ -2057,7 +2063,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.5.10",
+	Version:          "1.5.28",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"https"},

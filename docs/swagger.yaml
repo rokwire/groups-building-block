@@ -125,6 +125,8 @@ definitions:
         type: string
       description:
         type: string
+      hidden_for_search:
+        type: boolean
       image_url:
         type: string
       membership_questions:
@@ -416,6 +418,8 @@ definitions:
         type: string
       description:
         type: string
+      hidden_for_search:
+        type: boolean
       image_url:
         type: string
       membership_questions:
@@ -457,7 +461,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.10
+  version: 1.5.28
 paths:
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
