@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.29] - 2022-04-26
+- Update Swagger library due to security issue [#135](https://github.com/rokwire/groups-building-block/issues/135)
+
 ## [1.5.28] - 2022-04-20
 - Hide groups from search queries with additional flag [#132](https://github.com/rokwire/groups-building-block/issues/132)
 
