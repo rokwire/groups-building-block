@@ -4,16 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/rokwire/logging-library-go/logs"
-	"golang.org/x/sync/syncmap"
-	"gopkg.in/ericchiang/go-oidc.v2"
 	"groups/core"
 	"groups/core/model"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/google/uuid"
+	"golang.org/x/sync/syncmap"
+	"gopkg.in/ericchiang/go-oidc.v2"
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/authorization"
@@ -166,28 +166,14 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, coreBBHost string, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
-	if coreBBHost != "" {
-		serviceID := "groups"
-
-		remoteConfig := authservice.RemoteAuthDataLoaderConfig{
-			AuthServicesHost: coreBBHost,
-		}
-
-		// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-		serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{coreBBHost + "/bbs/service-regs"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
-
-		// Instantiate AuthService instance
-		authService, err := authservice.NewAuthService(serviceID, groupServiceURL, serviceLoader)
-		if err != nil {
-			log.Fatalf("error instancing auth service: %s", err)
-		}
-
+	if authService != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
-		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceID)
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", authService.GetServiceID())
 
 		// Instantiate TokenAuth instance to perform token validation
+		var err error
 		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
 		if err != nil {
 			log.Fatalf("error instancing token auth: %s", err)
