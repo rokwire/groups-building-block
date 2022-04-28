@@ -66,7 +66,7 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, 
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, nil, r)
+	user := auth.idTokenAuth.check(clientID, idToken, false, nil, r)
 	return clientID, user
 }
 
@@ -77,7 +77,7 @@ func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request,
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, allowedOIDCClientIDs, r)
+	user := auth.idTokenAuth.check(clientID, idToken, false, allowedOIDCClientIDs, r)
 	return clientID, user
 }
 
@@ -104,7 +104,7 @@ func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(clientID, idToken, nil, r)
+		user := auth.idTokenAuth.check(clientID, idToken, true, nil, r)
 		if user != nil {
 			authenticated = true
 		}
@@ -320,12 +320,13 @@ type IDTokenAuth struct {
 	cachedUsersLockMapping map[string]*sync.Mutex
 }
 
-func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs []string, r *http.Request) *model.User {
+func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCoreToken bool, allowedClientIDs []string, r *http.Request) *model.User {
 	var data *userData
 	var isCoreUser = false
+	var isAnonymous = false
 	if auth.coreTokenAuth != nil {
 		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		if err == nil && claims != nil && !claims.Anonymous {
+		if err == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
 			err = auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
 				return nil
@@ -336,6 +337,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
 				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
 			isCoreUser = true
+			isAnonymous = claims.Anonymous
 		}
 	}
 
@@ -422,7 +424,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowedClientIDs 
 	if data.Email != nil {
 		email = *data.Email
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {

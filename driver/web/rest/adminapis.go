@@ -221,7 +221,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -260,7 +260,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 		return
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, groupID)
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, false)
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -345,7 +345,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 		return
 	}
 
-	err := h.app.Services.DeleteEvent(clientID, *current, eventID, groupID)
+	err := h.app.Services.DeleteEvent(clientID, current, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

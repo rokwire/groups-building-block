@@ -68,6 +68,7 @@ type createGroupRequest struct {
 	Category                 string   `json:"category" validate:"required"`
 	Tags                     []string `json:"tags"`
 	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool     `json:"hidden_for_search"`
 	CreatorName              string   `json:"creator_name"`
 	CreatorEmail             string   `json:"creator_email"`
 	CreatorPhotoURL          string   `json:"creator_photo_url"`
@@ -133,6 +134,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	category := requestData.Category
 	tags := requestData.Tags
 	privacy := requestData.Privacy
+	hidden := requestData.Hidden
 	creatorName := requestData.CreatorName
 	creatorEmail := requestData.CreatorEmail
 	creatorPhotoURL := requestData.CreatorPhotoURL
@@ -143,7 +145,8 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	authmanEnabled := requestData.AuthmanEnabled
 	onlyAdminsCanCreatePolls := requestData.OnlyAdminsCanCreatePolls
 
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags, privacy,
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags,
+		privacy, hidden,
 		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
 		onlyAdminsCanCreatePolls)
 	if groupErr != nil {
@@ -170,6 +173,7 @@ type updateGroupRequest struct {
 	Category                 string   `json:"category" validate:"required"`
 	Tags                     []string `json:"tags"`
 	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool     `json:"hidden_for_search"`
 	ImageURL                 *string  `json:"image_url"`
 	WebURL                   *string  `json:"web_url"`
 	MembershipQuestions      []string `json:"membership_questions"`
@@ -244,6 +248,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	category := requestData.Category
 	title := requestData.Title
 	privacy := requestData.Privacy
+	hidden := requestData.Hidden
 	description := requestData.Description
 	imageURL := requestData.ImageURL
 	webURL := requestData.WebURL
@@ -253,7 +258,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	authmanEnabled := requestData.AuthmanEnabled
 	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
 
-	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, description, imageURL, webURL,
+	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, hidden, description, imageURL, webURL,
 		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
@@ -580,7 +585,7 @@ func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.Us
 
 		members := group.Members
 		for _, member := range members {
-			if member.User.ID == current.ID {
+			if member.UserID == current.ID {
 				memberStatus = member.Status
 			}
 		}
@@ -658,11 +663,29 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	//check if allowed to see the events for this group
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	if group.Privacy == "private" {
+		if current == nil || current.IsAnonymous {
+			log.Println("Anonymous user cannot see the events for a private group")
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+		if !group.IsGroupAdminOrMember(current.ID) {
+			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
 	}
 
 	data, err := json.Marshal(group)
@@ -1069,7 +1092,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 		return
 	}
 	if group.Privacy == "private" {
-		if current == nil {
+		if current == nil || current.IsAnonymous {
 			log.Println("Anonymous user cannot see the events for a private group")
 
 			w.WriteHeader(http.StatusForbidden)
@@ -1085,7 +1108,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 		}
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, groupID)
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1109,9 +1132,86 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	w.Write(data)
 }
 
-type createGroupEventRequest struct {
-	EventID string `json:"event_id" validate:"required"`
-} // @name createGroupEventRequest
+//GetGroupEventsV2 gives the group events V2
+// @Description Gives the group events.
+// @ID GetGroupEventsV2
+// @Accept json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.Event
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/events/v2 [get]
+func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if group.Privacy == "private" {
+		if current == nil || current.IsAnonymous {
+			log.Println("Anonymous user cannot see the events for a private group")
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+		if !group.IsGroupAdminOrMember(current.ID) {
+			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
+
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte("Forbidden"))
+			return
+		}
+	}
+
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
+	if err != nil {
+		log.Printf("error getting group events - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Remove  ToMembersList for non-admins
+	if len(events) > 0 && !group.IsGroupAdmin(current.ID) {
+		for i, event := range events {
+			event.ToMembersList = nil
+			events[i] = event
+		}
+	}
+
+	data, err := json.Marshal(events)
+	if err != nil {
+		log.Println("Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type groupEventRequest struct {
+	EventID       string           `json:"event_id" validate:"required"`
+	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
+} // @name groupEventRequest
 
 //CreateGroupEvent creates a group event
 // @Description Creates a group event
@@ -1119,7 +1219,7 @@ type createGroupEventRequest struct {
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
-// @Param data body createGroupEventRequest true "body data"
+// @Param data body groupEventRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
@@ -1141,7 +1241,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	var requestData createGroupEventRequest
+	var requestData groupEventRequest
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create event request data - %s\n", err.Error())
@@ -1178,9 +1278,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	eventID := requestData.EventID
-
-	err = h.app.Services.CreateEvent(clientID, *current, eventID, group)
+	err = h.app.Services.CreateEvent(clientID, current, requestData.EventID, group, requestData.ToMembersList)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1190,6 +1288,82 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully created"))
+}
+
+// UpdateGroupEvent updates a group event
+// @Description Updates a group event
+// @ID UpdateGroupEvent
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body groupEventRequest true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200 {string} Successfully created
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/events [post]
+func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the update group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData groupEventRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the update event request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating update event data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to create
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.UpdateEvent(clientID, current, requestData.EventID, group.ID, requestData.ToMembersList)
+	if err != nil {
+		log.Printf("Error on updating a group event - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 //DeleteGroupEvent deletes a group event
@@ -1240,7 +1414,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.DeleteEvent(clientID, *current, eventID, groupID)
+	err = h.app.Services.DeleteEvent(clientID, current, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1320,7 +1494,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		filterPrivatePostsValue = &filter
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, !group.IsGroupAdmin(current.ID), offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

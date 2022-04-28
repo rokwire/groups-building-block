@@ -345,6 +345,46 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["member.user_id_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "member.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.user_id_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.external_id_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.external_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.email_1"] == nil {
+		err := events.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.email", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("events checks passed")
 	return nil
 }
@@ -408,6 +448,47 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 			return err
 		}
 	}
+
+	if indexMapping["member.user_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "member.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.user_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.external_id_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.external_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.email_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.email", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("posts checks passed")
 	return nil
 }
@@ -478,7 +559,7 @@ func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectio
 		}
 
 		//apply events collection
-		var eventsList []event
+		var eventsList []model.Event
 		err = events.FindWithContext(sessionContext, bson.D{}, &eventsList, nil)
 		if err != nil {
 			abortTransaction(sessionContext)

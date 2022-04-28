@@ -12,6 +12,7 @@ type Group struct {
 	Category            string   `json:"category" bson:"category"` //one of the enums categories list
 	Title               string   `json:"title" bson:"title"`
 	Privacy             string   `json:"privacy" bson:"privacy"` //public or private
+	HiddenForSearch     bool     `json:"hidden_for_search" bson:"hidden_for_search"`
 	Description         *string  `json:"description" bson:"description"`
 	ImageURL            *string  `json:"image_url" bson:"image_url"`
 	WebURL              *string  `json:"web_url" bson:"web_url"`
@@ -33,7 +34,7 @@ func (gr Group) IsGroupAdminOrMember(userID string) bool {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.IsAdminOrMember() {
+		if item.UserID == userID && item.IsAdminOrMember() {
 			return true
 		}
 	}
@@ -46,7 +47,7 @@ func (gr Group) IsGroupAdmin(userID string) bool {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.IsAdmin() {
+		if item.UserID == userID && item.IsAdmin() {
 			return true
 		}
 	}
@@ -59,7 +60,7 @@ func (gr Group) IsGroupMember(userID string) bool {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.IsMember() {
+		if item.UserID == userID && item.IsMember() {
 			return true
 		}
 	}
@@ -72,7 +73,7 @@ func (gr Group) IsGroupPending(userID string) bool {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.IsPendingMember() {
+		if item.UserID == userID && item.IsPendingMember() {
 			return true
 		}
 	}
@@ -85,7 +86,7 @@ func (gr Group) IsGroupRejected(userID string) bool {
 		return false
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID && item.IsRejected() {
+		if item.UserID == userID && item.IsRejected() {
 			return true
 		}
 	}
@@ -98,7 +99,7 @@ func (gr Group) UserNameByID(userID string) *string {
 		return nil
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID {
+		if item.UserID == userID {
 			name := item.Name
 			return &name
 		}
@@ -125,7 +126,7 @@ func (gr Group) GetMemberByUserID(userID string) *Member {
 		return nil
 	}
 	for _, item := range gr.Members {
-		if item.User.ID == userID {
+		if item.UserID == userID {
 			return &item
 		}
 	}
@@ -138,7 +139,7 @@ func (gr Group) GetMemberByExternalID(userID string) *Member {
 		return nil
 	}
 	for _, item := range gr.Members {
-		if item.User.ExternalID == userID {
+		if item.ExternalID == userID {
 			return &item
 		}
 	}
@@ -152,9 +153,9 @@ func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notific
 
 	if len(gr.Members) > 0 {
 		for _, member := range gr.Members {
-			if member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.User.ID) {
+			if member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID) {
 				recipients = append(recipients, notifications.Recipient{
-					UserID: member.User.ID,
+					UserID: member.UserID,
 					Name:   member.Name,
 				})
 			}

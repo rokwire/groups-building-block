@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.5.10"
+        "version": "1.5.28"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -421,14 +421,14 @@
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Creates a group event",
+                "description": "Updates a group event",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "operationId": "CreateGroupEvent",
+                "operationId": "UpdateGroupEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -443,7 +443,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/createGroupEventRequest"
+                            "$ref": "#/definitions/groupEventRequest"
                         }
                     },
                     {
@@ -459,6 +459,47 @@
                         "description": "OK",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/events/v2": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the group events.",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "GetGroupEventsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Event"
+                            }
                         }
                     }
                 }
@@ -1306,6 +1347,67 @@
         }
     },
     "definitions": {
+        "Comment": {
+            "type": "object",
+            "properties": {
+                "date_created": {
+                    "type": "string"
+                },
+                "member": {
+                    "$ref": "#/definitions/Member"
+                },
+                "text": {
+                    "type": "string"
+                }
+            }
+        },
+        "Creator": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "Event": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "comments": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Comment"
+                    }
+                },
+                "creator": {
+                    "$ref": "#/definitions/Creator"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "event_id": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
         "GroupStat": {
             "type": "object",
             "properties": {
@@ -1340,13 +1442,72 @@
                 }
             }
         },
-        "createGroupEventRequest": {
+        "Member": {
             "type": "object",
-            "required": [
-                "event_id"
-            ],
             "properties": {
-                "event_id": {
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "member_answers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MemberAnswer"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "reject_reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "MemberAnswer": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "ToMember": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -1380,6 +1541,9 @@
                 "description": {
                     "type": "string"
                 },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
                 "image_url": {
                     "type": "string"
                 },
@@ -1393,7 +1557,11 @@
                     "type": "boolean"
                 },
                 "privacy": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "public",
+                        "private"
+                    ]
                 },
                 "tags": {
                     "type": "array",
@@ -1726,6 +1894,24 @@
                 }
             }
         },
+        "groupEventRequest": {
+            "type": "object",
+            "required": [
+                "event_id"
+            ],
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
         "membershipApprovalRequest": {
             "type": "object",
             "required": [
@@ -1800,6 +1986,9 @@
                 "description": {
                     "type": "string"
                 },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
                 "image_url": {
                     "type": "string"
                 },
@@ -1813,7 +2002,11 @@
                     "type": "boolean"
                 },
                 "privacy": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "public",
+                        "private"
+                    ]
                 },
                 "tags": {
                     "type": "array",
@@ -1836,7 +2029,11 @@
             ],
             "properties": {
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "member",
+                        "admin"
+                    ]
                 }
             }
         }

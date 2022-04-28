@@ -5,7 +5,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-- Ignore members different from uofinetid [116](https://github.com/rokwire/groups-building-block/issues/116)
+
+## [1.5.29] - 2022-04-26
+- Update Swagger library due to security issue [#135](https://github.com/rokwire/groups-building-block/issues/135)
+
+## [1.5.28] - 2022-04-20
+- Hide groups from search queries with additional flag [#132](https://github.com/rokwire/groups-building-block/issues/132)
+
+## [1.5.27] - 2022-04-14
+- Anonymous users need access /groups API too [#130](https://github.com/rokwire/groups-building-block/issues/130)
+
+## [1.5.26] - 2022-04-04
+- Implement additional GET /group/{group-id}/events/v2 api to avoid breaking existing clients [#128](https://github.com/rokwire/groups-building-block/issues/126)
+
+## [1.5.25] - 2022-03-23
+- Add support of members_to for events [#128](https://github.com/rokwire/groups-building-block/issues/126)
+
+## [1.5.24] - 2022-03-10
+- Authman settings are not serialised if the group is private and the user is not a member [#126](https://github.com/rokwire/groups-building-block/issues/126)
+
+## [1.5.24] - 2022-03-10
+- Authman settings are not serialised if the group is private and the user is not a member [#126](https://github.com/rokwire/groups-building-block/issues/126)
+
+## [1.5.23] - 2022-03-09
+- More fixes and improvements for post destination members restriction [#123](https://github.com/rokwire/groups-building-block/issues/123)
+
+## [1.5.22] - 2022-03-08
+- Limit reply to a specific subset of members [#123](https://github.com/rokwire/groups-building-block/issues/123)
+
+## [1.5.21] - 2022-02-24
+- Additional fix of wrong membership initialization [#122](https://github.com/rokwire/groups-building-block/issues/122)
+
+## [1.5.20] - 2022-02-23
+- Deprecate and remove member.user.id and use member.user_id [#122](https://github.com/rokwire/groups-building-block/issues/122)
+
+## [1.5.19] - 2022-02-16
+- Ignore members different from uofinetid [#116](https://github.com/rokwire/groups-building-block/issues/116)
+
+## [1.5.18] - 2022-02-15
+- Additional improvements for Authman sync [#116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.17] - 2022-02-14
 - Add additional parameter within the authman user api [#116](https://github.com/rokwire/groups-building-block/issues/116)

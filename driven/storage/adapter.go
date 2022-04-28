@@ -29,6 +29,7 @@ type group struct {
 	Category            string   `bson:"category"` //one of the enums categories list
 	Title               string   `bson:"title"`
 	Privacy             string   `bson:"privacy"` //public or private
+	HiddenForSearch     bool     `bson:"hidden_for_search"`
 	Description         *string  `bson:"description"`
 	ImageURL            *string  `bson:"image_url"`
 	WebURL              *string  `bson:"web_url"`
@@ -64,21 +65,6 @@ type member struct {
 type memberAnswer struct {
 	Question string `bson:"question"`
 	Answer   string `bson:"answer"`
-}
-
-type event struct {
-	EventID     string    `bson:"event_id"`
-	GroupID     string    `bson:"group_id"`
-	DateCreated time.Time `bson:"date_created"`
-	Comments    []comment `bson:"comments"`
-
-	ClientID string `bson:"client_id"`
-}
-
-type comment struct {
-	MemberID    string    `bson:"member_id"`
-	Text        string    `bson:"text"`
-	DateCreated time.Time `bson:"date_created"`
 }
 
 //Adapter implements the Storage interface
@@ -467,9 +453,8 @@ func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model
 		members := current.Members
 		newMembers := make([]model.Member, len(members))
 		for i, c := range members {
-			memberUser := model.User{ID: c.UserID}
 			newMembers[i] = model.Member{
-				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, User: memberUser,
+				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, UserID: c.UserID,
 			}
 		}
 		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy, Members: newMembers}
@@ -498,7 +483,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
+	hiddenForSearch bool, creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
 	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *core.GroupError) {
 	var insertedID string
 
@@ -531,7 +516,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		groupID, _ := uuid.NewUUID()
 		insertedID = groupID.String()
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
+			Tags: tags, HiddenForSearch: hiddenForSearch, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
 			MembershipQuestions: membershipQuestions, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 			OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls,
 		}
@@ -557,7 +542,8 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 }
 
 //UpdateGroup updates a group.
-func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string, privacy string, description *string,
+func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string,
+	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *core.GroupError {
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
@@ -585,6 +571,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "category", Value: category},
 				primitive.E{Key: "title", Value: title},
 				primitive.E{Key: "privacy", Value: privacy},
+				primitive.E{Key: "hidden_for_search", Value: hiddenForSearch},
 				primitive.E{Key: "description", Value: description},
 				primitive.E{Key: "image_url", Value: imageURL},
 				primitive.E{Key: "web_url", Value: webURL},
@@ -1290,31 +1277,39 @@ func (sa *Adapter) UpdateMembership(clientID string, currentUserID string, membe
 }
 
 //FindEvents finds the events for a group
-func (sa *Adapter) FindEvents(clientID string, groupID string) ([]model.Event, error) {
-	filter := bson.D{primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID}}
-	var result []event
+func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	filter := bson.D{
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
+			primitive.M{"member.user_id": current.ID},
+		}})
+	}
+
+	var result []model.Event
 	err := sa.db.events.Find(filter, &result, nil)
-	if err != nil {
-		return nil, err
-	}
-	if result == nil || len(result) == 0 {
-		//not found
-		return make([]model.Event, 0), nil
-	}
-
-	resList := make([]model.Event, len(result))
-	for i, e := range result {
-		group := model.Group{ID: groupID}
-		resList[i] = model.Event{EventID: e.EventID, Group: group, DateCreated: e.DateCreated}
-	}
-
-	return resList, nil
+	return result, err
 }
 
 //CreateEvent creates a group event
-func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string) error {
-	event := event{ClientID: clientID, EventID: eventID, GroupID: groupID, DateCreated: time.Now()}
+func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	event := model.Event{
+		ClientID:      clientID,
+		EventID:       eventID,
+		GroupID:       groupID,
+		DateCreated:   time.Now().UTC(),
+		ToMembersList: toMemberList,
+		Creator: model.Creator{
+			UserID: current.ID,
+			Name:   current.Name,
+			Email:  current.Email,
+		},
+	}
 	_, err := sa.db.events.InsertOne(event)
 
 	if err == nil {
@@ -1324,8 +1319,28 @@ func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string) 
 	return err
 }
 
+// UpdateEvent updates a group event
+func (sa *Adapter) UpdateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	filter := bson.D{
+		primitive.E{Key: "event_id", Value: eventID},
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	change := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "to_members", Value: toMemberList},
+		}},
+	}
+	_, err := sa.db.events.UpdateOne(filter, change, nil)
+	if err == nil {
+		sa.resetGroupUpdatedDate(clientID, groupID)
+	}
+	return err
+}
+
 //DeleteEvent deletes a group event
-func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) error {
+func (sa *Adapter) DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
 	filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
 		primitive.E{Key: "group_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID}}
@@ -1377,11 +1392,31 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 	return &noDataCount, nil
 }
 
-//FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+// FindPosts Retrieves posts for a group
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+
+	group, errGr := sa.FindGroup(clientID, groupID)
+	if group == nil {
+		if errGr != nil {
+			log.Printf("unable to find group with id %s: %s", groupID, errGr)
+		} else {
+			log.Printf("group does not exists %s", groupID)
+		}
+		return nil, errGr
+	}
+
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "group_id", Value: groupID},
+	}
+
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
+			primitive.M{"member.user_id": current.ID},
+		}})
 	}
 
 	if filterPrivatePostsValue != nil {
@@ -1419,7 +1454,9 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, *post.ID, true, order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
-					list = append(list, childPost)
+					if childPost.UserCanSeePost(current.ID) {
+						list = append(list, childPost)
+					}
 				}
 			}
 		}
@@ -1473,12 +1510,23 @@ func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Pos
 }
 
 //FindPost Retrieves a post by groupID and postID
-func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
-	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck)
+func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
-func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool) (*model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
+func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "_id", Value: postID},
+	}
+
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": userID},
+		}})
+	}
 
 	if !skipMembershipCheck {
 		group, err := sa.findGroupWithContext(clientID, groupID)
@@ -1522,8 +1570,11 @@ func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, g
 
 // FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, recursive bool, order *string) ([]*model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "parent_id", Value: parentID}}
+func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "parent_id", Value: parentID},
+	}
 
 	if !skipMembershipCheck {
 		group, err := sa.FindGroup(clientID, groupID)
@@ -1548,7 +1599,7 @@ func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID s
 	if recursive {
 		if len(posts) > 0 {
 			for _, post := range posts {
-				childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, *post.ID, true, recursive, order)
+				childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, *post.ID, true, filterByToMembers, recursive, order)
 				if err == nil && childPosts != nil {
 					for _, childPost := range childPosts {
 						posts = append(posts, childPost)
@@ -1624,7 +1675,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	group, err = sa.FindGroup(clientID, post.GroupID)
 	if group != nil && err == nil && group.IsGroupAdminOrMember(current.ID) {
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
-		post.Member = model.PostCreator{
+		post.Creator = model.Creator{
 			UserID: current.ID,
 			Email:  current.Email,
 			Name:   *name,
@@ -1645,11 +1696,11 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 
-	originalPost, _ := sa.FindPost(clientID, userID, post.GroupID, *post.ID, true)
+	originalPost, _ := sa.FindPost(clientID, userID, post.GroupID, *post.ID, true, true)
 	if originalPost == nil {
 		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
-	if originalPost.Member.UserID != userID {
+	if originalPost.Creator.UserID != userID {
 		return nil, fmt.Errorf("only creator of the post can update it")
 	}
 
@@ -1673,6 +1724,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 			primitive.E{Key: "private", Value: post.Private},
 			primitive.E{Key: "image_url", Value: post.ImageURL},
 			primitive.E{Key: "date_updated", Value: post.DateUpdated},
+			primitive.E{Key: "to_members", Value: post.ToMembersList},
 		},
 		},
 	}
@@ -1695,18 +1747,18 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 		ctx = context.Background()
 	}
 	group, _ := sa.FindGroup(clientID, groupID)
-	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true)
+	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true, !group.IsGroupAdmin(userID))
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}
 
 	if !force {
-		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Member.UserID != userID) {
+		if group == nil || originalPost == nil || (!group.IsGroupAdmin(userID) && originalPost.Creator.UserID != userID) {
 			return fmt.Errorf("only creator of the post or group admin can delete it")
 		}
 	}
 
-	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, false, nil)
+	childPosts, err := sa.FindPostsByParentID(clientID, userID, groupID, postID, true, !group.IsGroupAdmin(userID), false, nil)
 	if len(childPosts) > 0 && err == nil {
 		for _, post := range childPosts {
 			sa.deletePost(ctx, clientID, userID, groupID, *post.ID, true)
@@ -1816,6 +1868,7 @@ func constructGroup(gr group) model.Group {
 	category := gr.Category
 	title := gr.Title
 	privacy := gr.Privacy
+	hiddenForSearch := gr.HiddenForSearch
 	description := gr.Description
 	imageURL := gr.ImageURL
 	webURL := gr.WebURL
@@ -1834,7 +1887,7 @@ func constructGroup(gr group) model.Group {
 	}
 
 	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,
-		Description: description, ImageURL: imageURL, WebURL: webURL,
+		HiddenForSearch: hiddenForSearch, Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls,
@@ -1844,7 +1897,6 @@ func constructGroup(gr group) model.Group {
 func constructMember(member member) model.Member {
 	id := member.ID
 	userID := member.UserID
-	user := model.User{ID: member.UserID} // deprecated
 	externalID := member.ExternalID
 	name := member.Name
 	email := member.Email
@@ -1859,6 +1911,6 @@ func constructMember(member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, UserID: userID, User: user, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, UserID: userID, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
 }

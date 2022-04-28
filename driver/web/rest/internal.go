@@ -46,7 +46,7 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 
 		members := group.Members
 		for _, member := range members {
-			if member.User.ID == user.ID {
+			if member.UserID == user.ID {
 				memberStatus = member.Status
 			}
 		}

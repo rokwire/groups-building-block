@@ -1,5 +1,46 @@
 basePath: /gr
 definitions:
+  Comment:
+    properties:
+      date_created:
+        type: string
+      member:
+        $ref: '#/definitions/Member'
+      text:
+        type: string
+    type: object
+  Creator:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  Event:
+    properties:
+      client_id:
+        type: string
+      comments:
+        items:
+          $ref: '#/definitions/Comment'
+        type: array
+      creator:
+        $ref: '#/definitions/Creator'
+      date_created:
+        type: string
+      event_id:
+        type: string
+      group_id:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    type: object
   GroupStat:
     properties:
       authman_enabled:
@@ -22,12 +63,51 @@ definitions:
           $ref: '#/definitions/GroupStat'
         type: array
     type: object
-  createGroupEventRequest:
+  Member:
     properties:
-      event_id:
+      date_created:
         type: string
-    required:
-    - event_id
+      date_updated:
+        type: string
+      email:
+        type: string
+      external_id:
+        type: string
+      id:
+        type: string
+      member_answers:
+        items:
+          $ref: '#/definitions/MemberAnswer'
+        type: array
+      name:
+        type: string
+      photo_url:
+        type: string
+      reject_reason:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
+  MemberAnswer:
+    properties:
+      answer:
+        type: string
+      question:
+        type: string
+    type: object
+  ToMember:
+    properties:
+      email:
+        type: string
+      external_id:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
     type: object
   createGroupRequest:
     properties:
@@ -45,6 +125,8 @@ definitions:
         type: string
       description:
         type: string
+      hidden_for_search:
+        type: boolean
       image_url:
         type: string
       membership_questions:
@@ -54,6 +136,9 @@ definitions:
       only_admins_can_create_polls:
         type: boolean
       privacy:
+        enum:
+        - public
+        - private
         type: string
       tags:
         items:
@@ -275,6 +360,19 @@ definitions:
       posts_count:
         type: integer
     type: object
+  groupEventRequest:
+    properties:
+      event_id:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    required:
+    - event_id
+    type: object
   membershipApprovalRequest:
     properties:
       approve:
@@ -320,6 +418,8 @@ definitions:
         type: string
       description:
         type: string
+      hidden_for_search:
+        type: boolean
       image_url:
         type: string
       membership_questions:
@@ -329,6 +429,9 @@ definitions:
       only_admins_can_create_polls:
         type: boolean
       privacy:
+        enum:
+        - public
+        - private
         type: string
       tags:
         items:
@@ -346,6 +449,9 @@ definitions:
   updateMembershipRequest:
     properties:
       status:
+        enum:
+        - member
+        - admin
         type: string
     required:
     - status
@@ -355,7 +461,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.10
+  version: 1.5.28
 paths:
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
@@ -613,8 +719,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a group event
-      operationId: CreateGroupEvent
+      description: Updates a group event
+      operationId: UpdateGroupEvent
       parameters:
       - description: APP
         in: header
@@ -626,7 +732,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/createGroupEventRequest'
+          $ref: '#/definitions/groupEventRequest'
       - description: Group ID
         in: path
         name: group-id
@@ -639,6 +745,32 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+  /api/group/{group-id}/events/v2:
+    get:
+      consumes:
+      - application/json
+      description: Gives the group events.
+      operationId: GetGroupEventsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Event'
+            type: array
       security:
       - AppUserAuth: []
   /api/group/{group-id}/members:

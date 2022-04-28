@@ -6,7 +6,6 @@ import "time"
 type Member struct {
 	ID            string         `json:"id" bson:"id"`
 	UserID        string         `json:"user_id" bson:"user_id"`
-	User          User           `json:"user,omitempty"` // deprecated
 	ExternalID    string         `json:"external_id" bson:"external_id"`
 	Name          string         `json:"name" bson:"name"`
 	Email         string         `json:"email" bson:"email"`
@@ -18,6 +17,14 @@ type Member struct {
 	DateCreated time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
 } //@name Member
+
+// ToMember represents to(destination) member entity
+type ToMember struct {
+	UserID     string `json:"user_id" bson:"user_id"`
+	ExternalID string `json:"external_id" bson:"external_id"`
+	Name       string `json:"name" bson:"name"`
+	Email      string `json:"email" bson:"email"`
+} //@name ToMember
 
 // MemberAnswer represents member answer entity
 type MemberAnswer struct {
