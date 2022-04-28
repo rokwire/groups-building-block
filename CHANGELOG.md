@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
-- Fix auth library subscribed services [#138](https://github.com/rokwire/groups-building-block/issues/138)
+- Fix auth library usage issues [#138](https://github.com/rokwire/groups-building-block/issues/138)
 
 ## [1.5.29] - 2022-04-26
 - Update Swagger library due to security issue [#135](https://github.com/rokwire/groups-building-block/issues/135)
