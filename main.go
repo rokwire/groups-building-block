@@ -11,6 +11,9 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/logging-library-go/logs"
 )
 
 var (
@@ -54,8 +57,28 @@ func main() {
 	// Core adapter
 	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
 
+	// Auth Service
+	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
+	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
+		AuthServicesHost: coreBBHost,
+	}
+	// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
+	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"rewards"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
+	if err != nil {
+		log.Fatalf("error instancing auth data loader: %s", err)
+	}
+	// Instantiate AuthService instance
+	authService, err := authservice.NewAuthService("groups", groupServiceURL, serviceLoader)
+	if err != nil {
+		log.Fatalf("error instancing auth service: %s", err)
+	}
+
 	// Rewards adapter
-	rewardsAdapter := rewards.NewRewardsAdapter(intrernalAPIKey, coreAdapter)
+	rewardsServiceReg, err := authService.GetServiceReg("rewards")
+	if err != nil {
+		log.Fatalf("error finding rewards service reg: %s", err)
+	}
+	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter, coreAdapter, rewardsAdapter)
@@ -70,11 +93,10 @@ func main() {
 	oidcExtendedClientIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
-	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
 	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		internalAPIKeys, coreBBHost, groupServiceURL)
+		internalAPIKeys, authService, groupServiceURL)
 	webAdapter.Start()
 }
 

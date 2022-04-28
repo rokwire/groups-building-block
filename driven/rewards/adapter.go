@@ -3,7 +3,6 @@ package rewards
 import (
 	"encoding/json"
 	"fmt"
-	"groups/driven/corebb"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -28,14 +27,9 @@ const (
 )
 
 // NewRewardsAdapter creates a new rewards adapter
-func NewRewardsAdapter(internalAPIKey string, core *corebb.Adapter) *Adapter {
-	if core != nil {
-		serviceHosts, err := core.RetrieveCoreServices([]string{"rewards"})
-		if err != nil {
-			log.Fatalf("Error: NewRewardsAdapter - %s", err)
-		} else if len(serviceHosts) > 0 {
-			return &Adapter{internalAPIKey: internalAPIKey, rewardsHost: serviceHosts[0].Host}
-		}
+func NewRewardsAdapter(host string, internalAPIKey string) *Adapter {
+	if host != "" {
+		return &Adapter{rewardsHost: host, internalAPIKey: internalAPIKey}
 	}
 	log.Fatal("Error: NewRewardsAdapter - not initialized core")
 	return nil
