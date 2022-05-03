@@ -695,6 +695,41 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
 }
 
+func (app *Application) findPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
+	return app.storage.FindPolls(clientID, current, groupID, filterByToMembers, offset, limit, order)
+}
+
+func (app *Application) createPoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
+	return app.storage.CreatePoll(clientID, current, poll)
+}
+
+func (app *Application) updatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
+	persistedPoll, err := app.storage.FindPoll(clientID, current, group.ID, poll.PollID, true)
+	if persistedPoll != nil && err == nil {
+		if group.IsGroupAdmin(current.ID) || persistedPoll.Creator.UserID == current.ID {
+			persistedPoll.ToMembersList = poll.ToMembersList
+			return app.storage.UpdatePoll(clientID, current, persistedPoll)
+		} else {
+			log.Printf("Only group admin or poll creator can delete it")
+			return nil, fmt.Errorf("only group admin or poll creator can delete it")
+		}
+	}
+	return nil, err
+}
+
+func (app *Application) deletePoll(clientID string, current *model.User, group *model.Group, pollID string) error {
+	persistedPoll, err := app.storage.FindPoll(clientID, current, group.ID, pollID, true)
+	if persistedPoll != nil && err == nil {
+		if group.IsGroupAdmin(current.ID) || persistedPoll.Creator.UserID == current.ID {
+			return app.storage.DeletePoll(clientID, current, group.ID, pollID)
+		} else {
+			log.Printf("Only group admin or poll creator can delete it")
+			return fmt.Errorf("only group admin or poll creator can delete it")
+		}
+	}
+	return err
+}
+
 func (app *Application) synchronizeAuthman(clientID string) error {
 	log.Printf("Authman synchronization started")
 	defer log.Printf("Authman synchronization finished")

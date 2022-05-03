@@ -1776,6 +1776,121 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 	return err
 }
 
+// Group Polls
+
+func (sa *Adapter) FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
+	filter := bson.D{
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
+			primitive.M{"member.user_id": current.ID},
+		}})
+	}
+
+	var result []model.Poll
+	err := sa.db.polls.Find(filter, &result, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error storage.FindPolls() - %s", err)
+	}
+	return result, err
+}
+
+func (sa *Adapter) FindPoll(clientID string, current *model.User, groupID string, pollID string, filterByToMembers bool) (*model.Poll, error) {
+	filter := bson.D{
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "poll_id", Value: pollID},
+	}
+	if filterByToMembers {
+		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+			primitive.M{"to_members": primitive.Null{}},
+			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			primitive.M{"to_members.user_id": current.ID},
+			primitive.M{"member.user_id": current.ID},
+		}})
+	}
+
+	var result []model.Poll
+	err := sa.db.polls.Find(filter, &result, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error storage.FindPoll() - %s", err)
+	}
+	if len(result) > 0 {
+		return &result[0], nil
+	}
+
+	return nil, nil
+}
+
+func (sa *Adapter) CreatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error) {
+
+	if poll.PollID == "" {
+		return nil, fmt.Errorf("error storage.createPoll() - missing poll_id")
+	}
+	if poll.GroupID == "" {
+		return nil, fmt.Errorf("error storage.createPoll() - missing group_id")
+	}
+
+	poll.ClientID = clientID
+	poll.Creator = model.Creator{
+		UserID: current.ID,
+		Name:   current.Name,
+		Email:  current.Email,
+	}
+	poll.DateCreated = time.Now()
+	_, err := sa.db.polls.InsertOne(poll)
+	if err != nil {
+		return nil, fmt.Errorf("error storage.createPoll() - %s", err)
+	}
+	sa.resetGroupUpdatedDate(clientID, poll.GroupID)
+
+	return poll, err
+}
+
+func (sa *Adapter) UpdatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error) {
+
+	poll.DateUpdated = time.Now()
+
+	filter := bson.D{
+		primitive.E{Key: "poll_id", Value: poll.PollID},
+		primitive.E{Key: "group_id", Value: poll.GroupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	change := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: poll.DateUpdated},
+			primitive.E{Key: "to_members", Value: poll.ToMembersList},
+		}},
+	}
+	_, err := sa.db.polls.UpdateOne(filter, change, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error storage.updatePoll() - %s", err)
+	}
+
+	sa.resetGroupUpdatedDate(clientID, poll.GroupID)
+
+	return poll, err
+}
+
+func (sa *Adapter) DeletePoll(clientID string, current *model.User, groupID string, pollID string) error {
+	filter := bson.D{primitive.E{Key: "poll_id", Value: pollID},
+		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID}}
+	_, err := sa.db.polls.DeleteOne(filter, nil)
+	if err != nil {
+		return fmt.Errorf("error storage.deletePoll() - %s", err)
+	}
+
+	sa.resetGroupUpdatedDate(clientID, groupID)
+
+	return nil
+}
+
 //resetGroupUpdatedDate set the updated date to the current date time (now)
 func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
 	// transaction

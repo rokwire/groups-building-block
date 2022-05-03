@@ -27,6 +27,7 @@ type database struct {
 	groups *collectionWrapper
 	events *collectionWrapper
 	posts  *collectionWrapper
+	polls  *collectionWrapper
 
 	listener core.StorageListener
 }
@@ -84,6 +85,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	polls := &collectionWrapper{database: m, coll: db.Collection("polls")}
+	err = m.applyPollsChecks(polls)
+	if err != nil {
+		return err
+	}
+
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
@@ -99,6 +106,7 @@ func (m *database) start() error {
 	m.groups = groups
 	m.events = events
 	m.posts = posts
+	m.polls = polls
 
 	return nil
 }
@@ -490,6 +498,103 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 	}
 
 	log.Println("posts checks passed")
+	return nil
+}
+
+func (m *database) applyPollsChecks(polls *collectionWrapper) error {
+	log.Println("apply polls checks.....")
+
+	indexes, _ := polls.ListIndexes()
+	indexMapping := map[string]interface{}{}
+	if indexes != nil {
+
+		for _, index := range indexes {
+			name := index["name"].(string)
+			indexMapping[name] = index
+		}
+	}
+	if indexMapping["poll_id_1_group_id_1_client_id_1"] == nil {
+		err := polls.AddIndex(bson.D{
+			primitive.E{Key: "poll_id", Value: 1},
+			primitive.E{Key: "group_id", Value: 1},
+			primitive.E{Key: "client_id", Value: 1}},
+			true)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["poll_id_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "poll_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["group_id_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "group_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["creator.user_id_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "creator.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.user_id_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.user_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.external_id_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.external_id", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["to_members.email_1"] == nil {
+		err := polls.AddIndex(
+			bson.D{
+				primitive.E{Key: "to_members.email", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("polls checks passed")
 	return nil
 }
 

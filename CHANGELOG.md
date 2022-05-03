@@ -7,94 +7,126 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ## [1.5.30] - 2022-04-28
+### Added
+- Migrate group polls mapping and move ot to the Groups BB side [#140](https://github.com/rokwire/groups-building-block/issues/140)
+
+## [1.5.30] - 2022-04-28
 ### Fixed
 - Fix auth library usage issues [#138](https://github.com/rokwire/groups-building-block/issues/138)
 
 ## [1.5.29] - 2022-04-26
+### Changed
 - Update Swagger library due to security issue [#135](https://github.com/rokwire/groups-building-block/issues/135)
 
 ## [1.5.28] - 2022-04-20
+### Added
 - Hide groups from search queries with additional flag [#132](https://github.com/rokwire/groups-building-block/issues/132)
 
 ## [1.5.27] - 2022-04-14
+### Fixed
 - Anonymous users need access /groups API too [#130](https://github.com/rokwire/groups-building-block/issues/130)
 
 ## [1.5.26] - 2022-04-04
+### Added
 - Implement additional GET /group/{group-id}/events/v2 api to avoid breaking existing clients [#128](https://github.com/rokwire/groups-building-block/issues/126)
 
 ## [1.5.25] - 2022-03-23
+### Added
 - Add support of members_to for events [#128](https://github.com/rokwire/groups-building-block/issues/126)
 
 ## [1.5.24] - 2022-03-10
+### Fixed
 - Authman settings are not serialised if the group is private and the user is not a member [#126](https://github.com/rokwire/groups-building-block/issues/126)
 
 ## [1.5.24] - 2022-03-10
+### Fixed
 - Authman settings are not serialised if the group is private and the user is not a member [#126](https://github.com/rokwire/groups-building-block/issues/126)
 
 ## [1.5.23] - 2022-03-09
+### Fixed
 - More fixes and improvements for post destination members restriction [#123](https://github.com/rokwire/groups-building-block/issues/123)
 
 ## [1.5.22] - 2022-03-08
+### Changed
 - Limit reply to a specific subset of members [#123](https://github.com/rokwire/groups-building-block/issues/123)
 
 ## [1.5.21] - 2022-02-24
+### Added
 - Additional fix of wrong membership initialization [#122](https://github.com/rokwire/groups-building-block/issues/122)
 
 ## [1.5.20] - 2022-02-23
+### Changed
 - Deprecate and remove member.user.id and use member.user_id [#122](https://github.com/rokwire/groups-building-block/issues/122)
 
 ## [1.5.19] - 2022-02-16
+### Changed
 - Ignore members different from uofinetid [#116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.18] - 2022-02-15
+### Added
 - Additional improvements for Authman sync [#116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.17] - 2022-02-14
+### Added
 - Add additional parameter within the authman user api [#116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.16] - 2022-02-11
+### Changed
 - Add only_admins_can_create_posts flag to the group object [#116](https://github.com/rokwire/groups-building-block/issues/116)
 
 ## [1.5.15] - 2022-02-09
+### Fixed
 - Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.14] - 2022-02-09
+### Fixed
 - Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.13] - 2022-02-08
+### Fixed
 - Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.12] - 2022-02-07
+### Added
 - Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.11] - 2022-02-03
+### Fixed
 -Additional fixes for Login & Authman sync [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.10] - 2022-02-02
+### Fixed
 - Add internal stats API [#112](https://github.com/rokwire/groups-building-block/issues/112)
 
 ## [1.5.9] - 2022-01-31
+### Fixed
 - Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.8] - 2022-01-27
+### Fixed
 - Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.7] - 2022-01-12
+### Fixed
 - Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.6] - 2022-01-10
 - Authman sync fixes and improvements [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.6] - 2022-01-10
+### Changed
 - Update core auth library and cache the name of the user for Authman sync pupronse [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.5.5] - 2022-01-05 
+### Changed
 - Updated changelog
 
 ## [1.5.4] - 2022-01-04 (Rejected)
+### Added
 - Implement CRUD APIs for Poll mappings [#107](https://github.com/rokwire/groups-building-block/issues/107)
 
 ## [1.5.3] - 2021-12-27
+### Added
 - Add Authman API support [#106](https://github.com/rokwire/groups-building-block/issues/106)
 
 ## [1.4.44] - 2021-12-17
@@ -113,6 +145,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.40] - 2021-12-09
 
 ## [1.4.39] - 2021-12-08
+### Fixed
 Fail with error 401 or 403 during the authentication & authorization phase [#91](https://github.com/rokwire/groups-building-block/issues/91)
 
 ## [1.4.38] - 2021-12-06
