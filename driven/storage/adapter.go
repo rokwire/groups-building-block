@@ -1297,7 +1297,7 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 }
 
 //CreateEvent creates a group event
-func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error) {
 	event := model.Event{
 		ClientID:      clientID,
 		EventID:       eventID,
@@ -1311,16 +1311,20 @@ func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID str
 		},
 	}
 	_, err := sa.db.events.InsertOne(event)
+	if err != nil {
+		return nil, err
+	}
 
 	if err == nil {
 		sa.resetGroupUpdatedDate(clientID, groupID)
 	}
 
-	return err
+	return &event, err
 }
 
 // UpdateEvent updates a group event
 func (sa *Adapter) UpdateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+
 	filter := bson.D{
 		primitive.E{Key: "event_id", Value: eventID},
 		primitive.E{Key: "group_id", Value: groupID},
@@ -1510,11 +1514,11 @@ func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Pos
 }
 
 //FindPost Retrieves a post by groupID and postID
-func (sa *Adapter) FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+func (sa *Adapter) FindPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
 	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
-func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+func (sa *Adapter) findPostWithContext(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "_id", Value: postID},
@@ -1528,9 +1532,9 @@ func (sa *Adapter) findPostWithContext(clientID string, userID string, groupID s
 		}})
 	}
 
-	if !skipMembershipCheck {
+	if !skipMembershipCheck && userID != nil {
 		group, err := sa.findGroupWithContext(clientID, groupID)
-		if group == nil || err != nil || !group.IsGroupAdminOrMember(userID) {
+		if group == nil || err != nil || !group.IsGroupAdminOrMember(*userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 	}
@@ -1696,7 +1700,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 
-	originalPost, _ := sa.FindPost(clientID, userID, post.GroupID, *post.ID, true, true)
+	originalPost, _ := sa.FindPost(clientID, &userID, post.GroupID, *post.ID, true, true)
 	if originalPost == nil {
 		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
@@ -1747,7 +1751,7 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 		ctx = context.Background()
 	}
 	group, _ := sa.FindGroup(clientID, groupID)
-	originalPost, _ := sa.FindPost(clientID, userID, groupID, postID, true, !group.IsGroupAdmin(userID))
+	originalPost, _ := sa.FindPost(clientID, &userID, groupID, postID, true, !group.IsGroupAdmin(userID))
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}
@@ -1778,6 +1782,7 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 
 // Group Polls
 
+// FindPolls Finds polls by filter
 func (sa *Adapter) FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
 	filter := bson.D{
 		primitive.E{Key: "group_id", Value: groupID},
@@ -1792,14 +1797,28 @@ func (sa *Adapter) FindPolls(clientID string, current *model.User, groupID strin
 		}})
 	}
 
+	findOptions := options.Find()
+	if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+	}
+
 	var result []model.Poll
-	err := sa.db.polls.Find(filter, &result, nil)
+	err := sa.db.polls.Find(filter, &result, findOptions)
 	if err != nil {
 		return nil, fmt.Errorf("error storage.FindPolls() - %s", err)
 	}
 	return result, err
 }
 
+// FindPoll Finds a single poll
 func (sa *Adapter) FindPoll(clientID string, current *model.User, groupID string, pollID string, filterByToMembers bool) (*model.Poll, error) {
 	filter := bson.D{
 		primitive.E{Key: "group_id", Value: groupID},
@@ -1827,6 +1846,7 @@ func (sa *Adapter) FindPoll(clientID string, current *model.User, groupID string
 	return nil, nil
 }
 
+// CreatePoll creates a poll
 func (sa *Adapter) CreatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error) {
 
 	if poll.PollID == "" {
@@ -1852,6 +1872,7 @@ func (sa *Adapter) CreatePoll(clientID string, current *model.User, poll *model.
 	return poll, err
 }
 
+// UpdatePoll updates a poll
 func (sa *Adapter) UpdatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error) {
 
 	poll.DateUpdated = time.Now()
@@ -1877,6 +1898,7 @@ func (sa *Adapter) UpdatePoll(clientID string, current *model.User, poll *model.
 	return poll, err
 }
 
+// DeletePoll deletes a poll
 func (sa *Adapter) DeletePoll(clientID string, current *model.User, groupID string, pollID string) error {
 	filter := bson.D{primitive.E{Key: "poll_id", Value: pollID},
 		primitive.E{Key: "group_id", Value: groupID},

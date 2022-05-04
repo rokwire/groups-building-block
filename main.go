@@ -5,6 +5,7 @@ import (
 	"groups/driven/authman"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
+	"groups/driven/polls"
 	"groups/driven/rewards"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
@@ -62,8 +63,9 @@ func main() {
 	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
 		AuthServicesHost: coreBBHost,
 	}
+
 	// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"rewards"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
+	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"rewards", "polls-v2"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
 	if err != nil {
 		log.Fatalf("error instancing auth data loader: %s", err)
 	}
@@ -80,8 +82,16 @@ func main() {
 	}
 	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
+	// Rewards adapter
+	pollsServiceReg, err := authService.GetServiceReg("polls-v2")
+	if err != nil {
+		log.Fatalf("error finding polls service reg: %s", err)
+	}
+	pollsAdapter := polls.NewPollsAdapter(pollsServiceReg.Host, intrernalAPIKey)
+
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter, coreAdapter, rewardsAdapter)
+	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
+		coreAdapter, rewardsAdapter, pollsAdapter)
 	application.Start()
 
 	//web adapter

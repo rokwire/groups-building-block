@@ -41,7 +41,7 @@ type Services interface {
 	UpdateMembership(clientID string, current model.User, membershipID string, status string) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error
+	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
@@ -159,7 +159,7 @@ func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID s
 	return s.app.getEvents(clientID, current, groupID, filterByToMembers)
 }
 
-func (s *servicesImpl) CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error {
+func (s *servicesImpl) CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error) {
 	return s.app.createEvent(clientID, current, eventID, group, toMemberList)
 }
 
@@ -262,12 +262,12 @@ type Storage interface {
 	UpdateMembership(clientID string, currentUserID string, membershipID string, status string) error
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
+	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
 	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
-	FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
+	FindPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
@@ -323,4 +323,8 @@ type Core interface {
 // Rewards exposes Rewards internal APIs for giving rewards to the users
 type Rewards interface {
 	CreateUserReward(userID string, rewardType string, description string) error
+}
+
+// Polls exposes Polls internal APIs
+type Polls interface {
 }
