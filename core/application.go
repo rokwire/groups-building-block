@@ -4,6 +4,7 @@ import (
 	"errors"
 	"groups/core/model"
 	"groups/driven/corebb"
+	"groups/driven/polls"
 	"groups/driven/rewards"
 )
 
@@ -20,6 +21,7 @@ type Application struct {
 	authman       Authman
 	corebb        Core
 	rewards       Rewards
+	polls         Polls
 }
 
 // Start starts the corebb part of the application
@@ -76,10 +78,11 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter, rewards *rewards.Adapter) *Application {
+func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman,
+	core *corebb.Adapter, rewards *rewards.Adapter, polls *polls.Adapter) *Application {
 
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards}
+		authman: authman, corebb: core, rewards: rewards, polls: polls}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

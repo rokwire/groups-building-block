@@ -1278,7 +1278,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.CreateEvent(clientID, current, requestData.EventID, group, requestData.ToMembersList)
+	_, err = h.app.Services.CreateEvent(clientID, current, requestData.EventID, group, requestData.ToMembersList)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1726,6 +1726,303 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 	err = h.app.Services.DeletePost(clientID, current, groupID, postID, false)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetGroupPolls Get polls that are mapped to the desired group
+// @Description Get polls that are mapped to the desired group
+// @ID GetGroupPolls
+// @Param APP header string true "APP"
+// @Success 200 {array} model.Poll
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupID}/polls [get]
+func (h *ApisHandler) GetGroupPolls(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["groupID"]
+	if len(id) <= 0 {
+		log.Println("error apis.GetGroupPolls() - groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	var offset *int64
+	offsets, ok := r.URL.Query()["offset"]
+	if ok && len(offsets[0]) > 0 {
+		val, err := strconv.ParseInt(offsets[0], 0, 64)
+		if err == nil {
+			offset = &val
+		}
+	}
+
+	var limit *int64
+	limits, ok := r.URL.Query()["limit"]
+	if ok && len(limits[0]) > 0 {
+		val, err := strconv.ParseInt(limits[0], 0, 64)
+		if err == nil {
+			limit = &val
+		}
+	}
+
+	var order *string
+	orders, ok := r.URL.Query()["order"]
+	if ok && len(orders[0]) > 0 {
+		order = &orders[0]
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("error apis.GetGroupPolls() - there is no a group for the provided group id - %s", id)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("error apis.GetGroupPolls() - %s is not allowed to get polls for group %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	polls, err := h.app.Services.FindPolls(clientID, current, id, !group.IsGroupAdmin(current.ID), offset, limit, order)
+	if err != nil {
+		log.Printf("error apis.GetGroupPolls() - error getting polls for group (%s) - %s", id, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if polls == nil {
+		polls = []model.Poll{}
+	}
+
+	data, err := json.Marshal(polls)
+	if err != nil {
+		log.Printf("error apis.GetGroupPolls() - error on marshal polls for group (%s) - %s", id, err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// CreateGroupPoll Creates a group poll mapping
+// @Description Creates a group poll mapping
+// @ID CreateGroupPoll
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Success 200 {object} model.Poll
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts [post]
+func (h *ApisHandler) CreateGroupPoll(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["groupID"]
+	if len(id) <= 0 {
+		log.Println("error apis.CreateGroupPoll() - groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error apis.CreateGroupPoll() - error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var poll *model.Poll
+	err = json.Unmarshal(data, &poll)
+	if err != nil {
+		log.Printf("error apis.CreateGroupPoll() - error on unmarshal posts for group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// check if allowed to create
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil || !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("error apis.CreateGroupPoll() - the user is not member of the group - %s", id)
+		// do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	poll.GroupID = id // Set group id from the query param
+
+	poll, err = h.app.Services.CreatePoll(clientID, current, group, poll)
+	if err != nil {
+		log.Printf("error apis.CreateGroupPoll() - error creating poll for group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(poll)
+	if err != nil {
+		log.Printf("error apis.CreateGroupPoll() - error on marshal poll for group - %s", err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// UpdateGroupPoll Updates a group poll
+// @Description Updates a group poll
+// @ID UpdateGroupPoll
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200 {object} model.Poll
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts/{pollId} [put]
+func (h *ApisHandler) UpdateGroupPoll(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("error apis.UpdateGroupPoll() - groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	pollID := params["pollID"]
+	if len(pollID) <= 0 {
+		log.Println("error apis.UpdateGroupPoll() - pollID is required")
+		http.Error(w, "pollID is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error apis.UpdateGroupPoll() - error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var poll *model.Poll
+	err = json.Unmarshal(data, &poll)
+	if err != nil {
+		log.Printf("error apis.UpdateGroupPoll() - error on unmarshal poll (%s) - %s", pollID, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if poll.PollID == "" || pollID != poll.PollID {
+		log.Printf("error apis.UpdateGroupPoll() - unexpected poll id query param (%s) and poll json data", pollID)
+		http.Error(w, fmt.Sprintf("inconsistent poll id query param (%s) and poll json data", pollID), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("error apis.UpdateGroupPoll() - there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("error apis.UpdateGroupPoll() - %s is not allowed to delete poll for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	poll, err = h.app.Services.UpdatePoll(clientID, current, group, poll)
+	if err != nil {
+		log.Printf("error apis.UpdateGroupPoll() - error update poll (%s) - %s", pollID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(poll)
+	if err != nil {
+		log.Printf("error apis.UpdateGroupPoll() - error on marshal poll (%s) - %s", pollID, err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// DeleteGroupPoll Deletes a group poll
+// @Description Deletes a group poll.
+// @ID DeleteGroupPoll
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/polls/{pollId} [delete]
+func (h *ApisHandler) DeleteGroupPoll(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("error apis.DeleteGroupPoll() - groupID is required")
+		http.Error(w, "groupID is required", http.StatusBadRequest)
+		return
+	}
+
+	pollID := params["pollID"]
+	if len(pollID) <= 0 {
+		log.Println("error apis.DeleteGroupPoll() - pollID is required")
+		http.Error(w, "pollID is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("error apis.DeleteGroupPoll() - there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("error apis.DeleteGroupPoll() - %s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.DeletePoll(clientID, current, group, pollID)
+	if err != nil {
+		log.Printf("error apis.DeleteGroupPoll() - error deleting posts for post (%s) - %s", pollID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

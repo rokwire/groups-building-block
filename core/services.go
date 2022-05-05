@@ -593,13 +593,18 @@ func (app *Application) getEvents(clientID string, current *model.User, groupID 
 	return events, nil
 }
 
-func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error {
-	err := app.storage.CreateEvent(clientID, current, eventID, group.ID, toMemberList)
+func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error) {
+	event, err := app.storage.CreateEvent(clientID, current, eventID, group.ID, toMemberList)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+	var recipients []notifications.Recipient
+	if len(event.ToMembersList) > 0 {
+		recipients = event.GetMembersAsNotificationRecipients(&current.ID)
+	} else {
+		recipients = group.GetMembersAsNotificationRecipients(&current.ID)
+	}
 	topic := "group.events"
 	err = app.notifications.SendNotification(
 		recipients,
@@ -617,7 +622,7 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	if err != nil {
 		log.Printf("error while sending notification for new event: %s", err) // dont fail
 	}
-	return nil
+	return event, nil
 }
 
 func (app *Application) updateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
@@ -661,8 +666,13 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	go handleRewardsAsync(clientID, current.ID)
 
 	handleNotification := func() {
-		if post.ParentID == nil {
-			recipients := group.GetMembersAsNotificationRecipients(&current.ID)
+
+		recipients, _ := app.getPostNotificationRecipients(clientID, post, &current.ID)
+
+		if len(recipients) == 0 {
+			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
+		}
+		if len(recipients) > 0 {
 			topic := "group.posts"
 			err = app.notifications.SendNotification(
 				recipients,
@@ -687,12 +697,106 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	return post, nil
 }
 
+func (app *Application) getPostNotificationRecipients(clientID string, post *model.Post, skipUserID *string) ([]notifications.Recipient, error) {
+	if post == nil {
+		return nil, nil
+	}
+
+	if len(post.ToMembersList) > 0 {
+		return post.GetMembersAsNotificationRecipients(skipUserID), nil
+	}
+
+	var err error
+	for {
+		if post.ParentID == nil {
+			break
+		}
+
+		post, err = app.storage.FindPost(clientID, nil, post.GroupID, *post.ParentID, true, false)
+		if err != nil {
+			log.Printf("error app.getPostToMemberList() - %s", err)
+			return nil, fmt.Errorf("error app.getPostToMemberList() - %s", err)
+		}
+
+		if post != nil && len(post.ToMembersList) > 0 {
+			return post.GetMembersAsNotificationRecipients(skipUserID), nil
+		}
+	}
+
+	return nil, nil
+}
+
 func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
+}
+
+func (app *Application) findPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
+	return app.storage.FindPolls(clientID, current, groupID, filterByToMembers, offset, limit, order)
+}
+
+func (app *Application) createPoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
+	poll, err := app.storage.CreatePoll(clientID, current, poll)
+	if err != nil {
+		return nil, err
+	}
+
+	handleNotification := func() {
+		var recipients []notifications.Recipient
+		if len(poll.ToMembersList) > 0 {
+			recipients = poll.GetMembersAsNotificationRecipients(&current.ID)
+		} else {
+			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
+		}
+		topic := "group.polls"
+		err = app.notifications.SendNotification(
+			recipients,
+			&topic,
+			"Illinois",
+			fmt.Sprintf("New poll has been published in '%s' group", group.Title),
+			map[string]string{
+				"type":        "group",
+				"operation":   "poll_created",
+				"entity_type": "group",
+				"entity_id":   group.ID,
+				"entity_name": group.Title,
+			},
+		)
+		if err != nil {
+			log.Printf("error while sending notification for new poll: %s", err) // dont fail
+		}
+	}
+	go handleNotification()
+
+	return poll, err
+}
+
+func (app *Application) updatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
+	persistedPoll, err := app.storage.FindPoll(clientID, current, group.ID, poll.PollID, true)
+	if persistedPoll != nil && err == nil {
+		if group.IsGroupAdmin(current.ID) || persistedPoll.Creator.UserID == current.ID {
+			persistedPoll.ToMembersList = poll.ToMembersList
+			return app.storage.UpdatePoll(clientID, current, persistedPoll)
+		}
+		log.Printf("Only group admin or poll creator can delete it")
+		return nil, fmt.Errorf("only group admin or poll creator can delete it")
+	}
+	return nil, err
+}
+
+func (app *Application) deletePoll(clientID string, current *model.User, group *model.Group, pollID string) error {
+	persistedPoll, err := app.storage.FindPoll(clientID, current, group.ID, pollID, true)
+	if persistedPoll != nil && err == nil {
+		if group.IsGroupAdmin(current.ID) || persistedPoll.Creator.UserID == current.ID {
+			return app.storage.DeletePoll(clientID, current, group.ID, pollID)
+		}
+		log.Printf("Only group admin or poll creator can delete it")
+		return fmt.Errorf("only group admin or poll creator can delete it")
+	}
+	return err
 }
 
 func (app *Application) synchronizeAuthman(clientID string) error {

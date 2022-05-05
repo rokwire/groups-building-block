@@ -41,7 +41,7 @@ type Services interface {
 	UpdateMembership(clientID string, current model.User, membershipID string, status string) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error
+	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
@@ -50,6 +50,11 @@ type Services interface {
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
+
+	FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error)
+	CreatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error)
+	UpdatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error)
+	DeletePoll(clientID string, current *model.User, group *model.Group, pollID string) error
 
 	SynchronizeAuthman(clientID string) error
 }
@@ -154,7 +159,7 @@ func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID s
 	return s.app.getEvents(clientID, current, groupID, filterByToMembers)
 }
 
-func (s *servicesImpl) CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) error {
+func (s *servicesImpl) CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error) {
 	return s.app.createEvent(clientID, current, eventID, group, toMemberList)
 }
 
@@ -184,6 +189,22 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 
 func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error {
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
+}
+
+func (s *servicesImpl) FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
+	return s.app.findPolls(clientID, current, groupID, filterByToMembers, offset, limit, order)
+}
+
+func (s *servicesImpl) CreatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
+	return s.app.createPoll(clientID, current, group, poll)
+}
+
+func (s *servicesImpl) UpdatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
+	return s.app.updatePoll(clientID, current, group, poll)
+}
+
+func (s *servicesImpl) DeletePoll(clientID string, current *model.User, group *model.Group, pollID string) error {
+	return s.app.deletePoll(clientID, current, group, pollID)
 }
 
 func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
@@ -241,16 +262,22 @@ type Storage interface {
 	UpdateMembership(clientID string, currentUserID string, membershipID string, status string) error
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
+	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
 	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
-	FindPost(clientID string, userID string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
+	FindPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+
+	FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error)
+	FindPoll(clientID string, current *model.User, groupID string, pollID string, filterByToMembers bool) (*model.Poll, error)
+	CreatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error)
+	UpdatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error)
+	DeletePoll(clientID string, current *model.User, groupID string, pollID string) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 }
@@ -296,4 +323,8 @@ type Core interface {
 // Rewards exposes Rewards internal APIs for giving rewards to the users
 type Rewards interface {
 	CreateUserReward(userID string, rewardType string, description string) error
+}
+
+// Polls exposes Polls internal APIs
+type Polls interface {
 }

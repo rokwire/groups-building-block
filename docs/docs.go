@@ -633,6 +633,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{groupID}/polls": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Get polls that are mapped to the desired group",
+                "operationId": "GetGroupPolls",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Poll"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{groupID}/posts": {
             "get": {
                 "security": [
@@ -667,6 +701,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{groupId}/polls/{pollId}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a group poll.",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "DeleteGroupPoll",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/group/{groupId}/posts": {
             "post": {
                 "security": [
@@ -677,14 +742,14 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "creates a post within the desired group.",
+                "description": "Creates a group poll mapping",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "operationId": "CreateGroupPost",
+                "operationId": "CreateGroupPoll",
                 "parameters": [
                     {
                         "type": "string",
@@ -698,7 +763,41 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/Poll"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{groupId}/posts/{pollId}": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Updates a group poll",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "UpdateGroupPoll",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Poll"
                         }
                     }
                 }
@@ -1351,20 +1450,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "Comment": {
-            "type": "object",
-            "properties": {
-                "date_created": {
-                    "type": "string"
-                },
-                "member": {
-                    "$ref": "#/definitions/Member"
-                },
-                "text": {
-                    "type": "string"
-                }
-            }
-        },
         "Creator": {
             "type": "object",
             "properties": {
@@ -1384,12 +1469,6 @@ const docTemplate = `{
             "properties": {
                 "client_id": {
                     "type": "string"
-                },
-                "comments": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Comment"
-                    }
                 },
                 "creator": {
                     "$ref": "#/definitions/Creator"
@@ -1446,56 +1525,33 @@ const docTemplate = `{
                 }
             }
         },
-        "Member": {
+        "Poll": {
             "type": "object",
             "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "creator": {
+                    "$ref": "#/definitions/Creator"
+                },
                 "date_created": {
                     "type": "string"
                 },
                 "date_updated": {
                     "type": "string"
                 },
-                "email": {
+                "group_id": {
                     "type": "string"
                 },
-                "external_id": {
+                "poll_id": {
                     "type": "string"
                 },
-                "id": {
-                    "type": "string"
-                },
-                "member_answers": {
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/MemberAnswer"
+                        "$ref": "#/definitions/ToMember"
                     }
-                },
-                "name": {
-                    "type": "string"
-                },
-                "photo_url": {
-                    "type": "string"
-                },
-                "reject_reason": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "pending, member, admin, rejected",
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "MemberAnswer": {
-            "type": "object",
-            "properties": {
-                "answer": {
-                    "type": "string"
-                },
-                "question": {
-                    "type": "string"
                 }
             }
         },
@@ -2063,7 +2119,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.5.28",
+	Version:          "1.5.31",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"https"},

@@ -1,6 +1,9 @@
 package model
 
-import "time"
+import (
+	"groups/driven/notifications"
+	"time"
+)
 
 //Post represents group posts
 type Post struct {
@@ -33,4 +36,20 @@ func (p *Post) UserCanSeePost(userID string) bool {
 	}
 
 	return true
+}
+
+// GetMembersAsNotificationRecipients constructs all to members as notification recipients
+func (p Post) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
+	recipients := []notifications.Recipient{}
+	if len(p.ToMembersList) > 0 {
+		for _, member := range p.ToMembersList {
+			if skipUserID == nil || *skipUserID != member.UserID {
+				recipients = append(recipients, notifications.Recipient{
+					UserID: member.UserID,
+					Name:   member.Name,
+				})
+			}
+		}
+	}
+	return recipients
 }

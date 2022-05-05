@@ -1,14 +1,5 @@
 basePath: /gr
 definitions:
-  Comment:
-    properties:
-      date_created:
-        type: string
-      member:
-        $ref: '#/definitions/Member'
-      text:
-        type: string
-    type: object
   Creator:
     properties:
       email:
@@ -22,10 +13,6 @@ definitions:
     properties:
       client_id:
         type: string
-      comments:
-        items:
-          $ref: '#/definitions/Comment'
-        type: array
       creator:
         $ref: '#/definitions/Creator'
       date_created:
@@ -63,40 +50,26 @@ definitions:
           $ref: '#/definitions/GroupStat'
         type: array
     type: object
-  Member:
+  Poll:
     properties:
+      client_id:
+        type: string
+      creator:
+        $ref: '#/definitions/Creator'
       date_created:
         type: string
       date_updated:
         type: string
-      email:
+      group_id:
         type: string
-      external_id:
+      poll_id:
         type: string
-      id:
-        type: string
-      member_answers:
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
         items:
-          $ref: '#/definitions/MemberAnswer'
+          $ref: '#/definitions/ToMember'
         type: array
-      name:
-        type: string
-      photo_url:
-        type: string
-      reject_reason:
-        type: string
-      status:
-        description: pending, member, admin, rejected
-        type: string
-      user_id:
-        type: string
-    type: object
-  MemberAnswer:
-    properties:
-      answer:
-        type: string
-      question:
-        type: string
     type: object
   ToMember:
     properties:
@@ -461,7 +434,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.28
+  version: 1.5.31
 paths:
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
@@ -852,6 +825,26 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/group/{groupID}/polls:
+    get:
+      description: Get polls that are mapped to the desired group
+      operationId: GetGroupPolls
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Poll'
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /api/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -872,12 +865,30 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+  /api/group/{groupId}/polls/{pollId}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a group poll.
+      operationId: DeleteGroupPoll
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
   /api/group/{groupId}/posts:
     post:
       consumes:
       - application/json
-      description: creates a post within the desired group.
-      operationId: CreateGroupPost
+      description: Creates a group poll mapping
+      operationId: CreateGroupPoll
       parameters:
       - description: APP
         in: header
@@ -890,7 +901,27 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/Poll'
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+  /api/group/{groupId}/posts/{pollId}:
+    put:
+      consumes:
+      - application/json
+      description: Updates a group poll
+      operationId: UpdateGroupPoll
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Poll'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
