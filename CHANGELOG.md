@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.32] - 2022-05-05
+### Fixed
+- Additional fix due to broken UIUC client [#132](https://github.com/rokwire/groups-building-block/issues/132)
+
 ## [1.5.31] - 2022-05-04
 ### Fixed 
 - Additional fixes for subgroup notifications for posts, polls and events [#140](https://github.com/rokwire/groups-building-block/issues/140)

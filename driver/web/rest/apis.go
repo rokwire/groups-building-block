@@ -679,7 +679,7 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 			w.Write([]byte("Forbidden"))
 			return
 		}
-		if !group.IsGroupAdminOrMember(current.ID) {
+		if !group.IsGroupAdminOrMember(current.ID) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
 			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
 
 			w.WriteHeader(http.StatusForbidden)
