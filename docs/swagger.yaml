@@ -130,6 +130,22 @@ definitions:
     properties:
       email:
         type: string
+      external_id:
+        type: string
+      name:
+        type: string
+      photo_url:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
+  createPendingMemberRequest:
+    properties:
+      email:
+        type: string
       member_answers:
         items:
           properties:
@@ -387,6 +403,8 @@ definitions:
         type: boolean
       authman_group:
         type: string
+      block_new_membership_requests:
+        type: boolean
       category:
         type: string
       description:
@@ -810,7 +828,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/createMemberRequest'
+          $ref: '#/definitions/createPendingMemberRequest'
       - description: Group ID
         in: path
         name: group-id
@@ -821,6 +839,10 @@ paths:
       responses:
         "200":
           description: OK
+          schema:
+            type: string
+        "423":
+          description: Locked
           schema:
             type: string
       security:

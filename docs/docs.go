@@ -576,7 +576,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/createMemberRequest"
+                            "$ref": "#/definitions/createPendingMemberRequest"
                         }
                     },
                     {
@@ -590,6 +590,12 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "423": {
+                        "description": "Locked",
                         "schema": {
                             "type": "string"
                         }
@@ -1639,6 +1645,30 @@ const docTemplate = `{
         },
         "createMemberRequest": {
             "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "createPendingMemberRequest": {
+            "type": "object",
             "required": [
                 "email"
             ],
@@ -2039,6 +2069,9 @@ const docTemplate = `{
                 },
                 "authman_group": {
                     "type": "string"
+                },
+                "block_new_membership_requests": {
+                    "type": "boolean"
                 },
                 "category": {
                     "type": "string"

@@ -24,7 +24,8 @@ type Services interface {
 		authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, id string, category string, title string,
 		privacy string, hiddenForSearch bool, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
+		onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
@@ -34,6 +35,7 @@ type Services interface {
 
 	CreatePendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, current model.User, groupID string) error
+	CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error
 	DeleteMember(clientID string, current model.User, groupID string) error
 
 	ApplyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error
@@ -98,9 +100,10 @@ func (s *servicesImpl) CreateGroup(clientID string, current model.User, title st
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string,
 	privacy string, hiddenForSearch bool, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
+	onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *GroupError {
 	return s.app.updateGroup(clientID, current, id, category, title, privacy, hiddenForSearch, description, imageURL, webURL, tags,
-		membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
+		membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -137,6 +140,10 @@ func (s *servicesImpl) CreatePendingMember(clientID string, current model.User, 
 
 func (s *servicesImpl) DeletePendingMember(clientID string, current model.User, groupID string) error {
 	return s.app.deletePendingMember(clientID, current, groupID)
+}
+
+func (s *servicesImpl) CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error {
+	return s.app.createMember(clientID, current, groupID, member)
 }
 
 func (s *servicesImpl) DeleteMember(clientID string, current model.User, groupID string) error {
@@ -244,7 +251,8 @@ type Storage interface {
 		membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError)
 	UpdateGroup(clientID string, id string, category string, title string,
 		privacy string, hiddenForSearch bool, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError
+		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
+		onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -255,6 +263,7 @@ type Storage interface {
 	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
 	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
+	CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error
 	DeleteMember(clientID string, groupID string, userID string, force bool) error
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error

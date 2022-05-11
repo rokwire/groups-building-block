@@ -62,6 +62,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 		// Unauthenticated users must not see members
 		item["members"] = []map[string]interface{}{}
@@ -88,6 +89,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 		// Unauthenticated users must not see members
 		item["members"] = []map[string]interface{}{}
@@ -116,6 +118,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -175,6 +178,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -219,6 +223,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -263,6 +268,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -355,11 +361,11 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string,
 	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError {
+	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *GroupError {
 
 	err := app.storage.UpdateGroup(clientID, id, category, title,
 		privacy, hiddenForSearch, description, imageURL, webURL, tags, membershipQuestions,
-		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
+		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests)
 	if err != nil {
 		return err
 	}
@@ -500,6 +506,10 @@ func (app *Application) deletePendingMember(clientID string, current model.User,
 		return err
 	}
 	return nil
+}
+
+func (app *Application) createMember(clientID string, current *model.User, groupID string, member *model.Member) error {
+	return app.storage.CreateMember(clientID, current, groupID, member)
 }
 
 func (app *Application) deleteMember(clientID string, current model.User, groupID string) error {
