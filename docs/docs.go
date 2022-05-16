@@ -328,6 +328,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{group-id}/authman/synchronize": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman group. Only admin of the group could initiate the operation",
+                "consumes": [
+                    "text/plain"
+                ],
+                "operationId": "SynchAuthmanGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/event/{event-id}": {
             "delete": {
                 "security": [

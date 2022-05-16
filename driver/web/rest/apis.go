@@ -1150,6 +1150,56 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 	w.Write([]byte("Successfully updated"))
 }
 
+// SynchAuthmanGroup Synchronizes Authman group. Only admin of the group could initiate the operation
+// @Description Synchronizes Authman group. Only admin of the group could initiate the operation
+// @ID SynchAuthmanGroup
+// @Accept plain
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/authman/synchronize [post]
+func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group with id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.SynchronizeAuthmanGroup(clientID, group)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
 //GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID GetGroupEvents

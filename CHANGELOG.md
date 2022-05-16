@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.34] - 2022-05-16
+### Added
+- Ability to initiate manual Authman synch by group admin [#144](https://github.com/rokwire/groups-building-block/issues/143)
+
 ## [1.5.33] - 2022-05-11
 ### Added
 - Add support of closed groups [#143](https://github.com/rokwire/groups-building-block/issues/143)

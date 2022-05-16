@@ -59,6 +59,7 @@ type Services interface {
 	DeletePoll(clientID string, current *model.User, group *model.Group, pollID string) error
 
 	SynchronizeAuthman(clientID string) error
+	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
 }
 
 type servicesImpl struct {
@@ -216,6 +217,10 @@ func (s *servicesImpl) DeletePoll(clientID string, current *model.User, group *m
 
 func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
 	return s.app.synchronizeAuthman(clientID)
+}
+
+func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
+	return s.app.synchronizeAuthmanGroup(clientID, group)
 }
 
 // Administration exposes administration APIs for the driver adapters
