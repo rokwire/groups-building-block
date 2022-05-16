@@ -21,11 +21,12 @@ type Group struct {
 
 	Members []Member `json:"members" bson:"members"`
 
-	DateCreated              time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated              *time.Time `json:"date_updated" bson:"date_updated"`
-	AuthmanEnabled           bool       `json:"authman_enabled" bson:"authman_enabled"`
-	AuthmanGroup             *string    `json:"authman_group" bson:"authman_group"`
-	OnlyAdminsCanCreatePolls bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
+	AuthmanEnabled             bool       `json:"authman_enabled" bson:"authman_enabled"`
+	AuthmanGroup               *string    `json:"authman_group" bson:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group

@@ -41,10 +41,11 @@ type group struct {
 	DateCreated time.Time  `bson:"date_created"`
 	DateUpdated *time.Time `bson:"date_updated"`
 
-	ClientID                 string  `bson:"client_id"`
-	AuthmanEnabled           bool    `bson:"authman_enabled"`
-	AuthmanGroup             *string `bson:"authman_group"`
-	OnlyAdminsCanCreatePolls bool    `bson:"only_admins_can_create_polls"`
+	ClientID                   string  `bson:"client_id"`
+	AuthmanEnabled             bool    `bson:"authman_enabled"`
+	AuthmanGroup               *string `bson:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool    `bson:"only_admins_can_create_polls"`
+	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
 }
 
 type member struct {
@@ -544,7 +545,8 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 //UpdateGroup updates a group.
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string,
 	privacy string, hiddenForSearch bool, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *core.GroupError {
+	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
+	onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *core.GroupError {
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
@@ -581,6 +583,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "authman_enabled", Value: authmanEnabled},
 				primitive.E{Key: "authman_group", Value: authmanGroup},
 				primitive.E{Key: "only_admins_can_create_polls", Value: onlyAdminsCanCreatePolls},
+				primitive.E{Key: "block_new_membership_requests", Value: blockNewMembershipRequests},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -969,6 +972,60 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 	})
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+//CreateMember Created a member to a group
+func (sa *Adapter) CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error {
+	group, err := sa.FindGroup(clientID, groupID)
+	if err != nil {
+		return err
+	}
+
+	if group != nil {
+		if !group.IsGroupAdmin(current.ID) {
+			log.Printf("error: storage.CreateMember() - current user is not admin of the group")
+			return fmt.Errorf("current user is not admin of the group")
+		}
+
+		if member.ExternalID != "" && group.GetMemberByExternalID(member.ExternalID) != nil {
+			log.Printf("error: storage.CreateMember() - member of group '%s' with external id %s already exists", group.Title, member.ExternalID)
+			return fmt.Errorf("member of group '%s' with external id %s already exists", group.Title, member.ExternalID)
+		}
+
+		if member.UserID != "" && group.GetMemberByUserID(member.UserID) != nil {
+			log.Printf("error: storage.CreateMember() - member of group '%s' with user id %s already exists", group.Title, member.UserID)
+			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, member.UserID)
+		}
+
+		if len(member.UserID) == 0 && len(member.ExternalID) == 0 {
+			log.Printf("error: storage.CreateMember() - expected user_id or external_id")
+			return fmt.Errorf("expected user_id or external_id")
+		}
+
+		member.ID = uuid.NewString()
+		member.DateCreated = time.Now()
+		member.MemberAnswers = group.CreateMembershipEmptyAnswers()
+
+		// transaction
+		saveFilter := bson.D{
+			primitive.E{Key: "_id", Value: group.ID},
+		}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			}},
+			primitive.E{Key: "$push", Value: bson.D{
+				primitive.E{Key: "members", Value: member},
+			}},
+		}
+		_, err := sa.db.groups.UpdateOne(saveFilter, update, nil)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
@@ -2014,6 +2071,7 @@ func constructGroup(gr group) model.Group {
 	authmanEnabled := gr.AuthmanEnabled
 	authmanGroup := gr.AuthmanGroup
 	onlyAdminsCanCreatePolls := gr.OnlyAdminsCanCreatePolls
+	blockNewMembershipRequests := gr.BlockNewMembershipRequests
 
 	dateCreated := gr.DateCreated
 	dateUpdated := gr.DateUpdated
@@ -2027,7 +2085,7 @@ func constructGroup(gr group) model.Group {
 		HiddenForSearch: hiddenForSearch, Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
-		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls,
+		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
 	}
 }
 

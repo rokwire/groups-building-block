@@ -168,18 +168,19 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 }
 
 type updateGroupRequest struct {
-	Title                    string   `json:"title" validate:"required"`
-	Description              *string  `json:"description"`
-	Category                 string   `json:"category" validate:"required"`
-	Tags                     []string `json:"tags"`
-	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
-	Hidden                   bool     `json:"hidden_for_search"`
-	ImageURL                 *string  `json:"image_url"`
-	WebURL                   *string  `json:"web_url"`
-	MembershipQuestions      []string `json:"membership_questions"`
-	AuthmanEnabled           bool     `json:"authman_enabled"`
-	AuthmanGroup             *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	Title                      string   `json:"title" validate:"required"`
+	Description                *string  `json:"description"`
+	Category                   string   `json:"category" validate:"required"`
+	Tags                       []string `json:"tags"`
+	Privacy                    string   `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                     bool     `json:"hidden_for_search"`
+	ImageURL                   *string  `json:"image_url"`
+	WebURL                     *string  `json:"web_url"`
+	MembershipQuestions        []string `json:"membership_questions"`
+	AuthmanEnabled             bool     `json:"authman_enabled"`
+	AuthmanGroup               *string  `json:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	BlockNewMembershipRequests bool     `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
 } //@name updateGroupRequest
 
 //UpdateGroup updates a group
@@ -257,9 +258,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	authmanGroup := requestData.AuthmanGroup
 	authmanEnabled := requestData.AuthmanEnabled
 	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
+	blockNewMembershipRequests := requestData.BlockNewMembershipRequests
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, hidden, description, imageURL, webURL,
-		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts)
+		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts, blockNewMembershipRequests)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -700,7 +702,7 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 	w.Write(data)
 }
 
-type createMemberRequest struct {
+type createPendingMemberRequest struct {
 	Name          string `json:"name"`
 	Email         string `json:"email" validate:"required"`
 	PhotoURL      string `json:"photo_url"`
@@ -708,7 +710,7 @@ type createMemberRequest struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
 	} `json:"member_answers"`
-} // @name createMemberRequest
+} // @name createPendingMemberRequest
 
 //CreatePendingMember creates a group pending member
 // @Description Creates a group pending member
@@ -716,9 +718,10 @@ type createMemberRequest struct {
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
-// @Param data body createMemberRequest true "body data"
+// @Param data body createPendingMemberRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
+// @Failure 423 {string} block_new_membership_requests flag is true
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/pending-members [post]
 func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
@@ -737,7 +740,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	var requestData createMemberRequest
+	var requestData createPendingMemberRequest
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create pending member data - %s\n", err.Error())
@@ -751,6 +754,19 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 	if err != nil {
 		log.Printf("Error on validating create pending member data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Printf("error getting a group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if group == nil || group.BlockNewMembershipRequests {
+		log.Printf("error on create pending member - block_new_membership_requests is true")
+		http.Error(w, "block_new_membership_requests flag is true", http.StatusLocked)
 		return
 	}
 
@@ -805,6 +821,82 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
+}
+
+// createMemberRequest
+type createMemberRequest struct {
+	UserID     string `json:"user_id" bson:"user_id"`
+	ExternalID string `json:"external_id" bson:"external_id"`
+	Name       string `json:"name" bson:"name"`
+	Email      string `json:"email" bson:"email"`
+	PhotoURL   string `json:"photo_url"`
+	Status     string `json:"status" bson:"status"` //pending, member, admin, rejected
+} //@name createMemberRequest
+
+// CreateMember Adds a member to a group. The current user is required to be an admin of the group
+// @Description Adds a member to a group. The current user is required to be an admin of the group
+// @ID CreateMember
+// @Accept plain
+// @Param data body createMemberRequest true "body data"
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/members [delete]
+func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData createMemberRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create pending member data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(requestData.UserID) == 0 && len(requestData.ExternalID) == 0 {
+		log.Printf("error: api.CreateMember() - expected user_id or external_id")
+		http.Error(w, "expected user_id or external_id", http.StatusBadRequest)
+		return
+	}
+
+	if !(requestData.Status == "member" || requestData.Status == "admin" || requestData.Status == "rejected" || requestData.Status == "pending") {
+		log.Printf("error: api.CreateMember() - expected status with possible value (member, admin, rejected, pending)")
+		http.Error(w, "expected status with possible value (member, admin, rejected, pending)", http.StatusBadRequest)
+		return
+	}
+
+	member := model.Member{
+		UserID:     requestData.UserID,
+		ExternalID: requestData.ExternalID,
+		Email:      requestData.Email,
+		Name:       requestData.Name,
+		PhotoURL:   requestData.PhotoURL,
+		Status:     requestData.Status,
+	}
+
+	err = h.app.Services.CreateMember(clientID, current, groupID, &member)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 //DeleteMember deletes a member membership from a group
@@ -1056,6 +1148,56 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully updated"))
+}
+
+// SynchAuthmanGroup Synchronizes Authman group. Only admin of the group could initiate the operation
+// @Description Synchronizes Authman group. Only admin of the group could initiate the operation
+// @ID SynchAuthmanGroup
+// @Accept plain
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/authman/synchronize [post]
+func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group with id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.SynchronizeAuthmanGroup(clientID, group)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 //GetGroupEvents gives the group events

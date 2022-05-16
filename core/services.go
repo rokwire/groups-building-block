@@ -62,6 +62,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 		// Unauthenticated users must not see members
 		item["members"] = []map[string]interface{}{}
@@ -88,6 +89,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 		// Unauthenticated users must not see members
 		item["members"] = []map[string]interface{}{}
@@ -116,6 +118,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -175,6 +178,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -219,6 +223,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -263,6 +268,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 
 	//members
 	membersCount := len(group.Members)
@@ -355,11 +361,11 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string,
 	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) *GroupError {
+	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *GroupError {
 
 	err := app.storage.UpdateGroup(clientID, id, category, title,
 		privacy, hiddenForSearch, description, imageURL, webURL, tags, membershipQuestions,
-		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
+		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests)
 	if err != nil {
 		return err
 	}
@@ -500,6 +506,10 @@ func (app *Application) deletePendingMember(clientID string, current model.User,
 		return err
 	}
 	return nil
+}
+
+func (app *Application) createMember(clientID string, current *model.User, groupID string, member *model.Member) error {
+	return app.storage.CreateMember(clientID, current, groupID, member)
 }
 
 func (app *Application) deleteMember(clientID string, current model.User, groupID string) error {
@@ -800,8 +810,8 @@ func (app *Application) deletePoll(clientID string, current *model.User, group *
 }
 
 func (app *Application) synchronizeAuthman(clientID string) error {
-	log.Printf("Authman synchronization started")
-	defer log.Printf("Authman synchronization finished")
+	log.Printf("Global Authman synchronization started")
+	defer log.Printf("Global Authman synchronization finished")
 
 	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
 	if err != nil {
@@ -810,160 +820,171 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 
 	if len(authmanGroups) > 0 {
 		for _, authmanGroup := range authmanGroups {
-			if authmanGroup.AuthmanGroup != nil {
-				authmanExternalIDs, authmanErr := app.authman.RetrieveAuthmanGroupMembers(*authmanGroup.AuthmanGroup)
-				if authmanErr != nil {
-					log.Printf("Error on requesting Authman for %s: %s", *authmanGroup.AuthmanGroup, authmanErr)
-					continue
-				}
-				externalIDMapping := map[string]model.Member{}
-				for _, member := range authmanGroup.Members {
-					if _, ok := externalIDMapping[member.ExternalID]; !ok {
-						externalIDMapping[member.ExternalID] = member
-					}
-				}
+			err := app.synchronizeAuthmanGroup(clientID, &authmanGroup)
+			if err != nil {
+				fmt.Errorf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
+			}
+		}
+	}
 
-				localUsersMapping := map[string]model.User{}
-				localUsers, userErr := app.storage.FindUsers(clientID, authmanExternalIDs, true)
-				if authmanErr != nil {
-					log.Printf("Error on getting users(%+v) for Authman %s: %s", authmanExternalIDs, *authmanGroup.AuthmanGroup, userErr)
-					continue
-				} else if len(localUsers) > 0 {
-					for _, user := range localUsers {
-						localUsersMapping[user.ExternalID] = user
-					}
+	return nil
+}
+
+func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *model.Group) error {
+
+	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
+	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)
+
+	if authmanGroup.AuthmanGroup != nil {
+		authmanExternalIDs, authmanErr := app.authman.RetrieveAuthmanGroupMembers(*authmanGroup.AuthmanGroup)
+		if authmanErr != nil {
+			return fmt.Errorf("error on requesting Authman for %s: %s", *authmanGroup.AuthmanGroup, authmanErr)
+		}
+		externalIDMapping := map[string]model.Member{}
+		for _, member := range authmanGroup.Members {
+			if _, ok := externalIDMapping[member.ExternalID]; !ok {
+				externalIDMapping[member.ExternalID] = member
+			}
+		}
+
+		localUsersMapping := map[string]model.User{}
+		localUsers, userErr := app.storage.FindUsers(clientID, authmanExternalIDs, true)
+		if authmanErr != nil {
+			return fmt.Errorf("error on getting users(%+v) for Authman %s: %s", authmanExternalIDs, *authmanGroup.AuthmanGroup, userErr)
+		} else if len(localUsers) > 0 {
+			for _, user := range localUsers {
+				localUsersMapping[user.ExternalID] = user
+			}
+		}
+
+		members := []model.Member{}
+		userIDMapping := map[string]interface{}{}
+		missingInfoExternalIDs := []string{}
+		for _, externalID := range authmanExternalIDs {
+			if mappedMember, ok := externalIDMapping[externalID]; ok {
+				members = append(members, mappedMember)
+				if mappedMember.UserID != "" {
+					userIDMapping[mappedMember.UserID] = true
 				}
+				if mappedMember.Name == "" || mappedMember.Email == "" {
+					missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
+				}
+				return nil
+			}
 
-				members := []model.Member{}
-				userIDMapping := map[string]interface{}{}
-				missingInfoExternalIDs := []string{}
-				for _, externalID := range authmanExternalIDs {
-					if mappedMember, ok := externalIDMapping[externalID]; ok {
-						members = append(members, mappedMember)
-						if mappedMember.UserID != "" {
-							userIDMapping[mappedMember.UserID] = true
-						}
-						if mappedMember.Name == "" || mappedMember.Email == "" {
-							missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
-						}
-						continue
-					}
-
-					now := time.Now().UTC()
-					if user, ok := localUsersMapping[externalID]; ok {
-						// Add missed members
-						member := authmanGroup.GetMemberByUserID(user.ID)
-						if member != nil {
-							if member.IsPendingMember() || member.IsRejected() || member.IsMember() {
-								member.Status = "member"
-								member.DateUpdated = &now
-								members = append(members, *member)
-								log.Printf("User(%s, %s, %s) is set as member '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
-							} else if member.IsAdmin() {
-								members = append(members, *member)
-							} else {
-								log.Printf("User(%s, %s, %s) is already a member or admin of '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
-							}
-						} else {
-							members = append(members, model.Member{
-								ID:            uuid.NewString(),
-								UserID:        user.ID,
-								Status:        "member",
-								ExternalID:    externalID,
-								Name:          user.Name,
-								Email:         user.Email,
-								MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
-								DateCreated:   now,
-								DateUpdated:   &now,
-							})
-							log.Printf("User(%s, %s, %s) has been created as regular member of '%s'", externalID, user.Name, user.Email, authmanGroup.Title)
-						}
-						userIDMapping[user.ID] = true
+			now := time.Now().UTC()
+			if user, ok := localUsersMapping[externalID]; ok {
+				// Add missed members
+				member := authmanGroup.GetMemberByUserID(user.ID)
+				if member != nil {
+					if member.IsPendingMember() || member.IsRejected() || member.IsMember() {
+						member.Status = "member"
+						member.DateUpdated = &now
+						members = append(members, *member)
+						log.Printf("User(%s, %s, %s) is set as member '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
+					} else if member.IsAdmin() {
+						members = append(members, *member)
 					} else {
-						members = append(members, model.Member{
-							ID:            uuid.NewString(),
-							Status:        "member",
-							ExternalID:    externalID,
-							MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
-							DateCreated:   now,
-							DateUpdated:   &now,
-						})
-						log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
+						log.Printf("User(%s, %s, %s) is already a member or admin of '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
 					}
-				}
-
-				// Fetch user info for the required users
-				if len(missingInfoExternalIDs) > 0 {
-					userMapping, err := app.authman.RetrieveAuthmanUsers(missingInfoExternalIDs)
-					if err != nil {
-						log.Printf("error on retriving missing user info for(%+v): %s", missingInfoExternalIDs, err)
-					} else if len(userMapping) > 0 {
-						for i, member := range members {
-							updatedInfo := false
-							if mappedUser, ok := userMapping[member.ExternalID]; ok {
-								if member.Name == "" && mappedUser.Name != "" {
-									member.Name = mappedUser.Name
-									updatedInfo = true
-								}
-								if member.Email == "" && len(mappedUser.AttributeValues) > 0 {
-									member.Email = mappedUser.AttributeValues[0]
-									updatedInfo = true
-								}
-								if !updatedInfo {
-									log.Printf("The user has missing info: %+v Group: '%s' Authman Group: '%s'", mappedUser, authmanGroup.Title, *authmanGroup.AuthmanGroup)
-								}
-							}
-							if updatedInfo {
-								members[i] = member
-							}
-						}
-					}
-				}
-
-				newExternalMembersMapping := map[string]interface{}{}
-				for _, member := range members {
-					newExternalMembersMapping[member.ExternalID] = true
-				}
-
-				// Add remaining admins
-				if len(authmanGroup.Members) > 0 {
-					for _, member := range authmanGroup.Members {
-						val := userIDMapping[member.UserID]
-						if val == nil && member.IsAdmin() {
-							found := false
-							for i, innerMember := range members {
-								if member.ExternalID == innerMember.ExternalID {
-									members[i] = member
-									found = true
-									log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
-									break
-								}
-							}
-							if !found {
-								members = append(members, member)
-								log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
-							}
-						} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
-							log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)
-						}
-					}
-				}
-
-				// Sort
-				if len(members) > 1 {
-					sort.SliceStable(members, func(i, j int) bool {
-						if members[j].Status != "admin" && members[i].Status == "admin" {
-							return true
-						}
-						return false
+				} else {
+					members = append(members, model.Member{
+						ID:            uuid.NewString(),
+						UserID:        user.ID,
+						Status:        "member",
+						ExternalID:    externalID,
+						Name:          user.Name,
+						Email:         user.Email,
+						MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
+						DateCreated:   now,
+						DateUpdated:   &now,
 					})
+					log.Printf("User(%s, %s, %s) has been created as regular member of '%s'", externalID, user.Name, user.Email, authmanGroup.Title)
 				}
+				userIDMapping[user.ID] = true
+			} else {
+				members = append(members, model.Member{
+					ID:            uuid.NewString(),
+					Status:        "member",
+					ExternalID:    externalID,
+					MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
+					DateCreated:   now,
+					DateUpdated:   &now,
+				})
+				log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
+			}
+		}
 
-				err := app.storage.UpdateGroupMembers(clientID, authmanGroup.ID, members)
-				if err != nil {
-					log.Printf("error on updating authman group(%s, %s): %s", authmanGroup.ID, authmanGroup.Title, err)
+		// Fetch user info for the required users
+		if len(missingInfoExternalIDs) > 0 {
+			userMapping, err := app.authman.RetrieveAuthmanUsers(missingInfoExternalIDs)
+			if err != nil {
+				log.Printf("error on retriving missing user info for(%+v): %s", missingInfoExternalIDs, err)
+			} else if len(userMapping) > 0 {
+				for i, member := range members {
+					updatedInfo := false
+					if mappedUser, ok := userMapping[member.ExternalID]; ok {
+						if member.Name == "" && mappedUser.Name != "" {
+							member.Name = mappedUser.Name
+							updatedInfo = true
+						}
+						if member.Email == "" && len(mappedUser.AttributeValues) > 0 {
+							member.Email = mappedUser.AttributeValues[0]
+							updatedInfo = true
+						}
+						if !updatedInfo {
+							log.Printf("The user has missing info: %+v Group: '%s' Authman Group: '%s'", mappedUser, authmanGroup.Title, *authmanGroup.AuthmanGroup)
+						}
+					}
+					if updatedInfo {
+						members[i] = member
+					}
 				}
 			}
+		}
+
+		newExternalMembersMapping := map[string]interface{}{}
+		for _, member := range members {
+			newExternalMembersMapping[member.ExternalID] = true
+		}
+
+		// Add remaining admins
+		if len(authmanGroup.Members) > 0 {
+			for _, member := range authmanGroup.Members {
+				val := userIDMapping[member.UserID]
+				if val == nil && member.IsAdmin() {
+					found := false
+					for i, innerMember := range members {
+						if member.ExternalID == innerMember.ExternalID {
+							members[i] = member
+							found = true
+							log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
+							break
+						}
+					}
+					if !found {
+						members = append(members, member)
+						log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
+					}
+				} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
+					log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)
+				}
+			}
+		}
+
+		// Sort
+		if len(members) > 1 {
+			sort.SliceStable(members, func(i, j int) bool {
+				if members[j].Status != "admin" && members[i].Status == "admin" {
+					return true
+				}
+				return false
+			})
+		}
+
+		err := app.storage.UpdateGroupMembers(clientID, authmanGroup.ID, members)
+		if err != nil {
+			return fmt.Errorf("error on updating authman group(%s, %s): %s", authmanGroup.ID, authmanGroup.Title, err)
 		}
 	}
 

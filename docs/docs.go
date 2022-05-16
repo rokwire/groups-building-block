@@ -328,6 +328,41 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{group-id}/authman/synchronize": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman group. Only admin of the group could initiate the operation",
+                "consumes": [
+                    "text/plain"
+                ],
+                "operationId": "SynchAuthmanGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/event/{event-id}": {
             "delete": {
                 "security": [
@@ -576,7 +611,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/createMemberRequest"
+                            "$ref": "#/definitions/createPendingMemberRequest"
                         }
                     },
                     {
@@ -590,6 +625,12 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "423": {
+                        "description": "Locked",
                         "schema": {
                             "type": "string"
                         }
@@ -1639,6 +1680,30 @@ const docTemplate = `{
         },
         "createMemberRequest": {
             "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "createPendingMemberRequest": {
+            "type": "object",
             "required": [
                 "email"
             ],
@@ -2039,6 +2104,9 @@ const docTemplate = `{
                 },
                 "authman_group": {
                     "type": "string"
+                },
+                "block_new_membership_requests": {
+                    "type": "boolean"
                 },
                 "category": {
                     "type": "string"
