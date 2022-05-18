@@ -153,7 +153,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 
 			mItem["date_created"] = current.DateCreated
 			mItem["date_updated"] = current.DateUpdated
-			mItem["date_attendance"] = current.DateAttendance
+			mItem["date_attended"] = current.DateAttended
 
 			membersItems = append(membersItems, mItem)
 		}
@@ -595,8 +595,8 @@ func (app *Application) deleteMembership(clientID string, current *model.User, m
 	return nil
 }
 
-func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error {
-	err := app.storage.UpdateMembership(clientID, current, membershipID, status, dateAttendance)
+func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
+	err := app.storage.UpdateMembership(clientID, current, membershipID, status, dateAttended)
 	if err != nil {
 		return err
 	}

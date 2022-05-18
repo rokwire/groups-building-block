@@ -1680,7 +1680,7 @@
         "createMemberRequest": {
             "type": "object",
             "properties": {
-                "date_attendance": {
+                "date_attended": {
                     "type": "string"
                 },
                 "email": {
@@ -2161,7 +2161,7 @@
                 "status"
             ],
             "properties": {
-                "date_attendance": {
+                "date_attended": {
                     "type": "string"
                 },
                 "status": {

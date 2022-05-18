@@ -60,9 +60,9 @@ type member struct {
 	RejectReason  string         `bson:"reject_reason"`
 	MemberAnswers []memberAnswer `bson:"member_answers"`
 
-	DateCreated    time.Time  `bson:"date_created"`
-	DateUpdated    *time.Time `bson:"date_updated"`
-	DateAttendance *time.Time `bson:"date_attendance"`
+	DateCreated  time.Time  `bson:"date_created"`
+	DateUpdated  *time.Time `bson:"date_updated"`
+	DateAttended *time.Time `bson:"date_attended"`
 }
 
 type memberAnswer struct {
@@ -1267,7 +1267,7 @@ func (sa *Adapter) DeleteMembership(clientID string, current *model.User, member
 }
 
 //UpdateMembership updates a membership
-func (sa *Adapter) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error {
+func (sa *Adapter) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -1313,7 +1313,7 @@ func (sa *Adapter) UpdateMembership(clientID string, current *model.User, member
 				primitive.E{Key: "date_updated", Value: time.Now()},
 				primitive.E{Key: "members.$.status", Value: status},
 				primitive.E{Key: "members.$.date_updated", Value: time.Now()},
-				primitive.E{Key: "members.$.date_attendance", Value: dateAttendance},
+				primitive.E{Key: "members.$.date_attended", Value: dateAttended},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, changeFilter, change, nil)
@@ -2106,7 +2106,7 @@ func constructMember(member member) model.Member {
 	rejectReason := member.RejectReason
 	dateCreated := member.DateCreated
 	dateUpdated := member.DateUpdated
-	dateAttendance := member.DateAttendance
+	dateAttended := member.DateAttended
 
 	memberAnswers := make([]model.MemberAnswer, len(member.MemberAnswers))
 	for i, current := range member.MemberAnswers {
@@ -2115,6 +2115,6 @@ func constructMember(member member) model.Member {
 
 	return model.Member{ID: id, UserID: userID, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
-		DateAttendance: dateAttendance,
+		DateAttended: dateAttended,
 	}
 }

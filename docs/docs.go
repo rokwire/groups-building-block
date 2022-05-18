@@ -1684,7 +1684,7 @@ const docTemplate = `{
         "createMemberRequest": {
             "type": "object",
             "properties": {
-                "date_attendance": {
+                "date_attended": {
                     "type": "string"
                 },
                 "email": {
@@ -2165,7 +2165,7 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
-                "date_attendance": {
+                "date_attended": {
                     "type": "string"
                 },
                 "status": {
