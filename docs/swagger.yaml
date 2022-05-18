@@ -130,7 +130,7 @@ definitions:
     type: object
   createMemberRequest:
     properties:
-      date_attendance:
+      date_attended:
         type: string
       email:
         type: string
@@ -445,7 +445,7 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
-      date_attendance:
+      date_attended:
         type: string
       status:
         enum:

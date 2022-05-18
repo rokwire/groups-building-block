@@ -829,13 +829,13 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 
 // createMemberRequest
 type createMemberRequest struct {
-	UserID         string     `json:"user_id" bson:"user_id"`
-	ExternalID     string     `json:"external_id" bson:"external_id"`
-	Name           string     `json:"name" bson:"name"`
-	Email          string     `json:"email" bson:"email"`
-	PhotoURL       string     `json:"photo_url" bson:"photo_url"`
-	Status         string     `json:"status" bson:"status"` //pending, member, admin, rejected
-	DateAttendance *time.Time `json:"date_attendance" bson:"date_attendance"`
+	UserID       string     `json:"user_id" bson:"user_id"`
+	ExternalID   string     `json:"external_id" bson:"external_id"`
+	Name         string     `json:"name" bson:"name"`
+	Email        string     `json:"email" bson:"email"`
+	PhotoURL     string     `json:"photo_url" bson:"photo_url"`
+	Status       string     `json:"status" bson:"status"` //pending, member, admin, rejected
+	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
 } //@name createMemberRequest
 
 // CreateMember Adds a member to a group. The current user is required to be an admin of the group
@@ -885,13 +885,13 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	}
 
 	member := model.Member{
-		UserID:         requestData.UserID,
-		ExternalID:     requestData.ExternalID,
-		Email:          requestData.Email,
-		Name:           requestData.Name,
-		PhotoURL:       requestData.PhotoURL,
-		Status:         requestData.Status,
-		DateAttendance: requestData.DateAttendance,
+		UserID:       requestData.UserID,
+		ExternalID:   requestData.ExternalID,
+		Email:        requestData.Email,
+		Name:         requestData.Name,
+		PhotoURL:     requestData.PhotoURL,
+		Status:       requestData.Status,
+		DateAttended: requestData.DateAttended,
 	}
 
 	err = h.app.Services.CreateMember(clientID, current, groupID, &member)
@@ -1074,8 +1074,8 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 }
 
 type updateMembershipRequest struct {
-	Status         string     `json:"status" validate:"required,oneof=member admin"`
-	DateAttendance *time.Time `json:"date_attendance"`
+	Status       string     `json:"status" validate:"required,oneof=member admin"`
+	DateAttended *time.Time `json:"date_attended"`
 } // @name updateMembershipRequest
 
 //UpdateMembership updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
@@ -1144,9 +1144,9 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 	}
 
 	status := requestData.Status
-	dateAttendance := requestData.DateAttendance
+	dateAttended := requestData.DateAttended
 
-	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, dateAttendance)
+	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, dateAttended)
 	if err != nil {
 		log.Printf("Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -41,7 +41,7 @@ type Services interface {
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(clientID string, current *model.User, membershipID string) error
-	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error
+	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error)
@@ -160,8 +160,8 @@ func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, me
 	return s.app.deleteMembership(clientID, current, membershipID)
 }
 
-func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error {
-	return s.app.updateMembership(clientID, current, membershipID, status, dateAttendance)
+func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
+	return s.app.updateMembership(clientID, current, membershipID, status, dateAttended)
 }
 
 func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
@@ -274,7 +274,7 @@ type Storage interface {
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
 	DeleteMembership(clientID string, current *model.User, membershipID string) error
-	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error
+	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error)
