@@ -84,6 +84,8 @@ definitions:
     type: object
   createGroupRequest:
     properties:
+      attendance_group:
+        type: boolean
       authman_enabled:
         type: boolean
       authman_group:
@@ -128,6 +130,8 @@ definitions:
     type: object
   createMemberRequest:
     properties:
+      date_attendance:
+        type: string
       email:
         type: string
       external_id:
@@ -399,6 +403,8 @@ definitions:
     type: object
   updateGroupRequest:
     properties:
+      attendance_group:
+        type: boolean
       authman_enabled:
         type: boolean
       authman_group:
@@ -439,6 +445,8 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
+      date_attendance:
+        type: string
       status:
         enum:
         - member
@@ -1195,7 +1203,8 @@ paths:
     put:
       consumes:
       - application/json
-      description: Updates a membership
+      description: Updates a membership. Only admin can update membership. Member
+        is not allowed to update his/her own record.
       operationId: UpdateMembership
       parameters:
       - description: APP

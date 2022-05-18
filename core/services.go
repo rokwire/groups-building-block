@@ -63,6 +63,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
+		item["attendance_group"] = group.AttendanceGroup
 
 		// Unauthenticated users must not see members
 		item["members"] = []map[string]interface{}{}
@@ -90,6 +91,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
+		item["attendance_group"] = group.AttendanceGroup
 
 		// Unauthenticated users must not see members
 		item["members"] = []map[string]interface{}{}
@@ -119,6 +121,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
+	item["attendance_group"] = group.AttendanceGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -150,6 +153,8 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 
 			mItem["date_created"] = current.DateCreated
 			mItem["date_updated"] = current.DateUpdated
+			mItem["date_attendance"] = current.DateAttendance
+
 			membersItems = append(membersItems, mItem)
 		}
 	}
@@ -179,6 +184,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
+	item["attendance_group"] = group.AttendanceGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -224,6 +230,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
+	item["attendance_group"] = group.AttendanceGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -269,6 +276,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
+	item["attendance_group"] = group.AttendanceGroup
 
 	//members
 	membersCount := len(group.Members)
@@ -333,12 +341,12 @@ func (app *Application) getUserGroupMemberships(id string, external bool) ([]*mo
 	return getUserGroupMemberships, user, nil
 }
 
-func (app *Application) createGroup(clientID string, current model.User, title string, description *string, category string, tags []string,
+func (app *Application) createGroup(clientID string, current *model.User, title string, description *string, category string, tags []string,
 	privacy string, hiddenForSearch bool,
 	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool,
-	authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *GroupError) {
+	authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *GroupError) {
 	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, hiddenForSearch, current.ID, creatorName,
-		creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls)
+		creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, attendanceGroup)
 	if err != nil {
 		return nil, err
 	}
@@ -361,11 +369,11 @@ func (app *Application) createGroup(clientID string, current model.User, title s
 func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string,
 	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *GroupError {
+	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *GroupError {
 
 	err := app.storage.UpdateGroup(clientID, id, category, title,
 		privacy, hiddenForSearch, description, imageURL, webURL, tags, membershipQuestions,
-		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests)
+		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests, attendanceGroup)
 	if err != nil {
 		return err
 	}
@@ -456,7 +464,7 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return res, nil
 }
 
-func (app *Application) createPendingMember(clientID string, current model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
+func (app *Application) createPendingMember(clientID string, current *model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
 	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, email, photoURL, memberAnswers)
 	if err != nil {
 		return err
@@ -500,7 +508,7 @@ func (app *Application) createPendingMember(clientID string, current model.User,
 	return nil
 }
 
-func (app *Application) deletePendingMember(clientID string, current model.User, groupID string) error {
+func (app *Application) deletePendingMember(clientID string, current *model.User, groupID string) error {
 	err := app.storage.DeletePendingMember(clientID, groupID, current.ID)
 	if err != nil {
 		return err
@@ -512,7 +520,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 	return app.storage.CreateMember(clientID, current, groupID, member)
 }
 
-func (app *Application) deleteMember(clientID string, current model.User, groupID string) error {
+func (app *Application) deleteMember(clientID string, current *model.User, groupID string) error {
 	err := app.storage.DeleteMember(clientID, groupID, current.ID, false)
 	if err != nil {
 		return err
@@ -520,7 +528,7 @@ func (app *Application) deleteMember(clientID string, current model.User, groupI
 	return nil
 }
 
-func (app *Application) applyMembershipApproval(clientID string, current model.User, membershipID string, approve bool, rejectReason string) error {
+func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
 	err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
 	if err != nil {
 		return fmt.Errorf("error applying membership approval: %s", err)
@@ -579,16 +587,16 @@ func (app *Application) applyMembershipApproval(clientID string, current model.U
 	return nil
 }
 
-func (app *Application) deleteMembership(clientID string, current model.User, membershipID string) error {
-	err := app.storage.DeleteMembership(clientID, current.ID, membershipID)
+func (app *Application) deleteMembership(clientID string, current *model.User, membershipID string) error {
+	err := app.storage.DeleteMembership(clientID, current, membershipID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) updateMembership(clientID string, current model.User, membershipID string, status string) error {
-	err := app.storage.UpdateMembership(clientID, current.ID, membershipID, status)
+func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error {
+	err := app.storage.UpdateMembership(clientID, current, membershipID, status, dateAttendance)
 	if err != nil {
 		return err
 	}

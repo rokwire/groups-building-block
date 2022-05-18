@@ -27,6 +27,7 @@ type Group struct {
 	AuthmanGroup               *string    `json:"authman_group" bson:"authman_group"`
 	OnlyAdminsCanCreatePolls   bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
 	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
+	AttendanceGroup            bool       `json:"attendance_group" bson:"attendance_group"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group

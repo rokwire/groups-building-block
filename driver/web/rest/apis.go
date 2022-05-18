@@ -77,7 +77,8 @@ type createGroupRequest struct {
 	MembershipQuestions      []string `json:"membership_questions"`
 	AuthmanEnabled           bool     `json:"authman_enabled"`
 	AuthmanGroup             *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" `
+	AttendanceGroup          bool     `json:"attendance_group" `
 } //@name createGroupRequest
 
 type userGroupMembership struct {
@@ -144,11 +145,12 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	authmanGroup := requestData.AuthmanGroup
 	authmanEnabled := requestData.AuthmanEnabled
 	onlyAdminsCanCreatePolls := requestData.OnlyAdminsCanCreatePolls
+	attendanceGroup := requestData.AttendanceGroup
 
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, *current, title, description, category, tags,
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, title, description, category, tags,
 		privacy, hidden,
 		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
-		onlyAdminsCanCreatePolls)
+		onlyAdminsCanCreatePolls, attendanceGroup)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -179,8 +181,9 @@ type updateGroupRequest struct {
 	MembershipQuestions        []string `json:"membership_questions"`
 	AuthmanEnabled             bool     `json:"authman_enabled"`
 	AuthmanGroup               *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool     `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
-	BlockNewMembershipRequests bool     `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
+	OnlyAdminsCanCreatePolls   bool     `json:"only_admins_can_create_polls"`
+	BlockNewMembershipRequests bool     `json:"block_new_membership_requests"`
+	AttendanceGroup            bool     `json:"attendance_group" `
 } //@name updateGroupRequest
 
 //UpdateGroup updates a group
@@ -259,9 +262,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	authmanEnabled := requestData.AuthmanEnabled
 	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
 	blockNewMembershipRequests := requestData.BlockNewMembershipRequests
+	attendanceGroup := requestData.AttendanceGroup
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, hidden, description, imageURL, webURL,
-		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts, blockNewMembershipRequests)
+		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts, blockNewMembershipRequests, attendanceGroup)
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -781,7 +785,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		}
 	}
 
-	err = h.app.Services.CreatePendingMember(clientID, *current, groupID, name, email, photoURL, mAnswers)
+	err = h.app.Services.CreatePendingMember(clientID, current, groupID, name, email, photoURL, mAnswers)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -811,7 +815,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	err := h.app.Services.DeletePendingMember(clientID, *current, groupID)
+	err := h.app.Services.DeletePendingMember(clientID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -825,12 +829,13 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 
 // createMemberRequest
 type createMemberRequest struct {
-	UserID     string `json:"user_id" bson:"user_id"`
-	ExternalID string `json:"external_id" bson:"external_id"`
-	Name       string `json:"name" bson:"name"`
-	Email      string `json:"email" bson:"email"`
-	PhotoURL   string `json:"photo_url"`
-	Status     string `json:"status" bson:"status"` //pending, member, admin, rejected
+	UserID         string     `json:"user_id" bson:"user_id"`
+	ExternalID     string     `json:"external_id" bson:"external_id"`
+	Name           string     `json:"name" bson:"name"`
+	Email          string     `json:"email" bson:"email"`
+	PhotoURL       string     `json:"photo_url" bson:"photo_url"`
+	Status         string     `json:"status" bson:"status"` //pending, member, admin, rejected
+	DateAttendance *time.Time `json:"date_attendance" bson:"date_attendance"`
 } //@name createMemberRequest
 
 // CreateMember Adds a member to a group. The current user is required to be an admin of the group
@@ -880,12 +885,13 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	}
 
 	member := model.Member{
-		UserID:     requestData.UserID,
-		ExternalID: requestData.ExternalID,
-		Email:      requestData.Email,
-		Name:       requestData.Name,
-		PhotoURL:   requestData.PhotoURL,
-		Status:     requestData.Status,
+		UserID:         requestData.UserID,
+		ExternalID:     requestData.ExternalID,
+		Email:          requestData.Email,
+		Name:           requestData.Name,
+		PhotoURL:       requestData.PhotoURL,
+		Status:         requestData.Status,
+		DateAttendance: requestData.DateAttendance,
 	}
 
 	err = h.app.Services.CreateMember(clientID, current, groupID, &member)
@@ -917,7 +923,7 @@ func (h *ApisHandler) DeleteMember(clientID string, current *model.User, w http.
 		return
 	}
 
-	err := h.app.Services.DeleteMember(clientID, *current, groupID)
+	err := h.app.Services.DeleteMember(clientID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1002,7 +1008,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 	approve := *requestData.Approve
 	rejectedReason := requestData.RejectedReason
 
-	err = h.app.Services.ApplyMembershipApproval(clientID, *current, membershipID, approve, rejectedReason)
+	err = h.app.Services.ApplyMembershipApproval(clientID, current, membershipID, approve, rejectedReason)
 	if err != nil {
 		log.Printf("Error on applying membership approval - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1055,7 +1061,7 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.DeleteMembership(clientID, *current, membershipID)
+	err = h.app.Services.DeleteMembership(clientID, current, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1068,11 +1074,12 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 }
 
 type updateMembershipRequest struct {
-	Status string `json:"status" validate:"required,oneof=member admin"`
+	Status         string     `json:"status" validate:"required,oneof=member admin"`
+	DateAttendance *time.Time `json:"date_attendance"`
 } // @name updateMembershipRequest
 
-//UpdateMembership updates a membership
-// @Description Updates a membership
+//UpdateMembership updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
+// @Description Updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
 // @ID UpdateMembership
 // @Accept json
 // @Produce json
@@ -1137,8 +1144,9 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 	}
 
 	status := requestData.Status
+	dateAttendance := requestData.DateAttendance
 
-	err = h.app.Services.UpdateMembership(clientID, *current, membershipID, status)
+	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, dateAttendance)
 	if err != nil {
 		log.Printf("Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
