@@ -46,6 +46,7 @@ type group struct {
 	AuthmanGroup               *string `bson:"authman_group"`
 	OnlyAdminsCanCreatePolls   bool    `bson:"only_admins_can_create_polls"`
 	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
+	AttendanceGroup            bool    `bson:"attendance_group"`
 }
 
 type member struct {
@@ -59,8 +60,9 @@ type member struct {
 	RejectReason  string         `bson:"reject_reason"`
 	MemberAnswers []memberAnswer `bson:"member_answers"`
 
-	DateCreated time.Time  `bson:"date_created"`
-	DateUpdated *time.Time `bson:"date_updated"`
+	DateCreated    time.Time  `bson:"date_created"`
+	DateUpdated    *time.Time `bson:"date_updated"`
+	DateAttendance *time.Time `bson:"date_attendance"`
 }
 
 type memberAnswer struct {
@@ -485,7 +487,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 //CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
 	hiddenForSearch bool, creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool) (*string, *core.GroupError) {
+	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *core.GroupError) {
 	var insertedID string
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
@@ -519,7 +521,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
 			Tags: tags, HiddenForSearch: hiddenForSearch, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
 			MembershipQuestions: membershipQuestions, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
-			OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls,
+			OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, AttendanceGroup: attendanceGroup,
 		}
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
@@ -546,7 +548,7 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string,
 	privacy string, hiddenForSearch bool, description *string,
 	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
-	onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool) *core.GroupError {
+	onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *core.GroupError {
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
@@ -584,6 +586,7 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 				primitive.E{Key: "authman_group", Value: authmanGroup},
 				primitive.E{Key: "only_admins_can_create_polls", Value: onlyAdminsCanCreatePolls},
 				primitive.E{Key: "block_new_membership_requests", Value: blockNewMembershipRequests},
+				primitive.E{Key: "attendance_group", Value: attendanceGroup},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -1195,7 +1198,7 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 }
 
 //DeleteMembership deletes a membership
-func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membershipID string) error {
+func (sa *Adapter) DeleteMembership(clientID string, current *model.User, membershipID string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -1225,7 +1228,7 @@ func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membe
 		resultItem := result[0]
 		groupID := resultItem.GroupID
 		member := resultItem.Member
-		if member.UserID == currentUserID {
+		if member.UserID == current.ID {
 			abortTransaction(sessionContext)
 			return errors.New("you cannot remove yourself")
 		}
@@ -1264,7 +1267,7 @@ func (sa *Adapter) DeleteMembership(clientID string, currentUserID string, membe
 }
 
 //UpdateMembership updates a membership
-func (sa *Adapter) UpdateMembership(clientID string, currentUserID string, membershipID string, status string) error {
+func (sa *Adapter) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttendance *time.Time) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -1293,7 +1296,7 @@ func (sa *Adapter) UpdateMembership(clientID string, currentUserID string, membe
 		}
 		resultItem := result[0]
 		member := resultItem.Member
-		if member.UserID == currentUserID {
+		if member.UserID == current.ID {
 			abortTransaction(sessionContext)
 			return errors.New("you cannot update yourself")
 		}
@@ -1310,6 +1313,7 @@ func (sa *Adapter) UpdateMembership(clientID string, currentUserID string, membe
 				primitive.E{Key: "date_updated", Value: time.Now()},
 				primitive.E{Key: "members.$.status", Value: status},
 				primitive.E{Key: "members.$.date_updated", Value: time.Now()},
+				primitive.E{Key: "members.$.date_attendance", Value: dateAttendance},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, changeFilter, change, nil)
@@ -2072,6 +2076,7 @@ func constructGroup(gr group) model.Group {
 	authmanGroup := gr.AuthmanGroup
 	onlyAdminsCanCreatePolls := gr.OnlyAdminsCanCreatePolls
 	blockNewMembershipRequests := gr.BlockNewMembershipRequests
+	attendanceGroup := gr.AttendanceGroup
 
 	dateCreated := gr.DateCreated
 	dateUpdated := gr.DateUpdated
@@ -2086,6 +2091,7 @@ func constructGroup(gr group) model.Group {
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
+		AttendanceGroup: attendanceGroup,
 	}
 }
 
@@ -2100,6 +2106,7 @@ func constructMember(member member) model.Member {
 	rejectReason := member.RejectReason
 	dateCreated := member.DateCreated
 	dateUpdated := member.DateUpdated
+	dateAttendance := member.DateAttendance
 
 	memberAnswers := make([]model.MemberAnswer, len(member.MemberAnswers))
 	for i, current := range member.MemberAnswers {
@@ -2107,5 +2114,7 @@ func constructMember(member member) model.Member {
 	}
 
 	return model.Member{ID: id, UserID: userID, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
-		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers}
+		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
+		DateAttendance: dateAttendance,
+	}
 }

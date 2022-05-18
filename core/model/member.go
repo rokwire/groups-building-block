@@ -14,8 +14,9 @@ type Member struct {
 	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
 	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
 
-	DateCreated time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
+	DateCreated    time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated    *time.Time `json:"date_updated" bson:"date_updated"`
+	DateAttendance *time.Time `json:"date_attendance" bson:"date_attendance"`
 } //@name Member
 
 // ToMember represents to(destination) member entity

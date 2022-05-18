@@ -1165,7 +1165,7 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Updates a membership",
+                "description": "Updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1621,6 +1621,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "attendance_group": {
+                    "type": "boolean"
+                },
                 "authman_enabled": {
                     "type": "boolean"
                 },
@@ -1681,6 +1684,9 @@ const docTemplate = `{
         "createMemberRequest": {
             "type": "object",
             "properties": {
+                "date_attendance": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -2099,6 +2105,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "attendance_group": {
+                    "type": "boolean"
+                },
                 "authman_enabled": {
                     "type": "boolean"
                 },
@@ -2156,6 +2165,9 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "date_attendance": {
+                    "type": "string"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
