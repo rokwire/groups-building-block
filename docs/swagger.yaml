@@ -28,6 +28,55 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  Group:
+    properties:
+      attendance_group:
+        type: boolean
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
+      block_new_membership_requests:
+        type: boolean
+      category:
+        description: one of the enums categories list
+        type: string
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      description:
+        type: string
+      hidden_for_search:
+        type: boolean
+      id:
+        type: string
+      image_url:
+        type: string
+      members:
+        items:
+          $ref: '#/definitions/Member'
+        type: array
+      membership_questions:
+        items:
+          type: string
+        type: array
+      only_admins_can_create_polls:
+        type: boolean
+      privacy:
+        description: public or private
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      web_url:
+        type: string
+    type: object
   GroupStat:
     properties:
       authman_enabled:
@@ -49,6 +98,43 @@ definitions:
         items:
           $ref: '#/definitions/GroupStat'
         type: array
+    type: object
+  Member:
+    properties:
+      date_attended:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      email:
+        type: string
+      external_id:
+        type: string
+      id:
+        type: string
+      member_answers:
+        items:
+          $ref: '#/definitions/MemberAnswer'
+        type: array
+      name:
+        type: string
+      photo_url:
+        type: string
+      reject_reason:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
+  MemberAnswer:
+    properties:
+      answer:
+        type: string
+      question:
+        type: string
     type: object
   Poll:
     properties:
@@ -1155,6 +1241,25 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/int/group/{identifier}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves group details and members
+      operationId: IntGetGroup
+      parameters:
+      - description: Identifier
+        in: path
+        name: identifier
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Group'
+      security:
+      - IntAPIKeyAuth: []
   /api/int/user/{identifier}/groups:
     get:
       consumes:
