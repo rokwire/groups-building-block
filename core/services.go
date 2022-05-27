@@ -821,6 +821,36 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 	log.Printf("Global Authman synchronization started")
 	defer log.Printf("Global Authman synchronization finished")
 
+	giesGroups, err := app.authman.RetrieveAuthmanGiesGroups()
+	if err != nil {
+		return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
+	}
+
+	if giesGroups != nil && len(giesGroups.WsFindGroupsResults.GroupResults) > 0 {
+		for _, giesGroup := range giesGroups.WsFindGroupsResults.GroupResults {
+			storedGiesGroup, err := app.storage.FindAuthmanGroupByKey(clientID, giesGroup.Name)
+			if err != nil {
+				return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
+			}
+
+			if storedGiesGroup == nil {
+				title := giesGroup.Description
+				if len(title) == 0 {
+					title = giesGroup.DisplayName
+				}
+				emptyText := ""
+				_, err := app.storage.CreateGroup(clientID, title, &title, "", nil, "private", true,
+					"", "", "", "", &emptyText, &emptyText, nil,
+					true, &giesGroup.Name, false, false)
+				if err != nil {
+					return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
+				}
+
+				log.Printf("Created new `%s` group", title)
+			}
+		}
+	}
+
 	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
 	if err != nil {
 		return err

@@ -2040,6 +2040,30 @@ func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
 	return result, nil
 }
 
+// FindAuthmanGroupByKey Finds an Authman group by group long name
+func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error) {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "authman_enabled", Value: true},
+		primitive.E{Key: "authman_group", Value: authmanGroupKey},
+	}
+
+	findOptions := options.Find()
+
+	var list []group
+	err := sa.db.groups.Find(filter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) > 0 {
+		first := constructGroup(list[0])
+		return &first, nil
+	}
+
+	return nil, nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
