@@ -295,6 +295,7 @@ type Storage interface {
 	DeletePoll(clientID string, current *model.User, groupID string, pollID string) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
+	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
 }
 
 //StorageListener listenes for change data storage events
@@ -327,6 +328,7 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
 	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
+	RetrieveAuthmanGiesGroups() (*model.АuthmanGroupsResponse, error)
 }
 
 // Core exposes Core APIs for the driver adapters

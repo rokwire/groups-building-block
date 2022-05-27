@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.37] - 2022-05-27
+### Added
+- Implement automatic Authman group creation and membership synchronisation [#153](https://github.com/rokwire/groups-building-block/issues/153)
+
 ## [1.5.36] - 2022-05-26
 ### Added
 - Create internal group detail API [#151](https://github.com/rokwire/groups-building-block/issues/151)
