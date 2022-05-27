@@ -1127,6 +1127,37 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/{identifier}": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves group details and members",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "IntGetGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Identifier",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Group"
+                        }
+                    }
+                }
+            }
+        },
         "/api/int/user/{identifier}/groups": {
             "get": {
                 "security": [
@@ -1532,6 +1563,79 @@ const docTemplate = `{
                 }
             }
         },
+        "Group": {
+            "type": "object",
+            "properties": {
+                "attendance_group": {
+                    "type": "boolean"
+                },
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
+                "block_new_membership_requests": {
+                    "type": "boolean"
+                },
+                "category": {
+                    "description": "one of the enums categories list",
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Member"
+                    }
+                },
+                "membership_questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
+                },
+                "privacy": {
+                    "description": "public or private",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "web_url": {
+                    "type": "string"
+                }
+            }
+        },
         "GroupStat": {
             "type": "object",
             "properties": {
@@ -1563,6 +1667,62 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/GroupStat"
                     }
+                }
+            }
+        },
+        "Member": {
+            "type": "object",
+            "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "member_answers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MemberAnswer"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "reject_reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "MemberAnswer": {
+            "type": "object",
+            "properties": {
+                "answer": {
+                    "type": "string"
+                },
+                "question": {
+                    "type": "string"
                 }
             }
         },

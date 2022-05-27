@@ -73,6 +73,42 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 	w.Write(data)
 }
 
+// IntGetGroup Retrieves group details and members
+// @Description Retrieves group details and members
+// @ID IntGetGroup
+// @Accept json
+// @Param identifier path string true "Identifier"
+// @Success 200 {object} model.Group
+// @Security IntAPIKeyAuth
+// @Router /api/int/group/{identifier} [get]
+func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	identifier := params["identifier"]
+	if len(identifier) <= 0 {
+		log.Println("Identifier is required")
+		http.Error(w, "identifier is required", http.StatusBadRequest)
+		return
+	}
+
+	group, err := h.app.Services.GetGroupEntity(clientID, identifier)
+	if err != nil {
+		log.Printf("Unable to retrieve group with ID '%s': %s", identifier, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(group)
+	if err != nil {
+		log.Printf("Error on marshal the user group: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 //SynchronizeAuthman Synchronizes Authman groups memberhip
 // @Description Synchronizes Authman groups memberhip
 // @ID SynchronizeAuthman
