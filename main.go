@@ -51,6 +51,7 @@ func main() {
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
+	authmanAdminUINList := getAuthmanAdminUINList()
 
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
@@ -91,7 +92,7 @@ func main() {
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, pollsAdapter)
+		coreAdapter, rewardsAdapter, pollsAdapter, authmanAdminUINList)
 	application.Start()
 
 	//web adapter
@@ -147,6 +148,19 @@ func getEnvKey(key string, required bool) string {
 	}
 	printEnvVar(key, value)
 	return value
+}
+
+func getAuthmanAdminUINList() []string {
+	//get from the environment
+	authmanAdminUINs := getEnvKey("AUTHMAN_ADMIN_UIN_LIST", true)
+
+	//it is comma separated format
+	authmanAdminUINList := strings.Split(authmanAdminUINs, ",")
+	if len(authmanAdminUINList) <= 0 {
+		log.Fatal("AUTHMAN_ADMIN_UIN_LIST list is empty")
+	}
+
+	return authmanAdminUINList
 }
 
 func printEnvVar(name string, value string) {

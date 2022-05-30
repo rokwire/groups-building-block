@@ -873,6 +873,15 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
 	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)
 
+	defaultAdminsMapping := map[string]bool{}
+	if len(app.authmanAdminUINList) > 0 {
+		for _, externalID := range app.authmanAdminUINList {
+			defaultAdminsMapping[externalID] = true
+		}
+	}
+
+	now := time.Now().UTC()
+
 	if authmanGroup.AuthmanGroup != nil {
 		authmanExternalIDs, authmanErr := app.authman.RetrieveAuthmanGroupMembers(*authmanGroup.AuthmanGroup)
 		if authmanErr != nil {
@@ -907,10 +916,9 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 				if mappedMember.Name == "" || mappedMember.Email == "" {
 					missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
 				}
-				return nil
+				break // TBD: Why? This flow looks complicated and needs to be revised and redesign.
 			}
 
-			now := time.Now().UTC()
 			if user, ok := localUsersMapping[externalID]; ok {
 				// Add missed members
 				member := authmanGroup.GetMemberByUserID(user.ID)
@@ -1006,6 +1014,52 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 					}
 				} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
 					log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)
+				}
+			}
+		}
+
+		// Setup default admins - (check user exists, member exists or not exists and cover all possible scenarios) - separately
+		membersMapping := map[string]bool{}
+		for _, member := range members {
+			membersMapping[member.ExternalID] = true
+		}
+		if len(defaultAdminsMapping) > 0 {
+			for key := range defaultAdminsMapping {
+				if _, ok := membersMapping[key]; ok {
+					for index, innerMember := range members {
+						if innerMember.ExternalID == key {
+							innerMember.Status = "admin"
+							innerMember.DateUpdated = &now
+							members[index] = innerMember
+						}
+					}
+				} else {
+					user, err := app.storage.FindUser(clientID, key, true)
+					if err != nil {
+						return fmt.Errorf("error on retrieving  authman admin user(%s) for group(%s, %s): %s", key, authmanGroup.ID, authmanGroup.Title, err)
+					}
+					if user != nil {
+						members = append(members, model.Member{
+							ID:            uuid.NewString(),
+							UserID:        user.ID,
+							Status:        "admin",
+							ExternalID:    user.ExternalID,
+							Name:          user.Name,
+							Email:         user.Email,
+							MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
+							DateCreated:   now,
+							DateUpdated:   &now,
+						})
+					} else {
+						members = append(members, model.Member{
+							ID:            uuid.NewString(),
+							Status:        "admin",
+							ExternalID:    key,
+							MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
+							DateCreated:   now,
+							DateUpdated:   &now,
+						})
+					}
 				}
 			}
 		}
