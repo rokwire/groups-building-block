@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.38] - 2022-05-30
+- Add default Authman group admins on Authman group creation[#153](https://github.com/rokwire/groups-building-block/issues/153)
+
 ## [1.5.37] - 2022-05-27
 ### Added
 - Implement automatic Authman group creation and membership synchronisation [#153](https://github.com/rokwire/groups-building-block/issues/153)
