@@ -139,7 +139,7 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 }
 
 func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
-	apiKey := r.Header.Get("ROKWIRE_GS_API_KEY")
+	apiKey := r.Header.Get("INTERNAL-API-KEY")
 	if len(apiKey) == 0 {
 		return nil
 	}
@@ -165,7 +165,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
+func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
 	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
@@ -182,7 +182,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
-	internalAuth := newInternalAuth(internalAPIKeys)
+	internalAuth := newInternalAuth(internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
@@ -249,7 +249,7 @@ type userData struct {
 
 //InternalAuth entity
 type InternalAuth struct {
-	appKeys []string
+	internalAPIKey string
 }
 
 func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool {
@@ -264,15 +264,7 @@ func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool
 	}
 
 	//check if the api key is one of the listed
-	appKeys := auth.appKeys
-	exist := false
-	for _, element := range appKeys {
-		if element == *internalKey {
-			exist = true
-			break
-		}
-	}
-	if !exist {
+	if auth.internalAPIKey != *internalKey {
 		//not exist, so return 401
 		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalKey))
 
@@ -284,8 +276,8 @@ func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool
 }
 
 //newInternalAuth creates new internal auth
-func newInternalAuth(internalAPIKeys []string) *InternalAuth {
-	auth := InternalAuth{appKeys: internalAPIKeys}
+func newInternalAuth(internalAPIKey string) *InternalAuth {
+	auth := InternalAuth{internalAPIKey: internalAPIKey}
 	return &auth
 }
 

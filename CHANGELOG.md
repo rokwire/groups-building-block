@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.39] - 2022-06-01
+- Deprecate ROKWIRE_GS_API_KEY and start using INTERNAL-API-KEY as internal API authentication mechanism [#156](https://github.com/rokwire/groups-building-block/issues/156)
+
 ## [1.5.38] - 2022-05-30
 - Add default Authman group admins on Authman group creation[#153](https://github.com/rokwire/groups-building-block/issues/153)
 
