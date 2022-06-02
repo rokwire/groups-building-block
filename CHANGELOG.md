@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.40] - 2022-06-02
+- Rollback previous changes and add support of the both ROKWIRE_GS_API_KEY & INTERNAL-API-KEY headers for backward compatibility [#156](https://github.com/rokwire/groups-building-block/issues/156)
+
 ## [1.5.39] - 2022-06-01
 - Deprecate ROKWIRE_GS_API_KEY and start using INTERNAL-API-KEY as internal API authentication mechanism [#156](https://github.com/rokwire/groups-building-block/issues/156)
 

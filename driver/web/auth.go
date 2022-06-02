@@ -138,12 +138,18 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 	return &apiKey
 }
 
+// TBD Remove the legacy API key functionality
 func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
-	apiKey := r.Header.Get("INTERNAL-API-KEY")
-	if len(apiKey) == 0 {
-		return nil
+	internalAPIKey := r.Header.Get("INTERNAL-API-KEY")
+	if len(internalAPIKey) > 0 {
+		return &internalAPIKey
 	}
-	return &apiKey
+
+	legacyAPIKey := r.Header.Get("ROKWIRE_GS_API_KEY")
+	if len(legacyAPIKey) > 0 {
+		return &legacyAPIKey
+	}
+	return nil
 }
 
 func (auth *Auth) getIDToken(r *http.Request) *string {
@@ -165,7 +171,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
+func NewAuth(app *core.Application, host string, appKeys []string, legacyInternalAPIKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
 	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
@@ -182,7 +188,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
-	internalAuth := newInternalAuth(internalAPIKey)
+	internalAuth := newInternalAuth(legacyInternalAPIKeys, internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
@@ -249,12 +255,14 @@ type userData struct {
 
 //InternalAuth entity
 type InternalAuth struct {
-	internalAPIKey string
+	legacyInternalAPIKeys []string
+	internalAPIKey        string
 }
 
-func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool {
+// TBD Remove the legacy API key functionality
+func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) bool {
 	//check if there is internal key in the header
-	if internalKey == nil || len(*internalKey) == 0 {
+	if internalAPIKey == nil || len(*internalAPIKey) == 0 {
 		//no key, so return 400
 		log.Println(fmt.Sprintf("400 - Bad Request"))
 
@@ -263,21 +271,32 @@ func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool
 		return false
 	}
 
-	//check if the api key is one of the listed
-	if auth.internalAPIKey != *internalKey {
-		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalKey))
-
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
-		return false
+	if *internalAPIKey == auth.internalAPIKey {
+		return true
 	}
-	return true
+
+	//check if the api key is one of the listed
+	appKeys := auth.legacyInternalAPIKeys
+	for _, element := range appKeys {
+		if element == *internalAPIKey {
+			return true
+		}
+	}
+
+	//not exist, so return 401
+	log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalAPIKey))
+
+	w.WriteHeader(http.StatusUnauthorized)
+	w.Write([]byte("Unauthorized"))
+	return false
 }
 
 //newInternalAuth creates new internal auth
-func newInternalAuth(internalAPIKey string) *InternalAuth {
-	auth := InternalAuth{internalAPIKey: internalAPIKey}
+func newInternalAuth(legacyInternalAPIKeys []string, internalAPIKey string) *InternalAuth {
+	auth := InternalAuth{
+		legacyInternalAPIKeys: legacyInternalAPIKeys,
+		internalAPIKey:        internalAPIKey,
+	}
 	return &auth
 }
 
