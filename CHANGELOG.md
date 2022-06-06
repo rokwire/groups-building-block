@@ -6,13 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.41] - 2022-06-06
+### Added
+- Implement ability to use post's subject and body as a notification for the all group members [#159](https://github.com/rokwire/groups-building-block/issues/159)
+
 ## [1.5.40] - 2022-06-02
+### Changed
 - Rollback previous changes and add support of the both ROKWIRE_GS_API_KEY & INTERNAL-API-KEY headers for backward compatibility [#156](https://github.com/rokwire/groups-building-block/issues/156)
 
 ## [1.5.39] - 2022-06-01
+### Changed
 - Deprecate ROKWIRE_GS_API_KEY and start using INTERNAL-API-KEY as internal API authentication mechanism [#156](https://github.com/rokwire/groups-building-block/issues/156)
 
 ## [1.5.38] - 2022-05-30
+### Added
 - Add default Authman group admins on Authman group creation[#153](https://github.com/rokwire/groups-building-block/issues/153)
 
 ## [1.5.37] - 2022-05-27

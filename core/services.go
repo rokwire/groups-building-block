@@ -691,18 +691,28 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
 		}
 		if len(recipients) > 0 {
+			title := "Illinois"
+			body := fmt.Sprintf("New post has been published in '%s' group", group.Title)
+			if true { ////post.UseAsNotification {
+				title = post.Subject
+				body = post.Body
+			}
+
 			topic := "group.posts"
 			err = app.notifications.SendNotification(
 				recipients,
 				&topic,
-				"Illinois",
-				fmt.Sprintf("New post has been published in '%s' group", group.Title),
+				title,
+				body,
 				map[string]string{
-					"type":        "group",
-					"operation":   "post_created",
-					"entity_type": "group",
-					"entity_id":   group.ID,
-					"entity_name": group.Title,
+					"type":         "group",
+					"operation":    "post_created",
+					"entity_type":  "group",
+					"entity_id":    group.ID,
+					"entity_name":  group.Title,
+					"post_id":      *post.ID,
+					"post_subject": post.Subject,
+					"post_body":    post.Body,
 				},
 			)
 			if err != nil {
