@@ -693,7 +693,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		if len(recipients) > 0 {
 			title := "Illinois"
 			body := fmt.Sprintf("New post has been published in '%s' group", group.Title)
-			if true { ////post.UseAsNotification {
+			if post.UseAsNotification {
 				title = post.Subject
 				body = post.Body
 			}
