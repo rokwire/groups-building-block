@@ -1,6 +1,6 @@
 package polls
 
-// Adapter implements the Storage interface
+// Adapter implements the Polls interface
 type Adapter struct {
 	internalAPIKey string
 	baseURL        string

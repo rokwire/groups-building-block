@@ -2,6 +2,7 @@ package main
 
 import (
 	core "groups/core"
+	"groups/core/model"
 	"groups/driven/authman"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
@@ -44,6 +45,7 @@ func main() {
 	}
 
 	// Notification adapter
+	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
 	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
@@ -90,9 +92,14 @@ func main() {
 	}
 	pollsAdapter := polls.NewPollsAdapter(pollsServiceReg.Host, intrernalAPIKey)
 
+	config := &model.Config{
+		AuthmanAdminUINList:       authmanAdminUINList,
+		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
+	}
+
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, pollsAdapter, authmanAdminUINList)
+		coreAdapter, rewardsAdapter, pollsAdapter, config)
 	application.Start()
 
 	//web adapter

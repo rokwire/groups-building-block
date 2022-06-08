@@ -1589,7 +1589,7 @@ func (sa *Adapter) findPostWithContext(clientID string, userID *string, groupID 
 		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
 			primitive.M{"to_members": primitive.Null{}},
 			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": userID},
+			primitive.M{"to_members.user_id": *userID},
 		}})
 	}
 
@@ -1787,6 +1787,8 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 			primitive.E{Key: "subject", Value: post.Subject},
 			primitive.E{Key: "body", Value: post.Body},
 			primitive.E{Key: "private", Value: post.Private},
+			primitive.E{Key: "use_as_notification", Value: post.UseAsNotification},
+			primitive.E{Key: "is_abuse", Value: post.IsAbuse},
 			primitive.E{Key: "image_url", Value: post.ImageURL},
 			primitive.E{Key: "date_updated", Value: post.DateUpdated},
 			primitive.E{Key: "to_members", Value: post.ToMembersList},
@@ -1800,6 +1802,23 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 	}
 
 	return post, err
+}
+
+// ReportPostAsAbuse Report post as abuse
+func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error {
+
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "is_abuse", Value: true},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		},
+		},
+	}
+	_, err := sa.db.posts.UpdateOne(filter, update, nil)
+
+	return err
 }
 
 // DeletePost Deletes a post

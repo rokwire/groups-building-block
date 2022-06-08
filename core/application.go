@@ -10,9 +10,10 @@ import (
 
 // Application represents the corebb application code based on hexagonal architecture
 type Application struct {
-	version             string
-	build               string
-	authmanAdminUINList []string
+	version string
+	build   string
+
+	config *model.Config
 
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
@@ -79,10 +80,11 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 }
 
 // NewApplication creates new Application
-func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter, rewards *rewards.Adapter, polls *polls.Adapter, authmanAdminUINList []string) *Application {
+func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
+	rewards *rewards.Adapter, polls *polls.Adapter, config *model.Config) *Application {
 
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, polls: polls, authmanAdminUINList: authmanAdminUINList}
+		authman: authman, corebb: core, rewards: rewards, polls: polls, config: config}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
