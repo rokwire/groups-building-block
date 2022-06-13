@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Adapter implements the Storage interface
+// Adapter implements the Authman interface
 type Adapter struct {
 	authmanBaseURL  string
 	authmanUsername string

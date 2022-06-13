@@ -1101,6 +1101,23 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+  /api/group/{groupId}/posts/{postId}/report/abuse:
+    put:
+      consumes:
+      - application/json
+      description: Reports an abusive group post
+      operationId: ReportAbuseGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
   /api/group/{id}:
     delete:
       consumes:

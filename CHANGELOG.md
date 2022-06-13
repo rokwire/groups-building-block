@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.42] - 2022-06-08
+### Added
+- Report a post as abuse [#161](https://github.com/rokwire/groups-building-block/issues/161)
+
 ## [1.5.41] - 2022-06-06
 ### Added
 - Implement ability to use post's subject and body as a notification for the all group members [#159](https://github.com/rokwire/groups-building-block/issues/159)

@@ -659,6 +659,10 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
 }
 
+func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	return app.storage.FindPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+}
+
 func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
 	return app.storage.GetUserPostCount(clientID, userID)
 }
@@ -756,6 +760,29 @@ func (app *Application) getPostNotificationRecipients(clientID string, post *mod
 
 func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	return app.storage.UpdatePost(clientID, current.ID, post)
+}
+
+func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error {
+
+	err := app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
+	if err != nil {
+		log.Printf("error while reporting an abuse post: %s", err)
+		return fmt.Errorf("error while reporting an abuse post: %s", err)
+	}
+
+	subject := "Report Abuse Post"
+	body := fmt.Sprintf(`
+	Group title: %s
+	Post Title: %s
+	Post Body: %s
+	`, group.Title, post.Subject, post.Body)
+	err = app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+	if err != nil {
+		log.Printf("error while reporting an abuse post: %s", err)
+		return fmt.Errorf("error while reporting an abuse post: %s", err)
+	}
+
+	return nil
 }
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
@@ -884,8 +911,8 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)
 
 	defaultAdminsMapping := map[string]bool{}
-	if len(app.authmanAdminUINList) > 0 {
-		for _, externalID := range app.authmanAdminUINList {
+	if len(app.config.AuthmanAdminUINList) > 0 {
+		for _, externalID := range app.config.AuthmanAdminUINList {
 			defaultAdminsMapping[externalID] = true
 		}
 	}

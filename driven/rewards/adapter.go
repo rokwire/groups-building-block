@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// Adapter implements the Storage interface
+// Adapter implements the Rewards interface
 type Adapter struct {
 	internalAPIKey string
 	rewardsHost    string

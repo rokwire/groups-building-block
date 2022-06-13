@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-// Adapter implements the Storage interface
+// Adapter implements the Core interface
 type Adapter struct {
 	coreURL string
 }

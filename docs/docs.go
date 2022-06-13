@@ -907,6 +907,34 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{groupId}/posts/{postId}/report/abuse": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Reports an abusive group post",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "ReportAbuseGroupPost",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/group/{id}": {
             "delete": {
                 "security": [
