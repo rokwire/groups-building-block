@@ -38,6 +38,8 @@ definitions:
         type: string
       block_new_membership_requests:
         type: boolean
+      can_join_automatically:
+        type: boolean
       category:
         description: one of the enums categories list
         type: string
@@ -176,6 +178,8 @@ definitions:
         type: boolean
       authman_group:
         type: string
+      can_join_automatically:
+        type: boolean
       category:
         type: string
       creator_email:
@@ -222,20 +226,6 @@ definitions:
         type: string
       external_id:
         type: string
-      name:
-        type: string
-      photo_url:
-        type: string
-      status:
-        description: pending, member, admin, rejected
-        type: string
-      user_id:
-        type: string
-    type: object
-  createPendingMemberRequest:
-    properties:
-      email:
-        type: string
       member_answers:
         items:
           properties:
@@ -249,8 +239,23 @@ definitions:
         type: string
       photo_url:
         type: string
-    required:
-    - email
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
+  createPendingMemberRequest:
+    properties:
+      member_answers:
+        items:
+          properties:
+            answer:
+              type: string
+            question:
+              type: string
+          type: object
+        type: array
     type: object
   createResponse:
     properties:
@@ -496,6 +501,8 @@ definitions:
       authman_group:
         type: string
       block_new_membership_requests:
+        type: boolean
+      can_join_automatically:
         type: boolean
       category:
         type: string
@@ -903,6 +910,34 @@ paths:
           description: Successfuly deleted
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+    post:
+      consumes:
+      - text/plain
+      description: Adds a member to a group. The current user is required to be an
+        admin of the group
+      operationId: CreateMember
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createMemberRequest'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
       security:
       - AppUserAuth: []
   /api/group/{group-id}/pending-members:

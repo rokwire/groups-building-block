@@ -19,6 +19,34 @@ type Member struct {
 	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
 } //@name Member
 
+// GetDisplayName Constructs a display name based on the current data state
+func (m *Member) GetDisplayName() string {
+	if len(m.Name) > 0 {
+		return m.Name
+	} else if len(m.Email) > 0 {
+		return m.Email
+	} else if len(m.ExternalID) > 0 {
+		return m.ExternalID
+	}
+	return ""
+}
+
+// ApplyFromUserIfEmpty Copy info from the user entity
+func (m *Member) ApplyFromUserIfEmpty(user *User) {
+	if m.UserID == "" && user.ID != "" {
+		m.UserID = user.ID
+	}
+	if m.ExternalID == "" && user.ExternalID != "" {
+		m.ExternalID = user.ExternalID
+	}
+	if m.Email == "" && user.Email != "" {
+		m.Email = user.Email
+	}
+	if m.Name == "" && user.Name != "" {
+		m.Name = user.Name
+	}
+}
+
 // ToMember represents to(destination) member entity
 type ToMember struct {
 	UserID     string `json:"user_id" bson:"user_id"`

@@ -78,6 +78,7 @@ type createGroupRequest struct {
 	AuthmanEnabled           bool     `json:"authman_enabled"`
 	AuthmanGroup             *string  `json:"authman_group"`
 	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" `
+	CanJoinAutomatically     bool     `json:"can_join_automatically"`
 	AttendanceGroup          bool     `json:"attendance_group" `
 } //@name createGroupRequest
 
@@ -130,27 +131,21 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	title := requestData.Title
-	description := requestData.Description
-	category := requestData.Category
-	tags := requestData.Tags
-	privacy := requestData.Privacy
-	hidden := requestData.Hidden
-	creatorName := requestData.CreatorName
-	creatorEmail := requestData.CreatorEmail
-	creatorPhotoURL := requestData.CreatorPhotoURL
-	imageURL := requestData.ImageURL
-	webURL := requestData.WebURL
-	membershipQuestions := requestData.MembershipQuestions
-	authmanGroup := requestData.AuthmanGroup
-	authmanEnabled := requestData.AuthmanEnabled
-	onlyAdminsCanCreatePolls := requestData.OnlyAdminsCanCreatePolls
-	attendanceGroup := requestData.AttendanceGroup
-
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, title, description, category, tags,
-		privacy, hidden,
-		creatorName, creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup,
-		onlyAdminsCanCreatePolls, attendanceGroup)
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
+		Title:                    requestData.Title,
+		Description:              requestData.Description,
+		Category:                 requestData.Category,
+		Tags:                     requestData.Tags,
+		Privacy:                  requestData.Privacy,
+		HiddenForSearch:          requestData.Hidden,
+		ImageURL:                 requestData.ImageURL,
+		MembershipQuestions:      requestData.MembershipQuestions,
+		AuthmanGroup:             requestData.AuthmanGroup,
+		AuthmanEnabled:           requestData.AuthmanEnabled,
+		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:     requestData.CanJoinAutomatically,
+		AttendanceGroup:          requestData.AttendanceGroup,
+	})
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -182,6 +177,7 @@ type updateGroupRequest struct {
 	AuthmanEnabled             bool     `json:"authman_enabled"`
 	AuthmanGroup               *string  `json:"authman_group"`
 	OnlyAdminsCanCreatePolls   bool     `json:"only_admins_can_create_polls"`
+	CanJoinAutomatically       bool     `json:"can_join_automatically"`
 	BlockNewMembershipRequests bool     `json:"block_new_membership_requests"`
 	AttendanceGroup            bool     `json:"attendance_group" `
 } //@name updateGroupRequest
@@ -249,23 +245,22 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	category := requestData.Category
-	title := requestData.Title
-	privacy := requestData.Privacy
-	hidden := requestData.Hidden
-	description := requestData.Description
-	imageURL := requestData.ImageURL
-	webURL := requestData.WebURL
-	tags := requestData.Tags
-	membershipQuestions := requestData.MembershipQuestions
-	authmanGroup := requestData.AuthmanGroup
-	authmanEnabled := requestData.AuthmanEnabled
-	оnlyAdminsCanCreatePosts := requestData.OnlyAdminsCanCreatePolls
-	blockNewMembershipRequests := requestData.BlockNewMembershipRequests
-	attendanceGroup := requestData.AttendanceGroup
-
-	groupErr := h.app.Services.UpdateGroup(clientID, current, id, category, title, privacy, hidden, description, imageURL, webURL,
-		tags, membershipQuestions, authmanEnabled, authmanGroup, оnlyAdminsCanCreatePosts, blockNewMembershipRequests, attendanceGroup)
+	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
+		ID:                       id,
+		Title:                    requestData.Title,
+		Description:              requestData.Description,
+		Category:                 requestData.Category,
+		Tags:                     requestData.Tags,
+		Privacy:                  requestData.Privacy,
+		HiddenForSearch:          requestData.Hidden,
+		ImageURL:                 requestData.ImageURL,
+		MembershipQuestions:      requestData.MembershipQuestions,
+		AuthmanGroup:             requestData.AuthmanGroup,
+		AuthmanEnabled:           requestData.AuthmanEnabled,
+		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:     requestData.CanJoinAutomatically,
+		AttendanceGroup:          requestData.AttendanceGroup,
+	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -707,9 +702,6 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 }
 
 type createPendingMemberRequest struct {
-	Name          string `json:"name"`
-	Email         string `json:"email" validate:"required"`
-	PhotoURL      string `json:"photo_url"`
 	MemberAnswers []struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
@@ -774,9 +766,6 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	name := requestData.Name
-	email := requestData.Email
-	photoURL := requestData.PhotoURL
 	memberAnswers := requestData.MemberAnswers
 	mAnswers := make([]model.MemberAnswer, len(memberAnswers))
 	if memberAnswers != nil {
@@ -785,7 +774,15 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		}
 	}
 
-	err = h.app.Services.CreatePendingMember(clientID, current, groupID, name, email, photoURL, mAnswers)
+	member := &model.Member{
+		UserID:        current.ID,
+		ExternalID:    current.ExternalID,
+		Name:          current.Name,
+		Email:         current.Email,
+		MemberAnswers: mAnswers,
+	}
+
+	err = h.app.Services.CreatePendingMember(clientID, current, group, member)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -829,13 +826,17 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 
 // createMemberRequest
 type createMemberRequest struct {
-	UserID       string     `json:"user_id" bson:"user_id"`
-	ExternalID   string     `json:"external_id" bson:"external_id"`
-	Name         string     `json:"name" bson:"name"`
-	Email        string     `json:"email" bson:"email"`
-	PhotoURL     string     `json:"photo_url" bson:"photo_url"`
-	Status       string     `json:"status" bson:"status"` //pending, member, admin, rejected
-	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
+	UserID        string     `json:"user_id" bson:"user_id"`
+	ExternalID    string     `json:"external_id" bson:"external_id"`
+	Name          string     `json:"name" bson:"name"`
+	Email         string     `json:"email" bson:"email"`
+	PhotoURL      string     `json:"photo_url" bson:"photo_url"`
+	Status        string     `json:"status" bson:"status"` //pending, member, admin, rejected
+	DateAttended  *time.Time `json:"date_attended" bson:"date_attended"`
+	MemberAnswers []struct {
+		Question string `json:"question"`
+		Answer   string `json:"answer"`
+	} `json:"member_answers"`
 } //@name createMemberRequest
 
 // CreateMember Adds a member to a group. The current user is required to be an admin of the group
@@ -847,7 +848,7 @@ type createMemberRequest struct {
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /api/group/{group-id}/members [delete]
+// @Router /api/group/{group-id}/members [post]
 func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -878,9 +879,34 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		return
 	}
 
-	if !(requestData.Status == "member" || requestData.Status == "admin" || requestData.Status == "rejected" || requestData.Status == "pending") {
+	if requestData.Status != "" &&
+		!(requestData.Status == "member" ||
+			requestData.Status == "admin" ||
+			requestData.Status == "rejected" ||
+			requestData.Status == "pending") {
 		log.Printf("error: api.CreateMember() - expected status with possible value (member, admin, rejected, pending)")
 		http.Error(w, "expected status with possible value (member, admin, rejected, pending)", http.StatusBadRequest)
+		return
+	} else if requestData.Status == "" {
+		requestData.Status = "pending"
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("error: api.CreateMember() - there is no a group for the provided id - %s", groupID)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdmin(current.ID) {
+		log.Printf("error: api.CreateMember() - %s is not allowed to create group member", current.Email)
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
 		return
 	}
 
@@ -894,7 +920,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		DateAttended: requestData.DateAttended,
 	}
 
-	err = h.app.Services.CreateMember(clientID, current, groupID, &member)
+	err = h.app.Services.CreateMember(clientID, current, group, &member)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
