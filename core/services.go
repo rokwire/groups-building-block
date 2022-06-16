@@ -708,6 +708,16 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		// return err // No reason to fail if the main part succeeds
 	}
 
+	if err == nil && group != nil {
+		member := group.GetMemberByID(membershipID)
+		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.applyMembershipApproval() - error storing member in Authman: %s", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -715,6 +725,17 @@ func (app *Application) deleteMembership(clientID string, current *model.User, m
 	err := app.storage.DeleteMembership(clientID, current, membershipID)
 	if err != nil {
 		return err
+	}
+
+	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
+	if err == nil && group != nil {
+		member := group.GetMemberByID(membershipID)
+		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
+			}
+		}
 	}
 	return nil
 }
