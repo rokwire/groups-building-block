@@ -62,6 +62,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["membership_questions"] = group.MembershipQuestions
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
+		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 		item["can_join_automatically"] = group.CanJoinAutomatically
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 		item["attendance_group"] = group.AttendanceGroup
@@ -90,6 +91,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["membership_questions"] = group.MembershipQuestions
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
+		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 		item["can_join_automatically"] = group.CanJoinAutomatically
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 		item["attendance_group"] = group.AttendanceGroup
@@ -120,6 +122,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
+	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -183,6 +186,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
+	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -229,6 +233,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
+	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -275,6 +280,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
+	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup

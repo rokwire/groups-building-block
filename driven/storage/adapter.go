@@ -44,6 +44,7 @@ type group struct {
 	ClientID                   string  `bson:"client_id"`
 	AuthmanEnabled             bool    `bson:"authman_enabled"`
 	AuthmanGroup               *string `bson:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool    `bson:"only_admins_can_create_polls"`
 	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
 	CanJoinAutomatically       bool    `json:"can_join_automatically" bson:"can_join_automatically"`
 	AttendanceGroup            bool    `bson:"attendance_group"`
@@ -575,6 +576,7 @@ func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *mode
 				primitive.E{Key: "date_updated", Value: time.Now()},
 				primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
 				primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+				primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
 				primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
 				primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
 				primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
@@ -1969,6 +1971,7 @@ func constructGroup(gr group) model.Group {
 	membershipQuestions := gr.MembershipQuestions
 	authmanEnabled := gr.AuthmanEnabled
 	authmanGroup := gr.AuthmanGroup
+	onlyAdminsCanCreatePolls := gr.OnlyAdminsCanCreatePolls
 	blockNewMembershipRequests := gr.BlockNewMembershipRequests
 	canJoinAutomatically := gr.CanJoinAutomatically
 	attendanceGroup := gr.AttendanceGroup
@@ -1985,8 +1988,8 @@ func constructGroup(gr group) model.Group {
 		HiddenForSearch: hiddenForSearch, Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
-		BlockNewMembershipRequests: blockNewMembershipRequests,
-		CanJoinAutomatically:       canJoinAutomatically, AttendanceGroup: attendanceGroup,
+		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
+		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup,
 	}
 }
 
