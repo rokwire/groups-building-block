@@ -19,14 +19,8 @@ type Services interface {
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 
-	CreateGroup(clientID string, current *model.User, title string, description *string, category string, tags []string,
-		privacy string, hiddenForSearch bool,
-		creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
-		authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *GroupError)
-	UpdateGroup(clientID string, current *model.User, id string, category string, title string,
-		privacy string, hiddenForSearch bool, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
-		onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
+	UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
@@ -34,9 +28,9 @@ type Services interface {
 	DeleteUser(clientID string, current *model.User) error
 	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
-	CreatePendingMember(clientID string, current *model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, current *model.User, groupID string) error
-	CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error
+	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeleteMember(clientID string, current *model.User, groupID string) error
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
@@ -94,20 +88,12 @@ func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID 
 	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
-func (s *servicesImpl) CreateGroup(clientID string, current *model.User, title string, description *string, category string, tags []string,
-	privacy string, hiddenForSearch bool,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *GroupError) {
-	return s.app.createGroup(clientID, current, title, description, category, tags, privacy, hiddenForSearch, creatorName, creatorEmail, creatorPhotoURL,
-		imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, attendanceGroup)
+func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError) {
+	return s.app.createGroup(clientID, current, group)
 }
 
-func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, id string, category string, title string,
-	privacy string, hiddenForSearch bool, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
-	onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *GroupError {
-	return s.app.updateGroup(clientID, current, id, category, title, privacy, hiddenForSearch, description, imageURL, webURL, tags,
-		membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests, attendanceGroup)
+func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError {
+	return s.app.updateGroup(clientID, current, group)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -138,16 +124,16 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 	return s.app.getGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) CreatePendingMember(clientID string, current *model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	return s.app.createPendingMember(clientID, current, groupID, name, email, photoURL, memberAnswers)
+func (s *servicesImpl) CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
+	return s.app.createPendingMember(clientID, current, group, member)
 }
 
 func (s *servicesImpl) DeletePendingMember(clientID string, current *model.User, groupID string) error {
 	return s.app.deletePendingMember(clientID, current, groupID)
 }
 
-func (s *servicesImpl) CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error {
-	return s.app.createMember(clientID, current, groupID, member)
+func (s *servicesImpl) CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
+	return s.app.createMember(clientID, current, group, member)
 }
 
 func (s *servicesImpl) DeleteMember(clientID string, current *model.User, groupID string) error {
@@ -261,14 +247,8 @@ type Storage interface {
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
-	CreateGroup(clientID string, title string, description *string, category string, tags []string,
-		privacy string, hiddenForSearch bool,
-		creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string,
-		membershipQuestions []string, authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *GroupError)
-	UpdateGroup(clientID string, id string, category string, title string,
-		privacy string, hiddenForSearch bool, description *string,
-		imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
-		onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
+	UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -277,9 +257,9 @@ type Storage interface {
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
 	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
-	CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error
+	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
-	CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error
+	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeleteMember(clientID string, groupID string, userID string, force bool) error
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
@@ -341,6 +321,8 @@ type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
 	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
 	RetrieveAuthmanGiesGroups() (*model.АuthmanGroupsResponse, error)
+	AddAuthmanMemberToGroup(groupName string, uin string) error
+	RemoveAuthmanMemberFromGroup(groupName string, uin string) error
 }
 
 // Core exposes Core APIs for the driver adapters

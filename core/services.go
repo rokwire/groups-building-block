@@ -62,6 +62,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+		item["can_join_automatically"] = group.CanJoinAutomatically
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 		item["attendance_group"] = group.AttendanceGroup
 
@@ -90,6 +91,7 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
 		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+		item["can_join_automatically"] = group.CanJoinAutomatically
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 		item["attendance_group"] = group.AttendanceGroup
 
@@ -120,6 +122,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
 
@@ -183,6 +186,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
 
@@ -229,6 +233,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
 
@@ -275,6 +280,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
 	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
+	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
 
@@ -341,12 +347,8 @@ func (app *Application) getUserGroupMemberships(id string, external bool) ([]*mo
 	return getUserGroupMemberships, user, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, title string, description *string, category string, tags []string,
-	privacy string, hiddenForSearch bool,
-	creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string, authmanEnabled bool,
-	authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, title, description, category, tags, privacy, hiddenForSearch, current.ID, creatorName,
-		creatorEmail, creatorPhotoURL, imageURL, webURL, membershipQuestions, authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, attendanceGroup)
+func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError) {
+	insertedID, err := app.storage.CreateGroup(clientID, current, group)
 	if err != nil {
 		return nil, err
 	}
@@ -366,14 +368,9 @@ func (app *Application) createGroup(clientID string, current *model.User, title 
 	return insertedID, nil
 }
 
-func (app *Application) updateGroup(clientID string, current *model.User, id string, category string, title string,
-	privacy string, hiddenForSearch bool, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *GroupError {
+func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *GroupError {
 
-	err := app.storage.UpdateGroup(clientID, id, category, title,
-		privacy, hiddenForSearch, description, imageURL, webURL, tags, membershipQuestions,
-		authmanEnabled, authmanGroup, onlyAdminsCanCreatePolls, blockNewMembershipRequests, attendanceGroup)
+	err := app.storage.UpdateGroup(clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -464,13 +461,20 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return res, nil
 }
 
-func (app *Application) createPendingMember(clientID string, current *model.User, groupID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	err := app.storage.CreatePendingMember(clientID, groupID, current.ID, name, email, photoURL, memberAnswers)
+func (app *Application) createPendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
+
+	if group.CanJoinAutomatically {
+		member.Status = "member"
+	} else {
+		member.Status = "pending"
+	}
+
+	err := app.storage.CreatePendingMember(clientID, current, group, member)
 	if err != nil {
 		return err
 	}
 
-	group, err := app.storage.FindGroup(clientID, groupID)
+	group, err = app.storage.FindGroup(clientID, group.ID)
 	if err == nil && group != nil {
 		members := group.Members
 		if len(members) > 0 {
@@ -485,11 +489,17 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 			}
 			if len(recipients) > 0 {
 				topic := "group.invitations"
+
+				message := fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+				if group.CanJoinAutomatically {
+					message = fmt.Sprintf("%s joined '%s' group", member.GetDisplayName(), group.Title)
+				}
+
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
 					"Illinois",
-					fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title),
+					message,
 					map[string]string{
 						"type":        "group",
 						"operation":   "pending_member",
@@ -505,6 +515,13 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 		// return err // No reason to fail if the main part succeeds
 	}
 
+	if group.CanJoinAutomatically && group.AuthmanEnabled {
+		err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, member.ExternalID)
+		if err != nil {
+			log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
+		}
+	}
+
 	return nil
 }
 
@@ -513,11 +530,107 @@ func (app *Application) deletePendingMember(clientID string, current *model.User
 	if err != nil {
 		return err
 	}
+
+	group, err := app.storage.FindGroup(clientID, groupID)
+	if err == nil && group != nil {
+		if group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
+			}
+		}
+	}
+
 	return nil
 }
 
-func (app *Application) createMember(clientID string, current *model.User, groupID string, member *model.Member) error {
-	return app.storage.CreateMember(clientID, current, groupID, member)
+func (app *Application) createMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
+
+	if (member.UserID == "" && member.ExternalID != "") ||
+		(member.UserID != "" && member.ExternalID == "") {
+		if member.ExternalID == "" {
+			user, err := app.storage.FindUser(clientID, member.UserID, false)
+			if err == nil && user != nil {
+				member.ApplyFromUserIfEmpty(user)
+			} else {
+				log.Printf("error app.createMember() - unable to find user: %s", err)
+			}
+		}
+		if member.UserID == "" {
+			user, err := app.storage.FindUser(clientID, member.ExternalID, true)
+			if err == nil && user != nil {
+				member.ApplyFromUserIfEmpty(user)
+			} else {
+				log.Printf("error app.createMember() - unable to find user: %s", err)
+			}
+		}
+	}
+
+	err := app.storage.CreateMember(clientID, current, group, member)
+	if err != nil {
+		return err
+	}
+
+	group, err = app.storage.FindGroup(clientID, group.ID)
+	if err == nil && group != nil {
+		members := group.Members
+		if len(members) > 0 {
+			recipients := []notifications.Recipient{}
+			for _, adminMember := range members {
+				if adminMember.Status == "admin" && adminMember.UserID != current.ID {
+					recipients = append(recipients, notifications.Recipient{
+						UserID: adminMember.UserID,
+						Name:   adminMember.Name,
+					})
+				}
+			}
+
+			var message string
+			if member.Status == "member" || member.Status == "admin" {
+				message = fmt.Sprintf("New member joined '%s' group", group.Title)
+			} else {
+				message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+			}
+
+			if len(recipients) > 0 {
+				topic := "group.invitations"
+				app.notifications.SendNotification(
+					recipients,
+					&topic,
+					"Illinois",
+					message,
+					map[string]string{
+						"type":        "group",
+						"operation":   "pending_member",
+						"entity_type": "group",
+						"entity_id":   group.ID,
+						"entity_name": group.Title,
+					},
+				)
+			}
+		}
+
+		if group.AuthmanEnabled && group.AuthmanGroup != nil {
+			err = app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, member.ExternalID)
+			if err != nil {
+				return err
+			}
+		}
+
+	} else {
+		log.Printf("Unable to retrieve group by membership id: %s\n", err)
+		// return err // No reason to fail if the main part succeeds
+	}
+	if err == nil && group != nil {
+		if group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.createMember() - error storing member in Authman: %s", err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (app *Application) deleteMember(clientID string, current *model.User, groupID string) error {
@@ -525,6 +638,17 @@ func (app *Application) deleteMember(clientID string, current *model.User, group
 	if err != nil {
 		return err
 	}
+
+	group, err := app.storage.FindGroup(clientID, groupID)
+	if err == nil && group != nil {
+		if group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -584,6 +708,16 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		// return err // No reason to fail if the main part succeeds
 	}
 
+	if err == nil && group != nil {
+		member := group.GetMemberByID(membershipID)
+		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.applyMembershipApproval() - error storing member in Authman: %s", err)
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -591,6 +725,17 @@ func (app *Application) deleteMembership(clientID string, current *model.User, m
 	err := app.storage.DeleteMembership(clientID, current, membershipID)
 	if err != nil {
 		return err
+	}
+
+	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
+	if err == nil && group != nil {
+		member := group.GetMemberByID(membershipID)
+		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
+			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
+			if err != nil {
+				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
+			}
+		}
 	}
 	return nil
 }
@@ -876,9 +1021,15 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 					title = giesGroup.DisplayName
 				}
 				emptyText := ""
-				_, err := app.storage.CreateGroup(clientID, title, &title, "", nil, "private", true,
-					"", "", "", "", &emptyText, &emptyText, nil,
-					true, &giesGroup.Name, false, false)
+				_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
+					Title:                title,
+					Description:          &emptyText,
+					Privacy:              "private",
+					HiddenForSearch:      true,
+					CanJoinAutomatically: true,
+					AuthmanEnabled:       true,
+					AuthmanGroup:         &giesGroup.Name,
+				})
 				if err != nil {
 					return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
 				}

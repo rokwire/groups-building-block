@@ -74,6 +74,64 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 	return nil, nil
 }
 
+// AddAuthmanMemberToGroup add a member to an Authman group
+func (a *Adapter) AddAuthmanMemberToGroup(groupName string, uin string) error {
+	if len(groupName) > 0 {
+		url := fmt.Sprintf("%s/groups/%s/members/%s", a.authmanBaseURL, groupName, uin)
+		client := &http.Client{}
+		req, err := http.NewRequest("PUT", url, nil)
+		if err != nil {
+			log.Printf("AddAuthmanMemberToGroup: error creating load user data request - %s", err)
+			return err
+		}
+
+		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("AddAuthmanMemberToGroup: error loading user data - %s", err)
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			log.Printf("RetrieveAuthmanGroupMembersError: error with response code - %d", resp.StatusCode)
+			return fmt.Errorf("AddAuthmanMemberToGroup: error with response code != 200")
+		}
+
+		return nil
+	}
+	return nil
+}
+
+// RemoveAuthmanMemberFromGroup remove a member from an Authman group
+func (a *Adapter) RemoveAuthmanMemberFromGroup(groupName string, uin string) error {
+	if len(groupName) > 0 {
+		url := fmt.Sprintf("%s/groups/%s/members/%s", a.authmanBaseURL, groupName, uin)
+		client := &http.Client{}
+		req, err := http.NewRequest("DELETE", url, nil)
+		if err != nil {
+			log.Printf("AddAuthmanMemberToGroup: error creating load user data request - %s", err)
+			return err
+		}
+
+		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("AddAuthmanMemberToGroup: error loading user data - %s", err)
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			log.Printf("RetrieveAuthmanGroupMembersError: error with response code - %d", resp.StatusCode)
+			return fmt.Errorf("AddAuthmanMemberToGroup: error with response code != 200")
+		}
+
+		return nil
+	}
+	return nil
+}
+
 // RetrieveAuthmanUsers retrieve authman user data based on external IDs
 func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error) {
 	externalIDCount := len(externalIDs)

@@ -545,6 +545,48 @@ const docTemplate = `{
             }
         },
         "/api/group/{group-id}/members": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Adds a member to a group. The current user is required to be an admin of the group",
+                "consumes": [
+                    "text/plain"
+                ],
+                "operationId": "CreateMember",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/createMemberRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -1606,6 +1648,9 @@ const docTemplate = `{
                 "block_new_membership_requests": {
                     "type": "boolean"
                 },
+                "can_join_automatically": {
+                    "type": "boolean"
+                },
                 "category": {
                     "description": "one of the enums categories list",
                     "type": "string"
@@ -1818,6 +1863,9 @@ const docTemplate = `{
                 "authman_group": {
                     "type": "string"
                 },
+                "can_join_automatically": {
+                    "type": "boolean"
+                },
                 "category": {
                     "type": "string"
                 },
@@ -1881,30 +1929,6 @@ const docTemplate = `{
                 "external_id": {
                     "type": "string"
                 },
-                "name": {
-                    "type": "string"
-                },
-                "photo_url": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "pending, member, admin, rejected",
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "createPendingMemberRequest": {
-            "type": "object",
-            "required": [
-                "email"
-            ],
-            "properties": {
-                "email": {
-                    "type": "string"
-                },
                 "member_answers": {
                     "type": "array",
                     "items": {
@@ -1924,6 +1948,32 @@ const docTemplate = `{
                 },
                 "photo_url": {
                     "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "createPendingMemberRequest": {
+            "type": "object",
+            "properties": {
+                "member_answers": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "answer": {
+                                "type": "string"
+                            },
+                            "question": {
+                                "type": "string"
+                            }
+                        }
+                    }
                 }
             }
         },
@@ -2303,6 +2353,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "block_new_membership_requests": {
+                    "type": "boolean"
+                },
+                "can_join_automatically": {
                     "type": "boolean"
                 },
                 "category": {

@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.43] - 2022-06-16
+### Added
+- Add the group member to the autumn group automatically  [#163](https://github.com/rokwire/groups-building-block/issues/163)
+
 ## [1.5.42] - 2022-06-08
 ### Added
 - Report a post as abuse [#161](https://github.com/rokwire/groups-building-block/issues/161)

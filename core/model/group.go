@@ -26,6 +26,7 @@ type Group struct {
 	AuthmanEnabled             bool       `json:"authman_enabled" bson:"authman_enabled"`
 	AuthmanGroup               *string    `json:"authman_group" bson:"authman_group"`
 	OnlyAdminsCanCreatePolls   bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	CanJoinAutomatically       bool       `json:"can_join_automatically" bson:"can_join_automatically"`
 	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
 	AttendanceGroup            bool       `json:"attendance_group" bson:"attendance_group"`
 } // @name Group

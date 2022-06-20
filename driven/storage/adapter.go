@@ -46,6 +46,7 @@ type group struct {
 	AuthmanGroup               *string `bson:"authman_group"`
 	OnlyAdminsCanCreatePolls   bool    `bson:"only_admins_can_create_polls"`
 	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
+	CanJoinAutomatically       bool    `json:"can_join_automatically" bson:"can_join_automatically"`
 	AttendanceGroup            bool    `bson:"attendance_group"`
 }
 
@@ -485,15 +486,13 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 }
 
 //CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(clientID string, title string, description *string, category string, tags []string, privacy string,
-	hiddenForSearch bool, creatorUserID string, creatorName string, creatorEmail string, creatorPhotoURL string, imageURL *string, webURL *string, membershipQuestions []string,
-	authmanEnabled bool, authmanGroup *string, onlyAdminsCanCreatePolls bool, attendanceGroup bool) (*string, *core.GroupError) {
-	var insertedID string
+func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *core.GroupError) {
+	insertedID := uuid.NewString()
 
-	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
-		for _, group := range existingGroups {
-			if strings.ToLower(group.Title) == strings.ToLower(title) {
+		for _, persistedGrop := range existingGroups {
+			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
 				return nil, core.NewGropDuplicationError()
 			}
 		}
@@ -508,21 +507,17 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 		}
 
 		// insert the group and the admin member
-		now := time.Now()
-
-		memberID, _ := uuid.NewUUID()
-		adminMember := member{ID: memberID.String(), UserID: creatorUserID, Name: creatorName, Email: creatorEmail,
-			PhotoURL: creatorPhotoURL, Status: "admin", DateCreated: now}
-
-		members := []member{adminMember}
-
-		groupID, _ := uuid.NewUUID()
-		insertedID = groupID.String()
-		group := group{ID: insertedID, ClientID: clientID, Title: title, Description: description, Category: category,
-			Tags: tags, HiddenForSearch: hiddenForSearch, Privacy: privacy, Members: members, DateCreated: now, ImageURL: imageURL, WebURL: webURL,
-			MembershipQuestions: membershipQuestions, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
-			OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, AttendanceGroup: attendanceGroup,
+		group.ID = insertedID
+		group.DateCreated = time.Now()
+		if current != nil && len(group.Members) == 0 {
+			group.Members = []model.Member{{
+				ID: uuid.NewString(), UserID: current.ID,
+				Name: current.Name, Email: current.Email,
+				ExternalID: current.ExternalID,
+				PhotoURL:   "", Status: "admin", DateCreated: time.Now(),
+			}}
 		}
+
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -545,15 +540,12 @@ func (sa *Adapter) CreateGroup(clientID string, title string, description *strin
 }
 
 //UpdateGroup updates a group.
-func (sa *Adapter) UpdateGroup(clientID string, id string, category string, title string,
-	privacy string, hiddenForSearch bool, description *string,
-	imageURL *string, webURL *string, tags []string, membershipQuestions []string, authmanEnabled bool, authmanGroup *string,
-	onlyAdminsCanCreatePolls bool, blockNewMembershipRequests bool, attendanceGroup bool) *core.GroupError {
+func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *core.GroupError {
 
-	existingGroups, err := sa.FindGroups(clientID, nil, nil, &title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
-		for _, group := range existingGroups {
-			if group.ID != id && strings.ToLower(group.Title) == strings.ToLower(title) {
+		for _, persistedGrop := range existingGroups {
+			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
 				return core.NewGropDuplicationError()
 			}
 		}
@@ -568,25 +560,26 @@ func (sa *Adapter) UpdateGroup(clientID string, id string, category string, titl
 		}
 
 		// update the group
-		filter := bson.D{primitive.E{Key: "_id", Value: id},
+		filter := bson.D{primitive.E{Key: "_id", Value: group.ID},
 			primitive.E{Key: "client_id", Value: clientID}}
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "category", Value: category},
-				primitive.E{Key: "title", Value: title},
-				primitive.E{Key: "privacy", Value: privacy},
-				primitive.E{Key: "hidden_for_search", Value: hiddenForSearch},
-				primitive.E{Key: "description", Value: description},
-				primitive.E{Key: "image_url", Value: imageURL},
-				primitive.E{Key: "web_url", Value: webURL},
-				primitive.E{Key: "tags", Value: tags},
-				primitive.E{Key: "membership_questions", Value: membershipQuestions},
+				primitive.E{Key: "category", Value: group.Category},
+				primitive.E{Key: "title", Value: group.Title},
+				primitive.E{Key: "privacy", Value: group.Privacy},
+				primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+				primitive.E{Key: "description", Value: group.Description},
+				primitive.E{Key: "image_url", Value: group.ImageURL},
+				primitive.E{Key: "web_url", Value: group.WebURL},
+				primitive.E{Key: "tags", Value: group.Tags},
+				primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
 				primitive.E{Key: "date_updated", Value: time.Now()},
-				primitive.E{Key: "authman_enabled", Value: authmanEnabled},
-				primitive.E{Key: "authman_group", Value: authmanGroup},
-				primitive.E{Key: "only_admins_can_create_polls", Value: onlyAdminsCanCreatePolls},
-				primitive.E{Key: "block_new_membership_requests", Value: blockNewMembershipRequests},
-				primitive.E{Key: "attendance_group", Value: attendanceGroup},
+				primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+				primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+				primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+				primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+				primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+				primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
@@ -815,93 +808,92 @@ func (sa *Adapter) UpdateGroupMembers(clientID string, groupID string, members [
 }
 
 //CreatePendingMember creates a pending member for a specific group
-func (sa *Adapter) CreatePendingMember(clientID string, groupID string, userID string, name string, email string, photoURL string, memberAnswers []model.MemberAnswer) error {
-	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
+func (sa *Adapter) CreatePendingMember(clientID string, user *model.User, group *model.Group, member *model.Member) error {
+	if member != nil && group != nil {
+		// transaction
+		err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+			err := sessionContext.StartTransaction()
+			if err != nil {
+				log.Printf("error starting a transaction - %s", err)
+				return err
+			}
 
-		//1. first check if there is a group for the prvoided group id
-		groupFilter := bson.D{primitive.E{Key: "_id", Value: groupID}, primitive.E{Key: "client_id", Value: clientID}}
-		var result []*group
-		err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if result == nil || len(result) == 0 {
-			//there is no a group for the provided id
-			abortTransaction(sessionContext)
-			return errors.New("there is no a group for the provided id")
-		}
-		group := result[0]
+			//1. first check if there is a group for the prvoided group id
+			groupFilter := bson.D{primitive.E{Key: "_id", Value: group.ID}, primitive.E{Key: "client_id", Value: clientID}}
+			var result []*model.Group
+			err = sa.db.groups.FindWithContext(sessionContext, groupFilter, &result, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+			if result == nil || len(result) == 0 {
+				//there is no a group for the provided id
+				abortTransaction(sessionContext)
+				return errors.New("there is no a group for the provided id")
+			}
+			group := result[0]
 
-		//2. check if the user is already a member of this group - pending or member or admin or rejected
-		members := group.Members
-		if members != nil {
-			for _, cMember := range members {
-				if cMember.UserID == userID {
-					switch cMember.Status {
-					case "admin":
-						return errors.New("the user is an admin for the group")
-					case "member":
-						return errors.New("the user is a member for the group")
-					case "pending":
-						return errors.New("the user is pending for the group")
-					case "rejected":
-						return errors.New("the user is rejected for the group")
-					default:
-						return errors.New("error creating a pending user")
+			//2. check if the user is already a member of this group - pending or member or admin or rejected
+			members := group.Members
+			if members != nil {
+				for _, cMember := range members {
+					if cMember.UserID == user.ID {
+						switch cMember.Status {
+						case "admin":
+							return errors.New("the user is an admin for the group")
+						case "member":
+							return errors.New("the user is a member for the group")
+						case "pending":
+							return errors.New("the user is pending for the group")
+						case "rejected":
+							return errors.New("the user is rejected for the group")
+						default:
+							return errors.New("error creating a pending user")
+						}
 					}
 				}
 			}
-		}
 
-		//3. check if the answers match the group questions
-		if len(group.MembershipQuestions) != len(memberAnswers) {
-			return errors.New("member answers mismatch")
-		}
-
-		//4. now we can add the pending member
-		now := time.Now()
-		memberID, _ := uuid.NewUUID()
-		var memberAns []memberAnswer
-		if len(memberAnswers) > 0 {
-			for _, cAns := range memberAnswers {
-				memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
+			//3. check if the answers match the group questions
+			if len(group.MembershipQuestions) != len(member.MemberAnswers) {
+				return errors.New("member answers mismatch")
 			}
-		}
-		pendingMember := member{ID: memberID.String(), UserID: userID, Name: name, Email: email,
-			PhotoURL: photoURL, Status: "pending", MemberAnswers: memberAns, DateCreated: now}
-		groupMembers := group.Members
-		groupMembers = append(groupMembers, pendingMember)
-		saveFilter := bson.D{primitive.E{Key: "_id", Value: groupID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "members", Value: groupMembers},
-				primitive.E{Key: "date_updated", Value: time.Now()},
-			},
-			},
-		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
 
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
+			//4. now we can add the pending member
+			var memberAns []memberAnswer
+			if len(member.MemberAnswers) > 0 {
+				for _, cAns := range member.MemberAnswers {
+					memberAns = append(memberAns, memberAnswer{Question: cAns.Question, Answer: cAns.Answer})
+				}
+			}
+
+			groupMembers := group.Members
+			groupMembers = append(groupMembers, *member)
+			saveFilter := bson.D{primitive.E{Key: "_id", Value: group.ID}}
+			update := bson.D{
+				primitive.E{Key: "$set", Value: bson.D{
+					primitive.E{Key: "members", Value: groupMembers},
+					primitive.E{Key: "date_updated", Value: time.Now()},
+				},
+				},
+			}
+			_, err = sa.db.groups.UpdateOneWithContext(sessionContext, saveFilter, update, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+
+			//commit the transaction
+			err = sessionContext.CommitTransaction(sessionContext)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			return nil
+		})
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -981,14 +973,9 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 }
 
 //CreateMember Created a member to a group
-func (sa *Adapter) CreateMember(clientID string, current *model.User, groupID string, member *model.Member) error {
-	group, err := sa.FindGroup(clientID, groupID)
-	if err != nil {
-		return err
-	}
-
+func (sa *Adapter) CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
 	if group != nil {
-		if !group.IsGroupAdmin(current.ID) {
+		if !group.IsGroupAdmin(current.ID) && !group.CanJoinAutomatically {
 			log.Printf("error: storage.CreateMember() - current user is not admin of the group")
 			return fmt.Errorf("current user is not admin of the group")
 		}
@@ -2119,6 +2106,7 @@ func constructGroup(gr group) model.Group {
 	authmanGroup := gr.AuthmanGroup
 	onlyAdminsCanCreatePolls := gr.OnlyAdminsCanCreatePolls
 	blockNewMembershipRequests := gr.BlockNewMembershipRequests
+	canJoinAutomatically := gr.CanJoinAutomatically
 	attendanceGroup := gr.AttendanceGroup
 
 	dateCreated := gr.DateCreated
@@ -2134,7 +2122,7 @@ func constructGroup(gr group) model.Group {
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
-		AttendanceGroup: attendanceGroup,
+		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup,
 	}
 }
 
