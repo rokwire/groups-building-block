@@ -108,11 +108,6 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPost)).Methods("DELETE")
 
-	restSubrouter.HandleFunc("/group/{groupID}/polls", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupPolls)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{groupID}/polls", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupPoll)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{groupID}/polls/{pollID}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupPoll)).Methods("PUT")
-	restSubrouter.HandleFunc("/group/{groupID}/polls/{pollID}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPoll)).Methods("DELETE")
-
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
