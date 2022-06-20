@@ -44,7 +44,6 @@ type group struct {
 	ClientID                   string  `bson:"client_id"`
 	AuthmanEnabled             bool    `bson:"authman_enabled"`
 	AuthmanGroup               *string `bson:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool    `bson:"only_admins_can_create_polls"`
 	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
 	CanJoinAutomatically       bool    `json:"can_join_automatically" bson:"can_join_automatically"`
 	AttendanceGroup            bool    `bson:"attendance_group"`
@@ -576,7 +575,6 @@ func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *mode
 				primitive.E{Key: "date_updated", Value: time.Now()},
 				primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
 				primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
-				primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
 				primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
 				primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
 				primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
@@ -1847,139 +1845,6 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 	return err
 }
 
-// Group Polls
-
-// FindPolls Finds polls by filter
-func (sa *Adapter) FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
-	filter := bson.D{
-		primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID},
-	}
-	if filterByToMembers {
-		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": current.ID},
-			primitive.M{"member.user_id": current.ID},
-		}})
-	}
-
-	findOptions := options.Find()
-	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
-	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
-	}
-	if limit != nil {
-		findOptions.SetLimit(*limit)
-	}
-	if offset != nil {
-		findOptions.SetSkip(*offset)
-	}
-
-	var result []model.Poll
-	err := sa.db.polls.Find(filter, &result, findOptions)
-	if err != nil {
-		return nil, fmt.Errorf("error storage.FindPolls() - %s", err)
-	}
-	return result, err
-}
-
-// FindPoll Finds a single poll
-func (sa *Adapter) FindPoll(clientID string, current *model.User, groupID string, pollID string, filterByToMembers bool) (*model.Poll, error) {
-	filter := bson.D{
-		primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "poll_id", Value: pollID},
-	}
-	if filterByToMembers {
-		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": current.ID},
-			primitive.M{"member.user_id": current.ID},
-		}})
-	}
-
-	var result []model.Poll
-	err := sa.db.polls.Find(filter, &result, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error storage.FindPoll() - %s", err)
-	}
-	if len(result) > 0 {
-		return &result[0], nil
-	}
-
-	return nil, nil
-}
-
-// CreatePoll creates a poll
-func (sa *Adapter) CreatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error) {
-
-	if poll.PollID == "" {
-		return nil, fmt.Errorf("error storage.createPoll() - missing poll_id")
-	}
-	if poll.GroupID == "" {
-		return nil, fmt.Errorf("error storage.createPoll() - missing group_id")
-	}
-
-	poll.ClientID = clientID
-	poll.Creator = model.Creator{
-		UserID: current.ID,
-		Name:   current.Name,
-		Email:  current.Email,
-	}
-	poll.DateCreated = time.Now()
-	_, err := sa.db.polls.InsertOne(poll)
-	if err != nil {
-		return nil, fmt.Errorf("error storage.createPoll() - %s", err)
-	}
-	sa.resetGroupUpdatedDate(clientID, poll.GroupID)
-
-	return poll, err
-}
-
-// UpdatePoll updates a poll
-func (sa *Adapter) UpdatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error) {
-
-	poll.DateUpdated = time.Now()
-
-	filter := bson.D{
-		primitive.E{Key: "poll_id", Value: poll.PollID},
-		primitive.E{Key: "group_id", Value: poll.GroupID},
-		primitive.E{Key: "client_id", Value: clientID},
-	}
-	change := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: poll.DateUpdated},
-			primitive.E{Key: "to_members", Value: poll.ToMembersList},
-		}},
-	}
-	_, err := sa.db.polls.UpdateOne(filter, change, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error storage.updatePoll() - %s", err)
-	}
-
-	sa.resetGroupUpdatedDate(clientID, poll.GroupID)
-
-	return poll, err
-}
-
-// DeletePoll deletes a poll
-func (sa *Adapter) DeletePoll(clientID string, current *model.User, groupID string, pollID string) error {
-	filter := bson.D{primitive.E{Key: "poll_id", Value: pollID},
-		primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID}}
-	_, err := sa.db.polls.DeleteOne(filter, nil)
-	if err != nil {
-		return fmt.Errorf("error storage.deletePoll() - %s", err)
-	}
-
-	sa.resetGroupUpdatedDate(clientID, groupID)
-
-	return nil
-}
-
 //resetGroupUpdatedDate set the updated date to the current date time (now)
 func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
 	// transaction
@@ -2104,7 +1969,6 @@ func constructGroup(gr group) model.Group {
 	membershipQuestions := gr.MembershipQuestions
 	authmanEnabled := gr.AuthmanEnabled
 	authmanGroup := gr.AuthmanGroup
-	onlyAdminsCanCreatePolls := gr.OnlyAdminsCanCreatePolls
 	blockNewMembershipRequests := gr.BlockNewMembershipRequests
 	canJoinAutomatically := gr.CanJoinAutomatically
 	attendanceGroup := gr.AttendanceGroup
@@ -2121,8 +1985,8 @@ func constructGroup(gr group) model.Group {
 		HiddenForSearch: hiddenForSearch, Description: description, ImageURL: imageURL, WebURL: webURL,
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
-		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
-		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup,
+		BlockNewMembershipRequests: blockNewMembershipRequests,
+		CanJoinAutomatically:       canJoinAutomatically, AttendanceGroup: attendanceGroup,
 	}
 }
 

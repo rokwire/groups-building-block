@@ -63,23 +63,22 @@ func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter,
 }
 
 type createGroupRequest struct {
-	Title                    string   `json:"title" validate:"required"`
-	Description              *string  `json:"description"`
-	Category                 string   `json:"category" validate:"required"`
-	Tags                     []string `json:"tags"`
-	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
-	Hidden                   bool     `json:"hidden_for_search"`
-	CreatorName              string   `json:"creator_name"`
-	CreatorEmail             string   `json:"creator_email"`
-	CreatorPhotoURL          string   `json:"creator_photo_url"`
-	ImageURL                 *string  `json:"image_url"`
-	WebURL                   *string  `json:"web_url"`
-	MembershipQuestions      []string `json:"membership_questions"`
-	AuthmanEnabled           bool     `json:"authman_enabled"`
-	AuthmanGroup             *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" `
-	CanJoinAutomatically     bool     `json:"can_join_automatically"`
-	AttendanceGroup          bool     `json:"attendance_group" `
+	Title                string   `json:"title" validate:"required"`
+	Description          *string  `json:"description"`
+	Category             string   `json:"category" validate:"required"`
+	Tags                 []string `json:"tags"`
+	Privacy              string   `json:"privacy" validate:"required,oneof=public private"`
+	Hidden               bool     `json:"hidden_for_search"`
+	CreatorName          string   `json:"creator_name"`
+	CreatorEmail         string   `json:"creator_email"`
+	CreatorPhotoURL      string   `json:"creator_photo_url"`
+	ImageURL             *string  `json:"image_url"`
+	WebURL               *string  `json:"web_url"`
+	MembershipQuestions  []string `json:"membership_questions"`
+	AuthmanEnabled       bool     `json:"authman_enabled"`
+	AuthmanGroup         *string  `json:"authman_group"`
+	CanJoinAutomatically bool     `json:"can_join_automatically"`
+	AttendanceGroup      bool     `json:"attendance_group" `
 } //@name createGroupRequest
 
 type userGroupMembership struct {
@@ -132,19 +131,18 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	}
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
-		Title:                    requestData.Title,
-		Description:              requestData.Description,
-		Category:                 requestData.Category,
-		Tags:                     requestData.Tags,
-		Privacy:                  requestData.Privacy,
-		HiddenForSearch:          requestData.Hidden,
-		ImageURL:                 requestData.ImageURL,
-		MembershipQuestions:      requestData.MembershipQuestions,
-		AuthmanGroup:             requestData.AuthmanGroup,
-		AuthmanEnabled:           requestData.AuthmanEnabled,
-		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
-		CanJoinAutomatically:     requestData.CanJoinAutomatically,
-		AttendanceGroup:          requestData.AttendanceGroup,
+		Title:                requestData.Title,
+		Description:          requestData.Description,
+		Category:             requestData.Category,
+		Tags:                 requestData.Tags,
+		Privacy:              requestData.Privacy,
+		HiddenForSearch:      requestData.Hidden,
+		ImageURL:             requestData.ImageURL,
+		MembershipQuestions:  requestData.MembershipQuestions,
+		AuthmanGroup:         requestData.AuthmanGroup,
+		AuthmanEnabled:       requestData.AuthmanEnabled,
+		CanJoinAutomatically: requestData.CanJoinAutomatically,
+		AttendanceGroup:      requestData.AttendanceGroup,
 	})
 	if groupErr != nil {
 		log.Println(groupErr.Error())
@@ -176,7 +174,6 @@ type updateGroupRequest struct {
 	MembershipQuestions        []string `json:"membership_questions"`
 	AuthmanEnabled             bool     `json:"authman_enabled"`
 	AuthmanGroup               *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool     `json:"only_admins_can_create_polls"`
 	CanJoinAutomatically       bool     `json:"can_join_automatically"`
 	BlockNewMembershipRequests bool     `json:"block_new_membership_requests"`
 	AttendanceGroup            bool     `json:"attendance_group" `
@@ -246,20 +243,19 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	}
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
-		ID:                       id,
-		Title:                    requestData.Title,
-		Description:              requestData.Description,
-		Category:                 requestData.Category,
-		Tags:                     requestData.Tags,
-		Privacy:                  requestData.Privacy,
-		HiddenForSearch:          requestData.Hidden,
-		ImageURL:                 requestData.ImageURL,
-		MembershipQuestions:      requestData.MembershipQuestions,
-		AuthmanGroup:             requestData.AuthmanGroup,
-		AuthmanEnabled:           requestData.AuthmanEnabled,
-		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
-		CanJoinAutomatically:     requestData.CanJoinAutomatically,
-		AttendanceGroup:          requestData.AttendanceGroup,
+		ID:                   id,
+		Title:                requestData.Title,
+		Description:          requestData.Description,
+		Category:             requestData.Category,
+		Tags:                 requestData.Tags,
+		Privacy:              requestData.Privacy,
+		HiddenForSearch:      requestData.Hidden,
+		ImageURL:             requestData.ImageURL,
+		MembershipQuestions:  requestData.MembershipQuestions,
+		AuthmanGroup:         requestData.AuthmanGroup,
+		AuthmanEnabled:       requestData.AuthmanEnabled,
+		CanJoinAutomatically: requestData.CanJoinAutomatically,
+		AttendanceGroup:      requestData.AttendanceGroup,
 	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)

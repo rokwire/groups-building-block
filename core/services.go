@@ -2,10 +2,11 @@ package core
 
 import (
 	"fmt"
-	"github.com/google/uuid"
 	"groups/driven/rewards"
 	"sort"
 	"time"
+
+	"github.com/google/uuid"
 
 	"groups/core/model"
 	"groups/driven/notifications"
@@ -61,7 +62,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["membership_questions"] = group.MembershipQuestions
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
-		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 		item["can_join_automatically"] = group.CanJoinAutomatically
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 		item["attendance_group"] = group.AttendanceGroup
@@ -90,7 +90,6 @@ func (app *Application) protectDataForAnonymous(group model.Group) map[string]in
 		item["membership_questions"] = group.MembershipQuestions
 		item["authman_enabled"] = group.AuthmanEnabled
 		item["authman_group"] = group.AuthmanGroup
-		item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 		item["can_join_automatically"] = group.CanJoinAutomatically
 		item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 		item["attendance_group"] = group.AttendanceGroup
@@ -121,7 +120,6 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
-	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -185,7 +183,6 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
-	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -232,7 +229,6 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
-	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -279,7 +275,6 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 	item["membership_questions"] = group.MembershipQuestions
 	item["authman_enabled"] = group.AuthmanEnabled
 	item["authman_group"] = group.AuthmanGroup
-	item["only_admins_can_create_polls"] = group.OnlyAdminsCanCreatePolls
 	item["can_join_automatically"] = group.CanJoinAutomatically
 	item["block_new_membership_requests"] = group.BlockNewMembershipRequests
 	item["attendance_group"] = group.AttendanceGroup
@@ -932,71 +927,6 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
-}
-
-func (app *Application) findPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
-	return app.storage.FindPolls(clientID, current, groupID, filterByToMembers, offset, limit, order)
-}
-
-func (app *Application) createPoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
-	poll, err := app.storage.CreatePoll(clientID, current, poll)
-	if err != nil {
-		return nil, err
-	}
-
-	handleNotification := func() {
-		var recipients []notifications.Recipient
-		if len(poll.ToMembersList) > 0 {
-			recipients = poll.GetMembersAsNotificationRecipients(&current.ID)
-		} else {
-			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
-		}
-		topic := "group.polls"
-		err = app.notifications.SendNotification(
-			recipients,
-			&topic,
-			"Illinois",
-			fmt.Sprintf("New poll has been published in '%s' group", group.Title),
-			map[string]string{
-				"type":        "group",
-				"operation":   "poll_created",
-				"entity_type": "group",
-				"entity_id":   group.ID,
-				"entity_name": group.Title,
-			},
-		)
-		if err != nil {
-			log.Printf("error while sending notification for new poll: %s", err) // dont fail
-		}
-	}
-	go handleNotification()
-
-	return poll, err
-}
-
-func (app *Application) updatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
-	persistedPoll, err := app.storage.FindPoll(clientID, current, group.ID, poll.PollID, true)
-	if persistedPoll != nil && err == nil {
-		if group.IsGroupAdmin(current.ID) || persistedPoll.Creator.UserID == current.ID {
-			persistedPoll.ToMembersList = poll.ToMembersList
-			return app.storage.UpdatePoll(clientID, current, persistedPoll)
-		}
-		log.Printf("Only group admin or poll creator can delete it")
-		return nil, fmt.Errorf("only group admin or poll creator can delete it")
-	}
-	return nil, err
-}
-
-func (app *Application) deletePoll(clientID string, current *model.User, group *model.Group, pollID string) error {
-	persistedPoll, err := app.storage.FindPoll(clientID, current, group.ID, pollID, true)
-	if persistedPoll != nil && err == nil {
-		if group.IsGroupAdmin(current.ID) || persistedPoll.Creator.UserID == current.ID {
-			return app.storage.DeletePoll(clientID, current, group.ID, pollID)
-		}
-		log.Printf("Only group admin or poll creator can delete it")
-		return fmt.Errorf("only group admin or poll creator can delete it")
-	}
-	return err
 }
 
 func (app *Application) synchronizeAuthman(clientID string) error {

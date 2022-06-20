@@ -50,11 +50,6 @@ type Services interface {
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error)
-	CreatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error)
-	UpdatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error)
-	DeletePoll(clientID string, current *model.User, group *model.Group, pollID string) error
-
 	SynchronizeAuthman(clientID string) error
 	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
 }
@@ -196,22 +191,6 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error) {
-	return s.app.findPolls(clientID, current, groupID, filterByToMembers, offset, limit, order)
-}
-
-func (s *servicesImpl) CreatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
-	return s.app.createPoll(clientID, current, group, poll)
-}
-
-func (s *servicesImpl) UpdatePoll(clientID string, current *model.User, group *model.Group, poll *model.Poll) (*model.Poll, error) {
-	return s.app.updatePoll(clientID, current, group, poll)
-}
-
-func (s *servicesImpl) DeletePoll(clientID string, current *model.User, group *model.Group, pollID string) error {
-	return s.app.deletePoll(clientID, current, group, pollID)
-}
-
 func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
 	return s.app.synchronizeAuthman(clientID)
 }
@@ -279,12 +258,6 @@ type Storage interface {
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 
-	FindPolls(clientID string, current *model.User, groupID string, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]model.Poll, error)
-	FindPoll(clientID string, current *model.User, groupID string, pollID string, filterByToMembers bool) (*model.Poll, error)
-	CreatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error)
-	UpdatePoll(clientID string, current *model.User, poll *model.Poll) (*model.Poll, error)
-	DeletePoll(clientID string, current *model.User, groupID string, pollID string) error
-
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
 }
@@ -334,8 +307,4 @@ type Core interface {
 // Rewards exposes Rewards internal APIs for giving rewards to the users
 type Rewards interface {
 	CreateUserReward(userID string, rewardType string, description string) error
-}
-
-// Polls exposes Polls internal APIs
-type Polls interface {
 }
