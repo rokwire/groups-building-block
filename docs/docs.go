@@ -760,6 +760,33 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
+                "description": "creates a post within the desired group.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "CreateGroupPost",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.postResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{groupId}/posts/{postId}": {
             "put": {
                 "security": [
@@ -1562,6 +1589,9 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
+                },
                 "privacy": {
                     "description": "public or private",
                     "type": "string"
@@ -1733,6 +1763,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
                 },
                 "privacy": {
                     "type": "string",
@@ -2213,6 +2246,9 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
                 },
                 "privacy": {
                     "type": "string",

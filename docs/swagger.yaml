@@ -65,6 +65,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_polls:
+        type: boolean
       privacy:
         description: public or private
         type: string
@@ -175,6 +177,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_polls:
+        type: boolean
       privacy:
         enum:
         - public
@@ -491,6 +495,8 @@ definitions:
         items:
           type: string
         type: array
+      only_admins_can_create_polls:
+        type: boolean
       privacy:
         enum:
         - public
@@ -972,7 +978,6 @@ paths:
             type: string
       security:
       - AppUserAuth: []
-
   /api/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -997,8 +1002,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates a group poll mapping
-      operationId: CreateGroupPoll
+      description: creates a post within the desired group.
+      operationId: CreateGroupPost
       parameters:
       - description: APP
         in: header
@@ -1011,7 +1016,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/Poll'
+            $ref: '#/definitions/rest.postResponse'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
