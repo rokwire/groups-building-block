@@ -138,27 +138,6 @@ definitions:
       question:
         type: string
     type: object
-  Poll:
-    properties:
-      client_id:
-        type: string
-      creator:
-        $ref: '#/definitions/Creator'
-      date_created:
-        type: string
-      date_updated:
-        type: string
-      group_id:
-        type: string
-      poll_id:
-        type: string
-      to_members:
-        description: nil or empty means everyone; non-empty means visible to those
-          user ids and admins
-        items:
-          $ref: '#/definitions/ToMember'
-        type: array
-    type: object
   ToMember:
     properties:
       email:
@@ -999,26 +978,6 @@ paths:
             type: string
       security:
       - AppUserAuth: []
-  /api/group/{groupID}/polls:
-    get:
-      description: Get polls that are mapped to the desired group
-      operationId: GetGroupPolls
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/Poll'
-            type: array
-      security:
-      - AppUserAuth: []
-      - APIKeyAuth: []
   /api/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -1039,30 +998,12 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
-  /api/group/{groupId}/polls/{pollId}:
-    delete:
-      consumes:
-      - application/json
-      description: Deletes a group poll.
-      operationId: DeleteGroupPoll
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      responses:
-        "200":
-          description: ""
-      security:
-      - AppUserAuth: []
-      - APIKeyAuth: []
   /api/group/{groupId}/posts:
     post:
       consumes:
       - application/json
-      description: Creates a group poll mapping
-      operationId: CreateGroupPoll
+      description: creates a post within the desired group.
+      operationId: CreateGroupPost
       parameters:
       - description: APP
         in: header
@@ -1075,27 +1016,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/Poll'
-      security:
-      - AppUserAuth: []
-      - APIKeyAuth: []
-  /api/group/{groupId}/posts/{pollId}:
-    put:
-      consumes:
-      - application/json
-      description: Updates a group poll
-      operationId: UpdateGroupPoll
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/Poll'
+            $ref: '#/definitions/rest.postResponse'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []

@@ -716,40 +716,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/group/{groupID}/polls": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Get polls that are mapped to the desired group",
-                "operationId": "GetGroupPolls",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/Poll"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/group/{groupID}/posts": {
             "get": {
                 "security": [
@@ -784,37 +750,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/group/{groupId}/polls/{pollId}": {
-            "delete": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Deletes a group poll.",
-                "consumes": [
-                    "application/json"
-                ],
-                "operationId": "DeleteGroupPoll",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": ""
-                    }
-                }
-            }
-        },
         "/api/group/{groupId}/posts": {
             "post": {
                 "security": [
@@ -825,14 +760,14 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Creates a group poll mapping",
+                "description": "creates a post within the desired group.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
                     "application/json"
                 ],
-                "operationId": "CreateGroupPoll",
+                "operationId": "CreateGroupPost",
                 "parameters": [
                     {
                         "type": "string",
@@ -846,41 +781,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/Poll"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/group/{groupId}/posts/{pollId}": {
-            "put": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Updates a group poll",
-                "consumes": [
-                    "application/json"
-                ],
-                "operationId": "UpdateGroupPoll",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/Poll"
+                            "$ref": "#/definitions/rest.postResponse"
                         }
                     }
                 }
@@ -1796,36 +1697,6 @@ const docTemplate = `{
                 },
                 "question": {
                     "type": "string"
-                }
-            }
-        },
-        "Poll": {
-            "type": "object",
-            "properties": {
-                "client_id": {
-                    "type": "string"
-                },
-                "creator": {
-                    "$ref": "#/definitions/Creator"
-                },
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "group_id": {
-                    "type": "string"
-                },
-                "poll_id": {
-                    "type": "string"
-                },
-                "to_members": {
-                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/ToMember"
-                    }
                 }
             }
         },
