@@ -238,7 +238,7 @@ type Storage interface {
 	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
-	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
+	CreateMemberUnchecked(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeleteMember(clientID string, groupID string, userID string, force bool) error
 
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error

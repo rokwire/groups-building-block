@@ -867,6 +867,9 @@ func (sa *Adapter) CreatePendingMember(clientID string, user *model.User, group 
 				}
 			}
 
+			if len(member.ID) > 0 {
+				member.ID = uuid.NewString()
+			}
 			groupMembers := group.Members
 			groupMembers = append(groupMembers, *member)
 			saveFilter := bson.D{primitive.E{Key: "_id", Value: group.ID}}
@@ -972,26 +975,26 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 	return nil
 }
 
-//CreateMember Created a member to a group
-func (sa *Adapter) CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
+//CreateMemberUnchecked Created a member to a group
+func (sa *Adapter) CreateMemberUnchecked(clientID string, current *model.User, group *model.Group, member *model.Member) error {
 	if group != nil {
 		if !group.IsGroupAdmin(current.ID) && !group.CanJoinAutomatically {
-			log.Printf("error: storage.CreateMember() - current user is not admin of the group")
+			log.Printf("error: storage.CreateMemberUnchecked() - current user is not admin of the group")
 			return fmt.Errorf("current user is not admin of the group")
 		}
 
 		if member.ExternalID != "" && group.GetMemberByExternalID(member.ExternalID) != nil {
-			log.Printf("error: storage.CreateMember() - member of group '%s' with external id %s already exists", group.Title, member.ExternalID)
+			log.Printf("error: storage.CreateMemberUnchecked() - member of group '%s' with external id %s already exists", group.Title, member.ExternalID)
 			return fmt.Errorf("member of group '%s' with external id %s already exists", group.Title, member.ExternalID)
 		}
 
 		if member.UserID != "" && group.GetMemberByUserID(member.UserID) != nil {
-			log.Printf("error: storage.CreateMember() - member of group '%s' with user id %s already exists", group.Title, member.UserID)
+			log.Printf("error: storage.CreateMemberUnchecked() - member of group '%s' with user id %s already exists", group.Title, member.UserID)
 			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, member.UserID)
 		}
 
 		if len(member.UserID) == 0 && len(member.ExternalID) == 0 {
-			log.Printf("error: storage.CreateMember() - expected user_id or external_id")
+			log.Printf("error: storage.CreateMemberUnchecked() - expected user_id or external_id")
 			return fmt.Errorf("expected user_id or external_id")
 		}
 
