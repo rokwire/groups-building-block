@@ -5,9 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- Prepare the project to become open source [#146](https://github.com/rokwire/groups-building-block/issues/146)
 
 ## [1.5.44] - 2022-06-21
+### Fixed
 - Additional fix for missing ID on new member request [#163](https://github.com/rokwire/groups-building-block/issues/163)
+### Changed
 - Clean polls logic and remove it from the Groups BB [#150](https://github.com/rokwire/groups-building-block/issues/150)
 
 ## [1.5.43] - 2022-06-16
