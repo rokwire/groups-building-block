@@ -2,16 +2,18 @@
 
 ## Supported Versions
 
-Patches for **Rokwire Building Blocks** in this repository will only be applied to the following versions:
+Patches for **Groups Building Block** in this repository will only be applied to the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.5.29   | :white_check_mark: |
-| <1.4.3   | :red_cross_mark: |
+| 1.5.44   | :white_check_mark: |
+| <1.5.44   | :red_cross_mark: |
 
 
 
-## Reporting a Vulnerability
+## Reporting a Bug or Vulnerability
 
-Vulnerabilities can be responsibly disclosed to [securitysupport@illinois.edu](mailto:securitysupport@illinois.edu).
-Bugs can be reported by creating a [GitHub issue](https://github.com/rokwire/rokwire-building-blocks-api/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBUG%5D).
+Vulnerabilities can be responsibly disclosed through the process
+ documented at https://go.illinois.edu/vulnerability
+
+Bugs can be reported by creating a [GitHub issue](https://github.com/rokwire/groups-building-block/issues/new?assignees=&labels=bug&template=bug_report.md&title=%5BBUG%5D+).
