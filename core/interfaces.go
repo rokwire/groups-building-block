@@ -50,7 +50,7 @@ type Services interface {
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	SynchronizeAuthman(clientID string) error
+	SynchronizeAuthman(clientID string, stemNames []string) error
 	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
 }
 
@@ -191,8 +191,8 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
-	return s.app.synchronizeAuthman(clientID)
+func (s *servicesImpl) SynchronizeAuthman(clientID string, stemNames []string) error {
+	return s.app.synchronizeAuthman(clientID, stemNames)
 }
 
 func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
@@ -293,7 +293,7 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
 	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
-	RetrieveAuthmanGiesGroups() (*model.АuthmanGroupsResponse, error)
+	RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGroupsResponse, error)
 	AddAuthmanMemberToGroup(groupName string, uin string) error
 	RemoveAuthmanMemberFromGroup(groupName string, uin string) error
 }

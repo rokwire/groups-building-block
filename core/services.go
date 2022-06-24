@@ -935,42 +935,46 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
 }
 
-func (app *Application) synchronizeAuthman(clientID string) error {
+func (app *Application) synchronizeAuthman(clientID string, stemNames []string) error {
 	log.Printf("Global Authman synchronization started")
 	defer log.Printf("Global Authman synchronization finished")
 
-	giesGroups, err := app.authman.RetrieveAuthmanGiesGroups()
-	if err != nil {
-		return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
-	}
-
-	if giesGroups != nil && len(giesGroups.WsFindGroupsResults.GroupResults) > 0 {
-		for _, giesGroup := range giesGroups.WsFindGroupsResults.GroupResults {
-			storedGiesGroup, err := app.storage.FindAuthmanGroupByKey(clientID, giesGroup.Name)
+	if len(stemNames) > 0 {
+		for _, stemName := range stemNames {
+			giesGroups, err := app.authman.RetrieveAuthmanGiesGroups(stemName)
 			if err != nil {
 				return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
 			}
 
-			if storedGiesGroup == nil {
-				title := giesGroup.Description
-				if len(title) == 0 {
-					title = giesGroup.DisplayName
-				}
-				emptyText := ""
-				_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
-					Title:                title,
-					Description:          &emptyText,
-					Privacy:              "private",
-					HiddenForSearch:      true,
-					CanJoinAutomatically: true,
-					AuthmanEnabled:       true,
-					AuthmanGroup:         &giesGroup.Name,
-				})
-				if err != nil {
-					return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
-				}
+			if giesGroups != nil && len(giesGroups.WsFindGroupsResults.GroupResults) > 0 {
+				for _, giesGroup := range giesGroups.WsFindGroupsResults.GroupResults {
+					storedGiesGroup, err := app.storage.FindAuthmanGroupByKey(clientID, giesGroup.Name)
+					if err != nil {
+						return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
+					}
 
-				log.Printf("Created new `%s` group", title)
+					if storedGiesGroup == nil {
+						title := giesGroup.Description
+						if len(title) == 0 {
+							title = giesGroup.DisplayName
+						}
+						emptyText := ""
+						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
+							Title:                title,
+							Description:          &emptyText,
+							Privacy:              "private",
+							HiddenForSearch:      true,
+							CanJoinAutomatically: true,
+							AuthmanEnabled:       true,
+							AuthmanGroup:         &giesGroup.Name,
+						})
+						if err != nil {
+							return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
+						}
+
+						log.Printf("Created new `%s` group", title)
+					}
+				}
 			}
 		}
 	}

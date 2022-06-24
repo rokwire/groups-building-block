@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.45] - 2022-06-24
+- Internal Autumn synch API needs to take parameters for stem checks [#167](https://github.com/rokwire/groups-building-block/issues/167)
+
 ## [1.5.44] - 2022-06-21
 - Additional fix for missing ID on new member request [#163](https://github.com/rokwire/groups-building-block/issues/163)
 - Clean polls logic and remove it from the Groups BB [#150](https://github.com/rokwire/groups-building-block/issues/150)

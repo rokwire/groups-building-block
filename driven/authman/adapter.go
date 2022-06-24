@@ -206,17 +206,17 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 }
 
 // RetrieveAuthmanGiesGroups retrieve Authman Gies user data based on external IDs
-func (a *Adapter) RetrieveAuthmanGiesGroups() (*model.АuthmanGroupsResponse, error) {
+func (a *Adapter) RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGroupsResponse, error) {
 
 	// Hardcoded until it needs to be configurable
-	requestBody := `{
+	requestBody := fmt.Sprintf(`{
 		  "WsRestFindGroupsRequest":{
 			"wsQueryFilter":{
 			  "queryFilterType":"FIND_BY_STEM_NAME",
-			  "stemName":"urb:app:rokwire:service:groups-rosters:gies-rosters"
+			  "stemName":"%s"
 			}
 		  }
-		}`
+		}`, stemName)
 
 	url := fmt.Sprintf("%s/groups", a.authmanBaseURL)
 	client := &http.Client{}
