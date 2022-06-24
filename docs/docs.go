@@ -1434,7 +1434,7 @@ const docTemplate = `{
             }
         },
         "/int/authman/synchronize": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "IntAPIKeyAuth": []
