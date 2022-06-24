@@ -1431,7 +1431,7 @@ paths:
       security:
       - AppUserAuth: []
   /int/authman/synchronize:
-    get:
+    post:
       consumes:
       - application/json
       description: Synchronizes Authman groups memberhip

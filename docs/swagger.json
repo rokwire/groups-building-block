@@ -1430,7 +1430,7 @@
             }
         },
         "/int/authman/synchronize": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "IntAPIKeyAuth": []

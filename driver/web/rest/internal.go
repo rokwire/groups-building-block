@@ -122,7 +122,7 @@ type synchronizeAuthmanRequestBody struct {
 // @Accept json
 // @Success 200
 // @Security IntAPIKeyAuth
-// @Router /int/authman/synchronize [get]
+// @Router /int/authman/synchronize [post]
 func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.ResponseWriter, r *http.Request) {
 
 	data, err := ioutil.ReadAll(r.Body)
