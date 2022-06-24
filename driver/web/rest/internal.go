@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"groups/core"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -109,16 +110,37 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 	w.Write(data)
 }
 
+// synchronizeAuthmanRequestBody authman sync body struct
+type synchronizeAuthmanRequestBody struct {
+	GroupAutoCreateStemNames []string `json:"group_auto_create_stem_names"`
+} // @name synchronizeAuthmanRequestBody
+
 //SynchronizeAuthman Synchronizes Authman groups memberhip
 // @Description Synchronizes Authman groups memberhip
 // @ID SynchronizeAuthman
+// @Param data body synchronizeAuthmanRequestBody true "body data"
 // @Accept json
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /int/authman/synchronize [get]
 func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.ResponseWriter, r *http.Request) {
 
-	err := h.app.Services.SynchronizeAuthman(clientID)
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData synchronizeAuthmanRequestBody
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
