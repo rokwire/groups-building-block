@@ -925,6 +925,9 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	}
 
 	subject := "Group Post Violation of Student Code"
+	if post.ParentID != nil {
+		subject = "Group Reply Violation of Student Code"
+	}
 	body := fmt.Sprintf(`
 	<div>Violation by: %s %s\n</div>
 	<div>Group title: %s\n</div>
