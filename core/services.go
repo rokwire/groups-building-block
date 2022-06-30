@@ -908,20 +908,33 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
-func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error {
+func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error {
 
-	err := app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
+	var creatorExternalID string
+	creator, err := app.storage.FindUser(clientID, post.Creator.UserID, false)
+	if err != nil {
+		log.Printf("error retrieving user: %s", err)
+	} else if creator != nil {
+		creatorExternalID = creator.ExternalID
+	}
+
+	err = app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
 		return fmt.Errorf("error while reporting an abuse post: %s", err)
 	}
 
-	subject := "Report Abuse Post"
+	subject := "Group Post Violation of Student Code"
 	body := fmt.Sprintf(`
-	Group title: %s
-	Post Title: %s
-	Post Body: %s
-	`, group.Title, post.Subject, post.Body)
+	<div>Violation by: %s %s\n</div>
+	<div>Group title: %s\n</div>
+	<div>Post Title: %s\n</div>
+	<div>Post Body: %s\n</div>
+	<div>Reported by: %s %s\n</div>
+	<div>Reported comment: %s\n</div>
+	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
+		current.ExternalID, current.Name, comment)
+	body = strings.ReplaceAll(body, `\n`, "\n")
 	err = app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
