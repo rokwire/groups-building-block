@@ -47,7 +47,7 @@ type Services interface {
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error
+	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
 	SynchronizeAuthman(clientID string, stemNames []string) error
@@ -183,8 +183,8 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 	return s.app.updatePost(clientID, current, post)
 }
 
-func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error {
-	return s.app.reportPostAsAbuse(clientID, current, group, post)
+func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error {
+	return s.app.reportPostAsAbuse(clientID, current, group, post, comment)
 }
 
 func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error {

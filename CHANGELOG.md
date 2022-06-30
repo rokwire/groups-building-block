@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.46] - 2022-06-30
+### Changed
+- Improve report abuse email template [#174](https://github.com/rokwire/groups-building-block/issues/174)
+
 ## [1.5.45] - 2022-06-24
 ### Changed
 - Internal Autumn synch API needs to take parameters for stem checks [#167](https://github.com/rokwire/groups-building-block/issues/167)
