@@ -580,6 +580,7 @@ func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *mode
 				primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
 				primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
 				primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+				primitive.E{Key: "members", Value: group.Members},
 			}},
 		}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
