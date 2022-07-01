@@ -951,6 +951,7 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
 }
 
+// TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthman(clientID string, stemNames []string) error {
 	log.Printf("Global Authman synchronization started")
 	defer log.Printf("Global Authman synchronization finished")
@@ -970,10 +971,13 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 					}
 
 					if storedGiesGroup == nil {
-						title := giesGroup.Description
-						if len(title) == 0 {
-							title = giesGroup.DisplayName
+						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
+
+						var members []model.Member
+						if len(adminUINs) > 0 {
+							members = app.buildMembersByExternalIDs(clientID, adminUINs, "admin")
 						}
+
 						emptyText := ""
 						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
 							Title:                title,
@@ -983,12 +987,59 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 							CanJoinAutomatically: true,
 							AuthmanEnabled:       true,
 							AuthmanGroup:         &giesGroup.Name,
+							Members:              members,
 						})
 						if err != nil {
 							return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
 						}
 
 						log.Printf("Created new `%s` group", title)
+					} else {
+						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
+
+						missedUINs := []string{}
+						membersUpdated := false
+						adminUpdated := false
+						titleUpdated := false
+						for _, uin := range adminUINs {
+							found := false
+							for index, member := range storedGiesGroup.Members {
+								if member.ExternalID == uin {
+									if member.Status != "admin" {
+										now := time.Now()
+										storedGiesGroup.Members[index].Status = "admin"
+										storedGiesGroup.Members[index].DateUpdated = &now
+										adminUpdated = true
+										break
+									} else {
+										found = true
+									}
+								}
+							}
+							if !found {
+								missedUINs = append(missedUINs, uin)
+							}
+						}
+
+						if len(missedUINs) > 0 {
+							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
+							if len(missedMembers) > 0 {
+								storedGiesGroup.Members = append(storedGiesGroup.Members, missedMembers...)
+								membersUpdated = true
+							}
+						}
+
+						if storedGiesGroup.Title != title {
+							storedGiesGroup.Title = title
+							titleUpdated = true
+						}
+
+						if titleUpdated || adminUpdated || membersUpdated {
+							err := app.storage.UpdateGroup(clientID, nil, storedGiesGroup)
+							if err != nil {
+								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedGiesGroup.Title, err)
+							}
+						}
 					}
 				}
 			}
@@ -1012,6 +1063,43 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 	return nil
 }
 
+func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.Member {
+	if len(externalIDs) > 0 {
+		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
+		if len(users) > 0 {
+			members := []model.Member{}
+			userExternalIDmapping := map[string]model.User{}
+			for _, user := range users {
+				userExternalIDmapping[user.ExternalID] = user
+			}
+
+			for _, externalID := range externalIDs {
+				if value, ok := userExternalIDmapping[externalID]; ok {
+					members = append(members, model.Member{
+						ID:          uuid.NewString(),
+						UserID:      value.ID,
+						ExternalID:  externalID,
+						Name:        value.Name,
+						Email:       value.Email,
+						Status:      memberStatus,
+						DateCreated: time.Now(),
+					})
+				} else {
+					members = append(members, model.Member{
+						ID:          uuid.NewString(),
+						ExternalID:  externalID,
+						Status:      memberStatus,
+						DateCreated: time.Now(),
+					})
+				}
+			}
+			return members
+		}
+	}
+	return nil
+}
+
+// TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *model.Group) error {
 
 	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
@@ -1021,6 +1109,13 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 	if len(app.config.AuthmanAdminUINList) > 0 {
 		for _, externalID := range app.config.AuthmanAdminUINList {
 			defaultAdminsMapping[externalID] = true
+		}
+	}
+
+	admins := authmanGroup.GetAllAdminMembers()
+	if len(admins) > 0 {
+		for _, admin := range admins {
+			defaultAdminsMapping[admin.ExternalID] = true
 		}
 	}
 

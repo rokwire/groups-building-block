@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.47] - 2022-07-01
+### Changed
+- Handle Autumn group pretty name and the default admins [#177](https://github.com/rokwire/groups-building-block/issues/177)
+
 ## [1.5.46] - 2022-06-30
 ### Changed
 - Improve report abuse email template [#174](https://github.com/rokwire/groups-building-block/issues/174)
