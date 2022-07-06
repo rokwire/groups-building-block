@@ -522,6 +522,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 
 		// insert the group and the admin member
 		group.ID = insertedID
+		group.ClientID = clientID
 		group.DateCreated = time.Now()
 		if current != nil && len(group.Members) == 0 {
 			group.Members = []model.Member{{
