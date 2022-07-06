@@ -1,5 +1,6 @@
 vendor/
 bin/
+build/
 go.sum
 .vscode/
 *.sh
