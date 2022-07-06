@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Prepare the project to become open source [#146](https://github.com/rokwire/groups-building-block/issues/146)
 ### Fixed
 - Additional fix for missing client_id on creating a new group [#163](https://github.com/rokwire/groups-building-block/issues/163)
+- Additional fix for missing member creation date on requesting for a group membership [#163](https://github.com/rokwire/groups-building-block/issues/163)
 
 ## [1.5.47] - 2022-07-01
 ### Changed
