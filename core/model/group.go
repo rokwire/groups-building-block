@@ -163,6 +163,25 @@ func (gr Group) GetMemberByExternalID(userID string) *Member {
 	return nil
 }
 
+// GetAllAdminMembers gets all admin members
+func (gr Group) GetAllAdminMembers() []Member {
+	return gr.GetMembersByStatus("admin")
+}
+
+// GetMembersByStatus gets members by status field
+func (gr Group) GetMembersByStatus(status string) []Member {
+	var members []Member
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.Status == status {
+			members = append(members, item)
+		}
+	}
+	return members
+}
+
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
 func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 

@@ -1867,6 +1867,11 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 	w.Write(data)
 }
 
+// reportAbuseGroupPostRequestBody request body for report abuse API call
+type reportAbuseGroupPostRequestBody struct {
+	Comment string `json:"comment"`
+} // @name reportAbuseGroupPostRequestBody
+
 //ReportAbuseGroupPost Reports an abusive group post
 // @Description Reports an abusive group post
 // @ID ReportAbuseGroupPost
@@ -1888,6 +1893,21 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 	if len(postID) <= 0 {
 		log.Println("postID is required")
 		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on read reportAbuseGroupPostRequestBody - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var body *reportAbuseGroupPostRequestBody
+	err = json.Unmarshal(data, &body)
+	if err != nil {
+		log.Printf("error on unmarshal reportAbuseGroupPostRequestBody (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -1919,7 +1939,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	err = h.app.Services.ReportPostAsAbuse(clientID, current, group, post)
+	err = h.app.Services.ReportPostAsAbuse(clientID, current, group, post, body.Comment)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

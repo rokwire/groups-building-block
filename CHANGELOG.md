@@ -5,15 +5,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-
-
-### Added
 - Prepare the project to become open source [#146](https://github.com/rokwire/groups-building-block/issues/146)
+
+
+## [1.5.47] - 2022-07-01
+### Changed
+- Handle Autumn group pretty name and the default admins [#177](https://github.com/rokwire/groups-building-block/issues/177)
+
+## [1.5.46] - 2022-06-30
+### Changed
+- Improve report abuse email template [#174](https://github.com/rokwire/groups-building-block/issues/174)
+
+## [1.5.45] - 2022-06-24
+### Changed
+- Internal Autumn synch API needs to take parameters for stem checks [#167](https://github.com/rokwire/groups-building-block/issues/167)
 
 ## [1.5.44] - 2022-06-21
 ### Fixed
 - Additional fix for missing ID on new member request [#163](https://github.com/rokwire/groups-building-block/issues/163)
-### Changed
 - Clean polls logic and remove it from the Groups BB [#150](https://github.com/rokwire/groups-building-block/issues/150)
 
 ## [1.5.43] - 2022-06-16
