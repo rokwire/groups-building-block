@@ -883,9 +883,7 @@ func (sa *Adapter) CreatePendingMember(clientID string, user *model.User, group 
 				}
 			}
 
-			if len(member.ID) > 0 {
-				member.ID = uuid.NewString()
-			}
+			member.ID = uuid.NewString()
 			member.DateCreated = time.Now().UTC()
 
 			groupMembers := group.Members
