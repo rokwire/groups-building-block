@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 - Expose netID within the membership & user records [#184](https://github.com/rokwire/groups-building-block/issues/163)
+- Deprecate ROKWIRE_GS_API_KEY and start using only INTERNAL-API-KEY as internal API authentication mechanism. This  a redo operations of a previous redo changes due to a confirmation [#156](https://github.com/rokwire/groups-building-block/issues/156)
 
 ## [1.5.49] - 2022-07-07
 - Additional fix for missing member.id on requesting for a group membership [#163](https://github.com/rokwire/groups-building-block/issues/163)

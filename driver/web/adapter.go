@@ -253,11 +253,11 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 
 //NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, appKeys []string, oidcProvider string, oidcClientID string,
-	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, legacyInternalAPIKeys []string,
+	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
 	internalAPIKey string, authService *authservice.AuthService, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, appKeys, legacyInternalAPIKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
+	auth := NewAuth(app, host, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, authService, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
