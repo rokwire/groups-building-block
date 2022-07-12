@@ -185,7 +185,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, appKeys []string, legacyInternalAPIKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
+func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
 	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
@@ -202,7 +202,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, legacyInterna
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
-	internalAuth := newInternalAuth(legacyInternalAPIKeys, internalAPIKey)
+	internalAuth := newInternalAuth(internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
@@ -271,8 +271,7 @@ type userData struct {
 
 //InternalAuth entity
 type InternalAuth struct {
-	legacyInternalAPIKeys []string
-	internalAPIKey        string
+	internalAPIKey string
 }
 
 // TBD Remove the legacy API key functionality
@@ -291,14 +290,6 @@ func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) b
 		return true
 	}
 
-	//check if the api key is one of the listed
-	appKeys := auth.legacyInternalAPIKeys
-	for _, element := range appKeys {
-		if element == *internalAPIKey {
-			return true
-		}
-	}
-
 	//not exist, so return 401
 	log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalAPIKey))
 
@@ -308,10 +299,9 @@ func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) b
 }
 
 //newInternalAuth creates new internal auth
-func newInternalAuth(legacyInternalAPIKeys []string, internalAPIKey string) *InternalAuth {
+func newInternalAuth(internalAPIKey string) *InternalAuth {
 	auth := InternalAuth{
-		legacyInternalAPIKeys: legacyInternalAPIKeys,
-		internalAPIKey:        internalAPIKey,
+		internalAPIKey: internalAPIKey,
 	}
 	return &auth
 }
