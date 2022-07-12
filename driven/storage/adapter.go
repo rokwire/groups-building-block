@@ -68,6 +68,7 @@ type member struct {
 	ID            string         `bson:"id"`
 	UserID        string         `bson:"user_id"`
 	ExternalID    string         `bson:"external_id"`
+	NetID         string         `bson:"net_id"`
 	Name          string         `bson:"name"`
 	Email         string         `bson:"email"`
 	PhotoURL      string         `bson:"photo_url"`
@@ -276,6 +277,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "members.$.email", Value: current.Email},
 					primitive.E{Key: "members.$.user_id", Value: current.ID},
 					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.net_id", Value: current.NetID},
 					primitive.E{Key: "members.$.date_updated", Value: now},
 				}},
 			}
@@ -296,6 +298,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "members.$.email", Value: current.Email},
 					primitive.E{Key: "members.$.user_id", Value: current.ID},
 					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.net_id", Value: current.NetID},
 					primitive.E{Key: "members.$.date_updated", Value: now},
 				}},
 			}
@@ -316,6 +319,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "external_id", Value: current.ExternalID},
 					primitive.E{Key: "name", Value: current.Name},
 					primitive.E{Key: "email", Value: current.Email},
+					primitive.E{Key: "net_id", Value: current.NetID},
 					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
@@ -2016,6 +2020,7 @@ func constructMember(member member) model.Member {
 	id := member.ID
 	userID := member.UserID
 	externalID := member.ExternalID
+	netID := member.NetID
 	name := member.Name
 	email := member.Email
 	photoURL := member.PhotoURL
@@ -2030,7 +2035,7 @@ func constructMember(member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, UserID: userID, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, UserID: userID, ExternalID: externalID, NetID: netID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
 		DateAttended: dateAttended,
 	}

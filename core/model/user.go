@@ -22,6 +22,7 @@ type User struct {
 	IsAnonymous   bool       `json:"is_anonymous" bson:"is_anonymous"`
 	IsCoreUser    bool       `json:"is_core_user" bson:"is_core_user"`
 	ExternalID    string     `json:"external_id" bson:"external_id"`
+	NetID         string     `json:"net_id" bson:"net_id"`
 	Email         string     `json:"email" bson:"email"`
 	Name          string     `json:"name" bson:"name"`
 	DateCreated   time.Time  `json:"date_created" bson:"date_created"`
