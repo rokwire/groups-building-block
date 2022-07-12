@@ -150,6 +150,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem["id"] = current.ID
 			mItem["user_id"] = current.UserID
 			mItem["external_id"] = current.ExternalID
+			mItem["net_id"] = current.NetID
 			mItem["name"] = current.Name
 			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
@@ -215,6 +216,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
+				mItem["net_id"] = current.NetID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -262,6 +264,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
+				mItem["net_id"] = current.NetID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -309,6 +312,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
+				mItem["net_id"] = current.NetID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
