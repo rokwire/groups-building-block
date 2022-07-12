@@ -262,6 +262,8 @@ type userData struct {
 	Aud               *string   `json:"aud"`
 	Email             *string   `json:"email"`
 	Name              *string   `json:"name"`
+	Uin               *string   `json:"uin"`
+	NetID             *string   `json:"net_id"`
 	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 }
 
@@ -343,10 +345,17 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 				return nil
 			}
 
+			var netID *string
+			if claims.ExternalIDs != nil {
+				if value, ok := claims.ExternalIDs["net_id"]; ok {
+					netID = &value
+				}
+			}
+
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
-				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID, NetID: netID}
 			isCoreUser = true
 			isAnonymous = claims.Anonymous
 		}
@@ -423,9 +432,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	//5. Get the user for the provided external id.
-	var name = ""
-	var externalID = ""
-	var email = ""
+	var name, externalID, email, netID string
 	if data.Name != nil {
 		name = *data.Name
 	}
@@ -435,7 +442,11 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	if data.Email != nil {
 		email = *data.Email
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous}
+	if data.NetID != nil {
+		netID = *data.NetID
+	}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {

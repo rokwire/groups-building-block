@@ -22,6 +22,7 @@ type Member struct {
 	UserID        string         `json:"user_id" bson:"user_id"`
 	ExternalID    string         `json:"external_id" bson:"external_id"`
 	Name          string         `json:"name" bson:"name"`
+	NetID         string         `json:"net_id" bson:"net_id"`
 	Email         string         `json:"email" bson:"email"`
 	PhotoURL      string         `json:"photo_url" bson:"photo_url"`
 	Status        string         `json:"status" bson:"status"` //pending, member, admin, rejected
