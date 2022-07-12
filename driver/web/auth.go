@@ -25,6 +25,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/rokwire/logging-library-go/logs"
+
 	"github.com/google/uuid"
 	"golang.org/x/sync/syncmap"
 	"gopkg.in/ericchiang/go-oidc.v2"
@@ -42,6 +44,8 @@ type Auth struct {
 	idTokenAuth  *IDTokenAuth
 	internalAuth *InternalAuth
 	adminAuth    *AdminAuth
+
+	logger *logs.Logger
 
 	supportedClients []string
 }
@@ -186,7 +190,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, appKeys []string, legacyInternalAPIKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer, logger *logs.Logger) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -207,7 +211,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, legacyInterna
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClients}
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClients, logger: logger}
 	return &auth
 }
 

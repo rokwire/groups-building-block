@@ -19,6 +19,8 @@ import (
 	"groups/core/model"
 	"groups/driven/corebb"
 	"groups/driven/rewards"
+
+	"github.com/rokwire/logging-library-go/logs"
 )
 
 // Application represents the corebb application code based on hexagonal architecture
@@ -27,6 +29,7 @@ type Application struct {
 	build   string
 
 	config *model.Config
+	logger *logs.Logger
 
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
@@ -93,10 +96,10 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, config *model.Config) *Application {
+	rewards *rewards.Adapter, config *model.Config, logger *logs.Logger) *Application {
 
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, config: config}
+		authman: authman, corebb: core, rewards: rewards, config: config, logger: logger}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

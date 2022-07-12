@@ -22,6 +22,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/rokwire/logging-library-go/logs"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -32,6 +34,8 @@ type database struct {
 	mongoDBAuth  string
 	mongoDBName  string
 	mongoTimeout time.Duration
+
+	logger *logs.Logger
 
 	db       *mongo.Database
 	dbClient *mongo.Client
