@@ -389,7 +389,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *GroupError {
 
-	err := app.storage.UpdateGroup(clientID, current, group)
+	err := app.storage.UpdateGroupWithoutMembers(clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -1053,7 +1053,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 						}
 
 						if titleUpdated || adminUpdated || membersUpdated {
-							err := app.storage.UpdateGroup(clientID, nil, storedGiesGroup)
+							err := app.storage.UpdateGroupWithMembers(clientID, nil, storedGiesGroup)
 							if err != nil {
 								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedGiesGroup.Title, err)
 							}
