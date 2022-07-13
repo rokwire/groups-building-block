@@ -241,7 +241,8 @@ type Storage interface {
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError
+	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *GroupError
+	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
