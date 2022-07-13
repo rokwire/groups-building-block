@@ -1685,6 +1685,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "net_id": {
+                    "type": "string"
+                },
                 "photo_url": {
                     "type": "string"
                 },

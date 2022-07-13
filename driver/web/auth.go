@@ -189,7 +189,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 //NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, appKeys []string, legacyInternalAPIKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
+func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
 	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer, logger *logs.Logger) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
@@ -206,7 +206,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, legacyInterna
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
 	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
-	internalAuth := newInternalAuth(legacyInternalAPIKeys, internalAPIKey)
+	internalAuth := newInternalAuth(internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
 	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
@@ -266,6 +266,8 @@ type userData struct {
 	Aud               *string   `json:"aud"`
 	Email             *string   `json:"email"`
 	Name              *string   `json:"name"`
+	Uin               *string   `json:"uin"`
+	NetID             *string   `json:"net_id"`
 	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
 }
 
@@ -273,8 +275,7 @@ type userData struct {
 
 //InternalAuth entity
 type InternalAuth struct {
-	legacyInternalAPIKeys []string
-	internalAPIKey        string
+	internalAPIKey string
 }
 
 // TBD Remove the legacy API key functionality
@@ -293,14 +294,6 @@ func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) b
 		return true
 	}
 
-	//check if the api key is one of the listed
-	appKeys := auth.legacyInternalAPIKeys
-	for _, element := range appKeys {
-		if element == *internalAPIKey {
-			return true
-		}
-	}
-
 	//not exist, so return 401
 	log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalAPIKey))
 
@@ -310,10 +303,9 @@ func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) b
 }
 
 //newInternalAuth creates new internal auth
-func newInternalAuth(legacyInternalAPIKeys []string, internalAPIKey string) *InternalAuth {
+func newInternalAuth(internalAPIKey string) *InternalAuth {
 	auth := InternalAuth{
-		legacyInternalAPIKeys: legacyInternalAPIKeys,
-		internalAPIKey:        internalAPIKey,
+		internalAPIKey: internalAPIKey,
 	}
 	return &auth
 }
@@ -347,10 +339,17 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 				return nil
 			}
 
+			var netID *string
+			if claims.ExternalIDs != nil {
+				if value, ok := claims.ExternalIDs["net_id"]; ok {
+					netID = &value
+				}
+			}
+
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
-				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID, NetID: netID}
 			isCoreUser = true
 			isAnonymous = claims.Anonymous
 		}
@@ -427,9 +426,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	//5. Get the user for the provided external id.
-	var name = ""
-	var externalID = ""
-	var email = ""
+	var name, externalID, email, netID string
 	if data.Name != nil {
 		name = *data.Name
 	}
@@ -439,7 +436,11 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	if data.Email != nil {
 		email = *data.Email
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous}
+	if data.NetID != nil {
+		netID = *data.NetID
+	}
+	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
