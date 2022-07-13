@@ -5,13 +5,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-### Added
+
+## [1.5.51] - 2022-07-13
+### Fixed
+- [BUG-UIUC] Groups - editing group settings kicks out all members [#188](https://github.com/rokwire/groups-building-block/issues/188)
+
+## [1.5.50] - 2022-07-12
+### Changed
+- Expose netID within the membership & user records [#184](https://github.com/rokwire/groups-building-block/issues/163)
+- Deprecate ROKWIRE_GS_API_KEY and start using only INTERNAL-API-KEY as internal API authentication mechanism. This  a redo operations of a previous redo changes due to a confirmation [#156](https://github.com/rokwire/groups-building-block/issues/156)
+
+## [1.5.49] - 2022-07-07
+### Fixed
+- Additional fix for missing member.id on requesting for a group membership [#163](https://github.com/rokwire/groups-building-block/issues/163)
+
+## [1.5.48] - 2022-07-06
+### Changed
 - Prepare the project to become open source [#146](https://github.com/rokwire/groups-building-block/issues/146)
+### Fixed
+- Additional fix for missing client_id on creating a new group [#163](https://github.com/rokwire/groups-building-block/issues/163)
+- Additional fix for missing member creation date on requesting for a group membership [#163](https://github.com/rokwire/groups-building-block/issues/163)
+
+## [1.5.47] - 2022-07-01
+### Changed
+- Handle Autumn group pretty name and the default admins [#177](https://github.com/rokwire/groups-building-block/issues/177)
+
+## [1.5.46] - 2022-06-30
+### Changed
+- Improve report abuse email template [#174](https://github.com/rokwire/groups-building-block/issues/174)
+
+## [1.5.45] - 2022-06-24
+### Changed
+- Internal Autumn synch API needs to take parameters for stem checks [#167](https://github.com/rokwire/groups-building-block/issues/167)
 
 ## [1.5.44] - 2022-06-21
 ### Fixed
 - Additional fix for missing ID on new member request [#163](https://github.com/rokwire/groups-building-block/issues/163)
-### Changed
 - Clean polls logic and remove it from the Groups BB [#150](https://github.com/rokwire/groups-building-block/issues/150)
 
 ## [1.5.43] - 2022-06-16

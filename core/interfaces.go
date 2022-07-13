@@ -61,10 +61,10 @@ type Services interface {
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error
+	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	SynchronizeAuthman(clientID string) error
+	SynchronizeAuthman(clientID string, stemNames []string) error
 	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
 }
 
@@ -197,16 +197,16 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 	return s.app.updatePost(clientID, current, post)
 }
 
-func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error {
-	return s.app.reportPostAsAbuse(clientID, current, group, post)
+func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error {
+	return s.app.reportPostAsAbuse(clientID, current, group, post, comment)
 }
 
 func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error {
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
-	return s.app.synchronizeAuthman(clientID)
+func (s *servicesImpl) SynchronizeAuthman(clientID string, stemNames []string) error {
+	return s.app.synchronizeAuthman(clientID, stemNames)
 }
 
 func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
@@ -241,7 +241,8 @@ type Storage interface {
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError
+	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *GroupError
+	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -307,7 +308,7 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
 	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
-	RetrieveAuthmanGiesGroups() (*model.АuthmanGroupsResponse, error)
+	RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGroupsResponse, error)
 	AddAuthmanMemberToGroup(groupName string, uin string) error
 	RemoveAuthmanMemberFromGroup(groupName string, uin string) error
 }

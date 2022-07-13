@@ -1434,7 +1434,7 @@ const docTemplate = `{
             }
         },
         "/int/authman/synchronize": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "IntAPIKeyAuth": []
@@ -1445,6 +1445,17 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "operationId": "SynchronizeAuthman",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -1672,6 +1683,9 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "net_id": {
                     "type": "string"
                 },
                 "photo_url": {
@@ -2203,6 +2217,17 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "synchronizeAuthmanRequestBody": {
+            "type": "object",
+            "properties": {
+                "group_auto_create_stem_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

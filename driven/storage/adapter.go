@@ -68,6 +68,7 @@ type member struct {
 	ID            string         `bson:"id"`
 	UserID        string         `bson:"user_id"`
 	ExternalID    string         `bson:"external_id"`
+	NetID         string         `bson:"net_id"`
 	Name          string         `bson:"name"`
 	Email         string         `bson:"email"`
 	PhotoURL      string         `bson:"photo_url"`
@@ -276,6 +277,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "members.$.email", Value: current.Email},
 					primitive.E{Key: "members.$.user_id", Value: current.ID},
 					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.net_id", Value: current.NetID},
 					primitive.E{Key: "members.$.date_updated", Value: now},
 				}},
 			}
@@ -296,6 +298,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "members.$.email", Value: current.Email},
 					primitive.E{Key: "members.$.user_id", Value: current.ID},
 					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
+					primitive.E{Key: "members.$.net_id", Value: current.NetID},
 					primitive.E{Key: "members.$.date_updated", Value: now},
 				}},
 			}
@@ -316,6 +319,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "external_id", Value: current.ExternalID},
 					primitive.E{Key: "name", Value: current.Name},
 					primitive.E{Key: "email", Value: current.Email},
+					primitive.E{Key: "net_id", Value: current.NetID},
 					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
@@ -522,6 +526,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 
 		// insert the group and the admin member
 		group.ID = insertedID
+		group.ClientID = clientID
 		group.DateCreated = time.Now()
 		if current != nil && len(group.Members) == 0 {
 			group.Members = []model.Member{{
@@ -553,9 +558,57 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	return &insertedID, nil
 }
 
-//UpdateGroup updates a group.
-func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *core.GroupError {
+// UpdateGroupWithoutMembers updates a group except the members attribute
+func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
 
+	return sa.updateGroup(clientID, current, group, bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "category", Value: group.Category},
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "tags", Value: group.Tags},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+		}},
+	})
+}
+
+// UpdateGroupWithMembers updates a group along with the members
+func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
+	return sa.updateGroup(clientID, current, group, bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "category", Value: group.Category},
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "tags", Value: group.Tags},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+			primitive.E{Key: "members", Value: group.Members},
+		}},
+	})
+}
+
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *core.GroupError {
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
@@ -576,27 +629,7 @@ func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *mode
 		// update the group
 		filter := bson.D{primitive.E{Key: "_id", Value: group.ID},
 			primitive.E{Key: "client_id", Value: clientID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "category", Value: group.Category},
-				primitive.E{Key: "title", Value: group.Title},
-				primitive.E{Key: "privacy", Value: group.Privacy},
-				primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
-				primitive.E{Key: "description", Value: group.Description},
-				primitive.E{Key: "image_url", Value: group.ImageURL},
-				primitive.E{Key: "web_url", Value: group.WebURL},
-				primitive.E{Key: "tags", Value: group.Tags},
-				primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
-				primitive.E{Key: "date_updated", Value: time.Now()},
-				primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
-				primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
-				primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
-				primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
-				primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
-				primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-			}},
-		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, updateOperation, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
@@ -881,9 +914,9 @@ func (sa *Adapter) CreatePendingMember(clientID string, user *model.User, group 
 				}
 			}
 
-			if len(member.ID) > 0 {
-				member.ID = uuid.NewString()
-			}
+			member.ID = uuid.NewString()
+			member.DateCreated = time.Now().UTC()
+
 			groupMembers := group.Members
 			groupMembers = append(groupMembers, *member)
 			saveFilter := bson.D{primitive.E{Key: "_id", Value: group.ID}}
@@ -2014,6 +2047,7 @@ func constructMember(member member) model.Member {
 	id := member.ID
 	userID := member.UserID
 	externalID := member.ExternalID
+	netID := member.NetID
 	name := member.Name
 	email := member.Email
 	photoURL := member.PhotoURL
@@ -2028,7 +2062,7 @@ func constructMember(member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	return model.Member{ID: id, UserID: userID, ExternalID: externalID, Name: name, Email: email, PhotoURL: photoURL,
+	return model.Member{ID: id, UserID: userID, ExternalID: externalID, NetID: netID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
 		DateAttended: dateAttended,
 	}

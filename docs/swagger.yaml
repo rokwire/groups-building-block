@@ -121,6 +121,8 @@ definitions:
         type: array
       name:
         type: string
+      net_id:
+        type: string
       photo_url:
         type: string
       reject_reason:
@@ -470,6 +472,13 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  synchronizeAuthmanRequestBody:
+    properties:
+      group_auto_create_stem_names:
+        items:
+          type: string
+        type: array
     type: object
   updateGroupRequest:
     properties:
@@ -1424,11 +1433,18 @@ paths:
       security:
       - AppUserAuth: []
   /int/authman/synchronize:
-    get:
+    post:
       consumes:
       - application/json
       description: Synchronizes Authman groups memberhip
       operationId: SynchronizeAuthman
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/synchronizeAuthmanRequestBody'
       responses:
         "200":
           description: ""

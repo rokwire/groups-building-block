@@ -1430,7 +1430,7 @@
             }
         },
         "/int/authman/synchronize": {
-            "get": {
+            "post": {
                 "security": [
                     {
                         "IntAPIKeyAuth": []
@@ -1441,6 +1441,17 @@
                     "application/json"
                 ],
                 "operationId": "SynchronizeAuthman",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -1668,6 +1679,9 @@
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "net_id": {
                     "type": "string"
                 },
                 "photo_url": {
@@ -2199,6 +2213,17 @@
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "synchronizeAuthmanRequestBody": {
+            "type": "object",
+            "properties": {
+                "group_auto_create_stem_names": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

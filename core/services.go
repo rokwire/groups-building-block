@@ -150,6 +150,7 @@ func (app *Application) protectDataForAdmin(group model.Group) map[string]interf
 			mItem["id"] = current.ID
 			mItem["user_id"] = current.UserID
 			mItem["external_id"] = current.ExternalID
+			mItem["net_id"] = current.NetID
 			mItem["name"] = current.Name
 			mItem["email"] = current.Email
 			mItem["photo_url"] = current.PhotoURL
@@ -215,6 +216,7 @@ func (app *Application) protectDataForMember(group model.Group) map[string]inter
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
+				mItem["net_id"] = current.NetID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -262,6 +264,7 @@ func (app *Application) protectDataForPending(user model.User, group model.Group
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
+				mItem["net_id"] = current.NetID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -309,6 +312,7 @@ func (app *Application) protectDataForRejected(user model.User, group model.Grou
 				mItem["id"] = current.ID
 				mItem["user_id"] = current.UserID
 				mItem["external_id"] = current.ExternalID
+				mItem["net_id"] = current.NetID
 				mItem["name"] = current.Name
 				mItem["email"] = current.Email
 				mItem["photo_url"] = current.PhotoURL
@@ -385,7 +389,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *GroupError {
 
-	err := app.storage.UpdateGroup(clientID, current, group)
+	err := app.storage.UpdateGroupWithoutMembers(clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -922,20 +926,36 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
-func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post) error {
+func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error {
 
-	err := app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
+	var creatorExternalID string
+	creator, err := app.storage.FindUser(clientID, post.Creator.UserID, false)
+	if err != nil {
+		log.Printf("error retrieving user: %s", err)
+	} else if creator != nil {
+		creatorExternalID = creator.ExternalID
+	}
+
+	err = app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
 		return fmt.Errorf("error while reporting an abuse post: %s", err)
 	}
 
-	subject := "Report Abuse Post"
+	subject := "Group Post Violation of Student Code"
+	if post.ParentID != nil {
+		subject = "Group Reply Violation of Student Code"
+	}
 	body := fmt.Sprintf(`
-	Group title: %s
-	Post Title: %s
-	Post Body: %s
-	`, group.Title, post.Subject, post.Body)
+	<div>Violation by: %s %s\n</div>
+	<div>Group title: %s\n</div>
+	<div>Post Title: %s\n</div>
+	<div>Post Body: %s\n</div>
+	<div>Reported by: %s %s\n</div>
+	<div>Reported comment: %s\n</div>
+	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
+		current.ExternalID, current.Name, comment)
+	body = strings.ReplaceAll(body, `\n`, "\n")
 	err = app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
@@ -949,42 +969,97 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
 }
 
-func (app *Application) synchronizeAuthman(clientID string) error {
+// TODO this logic needs to be refactored because it's over complicated!
+func (app *Application) synchronizeAuthman(clientID string, stemNames []string) error {
 	log.Printf("Global Authman synchronization started")
 	defer log.Printf("Global Authman synchronization finished")
 
-	giesGroups, err := app.authman.RetrieveAuthmanGiesGroups()
-	if err != nil {
-		return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
-	}
-
-	if giesGroups != nil && len(giesGroups.WsFindGroupsResults.GroupResults) > 0 {
-		for _, giesGroup := range giesGroups.WsFindGroupsResults.GroupResults {
-			storedGiesGroup, err := app.storage.FindAuthmanGroupByKey(clientID, giesGroup.Name)
+	if len(stemNames) > 0 {
+		for _, stemName := range stemNames {
+			giesGroups, err := app.authman.RetrieveAuthmanGiesGroups(stemName)
 			if err != nil {
 				return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
 			}
 
-			if storedGiesGroup == nil {
-				title := giesGroup.Description
-				if len(title) == 0 {
-					title = giesGroup.DisplayName
-				}
-				emptyText := ""
-				_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
-					Title:                title,
-					Description:          &emptyText,
-					Privacy:              "private",
-					HiddenForSearch:      true,
-					CanJoinAutomatically: true,
-					AuthmanEnabled:       true,
-					AuthmanGroup:         &giesGroup.Name,
-				})
-				if err != nil {
-					return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
-				}
+			if giesGroups != nil && len(giesGroups.WsFindGroupsResults.GroupResults) > 0 {
+				for _, giesGroup := range giesGroups.WsFindGroupsResults.GroupResults {
+					storedGiesGroup, err := app.storage.FindAuthmanGroupByKey(clientID, giesGroup.Name)
+					if err != nil {
+						return fmt.Errorf("error on requesting Authman for GIES groups: %s", err)
+					}
 
-				log.Printf("Created new `%s` group", title)
+					if storedGiesGroup == nil {
+						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
+
+						var members []model.Member
+						if len(adminUINs) > 0 {
+							members = app.buildMembersByExternalIDs(clientID, adminUINs, "admin")
+						}
+
+						emptyText := ""
+						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
+							Title:                title,
+							Description:          &emptyText,
+							Privacy:              "private",
+							HiddenForSearch:      true,
+							CanJoinAutomatically: true,
+							AuthmanEnabled:       true,
+							AuthmanGroup:         &giesGroup.Name,
+							Members:              members,
+						})
+						if err != nil {
+							return fmt.Errorf("error on create Authman GIES group: '%s' - %s", giesGroup.Name, err)
+						}
+
+						log.Printf("Created new `%s` group", title)
+					} else {
+						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
+
+						missedUINs := []string{}
+						membersUpdated := false
+						adminUpdated := false
+						titleUpdated := false
+						for _, uin := range adminUINs {
+							found := false
+							for index, member := range storedGiesGroup.Members {
+								if member.ExternalID == uin {
+									if member.Status != "admin" {
+										now := time.Now()
+										storedGiesGroup.Members[index].Status = "admin"
+										storedGiesGroup.Members[index].DateUpdated = &now
+										adminUpdated = true
+										break
+									} else {
+										found = true
+									}
+								}
+							}
+							if !found {
+								missedUINs = append(missedUINs, uin)
+							}
+						}
+
+						if len(missedUINs) > 0 {
+							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
+							if len(missedMembers) > 0 {
+								storedGiesGroup.Members = append(storedGiesGroup.Members, missedMembers...)
+								membersUpdated = true
+							}
+						}
+
+						if storedGiesGroup.Title != title {
+							storedGiesGroup.Title = title
+							titleUpdated = true
+						}
+
+						if titleUpdated || adminUpdated || membersUpdated {
+							err := app.storage.UpdateGroupWithMembers(clientID, nil, storedGiesGroup)
+							if err != nil {
+								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedGiesGroup.Title, err)
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -1006,6 +1081,43 @@ func (app *Application) synchronizeAuthman(clientID string) error {
 	return nil
 }
 
+func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.Member {
+	if len(externalIDs) > 0 {
+		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
+		if len(users) > 0 {
+			members := []model.Member{}
+			userExternalIDmapping := map[string]model.User{}
+			for _, user := range users {
+				userExternalIDmapping[user.ExternalID] = user
+			}
+
+			for _, externalID := range externalIDs {
+				if value, ok := userExternalIDmapping[externalID]; ok {
+					members = append(members, model.Member{
+						ID:          uuid.NewString(),
+						UserID:      value.ID,
+						ExternalID:  externalID,
+						Name:        value.Name,
+						Email:       value.Email,
+						Status:      memberStatus,
+						DateCreated: time.Now(),
+					})
+				} else {
+					members = append(members, model.Member{
+						ID:          uuid.NewString(),
+						ExternalID:  externalID,
+						Status:      memberStatus,
+						DateCreated: time.Now(),
+					})
+				}
+			}
+			return members
+		}
+	}
+	return nil
+}
+
+// TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *model.Group) error {
 
 	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
@@ -1015,6 +1127,13 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 	if len(app.config.AuthmanAdminUINList) > 0 {
 		for _, externalID := range app.config.AuthmanAdminUINList {
 			defaultAdminsMapping[externalID] = true
+		}
+	}
+
+	admins := authmanGroup.GetAllAdminMembers()
+	if len(admins) > 0 {
+		for _, admin := range admins {
+			defaultAdminsMapping[admin.ExternalID] = true
 		}
 	}
 
