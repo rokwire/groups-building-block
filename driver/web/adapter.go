@@ -77,11 +77,11 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/user/login", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.LoginUser)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{group-id}/events", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
 
 	//internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
