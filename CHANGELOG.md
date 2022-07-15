@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+
+## [1.5.52] - 2022-07-15
+### Changed
+- Set "Academic" category for all Gies auto created groups [#192](https://github.com/rokwire/groups-building-block/issues/192)
 ### Fixed
 - Fix admin authorization [#190](https://github.com/rokwire/groups-building-block/issues/190)
 
