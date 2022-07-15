@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+## [1.5.52] - 2022-07-15
+### Changed
+- Set "Academic" category for all Gies auto created groups [#192](https://github.com/rokwire/groups-building-block/issues/192)
+### Fixed
+- Fix admin authorization [#190](https://github.com/rokwire/groups-building-block/issues/190)
+
 ## [1.5.51] - 2022-07-13
 ### Fixed
 - [BUG-UIUC] Groups - editing group settings kicks out all members [#188](https://github.com/rokwire/groups-building-block/issues/188)

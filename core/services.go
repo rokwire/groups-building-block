@@ -1000,6 +1000,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
 							Title:                title,
 							Description:          &emptyText,
+							Category:             "Academic", // Hardcoded.
 							Privacy:              "private",
 							HiddenForSearch:      true,
 							CanJoinAutomatically: true,
@@ -1016,9 +1017,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
 
 						missedUINs := []string{}
-						membersUpdated := false
-						adminUpdated := false
-						titleUpdated := false
+						groupUpdated := false
 						for _, uin := range adminUINs {
 							found := false
 							for index, member := range storedGiesGroup.Members {
@@ -1027,7 +1026,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 										now := time.Now()
 										storedGiesGroup.Members[index].Status = "admin"
 										storedGiesGroup.Members[index].DateUpdated = &now
-										adminUpdated = true
+										groupUpdated = true
 										break
 									} else {
 										found = true
@@ -1043,16 +1042,21 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
 							if len(missedMembers) > 0 {
 								storedGiesGroup.Members = append(storedGiesGroup.Members, missedMembers...)
-								membersUpdated = true
+								groupUpdated = true
 							}
 						}
 
 						if storedGiesGroup.Title != title {
 							storedGiesGroup.Title = title
-							titleUpdated = true
+							groupUpdated = true
 						}
 
-						if titleUpdated || adminUpdated || membersUpdated {
+						if storedGiesGroup.Category == "" {
+							storedGiesGroup.Category = "Academic" // Hardcoded.
+							groupUpdated = true
+						}
+
+						if groupUpdated {
 							err := app.storage.UpdateGroupWithMembers(clientID, nil, storedGiesGroup)
 							if err != nil {
 								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedGiesGroup.Title, err)
