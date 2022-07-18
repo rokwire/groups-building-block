@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.53] - 2022-07-18
+### Changed
+- Change the default title of groups transactional FCM messages to "Group - {Group Name}" [#194](https://github.com/rokwire/groups-building-block/issues/194)
 
 ## [1.5.52] - 2022-07-15
 ### Changed

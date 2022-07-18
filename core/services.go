@@ -517,7 +517,7 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					message,
 					map[string]string{
 						"type":        "group",
@@ -616,7 +616,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					message,
 					map[string]string{
 						"type":        "group",
@@ -691,7 +691,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 						},
 					},
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
 					map[string]string{
 						"type":        "group",
@@ -710,7 +710,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 						},
 					},
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
 					map[string]string{
 						"type":        "group",
@@ -791,7 +791,7 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	err = app.notifications.SendNotification(
 		recipients,
 		&topic,
-		"Illinois",
+		fmt.Sprintf("Group - %s", group.Title),
 		fmt.Sprintf("New event has been published in '%s' group", group.Title),
 		map[string]string{
 			"type":        "group",
@@ -859,7 +859,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
 		}
 		if len(recipients) > 0 {
-			title := "Illinois"
+			title := fmt.Sprintf("Group - %s", group.Title)
 			body := fmt.Sprintf("New post has been published in '%s' group", group.Title)
 			if post.UseAsNotification {
 				title = post.Subject
