@@ -1123,6 +1123,10 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 
 // TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *model.Group) error {
+	if !authmanGroup.IsAuthmanSyncEligible() {
+		log.Printf("Authman synchronization failed for group '%s' due to bad settings", authmanGroup.Title)
+		return nil // Pass only Authman enabled groups
+	}
 
 	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
 	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)

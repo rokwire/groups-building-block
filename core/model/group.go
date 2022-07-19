@@ -215,3 +215,8 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 
 	return answers
 }
+
+// IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
+func (gr Group) IsAuthmanSyncEligible() bool {
+	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
+}
