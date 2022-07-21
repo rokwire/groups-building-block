@@ -991,9 +991,28 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 					if storedGiesGroup == nil {
 						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
 
-						var members []model.Member
+						defaultAdminsMapping := map[string]bool{}
 						if len(adminUINs) > 0 {
-							members = app.buildMembersByExternalIDs(clientID, adminUINs, "admin")
+							for _, adminUIN := range adminUINs {
+								defaultAdminsMapping[adminUIN] = true
+							}
+						}
+						if len(app.config.AuthmanAdminUINList) > 0 {
+							for _, externalID := range app.config.AuthmanAdminUINList {
+								defaultAdminsMapping[externalID] = true
+							}
+						}
+
+						var constructedAdminUINs []string
+						if len(defaultAdminsMapping) > 0 {
+							for key := range defaultAdminsMapping {
+								constructedAdminUINs = append(constructedAdminUINs, key)
+							}
+						}
+
+						var members []model.Member
+						if len(constructedAdminUINs) > 0 {
+							members = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
 						}
 
 						emptyText := ""
@@ -1028,9 +1047,8 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 										storedGiesGroup.Members[index].DateUpdated = &now
 										groupUpdated = true
 										break
-									} else {
-										found = true
 									}
+									found = true
 								}
 							}
 							if !found {
@@ -1132,12 +1150,6 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)
 
 	defaultAdminsMapping := map[string]bool{}
-	if len(app.config.AuthmanAdminUINList) > 0 {
-		for _, externalID := range app.config.AuthmanAdminUINList {
-			defaultAdminsMapping[externalID] = true
-		}
-	}
-
 	admins := authmanGroup.GetAllAdminMembers()
 	if len(admins) > 0 {
 		for _, admin := range admins {

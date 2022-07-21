@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.55] - 2022-07-21
+### Fixed
+- Authman sync task should add default admins only to the new groups [#198](https://github.com/rokwire/groups-building-block/issues/198)
+
 ## [1.5.54] - 2022-07-19
 ### Changed
 - Check the group is eligible for autumn synchronisation before initiate the operation [#196](https://github.com/rokwire/groups-building-block/issues/196)
