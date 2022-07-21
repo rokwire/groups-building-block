@@ -389,7 +389,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *GroupError {
 
-	err := app.storage.UpdateGroup(clientID, current, group)
+	err := app.storage.UpdateGroupWithoutMembers(clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -517,7 +517,7 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					message,
 					map[string]string{
 						"type":        "group",
@@ -616,7 +616,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					message,
 					map[string]string{
 						"type":        "group",
@@ -691,7 +691,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 						},
 					},
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
 					map[string]string{
 						"type":        "group",
@@ -710,7 +710,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 						},
 					},
 					&topic,
-					"Illinois",
+					fmt.Sprintf("Group - %s", group.Title),
 					fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
 					map[string]string{
 						"type":        "group",
@@ -791,7 +791,7 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	err = app.notifications.SendNotification(
 		recipients,
 		&topic,
-		"Illinois",
+		fmt.Sprintf("Group - %s", group.Title),
 		fmt.Sprintf("New event has been published in '%s' group", group.Title),
 		map[string]string{
 			"type":        "group",
@@ -859,7 +859,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
 		}
 		if len(recipients) > 0 {
-			title := "Illinois"
+			title := fmt.Sprintf("Group - %s", group.Title)
 			body := fmt.Sprintf("New post has been published in '%s' group", group.Title)
 			if post.UseAsNotification {
 				title = post.Subject
@@ -1000,6 +1000,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
 							Title:                title,
 							Description:          &emptyText,
+							Category:             "Academic", // Hardcoded.
 							Privacy:              "private",
 							HiddenForSearch:      true,
 							CanJoinAutomatically: true,
@@ -1016,9 +1017,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 						title, adminUINs := giesGroup.GetGroupPettyTitleAndAdmins()
 
 						missedUINs := []string{}
-						membersUpdated := false
-						adminUpdated := false
-						titleUpdated := false
+						groupUpdated := false
 						for _, uin := range adminUINs {
 							found := false
 							for index, member := range storedGiesGroup.Members {
@@ -1027,7 +1026,7 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 										now := time.Now()
 										storedGiesGroup.Members[index].Status = "admin"
 										storedGiesGroup.Members[index].DateUpdated = &now
-										adminUpdated = true
+										groupUpdated = true
 										break
 									} else {
 										found = true
@@ -1043,17 +1042,22 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
 							if len(missedMembers) > 0 {
 								storedGiesGroup.Members = append(storedGiesGroup.Members, missedMembers...)
-								membersUpdated = true
+								groupUpdated = true
 							}
 						}
 
 						if storedGiesGroup.Title != title {
 							storedGiesGroup.Title = title
-							titleUpdated = true
+							groupUpdated = true
 						}
 
-						if titleUpdated || adminUpdated || membersUpdated {
-							err := app.storage.UpdateGroup(clientID, nil, storedGiesGroup)
+						if storedGiesGroup.Category == "" {
+							storedGiesGroup.Category = "Academic" // Hardcoded.
+							groupUpdated = true
+						}
+
+						if groupUpdated {
+							err := app.storage.UpdateGroupWithMembers(clientID, nil, storedGiesGroup)
 							if err != nil {
 								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedGiesGroup.Title, err)
 							}
@@ -1119,6 +1123,10 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 
 // TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *model.Group) error {
+	if !authmanGroup.IsAuthmanSyncEligible() {
+		log.Printf("Authman synchronization failed for group '%s' due to bad settings", authmanGroup.Title)
+		return nil // Pass only Authman enabled groups
+	}
 
 	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
 	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)

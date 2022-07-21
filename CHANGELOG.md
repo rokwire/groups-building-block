@@ -5,13 +5,34 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
 - Set logger [#182](https://github.com/rokwire/groups-building-block/issues/182)
 
+## [1.5.54] - 2022-07-19
+### Changed
+- Check the group is eligible for autumn synchronisation before initiate the operation [#196](https://github.com/rokwire/groups-building-block/issues/196)
+
+## [1.5.53] - 2022-07-18
+### Changed
+- Change the default title of groups transactional FCM messages to "Group - {Group Name}" [#194](https://github.com/rokwire/groups-building-block/issues/194)
+
+## [1.5.52] - 2022-07-15
+### Changed
+- Set "Academic" category for all Gies auto created groups [#192](https://github.com/rokwire/groups-building-block/issues/192)
+### Fixed
+- Fix admin authorization [#190](https://github.com/rokwire/groups-building-block/issues/190)
+
+## [1.5.51] - 2022-07-13
+### Fixed
+- [BUG-UIUC] Groups - editing group settings kicks out all members [#188](https://github.com/rokwire/groups-building-block/issues/188)
+
 ## [1.5.50] - 2022-07-12
+### Changed
 - Expose netID within the membership & user records [#184](https://github.com/rokwire/groups-building-block/issues/163)
 - Deprecate ROKWIRE_GS_API_KEY and start using only INTERNAL-API-KEY as internal API authentication mechanism. This  a redo operations of a previous redo changes due to a confirmation [#156](https://github.com/rokwire/groups-building-block/issues/156)
 
 ## [1.5.49] - 2022-07-07
+### Fixed
 - Additional fix for missing member.id on requesting for a group membership [#163](https://github.com/rokwire/groups-building-block/issues/163)
 
 ## [1.5.48] - 2022-07-06

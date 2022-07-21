@@ -560,9 +560,57 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	return &insertedID, nil
 }
 
-//UpdateGroup updates a group.
-func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *core.GroupError {
+// UpdateGroupWithoutMembers updates a group except the members attribute
+func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
 
+	return sa.updateGroup(clientID, current, group, bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "category", Value: group.Category},
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "tags", Value: group.Tags},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+		}},
+	})
+}
+
+// UpdateGroupWithMembers updates a group along with the members
+func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
+	return sa.updateGroup(clientID, current, group, bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "category", Value: group.Category},
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "tags", Value: group.Tags},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+			primitive.E{Key: "members", Value: group.Members},
+		}},
+	})
+}
+
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *core.GroupError {
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
@@ -583,28 +631,7 @@ func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *mode
 		// update the group
 		filter := bson.D{primitive.E{Key: "_id", Value: group.ID},
 			primitive.E{Key: "client_id", Value: clientID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "category", Value: group.Category},
-				primitive.E{Key: "title", Value: group.Title},
-				primitive.E{Key: "privacy", Value: group.Privacy},
-				primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
-				primitive.E{Key: "description", Value: group.Description},
-				primitive.E{Key: "image_url", Value: group.ImageURL},
-				primitive.E{Key: "web_url", Value: group.WebURL},
-				primitive.E{Key: "tags", Value: group.Tags},
-				primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
-				primitive.E{Key: "date_updated", Value: time.Now()},
-				primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
-				primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
-				primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
-				primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
-				primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
-				primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-				primitive.E{Key: "members", Value: group.Members},
-			}},
-		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
+		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, updateOperation, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
