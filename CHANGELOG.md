@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.56] - 2022-07-22
+### Added
+- Introduce admin Authman sync api (POST /admin/authman/synchronize) [#202](https://github.com/rokwire/groups-building-block/issues/202)
 ### Fixed
 - Improve logging of the internal API calls [#200](https://github.com/rokwire/groups-building-block/issues/200)
 

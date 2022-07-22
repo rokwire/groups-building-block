@@ -971,8 +971,20 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 
 // TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthman(clientID string, stemNames []string) error {
+
+	if app.authmanSyncInProgress {
+		log.Printf("Another Authman sync process is running")
+		return fmt.Errorf("another Authman sync process is running")
+	}
+
 	log.Printf("Global Authman synchronization started")
-	defer log.Printf("Global Authman synchronization finished")
+
+	app.authmanSyncInProgress = true
+	finishAuthmanSync := func() {
+		app.authmanSyncInProgress = false
+		log.Printf("Global Authman synchronization finished")
+	}
+	defer finishAuthmanSync()
 
 	if len(stemNames) > 0 {
 		for _, stemName := range stemNames {
@@ -1287,7 +1299,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 					}
 					if !found {
 						members = append(members, member)
-						log.Printf("add remaining admin user(%s, %s, %s) to '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
+						log.Printf("add remaining admin user(%s, %s, %s, %s) to '%s'", member.UserID, member.ExternalID, member.Name, member.Email, authmanGroup.Title)
 					}
 				} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
 					log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)
