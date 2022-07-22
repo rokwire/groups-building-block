@@ -17,7 +17,6 @@ package web
 import (
 	"context"
 	"errors"
-	"fmt"
 	"groups/core"
 	"groups/core/model"
 	"log"
@@ -98,6 +97,7 @@ func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request,
 func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
 	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
+		log.Printf("%s %s error - missing or bad APP header", r.Method, r.URL.Path)
 		return "", false
 	}
 
@@ -278,11 +278,6 @@ type InternalAuth struct {
 func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) bool {
 	//check if there is internal key in the header
 	if internalAPIKey == nil || len(*internalAPIKey) == 0 {
-		//no key, so return 400
-		log.Println(fmt.Sprintf("400 - Bad Request"))
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
 		return false
 	}
 
@@ -290,11 +285,6 @@ func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) b
 		return true
 	}
 
-	//not exist, so return 401
-	log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalAPIKey))
-
-	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte("Unauthorized"))
 	return false
 }
 

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Improve logging of the internal API calls [#200](https://github.com/rokwire/groups-building-block/issues/200)
+
 ## [1.5.55] - 2022-07-21
 ### Fixed
 - Authman sync task should add default admins only to the new groups [#198](https://github.com/rokwire/groups-building-block/issues/198)

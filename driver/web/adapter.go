@@ -204,7 +204,7 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 
 		clientID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
-			log.Printf("Unauthorized - Internal Key")
+			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
