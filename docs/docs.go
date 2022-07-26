@@ -869,6 +869,15 @@ const docTemplate = `{
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/reportAbuseGroupPostRequestBody"
+                        }
                     }
                 ],
                 "responses": {
@@ -2177,6 +2186,20 @@ const docTemplate = `{
                 },
                 "reject_reason": {
                     "type": "string"
+                }
+            }
+        },
+        "reportAbuseGroupPostRequestBody": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "send_to_dean": {
+                    "type": "boolean"
+                },
+                "send_to_group_admins": {
+                    "type": "boolean"
                 }
             }
         },

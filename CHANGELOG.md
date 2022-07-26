@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.57] - 2022-07-26
+### Changed
+- Improve report a group post as an abuse [#204](https://github.com/rokwire/groups-building-block/issues/204)
+
 ## [1.5.56] - 2022-07-22
 ### Added
 - Introduce admin Authman sync api (POST /admin/authman/synchronize) [#202](https://github.com/rokwire/groups-building-block/issues/202)

@@ -168,6 +168,20 @@ func (gr Group) GetAllAdminMembers() []Member {
 	return gr.GetMembersByStatus("admin")
 }
 
+// GetAllAdminsAsRecipients gets all admins as list of Recipient recipients
+func (gr Group) GetAllAdminsAsRecipients() []notifications.Recipient {
+	admins := gr.GetMembersByStatus("admin")
+
+	var recipients []notifications.Recipient
+	if len(admins) > 0 {
+		for _, admin := range admins {
+			recipients = append(recipients, admin.ToNotificationRecipient())
+		}
+	}
+
+	return recipients
+}
+
 // GetMembersByStatus gets members by status field
 func (gr Group) GetMembersByStatus(status string) []Member {
 	var members []Member
