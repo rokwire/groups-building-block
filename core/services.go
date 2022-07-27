@@ -351,6 +351,14 @@ func (app *Application) getGroupEntityByMembership(clientID string, membershipID
 	return group, nil
 }
 
+func (app *Application) getGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
+	group, err := app.storage.FindGroupByTitle(clientID, title)
+	if err != nil {
+		return nil, err
+	}
+	return group, nil
+}
+
 func (app *Application) getGroupCategories() ([]string, error) {
 	groupCategories, err := app.storage.ReadAllGroupCategories()
 	if err != nil {

@@ -32,6 +32,7 @@ type Services interface {
 
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
+	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError
@@ -95,6 +96,10 @@ func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group,
 
 func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
 	return s.app.getGroupEntityByMembership(clientID, membershipID)
+}
+
+func (s *servicesImpl) GetGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
+	return s.app.getGroupEntityByTitle(clientID, title)
 }
 
 func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError) {
@@ -246,6 +251,7 @@ type Storage interface {
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
+	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
