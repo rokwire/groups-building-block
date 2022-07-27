@@ -158,7 +158,7 @@ func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.Respons
 	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

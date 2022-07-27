@@ -1487,6 +1487,6 @@ securityDefinitions:
     type: apiKey
   IntAPIKeyAuth:
     in: header
-    name: ROKWIRE_GS_API_KEY
+    name: INTERNAL-API-KEY
     type: apiKey
 swagger: "2.0"

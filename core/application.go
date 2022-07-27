@@ -39,6 +39,8 @@ type Application struct {
 	authman       Authman
 	corebb        Core
 	rewards       Rewards
+
+	authmanSyncInProgress bool
 }
 
 // Start starts the corebb part of the application

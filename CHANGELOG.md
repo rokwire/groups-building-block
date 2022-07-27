@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Set logger [#182](https://github.com/rokwire/groups-building-block/issues/182)
 
+## [1.5.56] - 2022-07-22
+### Added
+- Introduce admin Authman sync api (POST /admin/authman/synchronize) [#202](https://github.com/rokwire/groups-building-block/issues/202)
+### Fixed
+- Improve logging of the internal API calls [#200](https://github.com/rokwire/groups-building-block/issues/200)
+
+## [1.5.55] - 2022-07-21
+### Fixed
+- Authman sync task should add default admins only to the new groups [#198](https://github.com/rokwire/groups-building-block/issues/198)
+
 ## [1.5.54] - 2022-07-19
 ### Changed
 - Check the group is eligible for autumn synchronisation before initiate the operation [#196](https://github.com/rokwire/groups-building-block/issues/196)

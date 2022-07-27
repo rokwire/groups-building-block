@@ -2328,7 +2328,7 @@ const docTemplate = `{
         },
         "IntAPIKeyAuth": {
             "type": "apiKey",
-            "name": "ROKWIRE_GS_API_KEY",
+            "name": "INTERNAL-API-KEY",
             "in": "header"
         }
     }

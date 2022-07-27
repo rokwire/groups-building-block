@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"groups/core"
 	"groups/core/model"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -401,6 +402,43 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 	err := h.app.Services.DeletePost(clientID, current, groupID, postID, true)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+//SynchronizeAuthman Synchronizes Authman groups memberhip
+// @Description Synchronizes Authman groups memberhip
+// @Tags Admin
+// @ID AdminSynchronizeAuthman
+// @Param data body synchronizeAuthmanRequestBody true "body data"
+// @Accept json
+// @Success 200
+// @Security AppUserAuth
+// @Router /int/authman/synchronize [post]
+func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData synchronizeAuthmanRequestBody
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

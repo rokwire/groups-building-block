@@ -62,7 +62,7 @@ type Adapter struct {
 
 // @securityDefinitions.apikey IntAPIKeyAuth
 // @in header
-// @name ROKWIRE_GS_API_KEY
+// @name INTERNAL-API-KEY
 
 //Start starts the web server
 func (we *Adapter) Start() {
@@ -78,6 +78,7 @@ func (we *Adapter) Start() {
 	adminSubrouter := restSubrouter.PathPrefix("/admin").Subrouter()
 
 	// Admin APIs
+	adminSubrouter.HandleFunc("/authman/synchronize", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/user/login", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.LoginUser)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
@@ -208,7 +209,7 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 
 		clientID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
-			log.Printf("Unauthorized - Internal Key")
+			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
