@@ -447,6 +447,15 @@ definitions:
     required:
     - approve
     type: object
+  reportAbuseGroupPostRequestBody:
+    properties:
+      comment:
+        type: string
+      send_to_dean:
+        type: boolean
+      send_to_group_admins:
+        type: boolean
+    type: object
   rest.postResponse:
     properties:
       body:
@@ -1078,6 +1087,12 @@ paths:
         name: APP
         required: true
         type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/reportAbuseGroupPostRequestBody'
       responses:
         "200":
           description: ""

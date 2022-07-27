@@ -14,7 +14,10 @@
 
 package model
 
-import "time"
+import (
+	"groups/driven/notifications"
+	"time"
+)
 
 // Member represents group member entity
 type Member struct {
@@ -59,6 +62,24 @@ func (m *Member) ApplyFromUserIfEmpty(user *User) {
 	}
 	if m.Name == "" && user.Name != "" {
 		m.Name = user.Name
+	}
+}
+
+// ToMember construct ToMember based on the data
+func (m *Member) ToMember() ToMember {
+	return ToMember{
+		UserID:     m.UserID,
+		ExternalID: m.ExternalID,
+		Name:       m.Name,
+		Email:      m.Email,
+	}
+}
+
+// ToNotificationRecipient construct notifications.Recipient based on the data
+func (m *Member) ToNotificationRecipient() notifications.Recipient {
+	return notifications.Recipient{
+		UserID: m.UserID,
+		Name:   m.Name,
 	}
 }
 
