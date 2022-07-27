@@ -121,3 +121,27 @@ func (m *Member) IsPendingMember() bool {
 func (m *Member) IsRejected() bool {
 	return m.Status == "rejected"
 }
+
+//ToShortMemberRecord converts to ShortMemberRecord
+func (m *Member) ToShortMemberRecord() ShortMemberRecord {
+	return ShortMemberRecord{
+		ID:         m.ID,
+		UserID:     m.UserID,
+		ExternalID: m.ExternalID,
+		Email:      m.Email,
+		NetID:      m.NetID,
+		Name:       m.Name,
+		Status:     m.Status,
+	}
+}
+
+// ShortMemberRecord represents group short member entity only with important identifiers
+type ShortMemberRecord struct {
+	ID         string `json:"id" bson:"id"`
+	UserID     string `json:"user_id" bson:"user_id"`
+	ExternalID string `json:"external_id" bson:"external_id"`
+	Name       string `json:"name" bson:"name"`
+	NetID      string `json:"net_id" bson:"net_id"`
+	Email      string `json:"email" bson:"email"`
+	Status     string `json:"status" bson:"status"` //pending, member, admin, rejected
+} //@name ShortMemberRecord
