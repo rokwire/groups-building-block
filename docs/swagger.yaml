@@ -438,6 +438,22 @@ definitions:
     required:
     - event_id
     type: object
+  intCreateGroupEventRequestBody:
+    properties:
+      creator:
+        $ref: '#/definitions/Creator'
+      event_id:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    required:
+    - creator
+    - event_id
+    type: object
   membershipApprovalRequest:
     properties:
       approve:
@@ -1255,7 +1271,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/groupEventRequest'
+          $ref: '#/definitions/intCreateGroupEventRequestBody'
       - description: Group ID
         in: path
         name: group-id

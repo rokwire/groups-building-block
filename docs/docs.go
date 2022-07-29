@@ -1185,7 +1185,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/groupEventRequest"
+                            "$ref": "#/definitions/intCreateGroupEventRequestBody"
                         }
                     },
                     {
@@ -2271,6 +2271,28 @@ const docTemplate = `{
                 "event_id"
             ],
             "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
+        "intCreateGroupEventRequestBody": {
+            "type": "object",
+            "required": [
+                "creator",
+                "event_id"
+            ],
+            "properties": {
+                "creator": {
+                    "$ref": "#/definitions/Creator"
+                },
                 "event_id": {
                     "type": "string"
                 },

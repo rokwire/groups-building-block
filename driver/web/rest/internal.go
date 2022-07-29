@@ -319,7 +319,7 @@ type intCreateGroupEventRequestBody struct {
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
-// @Param data body groupEventRequest true "body data"
+// @Param data body intCreateGroupEventRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security IntAPIKeyAuth
