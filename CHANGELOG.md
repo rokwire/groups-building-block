@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.59] - 2022-07-29
+### Added
+- Create internal API for creating a group event by another BB [#210](https://github.com/rokwire/groups-building-block/issues/210)
+
 ## [1.5.58] - 2022-07-27
 ### Added
 - Add internal API for retrieving group members by group title [#205](https://github.com/rokwire/groups-building-block/issues/205)

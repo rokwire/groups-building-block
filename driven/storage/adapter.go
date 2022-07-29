@@ -1400,7 +1400,7 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 		primitive.E{Key: "group_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID},
 	}
-	if filterByToMembers {
+	if filterByToMembers && current != nil {
 		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
 			primitive.M{"to_members": primitive.Null{}},
 			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
@@ -1416,17 +1416,39 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 
 //CreateEvent creates a group event
 func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error) {
+	var creator *model.Creator
+	if current != nil {
+		creator = current.ToCreator()
+	}
 	event := model.Event{
 		ClientID:      clientID,
 		EventID:       eventID,
 		GroupID:       groupID,
 		DateCreated:   time.Now().UTC(),
 		ToMembersList: toMemberList,
-		Creator: model.Creator{
-			UserID: current.ID,
-			Name:   current.Name,
-			Email:  current.Email,
-		},
+		Creator:       creator,
+	}
+	_, err := sa.db.events.InsertOne(event)
+	if err != nil {
+		return nil, err
+	}
+
+	if err == nil {
+		sa.resetGroupUpdatedDate(clientID, groupID)
+	}
+
+	return &event, err
+}
+
+//CreateEventWithCreator creates a group event with predefined creator record
+func (sa *Adapter) CreateEventWithCreator(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+	event := model.Event{
+		ClientID:      clientID,
+		EventID:       eventID,
+		GroupID:       groupID,
+		DateCreated:   time.Now().UTC(),
+		ToMembersList: toMemberList,
+		Creator:       creator,
 	}
 	_, err := sa.db.events.InsertOne(event)
 	if err != nil {

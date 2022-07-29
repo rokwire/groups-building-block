@@ -54,6 +54,7 @@ type Services interface {
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error)
+	CreateEventWithCreator(clientID string, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
@@ -174,6 +175,10 @@ func (s *servicesImpl) CreateEvent(clientID string, current *model.User, eventID
 	return s.app.createEvent(clientID, current, eventID, group, toMemberList)
 }
 
+func (s *servicesImpl) CreateEventWithCreator(clientID string, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+	return s.app.createEventWithCreator(clientID, eventID, group, toMemberList, creator)
+}
+
 func (s *servicesImpl) UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
 	return s.app.updateEvent(clientID, current, eventID, groupID, toMemberList)
 }
@@ -268,6 +273,7 @@ type Storage interface {
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error)
+	CreateEventWithCreator(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
@@ -298,16 +304,16 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error
-	SendMail(toEmail string, subject string, body string) error
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string)
+	SendMail(toEmail string, subject string, body string)
 }
 
 type notificationsImpl struct {
 	app *Application
 }
 
-func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
-	return n.app.sendNotification(recipients, topic, title, text, data)
+func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
+	n.app.sendNotification(recipients, topic, title, text, data)
 }
 
 // Authman exposes Authman APIs for the driver adapters

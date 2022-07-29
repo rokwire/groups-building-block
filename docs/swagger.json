@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.5.31"
+        "version": "1.5.59"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -1145,6 +1145,56 @@
                         "schema": {
                             "$ref": "#/definitions/Group"
                         }
+                    }
+                }
+            }
+        },
+        "/api/int/group/{group-id}/events": {
+            "post": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Creates a group event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "IntCreateGroupEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/groupEventRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
                     }
                 }
             }

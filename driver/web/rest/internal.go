@@ -16,6 +16,8 @@ package rest
 
 import (
 	"encoding/json"
+	"fmt"
+	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
@@ -302,4 +304,88 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+type intCreateGroupEventRequestBody struct {
+	EventID       string           `json:"event_id" bson:"event_id" validate:"required"`
+	Creator       *model.Creator   `json:"creator" bson:"creator" validate:"required"`
+	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
+} // @name intCreateGroupEventRequestBody
+
+// CreateGroupEvent creates a group event
+// @Description Creates a group event
+// @ID IntCreateGroupEvent
+// @Tags Internal
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body groupEventRequest true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security IntAPIKeyAuth
+// @Router /api/int/group/{group-id}/events [post]
+func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the create group event - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData intCreateGroupEventRequestBody
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create event request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating create event data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to create
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	grEvent, err := h.app.Services.CreateEventWithCreator(clientID, requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
+	if err != nil {
+		log.Printf("Error on creating an event - %s\n", err)
+		http.Error(w, fmt.Sprintf("Error on creating an event - %s\n", err), http.StatusInternalServerError)
+		return
+	}
+
+	responseData, err := json.Marshal(grEvent)
+	if err != nil {
+		log.Printf("Error on marshaling an event - %s\n", err)
+		http.Error(w, fmt.Sprintf("Error on marshaling an event - %s\n", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write(responseData)
 }

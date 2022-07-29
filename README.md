@@ -37,7 +37,6 @@ GR_OIDC_EXTENDED_CLIENT_IDS | < string > | no | Client ID to validate with OIDC 
 GR_OIDC_ADMIN_CLIENT_ID | < url > | yes | Client ID to validate with OIDC for admin client
 GR_OIDC_ADMIN_WEB_CLIENT_ID | < url > | yes | Client ID to validate with OIDC for web client
 ROKWIRE_API_KEYS | < string (comma-separated) > | yes | List of API keys to be used for client verification
-GR_GS_API_KEYS | < string (comma-separated) > | yes | List of legacy internal API keys for invocation by other BBs 
 AUTHMAN_ADMIN_UIN_LIST | < string (comma-separated) > | yes | List of UINs for admin users used when loading data from AuthMan
 
 

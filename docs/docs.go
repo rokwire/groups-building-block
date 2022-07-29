@@ -1153,6 +1153,56 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/{group-id}/events": {
+            "post": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Creates a group event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "IntCreateGroupEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/groupEventRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/int/group/{identifier}": {
             "get": {
                 "security": [
@@ -2417,7 +2467,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.5.31",
+	Version:          "1.5.59",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"https"},

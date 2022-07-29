@@ -550,7 +550,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.31
+  version: 1.5.59
 paths:
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
@@ -1238,6 +1238,38 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+  /api/int/group/{group-id}/events:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group event
+      operationId: IntCreateGroupEvent
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/groupEventRequest'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /api/int/group/{identifier}:
     get:
       consumes:
