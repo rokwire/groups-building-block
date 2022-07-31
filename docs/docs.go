@@ -869,6 +869,15 @@ const docTemplate = `{
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/reportAbuseGroupPostRequestBody"
+                        }
                     }
                 ],
                 "responses": {
@@ -1098,6 +1107,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/title/{title}/members": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Retrieves group members by  title",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "IntGetGroupMembersByGroupTitle",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Title",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Offsetting result",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Limiting the result",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/Group"
+                        }
+                    }
+                }
+            }
+        },
         "/api/int/group/{identifier}": {
             "get": {
                 "security": [
@@ -1108,6 +1163,9 @@ const docTemplate = `{
                 "description": "Retrieves group details and members",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Internal"
                 ],
                 "operationId": "IntGetGroup",
                 "parameters": [
@@ -1139,6 +1197,9 @@ const docTemplate = `{
                 "description": "Gives the user groups memberships",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Internal"
                 ],
                 "operationId": "IntGetUserGroupMemberships",
                 "parameters": [
@@ -1444,6 +1505,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Internal"
+                ],
                 "operationId": "SynchronizeAuthman",
                 "parameters": [
                     {
@@ -1473,6 +1537,9 @@ const docTemplate = `{
                 "description": "Retrieve group stats",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Internal"
                 ],
                 "operationId": "IntGroupStats",
                 "responses": {
@@ -2177,6 +2244,20 @@ const docTemplate = `{
                 },
                 "reject_reason": {
                     "type": "string"
+                }
+            }
+        },
+        "reportAbuseGroupPostRequestBody": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                },
+                "send_to_dean": {
+                    "type": "boolean"
+                },
+                "send_to_group_admins": {
+                    "type": "boolean"
                 }
             }
         },

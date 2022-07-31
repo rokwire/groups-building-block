@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Set logger [#182](https://github.com/rokwire/groups-building-block/issues/182)
 
+## [1.5.58] - 2022-07-27
+### Added
+- Add internal API for retrieving group members by group title [#205](https://github.com/rokwire/groups-building-block/issues/205)
+
+## [1.5.57] - 2022-07-26
+### Changed
+- Improve report a group post as an abuse [#204](https://github.com/rokwire/groups-building-block/issues/204)
+
 ## [1.5.56] - 2022-07-22
 ### Added
 - Introduce admin Authman sync api (POST /admin/authman/synchronize) [#202](https://github.com/rokwire/groups-building-block/issues/202)

@@ -17,9 +17,11 @@ package rest
 import (
 	"encoding/json"
 	"groups/core"
+	"groups/core/model"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -33,6 +35,7 @@ type InternalApisHandler struct {
 // IntGetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
 // @ID IntGetUserGroupMemberships
+// @Tags Internal
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupMembership
@@ -92,6 +95,7 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 // IntGetGroup Retrieves group details and members
 // @Description Retrieves group details and members
 // @ID IntGetGroup
+// @Tags Internal
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} model.Group
@@ -125,6 +129,70 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 	w.Write(data)
 }
 
+// IntGetGroupMembersByGroupTitle Retrieves group members by  title
+// @Description Retrieves group members by  title
+// @ID IntGetGroupMembersByGroupTitle
+// @Tags Internal
+// @Accept json
+// @Param identifier path string true "Title"
+// @Param offset query string false "Offsetting result"
+// @Param limit query string false "Limiting the result"
+// @Success 200 {object} model.Group
+// @Security IntAPIKeyAuth
+// @Router /api/int/group/title/{title}/members [get]
+func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	title := params["title"]
+
+	var offset *int64
+	offsets, ok := r.URL.Query()["offset"]
+	if ok && len(offsets[0]) > 0 {
+		val, err := strconv.ParseInt(offsets[0], 0, 64)
+		if err == nil {
+			offset = &val
+		}
+	}
+
+	var limit *int64
+	limits, ok := r.URL.Query()["limit"]
+	if ok && len(limits[0]) > 0 {
+		val, err := strconv.ParseInt(limits[0], 0, 64)
+		if err == nil {
+			limit = &val
+		}
+	}
+
+	group, err := h.app.Services.GetGroupEntityByTitle(clientID, title)
+	if err != nil {
+		log.Printf("Unable to retrieve group with title '%s': %s", title, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	shortMembers := []model.ShortMemberRecord{}
+	if group != nil && len(group.Members) > 0 {
+		for i, member := range group.Members {
+			if offset == nil || (offset != nil && limit != nil && i >= int(*offset)) {
+				shortMembers = append(shortMembers, member.ToShortMemberRecord())
+			}
+			if limit != nil && len(shortMembers) >= int(*limit) {
+				break
+			}
+		}
+	}
+
+	data, err := json.Marshal(shortMembers)
+	if err != nil {
+		log.Printf("Error on marshal the short member list: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // synchronizeAuthmanRequestBody authman sync body struct
 type synchronizeAuthmanRequestBody struct {
 	GroupAutoCreateStemNames []string `json:"group_auto_create_stem_names"`
@@ -133,6 +201,7 @@ type synchronizeAuthmanRequestBody struct {
 //SynchronizeAuthman Synchronizes Authman groups memberhip
 // @Description Synchronizes Authman groups memberhip
 // @ID SynchronizeAuthman
+// @Tags Internal
 // @Param data body synchronizeAuthmanRequestBody true "body data"
 // @Accept json
 // @Success 200
@@ -184,6 +253,7 @@ type GroupStat struct {
 // GroupStats Retrieve group stats
 // @Description Retrieve group stats
 // @ID IntGroupStats
+// @Tags Internal
 // @Accept json
 // @Success 200 {object} GroupsStats
 // @Security IntAPIKeyAuth

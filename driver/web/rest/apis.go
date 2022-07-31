@@ -1869,7 +1869,9 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 
 // reportAbuseGroupPostRequestBody request body for report abuse API call
 type reportAbuseGroupPostRequestBody struct {
-	Comment string `json:"comment"`
+	Comment           string `json:"comment"`
+	SendToGroupAdmins bool   `json:"send_to_group_admins" bson:"send_to_group_admins"`
+	SendToDean        bool   `json:"send_to_dean" bson:"send_to_dean"`
 } // @name reportAbuseGroupPostRequestBody
 
 //ReportAbuseGroupPost Reports an abusive group post
@@ -1877,6 +1879,7 @@ type reportAbuseGroupPostRequestBody struct {
 // @ID ReportAbuseGroupPost
 // @Accept  json
 // @Param APP header string true "APP"
+// @Param data body reportAbuseGroupPostRequestBody true "body data"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/group/{groupId}/posts/{postId}/report/abuse [put]
@@ -1939,7 +1942,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	err = h.app.Services.ReportPostAsAbuse(clientID, current, group, post, body.Comment)
+	err = h.app.Services.ReportPostAsAbuse(clientID, current, group, post, body.Comment, body.SendToDean, body.SendToGroupAdmins)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -351,6 +351,14 @@ func (app *Application) getGroupEntityByMembership(clientID string, membershipID
 	return group, nil
 }
 
+func (app *Application) getGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
+	group, err := app.storage.FindGroupByTitle(clientID, title)
+	if err != nil {
+		return nil, err
+	}
+	return group, nil
+}
+
 func (app *Application) getGroupCategories() ([]string, error) {
 	groupCategories, err := app.storage.ReadAllGroupCategories()
 	if err != nil {
@@ -926,7 +934,11 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
-func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string) error {
+func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+
+	if !sendToDean && !sendToGroupAdmins {
+		sendToDean = true
+	}
 
 	var creatorExternalID string
 	creator, err := app.storage.FindUser(clientID, post.Creator.UserID, false)
@@ -942,24 +954,57 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		return fmt.Errorf("error while reporting an abuse post: %s", err)
 	}
 
-	subject := "Group Post Violation of Student Code"
-	if post.ParentID != nil {
-		subject = "Group Reply Violation of Student Code"
+	subject := ""
+	if sendToDean && !sendToGroupAdmins {
+		subject = "Report violation of Student Code to Dean of Students"
+	} else if !sendToDean && sendToGroupAdmins {
+		subject = "Report obscene, threatening, or harassing content to Group Administrators"
+	} else {
+		subject = "Report violation of Student Code to Dean of Students and obscene, threatening, or harassing content to Group Administrators"
 	}
-	body := fmt.Sprintf(`
-	<div>Violation by: %s %s\n</div>
-	<div>Group title: %s\n</div>
-	<div>Post Title: %s\n</div>
-	<div>Post Body: %s\n</div>
-	<div>Reported by: %s %s\n</div>
-	<div>Reported comment: %s\n</div>
+
+	subject = fmt.Sprintf("%s %s", subject, post.DateCreated.Format(time.RFC850))
+
+	if sendToDean {
+		body := fmt.Sprintf(`
+<div>Violation by: %s %s\n</div>
+<div>Group title: %s\n</div>
+<div>Post Title: %s\n</div>
+<div>Post Body: %s\n</div>
+<div>Reported by: %s %s\n</div>
+<div>Reported comment: %s\n</div>
 	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
-		current.ExternalID, current.Name, comment)
-	body = strings.ReplaceAll(body, `\n`, "\n")
-	err = app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
-	if err != nil {
-		log.Printf("error while reporting an abuse post: %s", err)
-		return fmt.Errorf("error while reporting an abuse post: %s", err)
+			current.ExternalID, current.Name, comment)
+		body = strings.ReplaceAll(body, `\n`, "\n")
+		err = app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+		if err != nil {
+			log.Printf("error while reporting an abuse post: %s", err)
+			return fmt.Errorf("error while reporting an abuse post: %s", err)
+		}
+	}
+	if sendToGroupAdmins {
+		toMembers := group.GetAllAdminsAsRecipients()
+
+		body := fmt.Sprintf(`
+Violation by: %s %s
+Group title: %s
+Post Title: %s
+Post Body: %s
+Reported by: %s %s
+Reported comment: %s
+	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
+			current.ExternalID, current.Name, comment)
+
+		app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
+			"type":         "group",
+			"operation":    "report_abuse_post",
+			"entity_type":  "group",
+			"entity_id":    group.ID,
+			"entity_name":  group.Title,
+			"post_id":      *post.ID,
+			"post_subject": post.Subject,
+			"post_body":    post.Body,
+		})
 	}
 
 	return nil

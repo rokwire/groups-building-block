@@ -447,6 +447,15 @@ definitions:
     required:
     - approve
     type: object
+  reportAbuseGroupPostRequestBody:
+    properties:
+      comment:
+        type: string
+      send_to_dean:
+        type: boolean
+      send_to_group_admins:
+        type: boolean
+    type: object
   rest.postResponse:
     properties:
       body:
@@ -1078,6 +1087,12 @@ paths:
         name: APP
         required: true
         type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/reportAbuseGroupPostRequestBody'
       responses:
         "200":
           description: ""
@@ -1242,6 +1257,37 @@ paths:
             $ref: '#/definitions/Group'
       security:
       - IntAPIKeyAuth: []
+      tags:
+      - Internal
+  /api/int/group/title/{title}/members:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves group members by  title
+      operationId: IntGetGroupMembersByGroupTitle
+      parameters:
+      - description: Title
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Offsetting result
+        in: query
+        name: offset
+        type: string
+      - description: Limiting the result
+        in: query
+        name: limit
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Group'
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /api/int/user/{identifier}/groups:
     get:
       consumes:
@@ -1261,6 +1307,8 @@ paths:
             $ref: '#/definitions/rest.userGroupMembership'
       security:
       - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /api/memberships/{membership-id}:
     delete:
       consumes:
@@ -1450,6 +1498,8 @@ paths:
           description: ""
       security:
       - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /int/stats:
     get:
       consumes:
@@ -1463,6 +1513,8 @@ paths:
             $ref: '#/definitions/GroupsStats'
       security:
       - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /version:
     get:
       description: Gives the service version.
