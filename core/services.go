@@ -796,7 +796,7 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 		recipients = group.GetMembersAsNotificationRecipients(&current.ID)
 	}
 	topic := "group.events"
-	err = app.notifications.SendNotification(
+	app.notifications.SendNotification(
 		recipients,
 		&topic,
 		fmt.Sprintf("Group - %s", group.Title),
@@ -809,9 +809,37 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 			"entity_name": group.Title,
 		},
 	)
+
+	return event, nil
+}
+
+func (app *Application) createEventWithCreator(clientID string, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+	event, err := app.storage.CreateEventWithCreator(clientID, eventID, group.ID, toMemberList, creator)
 	if err != nil {
-		log.Printf("error while sending notification for new event: %s", err) // dont fail
+		return nil, err
 	}
+
+	var recipients []notifications.Recipient
+	if len(event.ToMembersList) > 0 {
+		recipients = event.GetMembersAsNotificationRecipients(&creator.UserID)
+	} else {
+		recipients = group.GetMembersAsNotificationRecipients(&creator.UserID)
+	}
+	topic := "group.events"
+	app.notifications.SendNotification(
+		recipients,
+		&topic,
+		fmt.Sprintf("Group - %s", group.Title),
+		fmt.Sprintf("New event has been published in '%s' group", group.Title),
+		map[string]string{
+			"type":        "group",
+			"operation":   "event_created",
+			"entity_type": "group",
+			"entity_id":   group.ID,
+			"entity_name": group.Title,
+		},
+	)
+
 	return event, nil
 }
 
@@ -875,7 +903,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			}
 
 			topic := "group.posts"
-			err = app.notifications.SendNotification(
+			app.notifications.SendNotification(
 				recipients,
 				&topic,
 				title,
@@ -891,9 +919,6 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 					"post_body":    post.Body,
 				},
 			)
-			if err != nil {
-				log.Printf("error while sending notification for new post: %s", err) // dont fail
-			}
 		}
 	}
 	go handleNotification()
@@ -976,11 +1001,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 		body = strings.ReplaceAll(body, `\n`, "\n")
-		err = app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
-		if err != nil {
-			log.Printf("error while reporting an abuse post: %s", err)
-			return fmt.Errorf("error while reporting an abuse post: %s", err)
-		}
+		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
 		toMembers := group.GetAllAdminsAsRecipients()
@@ -1417,6 +1438,6 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 	return nil
 }
 
-func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) error {
-	return app.notifications.SendNotification(recipients, topic, title, text, data)
+func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
+	app.notifications.SendNotification(recipients, topic, title, text, data)
 }

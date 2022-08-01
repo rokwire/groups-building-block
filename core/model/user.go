@@ -31,6 +31,15 @@ type User struct {
 	OriginalToken string
 } // @name User
 
+// ToCreator coverts to Creator
+func (u *User) ToCreator() *Creator {
+	return &Creator{
+		UserID: u.ID,
+		Name:   u.Name,
+		Email:  u.Email,
+	}
+}
+
 // CoreAccount wraps the account structure from the Core BB
 // @name CoreAccount
 type CoreAccount struct {
