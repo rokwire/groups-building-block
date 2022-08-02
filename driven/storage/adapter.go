@@ -2022,10 +2022,10 @@ func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
 }
 
 // FindAuthmanGroupByKey Finds an Authman group by group long name
-func (sa *Adapter) FindAuthmanGroupByKey(clientID string, id string) (*model.Group, error) {
+func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "id", Value: id},
+		primitive.E{Key: "authman_group", Value: authmanGroupKey},
 	}
 
 	findOptions := options.Find()
@@ -2152,7 +2152,7 @@ func (sa *Adapter) InsertManagedGroupConfig(config model.ManagedGroupConfig) err
 
 //UpdateManagedGroupConfig updates an existing managed group config
 func (sa *Adapter) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
-	filter := bson.M{"_id": config, "client_id": config.ClientID}
+	filter := bson.M{"_id": config.ID, "client_id": config.ClientID}
 	update := bson.M{"$set": bson.M{
 		"authman_stems": config.AuthmanStems,
 		"admin_uins":    config.AdminUINs,

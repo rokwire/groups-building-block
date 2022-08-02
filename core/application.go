@@ -52,7 +52,9 @@ func (app *Application) Start() {
 	storageListener := storageListenerImpl{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
 
-	go app.setupSyncManagedGroupTimer()
+	if app.config != nil && app.config.SyncManagedGroupsPeriod != 0 {
+		go app.setupSyncManagedGroupTimer()
+	}
 }
 
 // FindUser finds an user for the provided external id
@@ -125,7 +127,10 @@ func (app *Application) syncManagedGroups() {
 			log.Printf("error finding managed group configs for clientID %s\n", clientID)
 		}
 		if len(configs) > 0 {
-			app.synchronizeAuthman(clientID, configs)
+			err = app.synchronizeAuthman(clientID, configs)
+			if err != nil {
+				log.Printf("error syncing authman groups %s\n", err.Error())
+			}
 		}
 	}
 

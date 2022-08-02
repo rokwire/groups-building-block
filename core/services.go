@@ -1186,35 +1186,33 @@ func (app *Application) synchronizeAuthman(clientID string, configs []model.Mana
 func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.Member {
 	if len(externalIDs) > 0 {
 		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
-		if len(users) > 0 {
-			members := []model.Member{}
-			userExternalIDmapping := map[string]model.User{}
-			for _, user := range users {
-				userExternalIDmapping[user.ExternalID] = user
-			}
-
-			for _, externalID := range externalIDs {
-				if value, ok := userExternalIDmapping[externalID]; ok {
-					members = append(members, model.Member{
-						ID:          uuid.NewString(),
-						UserID:      value.ID,
-						ExternalID:  externalID,
-						Name:        value.Name,
-						Email:       value.Email,
-						Status:      memberStatus,
-						DateCreated: time.Now(),
-					})
-				} else {
-					members = append(members, model.Member{
-						ID:          uuid.NewString(),
-						ExternalID:  externalID,
-						Status:      memberStatus,
-						DateCreated: time.Now(),
-					})
-				}
-			}
-			return members
+		members := []model.Member{}
+		userExternalIDmapping := map[string]model.User{}
+		for _, user := range users {
+			userExternalIDmapping[user.ExternalID] = user
 		}
+
+		for _, externalID := range externalIDs {
+			if value, ok := userExternalIDmapping[externalID]; ok {
+				members = append(members, model.Member{
+					ID:          uuid.NewString(),
+					UserID:      value.ID,
+					ExternalID:  externalID,
+					Name:        value.Name,
+					Email:       value.Email,
+					Status:      memberStatus,
+					DateCreated: time.Now(),
+				})
+			} else {
+				members = append(members, model.Member{
+					ID:          uuid.NewString(),
+					ExternalID:  externalID,
+					Status:      memberStatus,
+					DateCreated: time.Now(),
+				})
+			}
+		}
+		return members
 	}
 	return nil
 }
@@ -1450,6 +1448,8 @@ func (app *Application) getManagedGroupConfigs(clientID string) ([]model.Managed
 
 func (app *Application) createManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
 	config.ID = uuid.NewString()
+	config.DateCreated = time.Now()
+	config.DateUpdated = nil
 	err := app.storage.InsertManagedGroupConfig(config)
 	return &config, err
 }

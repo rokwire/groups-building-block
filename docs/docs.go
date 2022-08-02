@@ -344,46 +344,6 @@ const docTemplate = `{
                     }
                 }
             },
-            "post": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Creates a new managed group config",
-                "consumes": [
-                    "text/plain"
-                ],
-                "operationId": "AdminCreateManagedGroupConfig",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/ManagedGroupConfig"
-                        }
-                    },
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/ManagedGroupConfig"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/admin/managed-group-configs/{id}": {
             "put": {
                 "security": [
                     {
@@ -393,6 +353,9 @@ const docTemplate = `{
                 "description": "Updates an existing managed group config",
                 "consumes": [
                     "text/plain"
+                ],
+                "tags": [
+                    "Admin"
                 ],
                 "operationId": "AdminUpdateManagedGroupConfig",
                 "parameters": [
@@ -426,6 +389,49 @@ const docTemplate = `{
                     }
                 }
             },
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a new managed group config",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminCreateManagedGroupConfig",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ManagedGroupConfig"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ManagedGroupConfig"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/managed-group-configs/{id}": {
             "delete": {
                 "security": [
                     {

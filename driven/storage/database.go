@@ -121,6 +121,10 @@ func (m *database) start() error {
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
 
+	go m.managedGroupConfigs.Watch(nil)
+
+	m.listeners = []Listener{}
+
 	return nil
 }
 

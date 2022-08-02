@@ -373,7 +373,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 	w.Write([]byte("Successfully deleted"))
 }
 
-// DeleteGroupPost Updates a post within the desired group.
+// DeleteGroupPost Deletes a post within the desired group.
 // @Description Deletes a post within the desired group.
 // @ID AdminDeleteGroupPost
 // @Tags Admin
@@ -442,6 +442,7 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // CreateManagedGroupConfig creates a new managed group config
 // @Description Creates a new managed group config
 // @ID AdminCreateManagedGroupConfig
+// @Tags Admin
 // @Accept plain
 // @Param data body  model.ManagedGroupConfig true "body data"
 // @Param APP header string true "APP"
@@ -487,22 +488,15 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // UpdateManagedGroupConfig updates an existing managed group config
 // @Description Updates an existing managed group config
 // @ID AdminUpdateManagedGroupConfig
+// @Tags Admin
 // @Accept plain
 // @Param data body  model.ManagedGroupConfig true "body data"
 // @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /api/admin/managed-group-configs/{id} [put]
+// @Router /api/admin/managed-group-configs [put]
 func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	id := params["id"]
-	if len(id) <= 0 {
-		log.Println("id param is required")
-		http.Error(w, "id param is required", http.StatusBadRequest)
-		return
-	}
-
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
@@ -528,7 +522,7 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully deleted"))
+	w.Write([]byte("Successfully updated"))
 }
 
 // DeleteManagedGroupConfig Deletes a managed group config
@@ -551,7 +545,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	err := h.app.Services.DeleteManagedGroupConfig(clientID, id)
+	err := h.app.Services.DeleteManagedGroupConfig(id, clientID)
 	if err != nil {
 		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
