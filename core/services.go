@@ -1113,6 +1113,8 @@ func (app *Application) synchronizeAuthman(clientID string, configs []model.Mana
 					} else {
 						title, adminUINs := stemGroup.GetGroupPrettyTitleAndAdmins()
 
+						adminUINs = append(adminUINs, config.AdminUINs...)
+
 						missedUINs := []string{}
 						groupUpdated := false
 						for _, uin := range adminUINs {
