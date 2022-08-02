@@ -101,6 +101,27 @@ definitions:
           $ref: '#/definitions/GroupStat'
         type: array
     type: object
+  ManagedGroupConfig:
+    properties:
+      admin_uins:
+        items:
+          type: string
+        type: array
+      authman_stems:
+        items:
+          type: string
+        type: array
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      id:
+        type: string
+      type:
+        type: string
+    type: object
   Member:
     properties:
       date_attended:
@@ -629,6 +650,34 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/group/{group-id}/members:
+    post:
+      consumes:
+      - text/plain
+      description: Updates an existing managed group config
+      operationId: AdminUpdateManagedGroupConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/ManagedGroupConfig'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -654,7 +703,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Updates a post within the desired group.
+      description: Deletes a post within the desired group.
       operationId: AdminDeleteGroupPost
       parameters:
       - description: APP
@@ -703,7 +752,86 @@ paths:
       consumes:
       - application/json
       description: Gives the groups list. It can be filtered by category
-      operationId: GetAllGroups
+      operationId: AdminGetAllGroups
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title - case insensitive
+        in: query
+        name: title
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getGroupsResponse'
+            type: array
+      security:
+      - APIKeyAuth: []
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/managed-group-configs:
+    get:
+      consumes:
+      - application/json
+      description: Gets managed group configs
+      operationId: AdminGetManagedGroupConfigs
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ManagedGroupConfig'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/managed-group-configs/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a managed group config
+      operationId: AdminDeleteManagedGroupConfig
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/user/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category
+      operationId: AdminGetUserGroups
       parameters:
       - description: APP
         in: header

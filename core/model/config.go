@@ -14,8 +14,21 @@
 
 package model
 
+import "time"
+
 // Config wrapper for in memory storage of configuration
 type Config struct {
 	AuthmanAdminUINList       []string
 	ReportAbuseRecipientEmail string
 }
+
+// ManagedGroupConfig defines a configs for a set of managed groups
+type ManagedGroupConfig struct {
+	ID           string     `json:"id" bson:"_id"`
+	ClientID     string     `json:"client_id" bson:"client_id"`
+	AuthmanStems []string   `json:"authman_stems" bson:"authman_stems"`
+	AdminUINs    []string   `json:"admin_uins" bson:"admin_uins"`
+	Type         string     `json:"type" bson:"type"`
+	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
+} //@name ManagedGroupConfig

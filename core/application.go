@@ -44,7 +44,7 @@ type Application struct {
 func (app *Application) Start() {
 	// set storage listener
 	storageListener := storageListenerImpl{app: app}
-	app.storage.SetStorageListener(&storageListener)
+	app.storage.RegisterStorageListener(&storageListener)
 }
 
 // FindUser finds an user for the provided external id
