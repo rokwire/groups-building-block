@@ -1491,7 +1491,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
-// @Router /api/group/{group-id}/events [post]
+// @Router /api/group/{group-id}/events [put]
 func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

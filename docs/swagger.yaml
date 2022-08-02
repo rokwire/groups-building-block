@@ -589,6 +589,26 @@ info:
   title: Rokwire Groups Building Block API
   version: 1.5.59
 paths:
+  /admin/authman/synchronize:
+    post:
+      consumes:
+      - application/json
+      description: Synchronizes Authman groups memberhip
+      operationId: AdminSynchronizeAuthman
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/synchronizeAuthmanRequestBody'
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
       consumes:
@@ -650,34 +670,6 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
-  /api/admin/group/{group-id}/members:
-    post:
-      consumes:
-      - text/plain
-      description: Updates an existing managed group config
-      operationId: AdminUpdateManagedGroupConfig
-      parameters:
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/ManagedGroupConfig'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      - description: ID
-        in: path
-        name: id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: ""
-      security:
-      - AppUserAuth: []
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -802,6 +794,30 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+    post:
+      consumes:
+      - text/plain
+      description: Creates a new managed group config
+      operationId: AdminCreateManagedGroupConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/ManagedGroupConfig'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ManagedGroupConfig'
+      security:
+      - AppUserAuth: []
   /api/admin/managed-group-configs/{id}:
     delete:
       consumes:
@@ -826,6 +842,33 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+    put:
+      consumes:
+      - text/plain
+      description: Updates an existing managed group config
+      operationId: AdminUpdateManagedGroupConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/ManagedGroupConfig'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
   /api/admin/user/groups:
     get:
       consumes:
@@ -973,6 +1016,37 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
     post:
+      consumes:
+      - application/json
+      description: Creates a group event
+      operationId: CreateGroupEvent
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/groupEventRequest'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+    put:
       consumes:
       - application/json
       description: Updates a group event

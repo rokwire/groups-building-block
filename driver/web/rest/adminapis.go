@@ -447,7 +447,7 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // @Param APP header string true "APP"
 // @Success 200 {object} model.ManagedGroupConfig
 // @Security AppUserAuth
-// @Router /api/admin/group/{group-id}/members [post]
+// @Router /api/admin/managed-group-configs [post]
 func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -493,7 +493,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /api/admin/group/{group-id}/members [post]
+// @Router /api/admin/managed-group-configs/{id} [put]
 func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
@@ -571,7 +571,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 // @Accept json
 // @Success 200
 // @Security AppUserAuth
-// @Router /int/authman/synchronize [post]
+// @Router /admin/authman/synchronize [post]
 func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	data, err := ioutil.ReadAll(r.Body)
