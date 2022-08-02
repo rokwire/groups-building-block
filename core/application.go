@@ -133,7 +133,7 @@ func (app *Application) syncManagedGroups() {
 	if app.config.SyncManagedGroupsPeriod != 0 {
 		durationMins = app.config.SyncManagedGroupsPeriod
 	}
-	duration := time.Hour * time.Duration(durationMins)
+	duration := time.Minute * time.Duration(durationMins)
 	app.syncManagedGroupsTimer = time.NewTimer(duration)
 	select {
 	case <-app.syncManagedGroupsTimer.C:
