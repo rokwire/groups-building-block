@@ -1037,24 +1037,24 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthman(clientID string, stemNames []string) error {
+func (app *Application) synchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error {
 
 	if app.authmanSyncInProgress {
-		log.Printf("Another Authman sync process is running")
+		log.Println("Another Authman sync process is running")
 		return fmt.Errorf("another Authman sync process is running")
 	}
 
-	log.Printf("Global Authman synchronization started")
+	log.Printf("Global Authman synchronization started for clientID: %s\n", clientID)
 
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
 		app.authmanSyncInProgress = false
-		log.Printf("Global Authman synchronization finished")
+		log.Printf("Global Authman synchronization finished for clientID: %s\n", clientID)
 	}
 	defer finishAuthmanSync()
 
-	if len(stemNames) > 0 {
-		for _, stemName := range stemNames {
+	for _, config := range configs {
+		for _, stemName := range config.AuthmanStems {
 			stemGroups, err := app.authman.RetrieveAuthmanStemGroups(stemName)
 			if err != nil {
 				return fmt.Errorf("error on requesting Authman for stem groups: %s", err)
@@ -1071,15 +1071,14 @@ func (app *Application) synchronizeAuthman(clientID string, stemNames []string) 
 						title, adminUINs := stemGroup.GetGroupPrettyTitleAndAdmins()
 
 						defaultAdminsMapping := map[string]bool{}
-						if len(adminUINs) > 0 {
-							for _, adminUIN := range adminUINs {
-								defaultAdminsMapping[adminUIN] = true
-							}
+						for _, adminUIN := range adminUINs {
+							defaultAdminsMapping[adminUIN] = true
 						}
-						if len(app.config.AuthmanAdminUINList) > 0 {
-							for _, externalID := range app.config.AuthmanAdminUINList {
-								defaultAdminsMapping[externalID] = true
-							}
+						for _, externalID := range app.config.AuthmanAdminUINList {
+							defaultAdminsMapping[externalID] = true
+						}
+						for _, externalID := range config.AdminUINs {
+							defaultAdminsMapping[externalID] = true
 						}
 
 						var constructedAdminUINs []string

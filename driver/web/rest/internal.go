@@ -17,7 +17,6 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
@@ -25,6 +24,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/gorilla/mux"
 )
@@ -226,7 +227,7 @@ func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.Respons
 		return
 	}
 
-	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
+	err = h.app.Services.SynchronizeAuthman(clientID, []model.ManagedGroupConfig{{AuthmanStems: requestData.GroupAutoCreateStemNames}})
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

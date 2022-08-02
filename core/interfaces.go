@@ -68,7 +68,7 @@ type Services interface {
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	SynchronizeAuthman(clientID string, stemNames []string) error
+	SynchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error
 	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
 
 	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
@@ -222,8 +222,8 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) SynchronizeAuthman(clientID string, stemNames []string) error {
-	return s.app.synchronizeAuthman(clientID, stemNames)
+func (s *servicesImpl) SynchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error {
+	return s.app.synchronizeAuthman(clientID, configs)
 }
 
 func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {

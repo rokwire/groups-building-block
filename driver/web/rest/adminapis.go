@@ -589,7 +589,7 @@ func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.Us
 		return
 	}
 
-	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
+	err = h.app.Services.SynchronizeAuthman(clientID, []model.ManagedGroupConfig{{AuthmanStems: requestData.GroupAutoCreateStemNames}})
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
