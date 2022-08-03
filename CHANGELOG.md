@@ -6,6 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.60] - 2022-08-03
+### Added
+- Add ability to paginate group and membership data as a separate V2 set of APIs. [#212](https://github.com/rokwire/groups-building-block/issues/212)
+  - Introduced APIs:
+    - GET /api/admin/group/{group-id}/stats
+    - GET /api/group/{id}/stats
+    - GET /api/group/{group-id}/members
+
+
 ## [1.5.59] - 2022-07-29
 ### Added
 - Create internal API for creating a group event by another BB [#210](https://github.com/rokwire/groups-building-block/issues/210)
