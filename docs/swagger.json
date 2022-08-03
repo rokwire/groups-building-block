@@ -19,7 +19,7 @@
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Synchronizes Authman groups memberhip",
+                "description": "Synchronizes Authman groups membership",
                 "consumes": [
                     "application/json"
                 ],
@@ -27,17 +27,6 @@
                     "Admin"
                 ],
                 "operationId": "AdminSynchronizeAuthman",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -1841,7 +1830,7 @@
                         "IntAPIKeyAuth": []
                     }
                 ],
-                "description": "Synchronizes Authman groups memberhip",
+                "description": "Synchronizes Authman groups membership",
                 "consumes": [
                     "application/json"
                 ],
@@ -1849,17 +1838,6 @@
                     "Internal"
                 ],
                 "operationId": "SynchronizeAuthman",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -2692,17 +2670,6 @@
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "synchronizeAuthmanRequestBody": {
-            "type": "object",
-            "properties": {
-                "group_auto_create_stem_names": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

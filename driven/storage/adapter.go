@@ -100,6 +100,9 @@ type Adapter struct {
 //Start starts the storage
 func (sa *Adapter) Start() error {
 	err := sa.db.start()
+	if err != nil {
+		return err
+	}
 
 	//register storage listener
 	sl := storageListener{adapter: sa}

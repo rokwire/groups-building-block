@@ -23,7 +23,7 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Synchronizes Authman groups memberhip",
+                "description": "Synchronizes Authman groups membership",
                 "consumes": [
                     "application/json"
                 ],
@@ -31,17 +31,6 @@ const docTemplate = `{
                     "Admin"
                 ],
                 "operationId": "AdminSynchronizeAuthman",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -1845,7 +1834,7 @@ const docTemplate = `{
                         "IntAPIKeyAuth": []
                     }
                 ],
-                "description": "Synchronizes Authman groups memberhip",
+                "description": "Synchronizes Authman groups membership",
                 "consumes": [
                     "application/json"
                 ],
@@ -1853,17 +1842,6 @@ const docTemplate = `{
                     "Internal"
                 ],
                 "operationId": "SynchronizeAuthman",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -2696,17 +2674,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "synchronizeAuthmanRequestBody": {
-            "type": "object",
-            "properties": {
-                "group_auto_create_stem_names": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },

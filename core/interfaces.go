@@ -15,6 +15,7 @@
 package core
 
 import (
+	"fmt"
 	"groups/core/model"
 	"groups/driven/notifications"
 	"groups/driven/storage"
@@ -68,7 +69,7 @@ type Services interface {
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	SynchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error
+	SynchronizeAuthman(clientID string) error
 	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
 
 	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
@@ -222,7 +223,11 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) SynchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error {
+func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
+	configs, err := s.app.storage.FindManagedGroupConfigs(clientID)
+	if err != nil {
+		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+	}
 	return s.app.synchronizeAuthman(clientID, configs)
 }
 

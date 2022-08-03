@@ -557,39 +557,23 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 	w.Write([]byte("Successfully deleted"))
 }
 
-//SynchronizeAuthman Synchronizes Authman groups memberhip
-// @Description Synchronizes Authman groups memberhip
+//SynchronizeAuthman Synchronizes Authman groups membership
+// @Description Synchronizes Authman groups membership
 // @Tags Admin
 // @ID AdminSynchronizeAuthman
-// @Param data body synchronizeAuthmanRequestBody true "body data"
 // @Accept json
 // @Success 200
 // @Security AppUserAuth
 // @Router /admin/authman/synchronize [post]
 func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error during Authman synchronization: %s", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var requestData synchronizeAuthmanRequestBody
-	err = json.Unmarshal(data, &requestData)
-	if err != nil {
-		log.Printf("Error during Authman synchronization: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = h.app.Services.SynchronizeAuthman(clientID, []model.ManagedGroupConfig{{AuthmanStems: requestData.GroupAutoCreateStemNames}})
+	err := h.app.Services.SynchronizeAuthman(clientID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Successfully started sync"))
 }
