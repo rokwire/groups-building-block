@@ -196,6 +196,45 @@ func (h *AdminApisHandler) LoginUser(clientID string, current *model.User, w htt
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetGroupStats Retrieves stats for a group by id
+// @Description Retrieves stats for a group by id
+// @ID AdminGetGroupStats
+// @Tags Admin
+// @Accept json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.GroupStats
+// @Security AppUserAuth
+// @Router /api/admin/group/{group-id}/stats [get]
+func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	stats, err := h.app.Services.GetGroupStats(clientID, groupID)
+	if err != nil {
+		log.Printf("error getting group stats - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(stats)
+	if err != nil {
+		log.Println("Error on marshal the group stats")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 //GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
@@ -206,7 +245,7 @@ func (h *AdminApisHandler) LoginUser(clientID string, current *model.User, w htt
 // @Router /api/admin/group/{groupID}/posts [get]
 func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["groupID"]
+	id := params["group-id"]
 	if len(id) <= 0 {
 		log.Println("groupID is required")
 		http.Error(w, "groupID is required", http.StatusBadRequest)
@@ -385,7 +424,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 // @Router /api/admin/group/{groupId}/posts/{postId} [delete]
 func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	groupID := params["groupID"]
+	groupID := params["group-id"]
 	if len(groupID) <= 0 {
 		log.Println("groupID is required")
 		http.Error(w, "id is required", http.StatusBadRequest)

@@ -286,6 +286,44 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	w.Write([]byte("Successfully updated"))
 }
 
+// GetGroupStats Retrieves stats for a group by id
+// @Description Retrieves stats for a group by id
+// @ID GetGroupStats
+// @Accept json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.GroupStats
+// @Security AppUserAuth
+// @Router /api/admin/group/{group-id}/stats [get]
+func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["id"]
+	if len(groupID) <= 0 {
+		log.Println("id is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	stats, err := h.app.Services.GetGroupStats(clientID, groupID)
+	if err != nil {
+		log.Printf("error getting group stats - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(stats)
+	if err != nil {
+		log.Println("Error on marshal the group stats")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 //DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID DeleteGroup
@@ -486,7 +524,86 @@ type getUserGroupsResponse struct {
 // @Security APIKeyAuth
 // @Router /api/user/groups [get]
 func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	groups, err := h.app.Services.GetUserGroups(clientID, current)
+
+	var offset *int64
+	offsets, ok := r.URL.Query()["offset"]
+	if ok && len(offsets[0]) > 0 {
+		val, err := strconv.ParseInt(offsets[0], 0, 64)
+		if err == nil {
+			offset = &val
+		}
+	}
+
+	var limit *int64
+	limits, ok := r.URL.Query()["limit"]
+	if ok && len(limits[0]) > 0 {
+		val, err := strconv.ParseInt(limits[0], 0, 64)
+		if err == nil {
+			limit = &val
+		}
+	}
+
+	var order *string
+	orders, ok := r.URL.Query()["order"]
+	if ok && len(orders[0]) > 0 {
+		order = &orders[0]
+	}
+
+	groups, err := h.app.Services.GetUserGroups(clientID, current, offset, limit, order)
+	if err != nil {
+		log.Printf("error getting user groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(groups)
+	if err != nil {
+		log.Println("Error on marshal the user groups items")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetV2UserGroups Gets V2 user groups with slightly changed schema. In difference the group will contain currentMember and will not contain all members.
+// @Description Gets V2 user groups with slightly changed schema. In difference the group will contain currentMember and will not contain all members.
+// @ID GetUserGroups
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200 {array} getUserGroupsResponse
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/user/groups [get]
+func (h *ApisHandler) GetV2UserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+
+	var offset *int64
+	offsets, ok := r.URL.Query()["offset"]
+	if ok && len(offsets[0]) > 0 {
+		val, err := strconv.ParseInt(offsets[0], 0, 64)
+		if err == nil {
+			offset = &val
+		}
+	}
+
+	var limit *int64
+	limits, ok := r.URL.Query()["limit"]
+	if ok && len(limits[0]) > 0 {
+		val, err := strconv.ParseInt(limits[0], 0, 64)
+		if err == nil {
+			limit = &val
+		}
+	}
+
+	var order *string
+	orders, ok := r.URL.Query()["order"]
+	if ok && len(orders[0]) > 0 {
+		order = &orders[0]
+	}
+
+	groups, err := h.app.Services.GetUserGroups(clientID, current, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -836,6 +953,64 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
+}
+
+// GetGroupMembers Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
+// @Description Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
+// @ID CreateMember
+// @Accept plain
+// @Param data body model.GroupMembersFilter true "body data"
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.Member
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/members [get]
+func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	requestData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal model.GroupMembersFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var request model.GroupMembersFilter
+	err = json.Unmarshal(requestData, &request)
+	if err != nil {
+		log.Printf("Error on unmarshal model.GroupMembersFilter request body - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	members, err := h.app.Services.GetGroupMembers(clientID, current, groupID, &request)
+	if err != nil {
+		log.Printf("api.GetGroupMembers error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if members == nil {
+		members = []model.Member{}
+	}
+
+	data, err := json.Marshal(members)
+	if err != nil {
+		log.Printf("api.GetGroupMembers error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 // createMemberRequest

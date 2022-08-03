@@ -111,6 +111,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/group/{group-id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves stats for a group by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "operationId": "GetGroupStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupStats"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/group/{groupID}/posts": {
             "get": {
                 "security": [
@@ -545,6 +586,54 @@ const docTemplate = `{
             }
         },
         "/api/group/{group-id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.",
+                "consumes": [
+                    "text/plain"
+                ],
+                "operationId": "CreateMember",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupMembersFilter"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Member"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -1470,7 +1559,7 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Gives the user groups.",
+                "description": "Gets V2 user groups with slightly changed schema. In difference the group will contain currentMember and will not contain all members.",
                 "consumes": [
                     "application/json"
                 ],
@@ -1738,6 +1827,46 @@ const docTemplate = `{
                 }
             }
         },
+        "GroupMembersFilter": {
+            "type": "object",
+            "properties": {
+                "external_id": {
+                    "description": "core user external id",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "membership id",
+                    "type": "string"
+                },
+                "limit": {
+                    "description": "result limit",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "member's name",
+                    "type": "string"
+                },
+                "net_id": {
+                    "description": "core user net id",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "result offset",
+                    "type": "integer"
+                },
+                "statuses": {
+                    "description": "lest of membership statuses",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
+                    "description": "core user id",
+                    "type": "string"
+                }
+            }
+        },
         "GroupStat": {
             "type": "object",
             "properties": {
@@ -1755,6 +1884,26 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                }
+            }
+        },
+        "GroupStats": {
+            "type": "object",
+            "properties": {
+                "admins_count": {
+                    "type": "integer"
+                },
+                "member_count": {
+                    "type": "integer"
+                },
+                "pending_count": {
+                    "type": "integer"
+                },
+                "rejected_count": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },

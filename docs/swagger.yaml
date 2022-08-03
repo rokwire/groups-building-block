@@ -79,6 +79,35 @@ definitions:
       web_url:
         type: string
     type: object
+  GroupMembersFilter:
+    properties:
+      external_id:
+        description: core user external id
+        type: string
+      id:
+        description: membership id
+        type: string
+      limit:
+        description: result limit
+        type: integer
+      name:
+        description: member's name
+        type: string
+      net_id:
+        description: core user net id
+        type: string
+      offset:
+        description: result offset
+        type: integer
+      statuses:
+        description: lest of membership statuses
+        items:
+          type: string
+        type: array
+      user_id:
+        description: core user id
+        type: string
+    type: object
   GroupStat:
     properties:
       authman_enabled:
@@ -91,6 +120,19 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  GroupStats:
+    properties:
+      admins_count:
+        type: integer
+      member_count:
+        type: integer
+      pending_count:
+        type: integer
+      rejected_count:
+        type: integer
+      total_count:
+        type: integer
     type: object
   GroupsStats:
     properties:
@@ -629,6 +671,32 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/group/{group-id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves stats for a group by id
+      operationId: GetGroupStats
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupStats'
+            type: array
+      security:
+      - AppUserAuth: []
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -923,6 +991,38 @@ paths:
           description: Successfuly deleted
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+    get:
+      consumes:
+      - text/plain
+      description: Gets the list of group members. The result would be empty if the
+        current user doesn't belong to the requested group.
+      operationId: CreateMember
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupMembersFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Member'
+            type: array
       security:
       - AppUserAuth: []
     post:
@@ -1482,7 +1582,8 @@ paths:
     get:
       consumes:
       - application/json
-      description: Gives the user groups.
+      description: Gets V2 user groups with slightly changed schema. In difference
+        the group will contain currentMember and will not contain all members.
       operationId: GetUserGroups
       parameters:
       - description: APP

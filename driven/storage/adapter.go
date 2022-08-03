@@ -832,12 +832,25 @@ func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, 
 }
 
 //FindUserGroups finds the user groups for client id
-func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group, error) {
+func (sa *Adapter) FindUserGroups(clientID string, userID string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID},
 		primitive.E{Key: "client_id", Value: clientID}}
 
+	findOptions := options.Find()
+	if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{{"date_created", -1}})
+	} else {
+		findOptions.SetSort(bson.D{{"date_created", 1}})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+	}
+
 	var list []group
-	err := sa.db.groups.Find(filter, &list, nil)
+	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
