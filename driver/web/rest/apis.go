@@ -37,6 +37,7 @@ type ApisHandler struct {
 //Version gives the service version
 // @Description Gives the service version.
 // @ID Version
+// @Tags Client-V1
 // @Produce plain
 // @Success 200 {string} v1.4.9
 // @Router /version [get]
@@ -47,6 +48,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 //GetGroupCategories gives all group categories
 // @Description Gives all group categories.
 // @ID GetGroupCategories
+// @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200 {array} string
@@ -106,6 +108,7 @@ type userGroupMembership struct {
 //CreateGroup creates a group
 // @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
 // @ID CreateGroup
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -199,6 +202,7 @@ type updateGroupRequest struct {
 //UpdateGroup updates a group
 // @Description Updates a group.
 // @ID UpdateGroup
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -289,6 +293,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 // GetGroupStats Retrieves stats for a group by id
 // @Description Retrieves stats for a group by id
 // @ID GetGroupStats
+// @Tags Client-V1
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -327,6 +332,7 @@ func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http
 //DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID DeleteGroup
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -412,6 +418,7 @@ type getGroupsResponse struct {
 //GetGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetGroups
+// @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
@@ -517,6 +524,7 @@ type getUserGroupsResponse struct {
 // GetUserGroups gets the user groups.
 // @Description Gives the user groups.
 // @ID GetUserGroups
+// @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200 {array} getUserGroupsResponse
@@ -525,59 +533,23 @@ type getUserGroupsResponse struct {
 // @Router /api/user/groups [get]
 func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
-	var offset *int64
-	offsets, ok := r.URL.Query()["offset"]
-	if ok && len(offsets[0]) > 0 {
-		val, err := strconv.ParseInt(offsets[0], 0, 64)
-		if err == nil {
-			offset = &val
-		}
+	var category *string
+	catogies, ok := r.URL.Query()["category"]
+	if ok && len(catogies[0]) > 0 {
+		category = &catogies[0]
 	}
 
-	var limit *int64
-	limits, ok := r.URL.Query()["limit"]
-	if ok && len(limits[0]) > 0 {
-		val, err := strconv.ParseInt(limits[0], 0, 64)
-		if err == nil {
-			limit = &val
-		}
+	var privacy *string
+	privacyParam, ok := r.URL.Query()["privacy"]
+	if ok && len(privacyParam[0]) > 0 {
+		privacy = &privacyParam[0]
 	}
 
-	var order *string
-	orders, ok := r.URL.Query()["order"]
-	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+	var title *string
+	titles, ok := r.URL.Query()["title"]
+	if ok && len(titles[0]) > 0 {
+		title = &titles[0]
 	}
-
-	groups, err := h.app.Services.GetUserGroups(clientID, current, offset, limit, order)
-	if err != nil {
-		log.Printf("error getting user groups - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	data, err := json.Marshal(groups)
-	if err != nil {
-		log.Println("Error on marshal the user groups items")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-}
-
-// GetV2UserGroups Gets V2 user groups with slightly changed schema. In difference the group will contain currentMember and will not contain all members.
-// @Description Gets V2 user groups with slightly changed schema. In difference the group will contain currentMember and will not contain all members.
-// @ID GetUserGroups
-// @Accept  json
-// @Param APP header string true "APP"
-// @Success 200 {array} getUserGroupsResponse
-// @Security AppUserAuth
-// @Security APIKeyAuth
-// @Router /api/user/groups [get]
-func (h *ApisHandler) GetV2UserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
@@ -603,7 +575,7 @@ func (h *ApisHandler) GetV2UserGroups(clientID string, current *model.User, w ht
 		order = &orders[0]
 	}
 
-	groups, err := h.app.Services.GetUserGroups(clientID, current, offset, limit, order)
+	groups, err := h.app.Services.GetUserGroups(clientID, current, category, privacy, title, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -625,6 +597,7 @@ func (h *ApisHandler) GetV2UserGroups(clientID string, current *model.User, w ht
 // LoginUser Logs in the user and refactor the user record and linked data if need
 // @Description Logs in the user and refactor the user record and linked data if need
 // @ID LoginUser
+// @Tags Client-V1
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -646,6 +619,7 @@ type getUserStatsResponse struct {
 // GetUserStats Gets user stat information. Responds with {"posts_count": xxx}
 // @Description Gets user stat information. Responds with {"posts_count": xxx}
 // @ID GetUserStats
+// @Tags Client-V1
 // @Param APP header string true "APP"
 // @Success 200 {object} getUserStatsResponse
 // @Security AppUserAuth
@@ -680,6 +654,7 @@ func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.
 // DeleteUser Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
 // @Description Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
 // @ID DeleteUser
+// @Tags Client-V1
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -697,6 +672,7 @@ func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.Re
 // GetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
 // @ID GetUserGroupMemberships
+// @Tags Client-V1
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupMembership
@@ -779,6 +755,7 @@ type getGroupResponse struct {
 //GetGroup gets a group
 // @Description Gives a group
 // @ID GetGroup
+// @Tags Client-V1
 // @Accept json
 // @Param APP header string true "APP"
 // @Param id path string true "ID"
@@ -842,6 +819,7 @@ type createPendingMemberRequest struct {
 //CreatePendingMember creates a group pending member
 // @Description Creates a group pending member
 // @ID CreatePendingMember
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -928,6 +906,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 //DeletePendingMember deletes a group pending member
 // @Description Deletes a group pending member
 // @ID DeletePendingMember
+// @Tags Client-V1
 // @Accept plain
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -958,6 +937,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // GetGroupMembers Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
 // @Description Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
 // @ID CreateMember
+// @Tags Client-V1
 // @Accept plain
 // @Param data body model.GroupMembersFilter true "body data"
 // @Param APP header string true "APP"
@@ -1031,6 +1011,7 @@ type createMemberRequest struct {
 // CreateMember Adds a member to a group. The current user is required to be an admin of the group
 // @Description Adds a member to a group. The current user is required to be an admin of the group
 // @ID CreateMember
+// @Tags Client-V1
 // @Accept plain
 // @Param data body createMemberRequest true "body data"
 // @Param APP header string true "APP"
@@ -1123,6 +1104,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 //DeleteMember deletes a member membership from a group
 // @Description Deletes a member membership from a group
 // @ID DeleteMember
+// @Tags Client-V1
 // @Accept plain
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1158,6 +1140,7 @@ type membershipApprovalRequest struct {
 //MembershipApproval approve/deny a membership
 // @Description Аpprove/Deny a membership
 // @ID MembershipApproval
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1238,6 +1221,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 //DeleteMembership deletes membership
 // @Description Deletes a membership
 // @ID DeleteMembership
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1296,6 +1280,7 @@ type updateMembershipRequest struct {
 //UpdateMembership updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
 // @Description Updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
 // @ID UpdateMembership
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1376,6 +1361,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 // SynchAuthmanGroup Synchronizes Authman group. Only admin of the group could initiate the operation
 // @Description Synchronizes Authman group. Only admin of the group could initiate the operation
 // @ID SynchAuthmanGroup
+// @Tags Client-V1
 // @Accept plain
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1426,6 +1412,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 //GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID GetGroupEvents
+// @Tags Client-V1
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1500,6 +1487,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 //GetGroupEventsV2 gives the group events V2
 // @Description Gives the group events.
 // @ID GetGroupEventsV2
+// @Tags Client-V1
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1581,6 +1569,7 @@ type groupEventRequest struct {
 //CreateGroupEvent creates a group event
 // @Description Creates a group event
 // @ID CreateGroupEvent
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1658,6 +1647,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 // UpdateGroupEvent updates a group event
 // @Description Updates a group event
 // @ID UpdateGroupEvent
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1734,6 +1724,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 //DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
 // @ID DeleteGroupEvent
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1794,6 +1785,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 // GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID GetGroupPosts
+// @Tags Client-V1
 // @Param APP header string true "APP"
 // @Success 200 {array} postResponse
 // @Security AppUserAuth
@@ -1881,6 +1873,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 //CreateGroupPost creates a post within the desired group.
 // @Description creates a post within the desired group.
 // @ID CreateGroupPost
+// @Tags Client-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1959,6 +1952,7 @@ type postResponse struct {
 //UpdateGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID UpdateGroupPost
+// @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200 {object} postResponse
@@ -2052,6 +2046,7 @@ type reportAbuseGroupPostRequestBody struct {
 //ReportAbuseGroupPost Reports an abusive group post
 // @Description Reports an abusive group post
 // @ID ReportAbuseGroupPost
+// @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param data body reportAbuseGroupPostRequestBody true "body data"
@@ -2131,6 +2126,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 //DeleteGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID DeleteGroupPost
+// @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200

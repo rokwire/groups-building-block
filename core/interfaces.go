@@ -39,7 +39,7 @@ type Services interface {
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
-	GetUserGroups(clientID string, currentGetUserGroups *model.User, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
 
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
@@ -126,8 +126,8 @@ func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
 	return s.app.getAllGroups(clientID)
 }
 
-func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	return s.app.getUserGroups(clientID, current, offset, limit, order)
+func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	return s.app.getUserGroups(clientID, current, category, privacy, title, offset, limit, order)
 }
 
 func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
@@ -270,7 +270,7 @@ type Storage interface {
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
-	FindUserGroups(clientID string, userID string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
 	GetGroupMembers(clientID string, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error)

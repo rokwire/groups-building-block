@@ -34,7 +34,7 @@ type AdminApisHandler struct {
 //GetUserGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetUserGroups
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
@@ -108,7 +108,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 //GetAllGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetAllGroups
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
@@ -182,7 +182,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 // LoginUser Logs in the user and refactor the user record and linked data if need
 // @Description Logs in the user and refactor the user record and linked data if need
 // @ID AdminLoginUser
-// @Tags Admin
+// @Tags Admin-V1
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/user/login [get]
@@ -199,7 +199,7 @@ func (h *AdminApisHandler) LoginUser(clientID string, current *model.User, w htt
 // GetGroupStats Retrieves stats for a group by id
 // @Description Retrieves stats for a group by id
 // @ID AdminGetGroupStats
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -238,7 +238,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 //GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
-// @Tags Admin
+// @Tags Admin-V1
 // @Param APP header string true "APP"
 // @Success 200 {array} postResponse
 // @Security AppUserAuth
@@ -298,7 +298,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 // GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID AdminGetGroupEvents
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -342,7 +342,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 //DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID AdminDeleteGroup
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -375,7 +375,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 // DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
 // @ID AdminDeleteGroupEvent
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -415,7 +415,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 // DeleteGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID AdminDeleteGroupPost
-// @Tags Admin
+// @Tags Admin-V1
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200
@@ -451,7 +451,7 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 
 //SynchronizeAuthman Synchronizes Authman groups memberhip
 // @Description Synchronizes Authman groups memberhip
-// @Tags Admin
+// @Tags Admin-V1
 // @ID AdminSynchronizeAuthman
 // @Param data body synchronizeAuthmanRequestBody true "body data"
 // @Accept json

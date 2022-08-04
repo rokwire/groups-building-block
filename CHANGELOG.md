@@ -6,6 +6,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.60b1] - 2022-08-04
+- Introduce V2 group APIs and improve the legacy with additional filter options  [#212](https://github.com/rokwire/groups-building-block/issues/212)
+  - Introduced V2 APIs (the members list is omitted from the v1 response):
+    - GET /api/v2/groups
+    - GET /api/v2/groups/{id}
+    - GET /api/v2/user/groups
+    - GET /api/admin/v2/groups
+    - GET /api/admin/v2/groups/{id}
+    - GET /api/admin/v2/user/groups
+
 ## [1.5.60] - 2022-08-03
 ### Added
 - Add ability to paginate group and membership data as a separate V2 set of APIs. [#212](https://github.com/rokwire/groups-building-block/issues/212)
