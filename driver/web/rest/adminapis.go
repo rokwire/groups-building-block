@@ -520,9 +520,8 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully updated"))
 }
 
 // DeleteManagedGroupConfig Deletes a managed group config
@@ -552,9 +551,8 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully deleted"))
 }
 
 //SynchronizeAuthman Synchronizes Authman groups membership
@@ -573,7 +571,6 @@ func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.Us
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully started sync"))
 }
