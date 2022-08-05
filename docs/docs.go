@@ -1778,7 +1778,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/Group"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ShortMemberRecord"
+                            }
                         }
                     }
                 }
@@ -2833,6 +2836,33 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "ShortMemberRecord": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }

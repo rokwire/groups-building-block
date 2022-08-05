@@ -140,7 +140,7 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 // @Param identifier path string true "Title"
 // @Param offset query string false "Offsetting result"
 // @Param limit query string false "Limiting the result"
-// @Success 200 {object} model.Group
+// @Success 200 {array} model.ShortMemberRecord
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/title/{title}/members [get]
 func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w http.ResponseWriter, r *http.Request) {

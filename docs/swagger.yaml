@@ -255,6 +255,24 @@ definitions:
       question:
         type: string
     type: object
+  ShortMemberRecord:
+    properties:
+      email:
+        type: string
+      external_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      net_id:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
   ToMember:
     properties:
       email:
@@ -1844,7 +1862,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/Group'
+            items:
+              $ref: '#/definitions/ShortMemberRecord'
+            type: array
       security:
       - IntAPIKeyAuth: []
       tags:
