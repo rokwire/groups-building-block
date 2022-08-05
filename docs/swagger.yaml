@@ -803,7 +803,7 @@ paths:
     delete:
       consumes:
       - application/json
-      description: Deletes a post within the desired group.
+      description: Updates a post within the desired group.
       operationId: AdminDeleteGroupPost
       parameters:
       - description: APP
@@ -878,7 +878,7 @@ paths:
       - APIKeyAuth: []
       - AppUserAuth: []
       tags:
-      - Admin
+      - Admin-V1
   /api/admin/managed-group-configs:
     get:
       consumes:
@@ -1289,6 +1289,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
     put:
       consumes:
       - application/json

@@ -217,7 +217,7 @@
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Deletes a post within the desired group.",
+                "description": "Updates a post within the desired group.",
                 "consumes": [
                     "application/json"
                 ],
@@ -513,7 +513,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminGetUserGroups",
                 "parameters": [
@@ -994,6 +994,9 @@
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [

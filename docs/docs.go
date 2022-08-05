@@ -221,7 +221,7 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Deletes a post within the desired group.",
+                "description": "Updates a post within the desired group.",
                 "consumes": [
                     "application/json"
                 ],
@@ -517,7 +517,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminGetUserGroups",
                 "parameters": [
@@ -998,6 +998,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [

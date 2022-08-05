@@ -33,7 +33,7 @@ type AdminApisHandler struct {
 
 //GetUserGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
-// @ID GetUserGroups
+// @ID AdminGetUserGroups
 // @Tags Admin-V1
 // @Accept  json
 // @Param APP header string true "APP"
@@ -42,7 +42,7 @@ type AdminApisHandler struct {
 // @Success 200 {array} getGroupsResponse
 // @Security APIKeyAuth
 // @Security AppUserAuth
-// @Router /api/admin/groups [get]
+// @Router /api/admin/user/groups [get]
 func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var category *string
 	catogies, ok := r.URL.Query()["category"]
@@ -105,9 +105,9 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 	w.Write(data)
 }
 
-//GetAllGroups gets groups. It can be filtered by category
+// GetAllGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
-// @ID GetAllGroups
+// @ID AdminGetAllGroups
 // @Tags Admin-V1
 // @Accept  json
 // @Param APP header string true "APP"
