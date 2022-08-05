@@ -449,33 +449,161 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 	w.WriteHeader(http.StatusOK)
 }
 
-//SynchronizeAuthman Synchronizes Authman groups memberhip
-// @Description Synchronizes Authman groups memberhip
-// @Tags Admin-V1
-// @ID AdminSynchronizeAuthman
-// @Param data body synchronizeAuthmanRequestBody true "body data"
+// GetManagedGroupConfigs gets managed group configs
+// @Description Gets managed group configs
+// @ID AdminGetManagedGroupConfigs
+// @Tags Admin
 // @Accept json
-// @Success 200
+// @Param APP header string true "APP"
+// @Success 200 {array}  model.ManagedGroupConfig
 // @Security AppUserAuth
-// @Router /int/authman/synchronize [post]
-func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+// @Router /api/admin/managed-group-configs [get]
+func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	configs, err := h.app.Services.GetManagedGroupConfigs(clientID)
+	if err != nil {
+		log.Printf("error getting managed group configs events - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	data, err := json.Marshal(configs)
+	if err != nil {
+		log.Println("Error on marshal managed group configs")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// CreateManagedGroupConfig creates a new managed group config
+// @Description Creates a new managed group config
+// @ID AdminCreateManagedGroupConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body  model.ManagedGroupConfig true "body data"
+// @Param APP header string true "APP"
+// @Success 200 {object} model.ManagedGroupConfig
+// @Security AppUserAuth
+// @Router /api/admin/managed-group-configs [post]
+func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error during Authman synchronization: %s", err)
+		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	var requestData synchronizeAuthmanRequestBody
-	err = json.Unmarshal(data, &requestData)
+	var config model.ManagedGroupConfig
+	err = json.Unmarshal(data, &config)
 	if err != nil {
-		log.Printf("Error during Authman synchronization: %s", err)
+		log.Printf("Error on unmarshal the managed group config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
+	config.ClientID = clientID
+	newConfig, err := h.app.Services.CreateManagedGroupConfig(config)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response, err := json.Marshal(newConfig)
+	if err != nil {
+		log.Println("Error on marshal created managed group config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(response)
+}
+
+// UpdateManagedGroupConfig updates an existing managed group config
+// @Description Updates an existing managed group config
+// @ID AdminUpdateManagedGroupConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body  model.ManagedGroupConfig true "body data"
+// @Param APP header string true "APP"
+// @Param id path string true "ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/managed-group-configs [put]
+func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var config model.ManagedGroupConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		log.Printf("Error on unmarshal the managed group config data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	config.ClientID = clientID
+	err = h.app.Services.UpdateManagedGroupConfig(config)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+// DeleteManagedGroupConfig Deletes a managed group config
+// @Description Deletes a managed group config
+// @ID AdminDeleteManagedGroupConfig
+// @Tags Admin
+// @Accept  json
+// @Param APP header string true "APP"
+// @Param id path string true "ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/managed-group-configs/{id} [delete]
+func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.DeleteManagedGroupConfig(id, clientID)
+	if err != nil {
+		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+//SynchronizeAuthman Synchronizes Authman groups membership
+// @Description Synchronizes Authman groups membership
+// @Tags Admin
+// @ID AdminSynchronizeAuthman
+// @Accept json
+// @Success 200
+// @Security AppUserAuth
+// @Router /admin/authman/synchronize [post]
+func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.SynchronizeAuthman(clientID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
