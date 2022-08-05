@@ -777,10 +777,16 @@ func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string
 	}
 
 	findOptions := options.Find()
-	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
-	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+	if order == nil || "asc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
 	}
 	if limit != nil {
 		findOptions.SetLimit(*limit)
@@ -868,10 +874,16 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, category *stri
 	}
 
 	findOptions := options.Find()
-	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
-	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+	if order == nil || "asc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
 	}
 	if limit != nil {
 		findOptions.SetLimit(*limit)
