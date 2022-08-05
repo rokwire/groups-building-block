@@ -14,26 +14,6 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 		{"client_id", clientID},
 	}
 
-	/*
-		if userID != nil {
-			innerMatch = append(innerMatch, primitive.E{
-				Key: "members",
-				Value: bson.D{
-					{"$elemMatch",
-						bson.D{
-							{"user_id", userID},
-							{"$or",
-								bson.A{
-									bson.D{{"status", "admin"}},
-									bson.D{{"status", "member"}},
-								},
-							},
-						},
-					},
-				},
-			})
-		}*/
-
 	pipeline := bson.A{
 		bson.D{
 			{"$match", innerMatch},
