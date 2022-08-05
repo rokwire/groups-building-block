@@ -219,8 +219,8 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 	return nil, nil
 }
 
-// RetrieveAuthmanGiesGroups retrieve Authman Gies user data based on external IDs
-func (a *Adapter) RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGroupsResponse, error) {
+// RetrieveAuthmanStemGroups retrieve Authman user data based on external IDs for a given stem
+func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGroupsResponse, error) {
 
 	// Hardcoded until it needs to be configurable
 	requestBody := fmt.Sprintf(`{
@@ -236,7 +236,7 @@ func (a *Adapter) RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGro
 	client := &http.Client{}
 	req, err := http.NewRequest("POST", url, strings.NewReader(requestBody))
 	if err != nil {
-		log.Printf("RetrieveAuthmanGiesGroups: error creating load user data request - %s", err)
+		log.Printf("RetrieveAuthmanStemGroups: error creating load user data request - %s", err)
 		return nil, err
 	}
 
@@ -245,31 +245,31 @@ func (a *Adapter) RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGro
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("RetrieveAuthmanGiesGroups: error loading user data - %s", err)
+		log.Printf("RetrieveAuthmanStemGroups: error loading user data - %s", err)
 		return nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		errordata, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Printf("RetrieveAuthmanGiesGroups: unable to read error response: %s", errordata)
-			return nil, fmt.Errorf("RetrieveAuthmanGiesGroups: unable to  error response: %s", errordata)
+			log.Printf("RetrieveAuthmanStemGroups: unable to read error response: %s", errordata)
+			return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to  error response: %s", errordata)
 		}
-		log.Printf("RetrieveAuthmanGiesGroups: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
-		return nil, fmt.Errorf("RetrieveAuthmanGiesGroups: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
+		log.Printf("RetrieveAuthmanStemGroups: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
+		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("RetrieveAuthmanGiesGroups: unable to read json: %s", err)
-		return nil, fmt.Errorf("RetrieveAuthmanGiesGroups: unable to  read json: %s", err)
+		log.Printf("RetrieveAuthmanStemGroups: unable to read json: %s", err)
+		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to  read json: %s", err)
 	}
 
 	var authmanData model.АuthmanGroupsResponse
 	err = json.Unmarshal(data, &authmanData)
 	if err != nil {
-		log.Printf("RetrieveAuthmanGiesGroups: unable to parse json: %s", err)
-		return nil, fmt.Errorf("RetrieveAuthmanGiesGroups: unable to parse json: %s", err)
+		log.Printf("RetrieveAuthmanStemGroups: unable to parse json: %s", err)
+		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to parse json: %s", err)
 	}
 
 	return &authmanData, nil

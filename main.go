@@ -25,6 +25,7 @@ import (
 	web "groups/driver/web"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/rokwire/core-auth-library-go/authservice"
@@ -68,6 +69,12 @@ func main() {
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
 	authmanAdminUINList := getAuthmanAdminUINList()
 
+	syncManagedGroupPeriodStr := getEnvKey("SYNC_MANAGED_GROUP_PERIOD", false)
+	syncManagedGroupPeriod, err := strconv.Atoi(syncManagedGroupPeriodStr)
+	if err != nil {
+		log.Printf("missing or invalid SYNC_MANAGED_GROUP_PERIOD %s. Defaulting to disabled sync\n", syncManagedGroupPeriodStr)
+	}
+
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
@@ -98,9 +105,13 @@ func main() {
 	}
 	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
+	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
+
 	config := &model.Config{
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
+		SyncManagedGroupsPeriod:   syncManagedGroupPeriod,
+		SupportedClientIDs:        supportedClientIDs,
 	}
 
 	//application
@@ -117,7 +128,7 @@ func main() {
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider,
+	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
 		intrernalAPIKey, authService, groupServiceURL)
 	webAdapter.Start()

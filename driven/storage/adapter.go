@@ -18,12 +18,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"groups/core"
 	"groups/core/model"
+	"groups/utils"
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"golang.org/x/sync/syncmap"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 
@@ -89,17 +92,33 @@ type memberAnswer struct {
 //Adapter implements the Storage interface
 type Adapter struct {
 	db *database
+
+	cachedManagedGroupConfigs *syncmap.Map
+	managedGroupConfigsLock   *sync.RWMutex
 }
 
 //Start starts the storage
 func (sa *Adapter) Start() error {
 	err := sa.db.start()
+	if err != nil {
+		return err
+	}
+
+	//register storage listener
+	sl := storageListener{adapter: sa}
+	sa.RegisterStorageListener(&sl)
+
+	err = sa.cacheManagedGroupConfigs()
+	if err != nil {
+		return errors.New("error caching managed group configs")
+	}
+
 	return err
 }
 
-//SetStorageListener sets listener for the storage
-func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
-	sa.db.listener = storageListener
+//RegisterStorageListener registers a data change listener with the storage adapter
+func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
+	sa.db.listeners = append(sa.db.listeners, storageListener)
 }
 
 // FindUser finds the user for the provided external id and client id
@@ -340,7 +359,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 	})
 
 	if err != nil {
-		return core.NewServerError()
+		return utils.NewServerError()
 	}
 
 	return nil
@@ -504,14 +523,14 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 }
 
 //CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *core.GroupError) {
+func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return nil, core.NewGropDuplicationError()
+				return nil, utils.NewGroupDuplicationError()
 			}
 		}
 	}
@@ -552,14 +571,14 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		return nil
 	})
 	if err != nil {
-		return nil, core.NewServerError()
+		return nil, utils.NewServerError()
 	}
 
 	return &insertedID, nil
 }
 
 // UpdateGroupWithoutMembers updates a group except the members attribute
-func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
+func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
 	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
@@ -584,7 +603,7 @@ func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.Use
 }
 
 // UpdateGroupWithMembers updates a group along with the members
-func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
+func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "category", Value: group.Category},
@@ -608,12 +627,12 @@ func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, 
 	})
 }
 
-func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *core.GroupError {
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *utils.GroupError {
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return core.NewGropDuplicationError()
+				return utils.NewGroupDuplicationError()
 			}
 		}
 	}
@@ -644,7 +663,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		return nil
 	})
 	if err != nil {
-		return core.NewServerError()
+		return utils.NewServerError()
 	}
 	return nil
 }
@@ -2009,7 +2028,6 @@ func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
 func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "authman_enabled", Value: true},
 		primitive.E{Key: "authman_group", Value: authmanGroupKey},
 	}
 
@@ -2029,6 +2047,147 @@ func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string
 	return nil, nil
 }
 
+//cacheManagedGroupConfigs caches the managed group configs from the DB
+func (sa *Adapter) cacheManagedGroupConfigs() error {
+	log.Println("cacheManagedGroupConfigs..")
+
+	configs, err := sa.LoadManagedGroupConfigs()
+	if err != nil {
+		return err
+	}
+
+	sa.setCachedManagedGroupConfigs(&configs)
+
+	return nil
+}
+
+func (sa *Adapter) setCachedManagedGroupConfigs(configs *[]model.ManagedGroupConfig) {
+	sa.managedGroupConfigsLock.Lock()
+	defer sa.managedGroupConfigsLock.Unlock()
+
+	sa.cachedManagedGroupConfigs = &syncmap.Map{}
+	for _, config := range *configs {
+		sa.cachedManagedGroupConfigs.Store(config.ID, config)
+	}
+}
+
+func (sa *Adapter) getCachedManagedGroupConfig(id string) (*model.ManagedGroupConfig, error) {
+	sa.managedGroupConfigsLock.RLock()
+	defer sa.managedGroupConfigsLock.RUnlock()
+
+	item, _ := sa.cachedManagedGroupConfigs.Load(id)
+	if item != nil {
+		config, ok := item.(model.ManagedGroupConfig)
+		if !ok {
+			return nil, fmt.Errorf("missing managed group config with id: %s", id)
+		}
+		return &config, nil
+	}
+	return nil, nil
+}
+
+func (sa *Adapter) getCachedManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	sa.managedGroupConfigsLock.RLock()
+	defer sa.managedGroupConfigsLock.RUnlock()
+
+	var err error
+	configList := make([]model.ManagedGroupConfig, 0)
+	sa.cachedManagedGroupConfigs.Range(func(key, item interface{}) bool {
+		if item == nil {
+			return false
+		}
+
+		config, ok := item.(model.ManagedGroupConfig)
+		if !ok {
+			err = fmt.Errorf("error casting config with id: %s", key)
+			return false
+		}
+		if config.ClientID == clientID {
+			configList = append(configList, config)
+		}
+		return true
+	})
+
+	return configList, err
+}
+
+// LoadManagedGroupConfigs loads all admin group config
+func (sa *Adapter) LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error) {
+	filter := bson.M{}
+
+	findOptions := options.Find()
+
+	var list []model.ManagedGroupConfig
+	err := sa.db.managedGroupConfigs.Find(filter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+//FindManagedGroupConfig finds a managed group config by ID
+func (sa *Adapter) FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error) {
+	config, err := sa.getCachedManagedGroupConfig(id)
+	if err != nil {
+		return nil, err
+	}
+	if config.ClientID != clientID {
+		return nil, fmt.Errorf("invalid clientID %s for config ID %s", id, clientID)
+	}
+	return config, nil
+}
+
+//FindManagedGroupConfigs finds all managed group configs for a specified clientID
+func (sa *Adapter) FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	return sa.getCachedManagedGroupConfigs(clientID)
+}
+
+//InsertManagedGroupConfig inserts a new managed group config
+func (sa *Adapter) InsertManagedGroupConfig(config model.ManagedGroupConfig) error {
+	_, err := sa.db.managedGroupConfigs.InsertOne(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//UpdateManagedGroupConfig updates an existing managed group config
+func (sa *Adapter) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
+	filter := bson.M{"_id": config.ID, "client_id": config.ClientID}
+	update := bson.M{"$set": bson.M{
+		"authman_stems": config.AuthmanStems,
+		"admin_uins":    config.AdminUINs,
+		"type":          config.Type,
+		"date_updated":  time.Now().UTC(),
+	}}
+
+	res, err := sa.db.managedGroupConfigs.UpdateOne(filter, update, nil)
+	if err != nil {
+		return err
+	}
+	if res.ModifiedCount != 1 {
+		return fmt.Errorf("managed config could not be found for id: %s", config.ID)
+	}
+
+	return nil
+}
+
+//DeleteManagedGroupConfig deletes an existing managed group config
+func (sa *Adapter) DeleteManagedGroupConfig(id string, clientID string) error {
+	filter := bson.M{"_id": id, "client_id": clientID}
+
+	res, err := sa.db.managedGroupConfigs.DeleteOne(filter, nil)
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount != 1 {
+		return fmt.Errorf("managed config could not be found for id: %s", id)
+	}
+	return nil
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
@@ -2039,7 +2198,10 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	timeoutMS := time.Millisecond * time.Duration(timeout)
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
-	return &Adapter{db: db}
+
+	cachedManagedGroupConfigs := &syncmap.Map{}
+	managedGroupConfigsLock := &sync.RWMutex{}
+	return &Adapter{db: db, cachedManagedGroupConfigs: cachedManagedGroupConfigs, managedGroupConfigsLock: managedGroupConfigsLock}
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {
@@ -2109,3 +2271,23 @@ func constructMember(member member) model.Member {
 		DateAttended: dateAttended,
 	}
 }
+
+type storageListener struct {
+	adapter *Adapter
+	DefaultListenerImpl
+}
+
+func (sl *storageListener) OnManagedGroupConfigsChanged() {
+	sl.adapter.cacheManagedGroupConfigs()
+}
+
+//Listener  listens for change data storage events
+type Listener interface {
+	OnManagedGroupConfigsChanged()
+}
+
+//DefaultListenerImpl default listener implementation
+type DefaultListenerImpl struct{}
+
+//OnManagedGroupConfigsChanged notifies managed group configs have been updated
+func (d *DefaultListenerImpl) OnManagedGroupConfigsChanged() {}

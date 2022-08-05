@@ -15,8 +15,11 @@
 package core
 
 import (
+	"fmt"
 	"groups/core/model"
 	"groups/driven/notifications"
+	"groups/driven/storage"
+	"groups/utils"
 	"time"
 )
 
@@ -34,8 +37,8 @@ type Services interface {
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 
-	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
+	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
@@ -66,8 +69,13 @@ type Services interface {
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	SynchronizeAuthman(clientID string, stemNames []string) error
+	SynchronizeAuthman(clientID string) error
 	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
+
+	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
+	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
+	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
+	DeleteManagedGroupConfig(id string, clientID string) error
 }
 
 type servicesImpl struct {
@@ -103,11 +111,11 @@ func (s *servicesImpl) GetGroupEntityByTitle(clientID string, title string) (*mo
 	return s.app.getGroupEntityByTitle(clientID, title)
 }
 
-func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError) {
+func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	return s.app.createGroup(clientID, current, group)
 }
 
-func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *GroupError {
+func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 	return s.app.updateGroup(clientID, current, group)
 }
 
@@ -215,12 +223,32 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) SynchronizeAuthman(clientID string, stemNames []string) error {
-	return s.app.synchronizeAuthman(clientID, stemNames)
+func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
+	configs, err := s.app.storage.FindManagedGroupConfigs(clientID)
+	if err != nil {
+		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+	}
+	return s.app.synchronizeAuthman(clientID, configs)
 }
 
 func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
 	return s.app.synchronizeAuthmanGroup(clientID, group)
+}
+
+func (s *servicesImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	return s.app.getManagedGroupConfigs(clientID)
+}
+
+func (s *servicesImpl) CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
+	return s.app.createManagedGroupConfig(config)
+}
+
+func (s *servicesImpl) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
+	return s.app.updateManagedGroupConfig(config)
+}
+
+func (s *servicesImpl) DeleteManagedGroupConfig(id string, clientID string) error {
+	return s.app.deleteManagedGroupConfig(id, clientID)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -238,7 +266,7 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
-	SetStorageListener(storageListener StorageListener)
+	RegisterStorageListener(listener storage.Listener)
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
 	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
@@ -250,9 +278,9 @@ type Storage interface {
 	ReadAllGroupCategories() ([]string, error)
 	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
 
-	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *GroupError)
-	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *GroupError
-	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
+	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	DeleteGroup(clientID string, id string) error
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
@@ -287,18 +315,20 @@ type Storage interface {
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
-}
 
-//StorageListener listenes for change data storage events
-type StorageListener interface {
-	OnConfigsChanged()
+	LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error)
+	FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error)
+	FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
+	InsertManagedGroupConfig(config model.ManagedGroupConfig) error
+	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
+	DeleteManagedGroupConfig(id string, clientID string) error
 }
 
 type storageListenerImpl struct {
 	app *Application
 }
 
-func (a *storageListenerImpl) OnConfigsChanged() {
+func (a *storageListenerImpl) OnManagedGroupConfigsChanged() {
 	//do nothing for now
 }
 
@@ -320,7 +350,7 @@ func (n *notificationsImpl) SendNotification(recipients []notifications.Recipien
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
 	RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error)
-	RetrieveAuthmanGiesGroups(stemName string) (*model.АuthmanGroupsResponse, error)
+	RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGroupsResponse, error)
 	AddAuthmanMemberToGroup(groupName string, uin string) error
 	RemoveAuthmanMemberFromGroup(groupName string, uin string) error
 }
