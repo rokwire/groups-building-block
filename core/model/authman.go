@@ -127,8 +127,8 @@ func (a *AuthmanGroupEntry) HasDescription() bool {
 	return a.Description != ""
 }
 
-// GetGroupPettyTitleAndAdmins Gets the group pretty name and and group admin UINs
-func (a *AuthmanGroupEntry) GetGroupPettyTitleAndAdmins() (string, []string) {
+// GetGroupPrettyTitleAndAdmins Gets the group pretty name and and group admin UINs
+func (a *AuthmanGroupEntry) GetGroupPrettyTitleAndAdmins() (string, []string) {
 	if strings.Contains(a.Description, "|") {
 		var first string
 		var adminUINs []string

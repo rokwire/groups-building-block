@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package core
+package utils
 
 import (
 	"encoding/json"
@@ -62,8 +62,8 @@ func NewServerError() *GroupError {
 	return &GroupError{Code: 4, Message: "server error"}
 }
 
-// NewGropDuplicationError duplicate group name error
-func NewGropDuplicationError() *GroupError {
+// NewGroupDuplicationError duplicate group name error
+func NewGroupDuplicationError() *GroupError {
 	return &GroupError{Code: 5, Message: "group name already in use"}
 }
 

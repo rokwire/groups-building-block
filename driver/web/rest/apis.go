@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"groups/core"
 	"groups/core/model"
+	"groups/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -127,7 +128,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a group - %s\n", err.Error())
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -135,7 +136,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create group data - %s\n", err.Error())
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -144,7 +145,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	err = validate.Struct(requestData)
 	if err != nil {
 		log.Printf("Error on validating create group data - %s\n", err.Error())
-		http.Error(w, core.NewValidationError(err).JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewValidationError(err).JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -172,7 +173,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	data, err = json.Marshal(createResponse{InsertedID: *insertedID})
 	if err != nil {
 		log.Println("Error on marshal create group response")
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -217,14 +218,14 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	id := params["id"]
 	if len(id) <= 0 {
 		log.Println("Group id is required")
-		http.Error(w, core.NewMissingParamError("Group id is required").JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewMissingParamError("Group id is required").JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the update group item - %s\n", err.Error())
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -232,7 +233,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the update group request data - %s\n", err.Error())
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -240,7 +241,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	err = validate.Struct(requestData)
 	if err != nil {
 		log.Printf("Error on validating update group data - %s\n", err.Error())
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -248,18 +249,18 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, core.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 	if group == nil {
 		log.Printf("there is no a group for the provided id - %s", id)
 		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, core.NewNotFoundError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewNotFoundError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 	if !group.IsGroupAdmin(current.ID) {
 		log.Printf("%s is not allowed to update a group", current.Email)
-		http.Error(w, core.NewForbiddenError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusBadRequest)
 		return
 	}
 
@@ -1655,7 +1656,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
-// @Router /api/group/{group-id}/events [post]
+// @Router /api/group/{group-id}/events [put]
 func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

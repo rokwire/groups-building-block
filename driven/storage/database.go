@@ -17,7 +17,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"groups/core"
 	"groups/core/model"
 	"log"
 	"time"
@@ -36,13 +35,14 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
-	users  *collectionWrapper
-	enums  *collectionWrapper
-	groups *collectionWrapper
-	events *collectionWrapper
-	posts  *collectionWrapper
+	users               *collectionWrapper
+	enums               *collectionWrapper
+	groups              *collectionWrapper
+	events              *collectionWrapper
+	posts               *collectionWrapper
+	managedGroupConfigs *collectionWrapper
 
-	listener core.StorageListener
+	listeners []Listener
 }
 
 func (m *database) start() error {
@@ -98,6 +98,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	managedGroupConfigs := &collectionWrapper{database: m, coll: db.Collection("managed_group_configs")}
+	err = m.applyManagedGroupConfigsChecks(posts)
+	if err != nil {
+		return err
+	}
+
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
@@ -113,6 +119,11 @@ func (m *database) start() error {
 	m.groups = groups
 	m.events = events
 	m.posts = posts
+	m.managedGroupConfigs = managedGroupConfigs
+
+	go m.managedGroupConfigs.Watch(nil)
+
+	m.listeners = []Listener{}
 
 	return nil
 }
@@ -507,6 +518,15 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 	return nil
 }
 
+func (m *database) applyManagedGroupConfigsChecks(managedGroupConfigs *collectionWrapper) error {
+	log.Println("apply managed group configs checks.....")
+
+	//TODO: Set up indexes
+
+	log.Println("managed group configs checks passed")
+	return nil
+}
+
 func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectionWrapper, groups *collectionWrapper, events *collectionWrapper) error {
 	log.Println("apply multi-tenant checks.....")
 
@@ -624,6 +644,15 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	if ns == nil {
 		return
 	}
+	nsMap := ns.(map[string]interface{})
+	coll := nsMap["coll"]
 
-	//do nothing for now
+	switch coll {
+	case "managed_group_configs":
+		log.Println("managed_group_configs collection changed")
+
+		for _, listener := range m.listeners {
+			go listener.OnManagedGroupConfigsChanged()
+		}
+	}
 }

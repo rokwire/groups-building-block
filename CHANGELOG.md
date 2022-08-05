@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- Improve managed group admin assignment and synchronization [#209](https://github.com/rokwire/groups-building-block/issues/209)
 
 ## [1.5.60b1] - 2022-08-04
 - Introduce V2 group APIs and improve the legacy with additional filter options  [#212](https://github.com/rokwire/groups-building-block/issues/212)

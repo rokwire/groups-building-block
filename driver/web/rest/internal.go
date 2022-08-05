@@ -17,7 +17,6 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
@@ -25,6 +24,8 @@ import (
 	"net/http"
 	"strconv"
 	"time"
+
+	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/gorilla/mux"
 )
@@ -200,40 +201,22 @@ type synchronizeAuthmanRequestBody struct {
 	GroupAutoCreateStemNames []string `json:"group_auto_create_stem_names"`
 } // @name synchronizeAuthmanRequestBody
 
-//SynchronizeAuthman Synchronizes Authman groups memberhip
-// @Description Synchronizes Authman groups memberhip
+//SynchronizeAuthman Synchronizes Authman groups membership
+// @Description Synchronizes Authman groups membership
 // @ID SynchronizeAuthman
 // @Tags Internal
-// @Param data body synchronizeAuthmanRequestBody true "body data"
 // @Accept json
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /int/authman/synchronize [post]
 func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.ResponseWriter, r *http.Request) {
-
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error during Authman synchronization: %s", err)
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var requestData synchronizeAuthmanRequestBody
-	err = json.Unmarshal(data, &requestData)
-	if err != nil {
-		log.Printf("Error during Authman synchronization: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	err = h.app.Services.SynchronizeAuthman(clientID, requestData.GroupAutoCreateStemNames)
+	err := h.app.Services.SynchronizeAuthman(clientID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 }
 

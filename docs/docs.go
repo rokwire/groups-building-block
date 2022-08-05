@@ -16,6 +16,28 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/admin/authman/synchronize": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Synchronizes Authman groups membership",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminSynchronizeAuthman",
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/admin/group/{group-id}/event/{event-id}": {
             "delete": {
                 "security": [
@@ -199,7 +221,7 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Updates a post within the desired group.",
+                "description": "Deletes a post within the desired group.",
                 "consumes": [
                     "application/json"
                 ],
@@ -284,7 +306,220 @@ const docTemplate = `{
                 "tags": [
                     "Admin-V1"
                 ],
-                "operationId": "GetAllGroups",
+                "operationId": "AdminGetAllGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title - case insensitive",
+                        "name": "title",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getGroupsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/managed-group-configs": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets managed group configs",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetManagedGroupConfigs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ManagedGroupConfig"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates an existing managed group config",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminUpdateManagedGroupConfig",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ManagedGroupConfig"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a new managed group config",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminCreateManagedGroupConfig",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/ManagedGroupConfig"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/ManagedGroupConfig"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/managed-group-configs/{id}": {
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a managed group config",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminDeleteManagedGroupConfig",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/admin/user/groups": {
+            "get": {
+                "security": [
+                    {
+                        "APIKeyAuth": []
+                    },
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetUserGroups",
                 "parameters": [
                     {
                         "type": "string",
@@ -700,7 +935,7 @@ const docTemplate = `{
                     }
                 }
             },
-            "post": {
+            "put": {
                 "security": [
                     {
                         "AppUserAuth": []
@@ -717,6 +952,54 @@ const docTemplate = `{
                     "Client-V1"
                 ],
                 "operationId": "UpdateGroupEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/groupEventRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a group event",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "operationId": "CreateGroupEvent",
                 "parameters": [
                     {
                         "type": "string",
@@ -2110,7 +2393,7 @@ const docTemplate = `{
                         "IntAPIKeyAuth": []
                     }
                 ],
-                "description": "Synchronizes Authman groups memberhip",
+                "description": "Synchronizes Authman groups membership",
                 "consumes": [
                     "application/json"
                 ],
@@ -2118,17 +2401,6 @@ const docTemplate = `{
                     "Internal"
                 ],
                 "operationId": "SynchronizeAuthman",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/synchronizeAuthmanRequestBody"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": ""
@@ -2468,6 +2740,38 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/GroupStat"
                     }
+                }
+            }
+        },
+        "ManagedGroupConfig": {
+            "type": "object",
+            "properties": {
+                "admin_uins": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "authman_stems": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
                 }
             }
         },
@@ -3069,17 +3373,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                }
-            }
-        },
-        "synchronizeAuthmanRequestBody": {
-            "type": "object",
-            "properties": {
-                "group_auto_create_stem_names": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
