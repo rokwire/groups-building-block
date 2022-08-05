@@ -963,11 +963,12 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 	}
 
 	var request model.GroupMembersFilter
-	err = json.Unmarshal(requestData, &request)
-	if err != nil {
-		log.Printf("Error on unmarshal model.GroupMembersFilter request body - %s\n", err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &request)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("Error on unmarshal model.GroupMembersFilter request body - %s\n", err.Error())
+		}
 	}
 
 	//check if allowed to update
