@@ -246,7 +246,7 @@ func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*
 	return &configs[0], nil
 }
 
-//SaveSyncConfig saves the provided sync times fields
+//SaveSyncTimes saves the provided sync times fields
 func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTimes) error {
 	filter := bson.M{"client_id": times.ClientID}
 
