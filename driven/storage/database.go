@@ -36,6 +36,7 @@ type database struct {
 	dbClient *mongo.Client
 
 	configs             *collectionWrapper
+	syncTimes           *collectionWrapper
 	users               *collectionWrapper
 	enums               *collectionWrapper
 	groups              *collectionWrapper
@@ -71,6 +72,12 @@ func (m *database) start() error {
 
 	configs := &collectionWrapper{database: m, coll: db.Collection("configs")}
 	err = m.applyConfigsChecks(configs)
+	if err != nil {
+		return err
+	}
+
+	syncTimes := &collectionWrapper{database: m, coll: db.Collection("sync_times")}
+	err = m.applySyncTimesChecks(syncTimes)
 	if err != nil {
 		return err
 	}
@@ -122,6 +129,7 @@ func (m *database) start() error {
 	m.dbClient = client
 
 	m.configs = configs
+	m.syncTimes = syncTimes
 	m.users = users
 	m.enums = enums
 	m.groups = groups
@@ -129,6 +137,7 @@ func (m *database) start() error {
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
 
+	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
 
 	m.listeners = []Listener{}
@@ -145,6 +154,18 @@ func (m *database) applyConfigsChecks(configs *collectionWrapper) error {
 	}
 
 	log.Println("configs checks passed")
+	return nil
+}
+
+func (m *database) applySyncTimesChecks(syncTimes *collectionWrapper) error {
+	log.Println("apply sync times checks.....")
+
+	err := syncTimes.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	log.Println("sync times checks passed")
 	return nil
 }
 
@@ -672,7 +693,8 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 		log.Println("configs collection changed")
 
 		for _, listener := range m.listeners {
-			go listener.OnConfigsChanged()
+			//Don't use goroutine to ensure cache is updated first
+			listener.OnConfigsChanged()
 		}
 	case "managed_group_configs":
 		log.Println("managed_group_configs collection changed")

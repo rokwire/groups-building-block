@@ -77,7 +77,7 @@ type Services interface {
 	DeleteManagedGroupConfig(id string, clientID string) error
 
 	GetSyncConfig(clientID string) (*model.SyncConfig, error)
-	UpdateSyncConfig(clientID string, cron string) error
+	UpdateSyncConfig(config model.SyncConfig) error
 }
 
 type servicesImpl struct {
@@ -226,7 +226,7 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 }
 
 func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
-	return s.app.synchronizeAuthman(clientID)
+	return s.app.synchronizeAuthman(clientID, false)
 }
 
 func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
@@ -253,8 +253,8 @@ func (s *servicesImpl) GetSyncConfig(clientID string) (*model.SyncConfig, error)
 	return s.app.getSyncConfig(clientID)
 }
 
-func (s *servicesImpl) UpdateSyncConfig(clientID string, cron string) error {
-	return s.app.updateSyncConfig(clientID, cron)
+func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
+	return s.app.updateSyncConfig(config)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -277,8 +277,12 @@ type Storage interface {
 	PerformTransaction(transaction func(context storage.TransactionContext) error) error
 
 	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
-	FindSyncConfig(context storage.TransactionContext, clientID string) (*model.SyncConfig, error)
-	SaveSyncConfig(context storage.TransactionContext, clientID string, cron *string, inProgress *bool) error
+	FindSyncConfigs() ([]model.SyncConfig, error)
+	FindSyncConfig(clientID string) (*model.SyncConfig, error)
+	SaveSyncConfig(context storage.TransactionContext, config model.SyncConfig) error
+
+	FindSyncTimes(context storage.TransactionContext, clientID string) (*model.SyncTimes, error)
+	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
 	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)

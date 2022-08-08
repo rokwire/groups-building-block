@@ -26,10 +26,17 @@ type ApplicationConfig struct {
 
 // SyncConfig defines system configs for managed group sync
 type SyncConfig struct {
-	Type       string `json:"type" bson:"type"`
-	ClientID   string `json:"client_id" bson:"client_id"`
-	CRON       string `json:"cron" bson:"cron"`
-	InProgress bool   `json:"in_progress" bson:"in_progress"`
+	Type          string `json:"type" bson:"type"`
+	ClientID      string `json:"client_id" bson:"client_id"`
+	CRON          string `json:"cron" bson:"cron"`
+	TimeThreshold int    `json:"time_threshold" bson:"time_threshold"` // Threshold from start_time to be considered same run in minutes
+}
+
+// SyncTimes defines the times used to prevent concurrent syncs
+type SyncTimes struct {
+	ClientID  string     `json:"client_id" bson:"client_id"`
+	StartTime *time.Time `json:"start_time" bson:"start_time"`
+	EndTime   *time.Time `json:"end_time" bson:"end_time"`
 }
 
 // ManagedGroupConfig defines a config for a set of managed groups

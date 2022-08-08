@@ -610,7 +610,8 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 		return
 	}
 
-	err = h.app.Services.UpdateSyncConfig(clientID, config.CRON)
+	config.ClientID = clientID
+	err = h.app.Services.UpdateSyncConfig(config)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

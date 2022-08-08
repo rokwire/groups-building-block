@@ -111,7 +111,7 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 func (app *Application) setupSyncManagedGroupTimer() {
 	log.Println("setupSyncManagedGroupTimer")
 
-	configs, err := app.storage.LoadSyncConfigs(nil)
+	configs, err := app.storage.FindSyncConfigs()
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}
@@ -128,7 +128,7 @@ func (app *Application) setupSyncManagedGroupTimer() {
 		if (!ok || task.cron != config.CRON) && config.CRON != "" {
 			sync := func() {
 				log.Println("syncManagedGroups for clientID " + config.ClientID)
-				err := app.synchronizeAuthman(config.ClientID)
+				err := app.synchronizeAuthman(config.ClientID, true)
 				if err != nil {
 					log.Printf("error syncing Authman groups for clientID %s: %s\n", config.ClientID, err.Error())
 				}
@@ -138,6 +138,7 @@ func (app *Application) setupSyncManagedGroupTimer() {
 				log.Printf("error scheduling managed group sync for clientID %s: %s\n", config.ClientID, err)
 			}
 			app.managedGroupTasks[config.ClientID] = scheduledTask{taskID: &taskID, cron: config.CRON}
+			log.Printf("sync managed group task scheduled for clientID=%s at %s\n", config.ClientID, config.CRON)
 		}
 	}
 	app.scheduler.Start()

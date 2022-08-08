@@ -91,8 +91,7 @@ func (collWrapper *collectionWrapper) ReplaceOneWithContext(ctx context.Context,
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
 	defer cancel()
 
 	if replacement == nil {
@@ -109,10 +108,13 @@ func (collWrapper *collectionWrapper) ReplaceOneWithContext(ctx context.Context,
 	if res == nil {
 		return errors.New("replace one - res is nil")
 	}
-	matchedCount := res.MatchedCount
-	if matchedCount == 0 {
-		return errors.New("replace one - no record replaced")
+	if replaceOptions.Upsert == nil || !*replaceOptions.Upsert {
+		matchedCount := res.MatchedCount
+		if matchedCount == 0 {
+			return errors.New("replace one - no record replaced")
+		}
 	}
+
 	return nil
 }
 

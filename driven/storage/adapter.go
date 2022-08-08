@@ -93,6 +93,9 @@ type memberAnswer struct {
 type Adapter struct {
 	db *database
 
+	cachedSyncConfigs *syncmap.Map
+	syncConfigsLock   *sync.RWMutex
+
 	cachedManagedGroupConfigs *syncmap.Map
 	managedGroupConfigsLock   *sync.RWMutex
 }
@@ -108,6 +111,11 @@ func (sa *Adapter) Start() error {
 	sl := storageListener{adapter: sa}
 	sa.RegisterStorageListener(&sl)
 
+	err = sa.cacheSyncConfigs()
+	if err != nil {
+		return errors.New("error caching sync configs")
+	}
+
 	err = sa.cacheManagedGroupConfigs()
 	if err != nil {
 		return errors.New("error caching managed group configs")
@@ -121,6 +129,69 @@ func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
 	sa.db.listeners = append(sa.db.listeners, storageListener)
 }
 
+//cacheSyncConfigs caches the sync configs from the DB
+func (sa *Adapter) cacheSyncConfigs() error {
+	log.Println("cacheSyncConfigs..")
+
+	configs, err := sa.LoadSyncConfigs(nil)
+	if err != nil {
+		return err
+	}
+
+	sa.setCachedSyncConfigs(&configs)
+
+	return nil
+}
+
+func (sa *Adapter) setCachedSyncConfigs(configs *[]model.SyncConfig) {
+	sa.syncConfigsLock.Lock()
+	defer sa.syncConfigsLock.Unlock()
+
+	sa.cachedSyncConfigs = &syncmap.Map{}
+	for _, config := range *configs {
+		sa.cachedSyncConfigs.Store(config.ClientID, config)
+	}
+}
+
+func (sa *Adapter) getCachedSyncConfig(clientID string) (*model.SyncConfig, error) {
+	sa.syncConfigsLock.RLock()
+	defer sa.syncConfigsLock.RUnlock()
+
+	item, _ := sa.cachedSyncConfigs.Load(clientID)
+	if item != nil {
+		config, ok := item.(model.SyncConfig)
+		if !ok {
+			return nil, fmt.Errorf("missing managed group config for clientID: %s", clientID)
+		}
+		return &config, nil
+	}
+	return nil, nil
+}
+
+func (sa *Adapter) getCachedSyncConfigs() ([]model.SyncConfig, error) {
+	sa.syncConfigsLock.RLock()
+	defer sa.syncConfigsLock.RUnlock()
+
+	var err error
+	configList := make([]model.SyncConfig, 0)
+	sa.cachedSyncConfigs.Range(func(key, item interface{}) bool {
+		if item == nil {
+			return false
+		}
+
+		config, ok := item.(model.SyncConfig)
+		if !ok {
+			err = fmt.Errorf("error casting config with client id: %s", key)
+			return false
+		}
+		configList = append(configList, config)
+		return true
+	})
+
+	return configList, err
+}
+
+//LoadSyncConfigs loads all sync configs
 func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConfig, error) {
 	filter := bson.M{"type": "sync"}
 
@@ -133,30 +204,55 @@ func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConf
 	return config, nil
 }
 
-func (sa *Adapter) FindSyncConfig(context TransactionContext, clientID string) (*model.SyncConfig, error) {
-	filter := bson.M{"type": "sync", "client_id": clientID}
+//FindSyncConfig finds the sync config for the specified clientID
+func (sa *Adapter) FindSyncConfig(clientID string) (*model.SyncConfig, error) {
+	return sa.getCachedSyncConfig(clientID)
+}
 
-	var config model.SyncConfig
-	err := sa.db.configs.FindOneWithContext(context, filter, &config, nil)
+//FindSyncConfigs finds all sync configs
+func (sa *Adapter) FindSyncConfigs() ([]model.SyncConfig, error) {
+	return sa.getCachedSyncConfigs()
+}
+
+//SaveSyncConfig saves the provided sync config fields
+func (sa *Adapter) SaveSyncConfig(context TransactionContext, config model.SyncConfig) error {
+	filter := bson.M{"type": "sync", "client_id": config.ClientID}
+
+	config.Type = "sync"
+
+	upsert := true
+	opts := options.ReplaceOptions{Upsert: &upsert}
+	err := sa.db.configs.ReplaceOne(filter, config, &opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+//FindSyncTimes finds the sync times for the specified clientID
+func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*model.SyncTimes, error) {
+	filter := bson.M{"client_id": clientID}
+
+	var configs []model.SyncTimes
+	err := sa.db.syncTimes.FindWithContext(context, filter, &configs, nil)
 	if err != nil {
 		return nil, err
 	}
+	if len(configs) != 1 {
+		return nil, nil
+	}
 
-	return &config, nil
+	return &configs[0], nil
 }
 
-func (sa *Adapter) SaveSyncConfig(context TransactionContext, clientID string, cron *string, inProgress *bool) error {
-	filter := bson.M{"type": "sync", "client_id": clientID}
-	update := bson.M{}
-	if cron != nil {
-		update["cron"] = *cron
-	}
-	if inProgress != nil {
-		update["in_progress"] = *inProgress
-	}
+//SaveSyncConfig saves the provided sync times fields
+func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTimes) error {
+	filter := bson.M{"client_id": times.ClientID}
+
 	upsert := true
-	opts := options.UpdateOptions{Upsert: &upsert}
-	_, err := sa.db.configs.UpdateOne(filter, bson.M{"$set": update}, &opts)
+	opts := options.ReplaceOptions{Upsert: &upsert}
+	err := sa.db.syncTimes.ReplaceOne(filter, times, &opts)
 	if err != nil {
 		return err
 	}
@@ -2276,9 +2372,13 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
 
+	cachedSyncConfigs := &syncmap.Map{}
+	syncConfigsLock := &sync.RWMutex{}
+
 	cachedManagedGroupConfigs := &syncmap.Map{}
 	managedGroupConfigsLock := &sync.RWMutex{}
-	return &Adapter{db: db, cachedManagedGroupConfigs: cachedManagedGroupConfigs, managedGroupConfigsLock: managedGroupConfigsLock}
+	return &Adapter{db: db, cachedSyncConfigs: cachedSyncConfigs, syncConfigsLock: syncConfigsLock,
+		cachedManagedGroupConfigs: cachedManagedGroupConfigs, managedGroupConfigsLock: managedGroupConfigsLock}
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {
@@ -2352,6 +2452,10 @@ func constructMember(member member) model.Member {
 type storageListener struct {
 	adapter *Adapter
 	DefaultListenerImpl
+}
+
+func (sl *storageListener) OnConfigsChanged() {
+	sl.adapter.cacheSyncConfigs()
 }
 
 func (sl *storageListener) OnManagedGroupConfigsChanged() {

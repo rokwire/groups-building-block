@@ -2707,8 +2707,9 @@ const docTemplate = `{
                 "cron": {
                     "type": "string"
                 },
-                "in_progress": {
-                    "type": "boolean"
+                "time_threshold": {
+                    "description": "Threshold from start_time to be considered same run in minutes",
+                    "type": "integer"
                 },
                 "type": {
                     "type": "string"
