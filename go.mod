@@ -7,6 +7,7 @@ require (
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
 	github.com/pquerna/cachecontrol v0.1.0 // indirect
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/rokwire/core-auth-library-go v1.0.9
 	github.com/rokwire/logging-library-go v1.0.3
 	github.com/swaggo/http-swagger v1.2.6

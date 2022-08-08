@@ -38,7 +38,6 @@ GR_OIDC_ADMIN_CLIENT_ID | < url > | yes | Client ID to validate with OIDC for ad
 GR_OIDC_ADMIN_WEB_CLIENT_ID | < url > | yes | Client ID to validate with OIDC for web client
 ROKWIRE_API_KEYS | < string (comma-separated) > | yes | List of API keys to be used for client verification
 AUTHMAN_ADMIN_UIN_LIST | < string (comma-separated) > | yes | List of UINs for admin users used when loading data from AuthMan
-SYNC_MANAGED_GROUP_PERIOD | < int > | no | Period at which to automatically sync managed groups in minutes. Missing or 0 disables automatic sync timer.
 
 ### Run Application
 

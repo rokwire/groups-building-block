@@ -35,6 +35,8 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
+	configs             *collectionWrapper
+	syncTimes           *collectionWrapper
 	users               *collectionWrapper
 	enums               *collectionWrapper
 	groups              *collectionWrapper
@@ -67,6 +69,18 @@ func (m *database) start() error {
 
 	//apply checks
 	db := client.Database(m.mongoDBName)
+
+	configs := &collectionWrapper{database: m, coll: db.Collection("configs")}
+	err = m.applyConfigsChecks(configs)
+	if err != nil {
+		return err
+	}
+
+	syncTimes := &collectionWrapper{database: m, coll: db.Collection("sync_times")}
+	err = m.applySyncTimesChecks(syncTimes)
+	if err != nil {
+		return err
+	}
 
 	users := &collectionWrapper{database: m, coll: db.Collection("users")}
 	err = m.applyUsersChecks(users)
@@ -114,6 +128,8 @@ func (m *database) start() error {
 	m.db = db
 	m.dbClient = client
 
+	m.configs = configs
+	m.syncTimes = syncTimes
 	m.users = users
 	m.enums = enums
 	m.groups = groups
@@ -121,10 +137,35 @@ func (m *database) start() error {
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
 
+	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
 
 	m.listeners = []Listener{}
 
+	return nil
+}
+
+func (m *database) applyConfigsChecks(configs *collectionWrapper) error {
+	log.Println("apply configs checks.....")
+
+	err := configs.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}, primitive.E{Key: "type", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	log.Println("configs checks passed")
+	return nil
+}
+
+func (m *database) applySyncTimesChecks(syncTimes *collectionWrapper) error {
+	log.Println("apply sync times checks.....")
+
+	err := syncTimes.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, true)
+	if err != nil {
+		return err
+	}
+
+	log.Println("sync times checks passed")
 	return nil
 }
 
@@ -648,6 +689,13 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 	coll := nsMap["coll"]
 
 	switch coll {
+	case "configs":
+		log.Println("configs collection changed")
+
+		for _, listener := range m.listeners {
+			//Don't use goroutine to ensure cache is updated first
+			listener.OnConfigsChanged()
+		}
 	case "managed_group_configs":
 		log.Println("managed_group_configs collection changed")
 

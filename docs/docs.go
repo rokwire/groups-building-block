@@ -428,9 +428,6 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Deletes a managed group config",
-                "consumes": [
-                    "application/json"
-                ],
                 "tags": [
                     "Admin"
                 ],
@@ -448,6 +445,81 @@ const docTemplate = `{
                         "description": "ID",
                         "name": "id",
                         "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/admin/sync-configs": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets sync config",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetSyncConfigs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.SyncConfig"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Saves sync config",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminSaveSyncConfig",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.SyncConfig"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
                         "required": true
                     }
                 ],
@@ -2619,6 +2691,24 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "reject_reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SyncConfig": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "cron": {
+                    "type": "string"
+                },
+                "time_threshold": {
+                    "description": "Threshold from start_time to be considered same run in minutes",
+                    "type": "integer"
+                },
+                "type": {
                     "type": "string"
                 }
             }

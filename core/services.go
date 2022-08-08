@@ -17,6 +17,7 @@ package core
 import (
 	"fmt"
 	"groups/driven/rewards"
+	"groups/driven/storage"
 	"groups/utils"
 	"sort"
 	"time"
@@ -1037,21 +1038,62 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error {
+func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool) error {
+	startTime := time.Now()
+	transaction := func(context storage.TransactionContext) error {
+		times, err := app.storage.FindSyncTimes(context, clientID)
+		if err != nil {
+			return err
+		}
+		if times != nil {
+			if checkThreshold {
+				config, err := app.storage.FindSyncConfig(clientID)
+				if err != nil {
+					log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+					return err
+				}
+				if config == nil {
+					log.Printf("missing sync configs for clientID %s", clientID)
+					return fmt.Errorf("missing sync configs for clientID %s: %v", clientID, err)
+				}
+				if times.StartTime != nil && (times.EndTime == nil || !startTime.After(times.StartTime.Add(time.Minute*time.Duration(config.TimeThreshold)))) {
+					log.Println("Authman has already been synced for clientID " + clientID)
+					return fmt.Errorf("Authman has already been synced for clientID %s", clientID)
+				}
+			} else {
+				if times.StartTime != nil && times.EndTime == nil {
+					log.Println("Another Authman sync process is running for clientID " + clientID)
+					return fmt.Errorf("another Authman sync process is running" + clientID)
+				}
+			}
+		}
 
-	if app.authmanSyncInProgress {
-		log.Println("Another Authman sync process is running")
-		return fmt.Errorf("another Authman sync process is running")
+		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID})
+	}
+
+	err := app.storage.PerformTransaction(transaction)
+	if err != nil {
+		return err
 	}
 
 	log.Printf("Global Authman synchronization started for clientID: %s\n", clientID)
 
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
-		app.authmanSyncInProgress = false
+		endTime := time.Now()
+		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID})
+		if err != nil {
+			log.Printf("Error saving sync configs to end sync: %s\n", err)
+			return
+		}
 		log.Printf("Global Authman synchronization finished for clientID: %s\n", clientID)
 	}
 	defer finishAuthmanSync()
+
+	configs, err := app.storage.FindManagedGroupConfigs(clientID)
+	if err != nil {
+		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+	}
 
 	for _, config := range configs {
 		for _, stemName := range config.AuthmanStems {
@@ -1460,4 +1502,12 @@ func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig
 
 func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
 	return app.storage.DeleteManagedGroupConfig(id, clientID)
+}
+
+func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
+	return app.storage.FindSyncConfig(clientID)
+}
+
+func (app *Application) updateSyncConfig(config model.SyncConfig) error {
+	return app.storage.SaveSyncConfig(nil, config)
 }
