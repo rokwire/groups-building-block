@@ -93,7 +93,7 @@ func main() {
 		log.Fatalf("error instancing auth data loader: %s", err)
 	}
 	// Instantiate AuthService instance
-	authService, err := authservice.NewTestAuthService("groups", groupServiceURL, serviceLoader)
+	authService, err := authservice.NewAuthService("groups", groupServiceURL, serviceLoader)
 	if err != nil {
 		log.Fatalf("error instancing auth service: %s", err)
 	}

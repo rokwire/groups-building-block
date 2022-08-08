@@ -528,7 +528,6 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 // @Description Deletes a managed group config
 // @ID AdminDeleteManagedGroupConfig
 // @Tags Admin
-// @Accept  json
 // @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
@@ -586,7 +585,7 @@ func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w
 
 // SaveSyncConfig saves sync config
 // @Description Saves sync config
-// @ID AdminUpdateSyncConfig
+// @ID AdminSaveSyncConfig
 // @Tags Admin
 // @Accept plain
 // @Param data body model.SyncConfig true "body data"

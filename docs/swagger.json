@@ -424,9 +424,6 @@
                     }
                 ],
                 "description": "Deletes a managed group config",
-                "consumes": [
-                    "application/json"
-                ],
                 "tags": [
                     "Admin"
                 ],
@@ -503,7 +500,7 @@
                 "tags": [
                     "Admin"
                 ],
-                "operationId": "AdminUpdateSyncConfig",
+                "operationId": "AdminSaveSyncConfig",
                 "parameters": [
                     {
                         "description": "body data",

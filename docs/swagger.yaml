@@ -849,8 +849,6 @@ paths:
       - Admin
   /api/admin/managed-group-configs/{id}:
     delete:
-      consumes:
-      - application/json
       description: Deletes a managed group config
       operationId: AdminDeleteManagedGroupConfig
       parameters:
@@ -898,7 +896,7 @@ paths:
       consumes:
       - text/plain
       description: Saves sync config
-      operationId: AdminUpdateSyncConfig
+      operationId: AdminSaveSyncConfig
       parameters:
       - description: body data
         in: body

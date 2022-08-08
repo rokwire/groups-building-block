@@ -428,9 +428,6 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Deletes a managed group config",
-                "consumes": [
-                    "application/json"
-                ],
                 "tags": [
                     "Admin"
                 ],
@@ -507,7 +504,7 @@ const docTemplate = `{
                 "tags": [
                     "Admin"
                 ],
-                "operationId": "AdminUpdateSyncConfig",
+                "operationId": "AdminSaveSyncConfig",
                 "parameters": [
                     {
                         "description": "body data",
