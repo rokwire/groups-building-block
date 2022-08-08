@@ -555,6 +555,72 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetSyncConfig gets sync config
+// @Description Gets sync config
+// @ID AdminGetSyncConfigs
+// @Tags Admin
+// @Accept json
+// @Param APP header string true "APP"
+// @Success 200 {array}  model.SyncConfig
+// @Security AppUserAuth
+// @Router /api/admin/sync-configs [get]
+func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	configs, err := h.app.Services.GetSyncConfig(clientID)
+	if err != nil {
+		log.Printf("error getting sync config - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(configs)
+	if err != nil {
+		log.Println("Error on marshal sync config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// SaveSyncConfig saves sync config
+// @Description Saves sync config
+// @ID AdminUpdateSyncConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body model.SyncConfig true "body data"
+// @Param APP header string true "APP"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/sync-configs [put]
+func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error reading body on create sync config - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var config model.SyncConfig
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		log.Printf("Error on unmarshal the sync config data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = h.app.Services.UpdateSyncConfig(clientID, config.CRON)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
 //SynchronizeAuthman Synchronizes Authman groups membership
 // @Description Synchronizes Authman groups membership
 // @Tags Admin

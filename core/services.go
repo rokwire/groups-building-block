@@ -17,6 +17,7 @@ package core
 import (
 	"fmt"
 	"groups/driven/rewards"
+	"groups/driven/storage"
 	"groups/utils"
 	"sort"
 	"time"
@@ -1037,21 +1038,43 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthman(clientID string, configs []model.ManagedGroupConfig) error {
+func (app *Application) synchronizeAuthman(clientID string) error {
+	transaction := func(context storage.TransactionContext) error {
+		config, err := app.storage.FindSyncConfig(context, clientID)
+		if err != nil {
+			return err
+		}
+		if config.InProgress {
+			log.Println("Another Authman sync process is running for clientID " + clientID)
+			return fmt.Errorf("another Authman sync process is running" + clientID)
+		}
+		inProgress := true
+		return app.storage.SaveSyncConfig(context, clientID, nil, &inProgress)
+	}
 
-	if app.authmanSyncInProgress {
-		log.Println("Another Authman sync process is running")
-		return fmt.Errorf("another Authman sync process is running")
+	err := app.storage.PerformTransaction(transaction)
+	if err != nil {
+		return err
 	}
 
 	log.Printf("Global Authman synchronization started for clientID: %s\n", clientID)
 
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
-		app.authmanSyncInProgress = false
+		inProgress := false
+		err := app.storage.SaveSyncConfig(nil, clientID, nil, &inProgress)
+		if err != nil {
+			log.Printf("Error saving sync configs to end sync: %s\n", err)
+			return
+		}
 		log.Printf("Global Authman synchronization finished for clientID: %s\n", clientID)
 	}
 	defer finishAuthmanSync()
+
+	configs, err := app.storage.FindManagedGroupConfigs(clientID)
+	if err != nil {
+		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+	}
 
 	for _, config := range configs {
 		for _, stemName := range config.AuthmanStems {
@@ -1460,4 +1483,12 @@ func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig
 
 func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
 	return app.storage.DeleteManagedGroupConfig(id, clientID)
+}
+
+func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
+	return app.storage.FindSyncConfig(nil, clientID)
+}
+
+func (app *Application) updateSyncConfig(clientID string, cron string) error {
+	return app.storage.SaveSyncConfig(nil, clientID, &cron, nil)
 }

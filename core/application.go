@@ -21,14 +21,21 @@ import (
 	"groups/driven/rewards"
 	"log"
 	"time"
+
+	"github.com/robfig/cron/v3"
 )
+
+type scheduledTask struct {
+	taskID *cron.EntryID
+	cron   string
+}
 
 // Application represents the corebb application code based on hexagonal architecture
 type Application struct {
 	version string
 	build   string
 
-	config *model.Config
+	config *model.ApplicationConfig
 
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
@@ -42,8 +49,8 @@ type Application struct {
 	authmanSyncInProgress bool
 
 	//synchronize managed groups timer
-	syncManagedGroupsTimer     *time.Timer
-	syncManagedGroupsTimerDone chan bool
+	scheduler         *cron.Cron
+	managedGroupTasks map[string]scheduledTask
 }
 
 // Start starts the corebb part of the application
@@ -52,9 +59,7 @@ func (app *Application) Start() {
 	storageListener := storageListenerImpl{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
 
-	if app.config != nil && app.config.SyncManagedGroupsPeriod != 0 {
-		go app.setupSyncManagedGroupTimer()
-	}
+	app.setupSyncManagedGroupTimer()
 }
 
 // FindUser finds an user for the provided external id
@@ -106,59 +111,46 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 func (app *Application) setupSyncManagedGroupTimer() {
 	log.Println("setupSyncManagedGroupTimer")
 
-	//cancel if active
-	if app.syncManagedGroupsTimer != nil {
-		app.syncManagedGroupsTimerDone <- true
-		app.syncManagedGroupsTimer.Stop()
+	configs, err := app.storage.LoadSyncConfigs(nil)
+	if err != nil {
+		log.Printf("error loading sync configs: %s", err)
 	}
 
-	app.syncManagedGroups()
-}
+	for _, config := range configs {
+		task, ok := app.managedGroupTasks[config.ClientID]
 
-func (app *Application) syncManagedGroups() {
-	log.Println("syncManagedGroups")
-	if app.config == nil {
-		return
-	}
-
-	for _, clientID := range app.config.SupportedClientIDs {
-		configs, err := app.storage.FindManagedGroupConfigs(clientID)
-		if err != nil {
-			log.Printf("error finding managed group configs for clientID %s\n", clientID)
+		//cancel if active
+		if ok && task.cron != config.CRON && task.taskID != nil {
+			app.scheduler.Remove(*task.taskID)
+			delete(app.managedGroupTasks, config.ClientID)
 		}
-		if len(configs) > 0 {
-			err = app.synchronizeAuthman(clientID, configs)
-			if err != nil {
-				log.Printf("error syncing authman groups %s\n", err.Error())
+
+		if (!ok || task.cron != config.CRON) && config.CRON != "" {
+			sync := func() {
+				log.Println("syncManagedGroups for clientID " + config.ClientID)
+				err := app.synchronizeAuthman(config.ClientID)
+				if err != nil {
+					log.Printf("error syncing Authman groups for clientID %s: %s\n", config.ClientID, err.Error())
+				}
 			}
+			taskID, err := app.scheduler.AddFunc(config.CRON, sync)
+			if err != nil {
+				log.Printf("error scheduling managed group sync for clientID %s: %s\n", config.ClientID, err)
+			}
+			app.managedGroupTasks[config.ClientID] = scheduledTask{taskID: &taskID, cron: config.CRON}
 		}
 	}
-
-	durationMins := 1440
-	if app.config.SyncManagedGroupsPeriod != 0 {
-		durationMins = app.config.SyncManagedGroupsPeriod
-	}
-	duration := time.Minute * time.Duration(durationMins)
-	app.syncManagedGroupsTimer = time.NewTimer(duration)
-	select {
-	case <-app.syncManagedGroupsTimer.C:
-		// timer expired
-		app.syncManagedGroupsTimer = nil
-
-		app.syncManagedGroups()
-	case <-app.syncManagedGroupsTimerDone:
-		// timer aborted
-		app.syncManagedGroupsTimer = nil
-	}
+	app.scheduler.Start()
 }
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, config *model.Config) *Application {
+	rewards *rewards.Adapter, config *model.ApplicationConfig) *Application {
 
-	timerDone := make(chan bool)
+	scheduler := cron.New(cron.WithLocation(time.UTC))
+	managedGroupTasks := map[string]scheduledTask{}
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, config: config, syncManagedGroupsTimerDone: timerDone}
+		authman: authman, corebb: core, rewards: rewards, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

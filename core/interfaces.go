@@ -15,7 +15,6 @@
 package core
 
 import (
-	"fmt"
 	"groups/core/model"
 	"groups/driven/notifications"
 	"groups/driven/storage"
@@ -76,6 +75,9 @@ type Services interface {
 	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
+
+	GetSyncConfig(clientID string) (*model.SyncConfig, error)
+	UpdateSyncConfig(clientID string, cron string) error
 }
 
 type servicesImpl struct {
@@ -224,11 +226,7 @@ func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID 
 }
 
 func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
-	configs, err := s.app.storage.FindManagedGroupConfigs(clientID)
-	if err != nil {
-		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
-	}
-	return s.app.synchronizeAuthman(clientID, configs)
+	return s.app.synchronizeAuthman(clientID)
 }
 
 func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
@@ -251,6 +249,14 @@ func (s *servicesImpl) DeleteManagedGroupConfig(id string, clientID string) erro
 	return s.app.deleteManagedGroupConfig(id, clientID)
 }
 
+func (s *servicesImpl) GetSyncConfig(clientID string) (*model.SyncConfig, error) {
+	return s.app.getSyncConfig(clientID)
+}
+
+func (s *servicesImpl) UpdateSyncConfig(clientID string, cron string) error {
+	return s.app.updateSyncConfig(clientID, cron)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
@@ -267,6 +273,12 @@ func (s *administrationImpl) GetGroups(clientID string, category *string, privac
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	RegisterStorageListener(listener storage.Listener)
+
+	PerformTransaction(transaction func(context storage.TransactionContext) error) error
+
+	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
+	FindSyncConfig(context storage.TransactionContext, clientID string) (*model.SyncConfig, error)
+	SaveSyncConfig(context storage.TransactionContext, clientID string, cron *string, inProgress *bool) error
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
 	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
@@ -325,11 +337,12 @@ type Storage interface {
 }
 
 type storageListenerImpl struct {
+	storage.DefaultListenerImpl
 	app *Application
 }
 
-func (a *storageListenerImpl) OnManagedGroupConfigsChanged() {
-	//do nothing for now
+func (a *storageListenerImpl) OnConfigsChanged() {
+	a.app.setupSyncManagedGroupTimer()
 }
 
 // Notifications exposes Notifications BB APIs for the driver adapters

@@ -121,6 +121,49 @@ func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
 	sa.db.listeners = append(sa.db.listeners, storageListener)
 }
 
+func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConfig, error) {
+	filter := bson.M{"type": "sync"}
+
+	var config []model.SyncConfig
+	err := sa.db.configs.FindWithContext(context, filter, &config, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func (sa *Adapter) FindSyncConfig(context TransactionContext, clientID string) (*model.SyncConfig, error) {
+	filter := bson.M{"type": "sync", "client_id": clientID}
+
+	var config model.SyncConfig
+	err := sa.db.configs.FindOneWithContext(context, filter, &config, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &config, nil
+}
+
+func (sa *Adapter) SaveSyncConfig(context TransactionContext, clientID string, cron *string, inProgress *bool) error {
+	filter := bson.M{"type": "sync", "client_id": clientID}
+	update := bson.M{}
+	if cron != nil {
+		update["cron"] = *cron
+	}
+	if inProgress != nil {
+		update["in_progress"] = *inProgress
+	}
+	upsert := true
+	opts := options.UpdateOptions{Upsert: &upsert}
+	_, err := sa.db.configs.UpdateOne(filter, bson.M{"$set": update}, &opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // FindUser finds the user for the provided external id and client id
 func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.User, error) {
 	var filter bson.D
@@ -2188,6 +2231,40 @@ func (sa *Adapter) DeleteManagedGroupConfig(id string, clientID string) error {
 	return nil
 }
 
+//PerformTransaction performs a transaction
+func (sa *Adapter) PerformTransaction(transaction func(context TransactionContext) error) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return err
+		}
+
+		err = transaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return err
+		}
+
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
+	err := sessionContext.AbortTransaction(sessionContext)
+	if err != nil {
+		log.Printf("error aborting a transaction - %s\n", err)
+	}
+}
+
 //NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
@@ -2283,11 +2360,20 @@ func (sl *storageListener) OnManagedGroupConfigsChanged() {
 
 //Listener  listens for change data storage events
 type Listener interface {
+	OnConfigsChanged()
 	OnManagedGroupConfigsChanged()
 }
 
 //DefaultListenerImpl default listener implementation
 type DefaultListenerImpl struct{}
 
+//OnConfigsChanged notifies configs have been updated
+func (d *DefaultListenerImpl) OnConfigsChanged() {}
+
 //OnManagedGroupConfigsChanged notifies managed group configs have been updated
 func (d *DefaultListenerImpl) OnManagedGroupConfigsChanged() {}
+
+//TransactionContext wraps mongo.SessionContext for use by external packages
+type TransactionContext interface {
+	mongo.SessionContext
+}

@@ -107,7 +107,7 @@ func main() {
 
 	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	config := &model.Config{
+	config := &model.ApplicationConfig{
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
 		SyncManagedGroupsPeriod:   syncManagedGroupPeriod,

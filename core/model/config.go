@@ -16,15 +16,23 @@ package model
 
 import "time"
 
-// Config wrapper for in memory storage of configuration
-type Config struct {
+// ApplicationConfig wrapper for in memory storage of configuration
+type ApplicationConfig struct {
 	AuthmanAdminUINList       []string
 	ReportAbuseRecipientEmail string
 	SyncManagedGroupsPeriod   int //Period at which to automatically sync managed groups in minutes
 	SupportedClientIDs        []string
 }
 
-// ManagedGroupConfig defines a configs for a set of managed groups
+// SyncConfig defines system configs for managed group sync
+type SyncConfig struct {
+	Type       string `json:"type" bson:"type"`
+	ClientID   string `json:"client_id" bson:"client_id"`
+	CRON       string `json:"cron" bson:"cron"`
+	InProgress bool   `json:"in_progress" bson:"in_progress"`
+}
+
+// ManagedGroupConfig defines a config for a set of managed groups
 type ManagedGroupConfig struct {
 	ID           string     `json:"id" bson:"_id"`
 	ClientID     string     `json:"client_id" bson:"client_id"`

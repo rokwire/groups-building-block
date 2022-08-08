@@ -87,6 +87,8 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateManagedGroupConfig)).Methods("POST")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateManagedGroupConfig)).Methods("PUT")
 	adminSubrouter.HandleFunc("/managed-group-configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteManagedGroupConfig)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/sync-config", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetSyncConfig)).Methods("GET")
+	adminSubrouter.HandleFunc("/sync-config", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
 
 	//internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
