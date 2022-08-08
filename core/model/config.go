@@ -20,7 +20,6 @@ import "time"
 type ApplicationConfig struct {
 	AuthmanAdminUINList       []string
 	ReportAbuseRecipientEmail string
-	SyncManagedGroupsPeriod   int //Period at which to automatically sync managed groups in minutes
 	SupportedClientIDs        []string
 }
 
