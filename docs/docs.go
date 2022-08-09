@@ -53,7 +53,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminDeleteGroupEvent",
                 "parameters": [
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminGetGroupEvents",
                 "parameters": [
@@ -133,6 +133,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/group/{group-id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves stats for a group by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetGroupStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupStats"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/group/{groupID}/posts": {
             "get": {
                 "security": [
@@ -142,7 +186,7 @@ const docTemplate = `{
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminGetGroupPosts",
                 "parameters": [
@@ -177,12 +221,12 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Deletes a post within the desired group.",
+                "description": "Updates a post within the desired group.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminDeleteGroupPost",
                 "parameters": [
@@ -216,7 +260,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminDeleteGroup",
                 "parameters": [
@@ -260,7 +304,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminGetAllGroups",
                 "parameters": [
@@ -545,7 +589,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminGetUserGroups",
                 "parameters": [
@@ -591,12 +635,202 @@ const docTemplate = `{
                 ],
                 "description": "Logs in the user and refactor the user record and linked data if need",
                 "tags": [
-                    "Admin"
+                    "Admin-V1"
                 ],
                 "operationId": "AdminLoginUser",
                 "responses": {
                     "200": {
                         "description": ""
+                    }
+                }
+            }
+        },
+        "/api/admin/v2/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category, title and privacy. V2",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V2"
+                ],
+                "operationId": "AdminGetGroupsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category - filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupV2"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/v2/groups/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives a group. V2",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V2"
+                ],
+                "operationId": "AdminGetGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/v2/user/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gives the user groups. It can be filtered by category, title and privacy. V2.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V2"
+                ],
+                "operationId": "AdminGetUserGroupsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category - filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupV2"
+                            }
+                        }
                     }
                 }
             }
@@ -611,6 +845,9 @@ const docTemplate = `{
                 "description": "Gives all group categories.",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "GetGroupCategories",
                 "parameters": [
@@ -645,6 +882,9 @@ const docTemplate = `{
                 "description": "Synchronizes Authman group. Only admin of the group could initiate the operation",
                 "consumes": [
                     "text/plain"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "SynchAuthmanGroup",
                 "parameters": [
@@ -683,6 +923,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "DeleteGroupEvent",
                 "parameters": [
@@ -732,6 +975,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "GetGroupEvents",
                 "parameters": [
                     {
@@ -773,6 +1019,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "UpdateGroupEvent",
                 "parameters": [
@@ -822,6 +1071,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [
                     {
@@ -869,6 +1121,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "GetGroupEventsV2",
                 "parameters": [
                     {
@@ -900,6 +1155,57 @@ const docTemplate = `{
             }
         },
         "/api/group/{group-id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "CreateMember",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupMembersFilter"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Member"
+                            }
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -909,6 +1215,9 @@ const docTemplate = `{
                 "description": "Adds a member to a group. The current user is required to be an admin of the group",
                 "consumes": [
                     "text/plain"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -952,6 +1261,9 @@ const docTemplate = `{
                 "consumes": [
                     "text/plain"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "DeleteMember",
                 "parameters": [
                     {
@@ -992,6 +1304,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "CreatePendingMember",
                 "parameters": [
@@ -1044,6 +1359,9 @@ const docTemplate = `{
                 "consumes": [
                     "text/plain"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "DeletePendingMember",
                 "parameters": [
                     {
@@ -1082,6 +1400,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "gets all posts for the desired group.",
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "GetGroupPosts",
                 "parameters": [
                     {
@@ -1122,6 +1443,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "CreateGroupPost",
                 "parameters": [
                     {
@@ -1156,6 +1480,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "UpdateGroupPost",
                 "parameters": [
                     {
@@ -1188,6 +1515,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "DeleteGroupPost",
                 "parameters": [
                     {
@@ -1215,6 +1545,9 @@ const docTemplate = `{
                 "description": "Reports an abusive group post",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "ReportAbuseGroupPost",
                 "parameters": [
@@ -1256,6 +1589,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "DeleteGroup",
                 "parameters": [
                     {
@@ -1296,6 +1632,9 @@ const docTemplate = `{
                 "description": "Gives the groups list. It can be filtered by category",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "GetGroups",
                 "parameters": [
@@ -1344,6 +1683,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "CreateGroup",
                 "parameters": [
                     {
@@ -1387,6 +1729,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "GetGroup",
                 "parameters": [
                     {
@@ -1425,6 +1770,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "UpdateGroup",
                 "parameters": [
@@ -1502,7 +1850,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/Group"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/ShortMemberRecord"
+                            }
                         }
                     }
                 }
@@ -1640,6 +1991,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "UpdateMembership",
                 "parameters": [
                     {
@@ -1688,6 +2042,9 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "DeleteMembership",
                 "parameters": [
                     {
@@ -1728,6 +2085,9 @@ const docTemplate = `{
                 ],
                 "produces": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "MembershipApproval",
                 "parameters": [
@@ -1776,6 +2136,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Deletes a user with all the involved information from the Notifications BB (this includes - group membership \u0026 posts (and child posts - no matter of the creator))",
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "DeleteUser",
                 "responses": {
                     "200": {
@@ -1794,6 +2157,9 @@ const docTemplate = `{
                 "description": "Gives the user groups memberships",
                 "consumes": [
                     "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "GetUserGroupMemberships",
                 "parameters": [
@@ -1829,6 +2195,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "GetUserGroups",
                 "parameters": [
                     {
@@ -1863,6 +2232,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Logs in the user and refactor the user record and linked data if need",
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "LoginUser",
                 "responses": {
                     "200": {
@@ -1879,6 +2251,9 @@ const docTemplate = `{
                     }
                 ],
                 "description": "Gets user stat information. Responds with {\"posts_count\": xxx}",
+                "tags": [
+                    "Client-V1"
+                ],
                 "operationId": "GetUserStats",
                 "parameters": [
                     {
@@ -1894,6 +2269,196 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/getUserStatsResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category, title and privacy. V2",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V2"
+                ],
+                "operationId": "GetGroupsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category - filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupV2"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/groups/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives a group. V2",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V2"
+                ],
+                "operationId": "GetGroupV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/GroupV2"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v2/user/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gives the user groups. It can be filtered by category, title and privacy. V2.",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V2"
+                ],
+                "operationId": "GetUserGroupsV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category - filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupV2"
+                            }
                         }
                     }
                 }
@@ -1951,6 +2516,9 @@ const docTemplate = `{
                 "description": "Gives the service version.",
                 "produces": [
                     "text/plain"
+                ],
+                "tags": [
+                    "Client-V1"
                 ],
                 "operationId": "Version",
                 "responses": {
@@ -2082,6 +2650,46 @@ const docTemplate = `{
                 }
             }
         },
+        "GroupMembersFilter": {
+            "type": "object",
+            "properties": {
+                "external_id": {
+                    "description": "core user external id",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "membership id",
+                    "type": "string"
+                },
+                "limit": {
+                    "description": "result limit",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "member's name",
+                    "type": "string"
+                },
+                "net_id": {
+                    "description": "core user net id",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "result offset",
+                    "type": "integer"
+                },
+                "statuses": {
+                    "description": "lest of membership statuses",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
+                    "description": "core user id",
+                    "type": "string"
+                }
+            }
+        },
         "GroupStat": {
             "type": "object",
             "properties": {
@@ -2098,6 +2706,103 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupStats": {
+            "type": "object",
+            "properties": {
+                "admins_count": {
+                    "type": "integer"
+                },
+                "attendance_count": {
+                    "type": "integer"
+                },
+                "member_count": {
+                    "type": "integer"
+                },
+                "pending_count": {
+                    "type": "integer"
+                },
+                "rejected_count": {
+                    "type": "integer"
+                },
+                "total_count": {
+                    "type": "integer"
+                }
+            }
+        },
+        "GroupV2": {
+            "type": "object",
+            "properties": {
+                "attendance_group": {
+                    "type": "boolean"
+                },
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
+                "block_new_membership_requests": {
+                    "type": "boolean"
+                },
+                "can_join_automatically": {
+                    "type": "boolean"
+                },
+                "category": {
+                    "description": "one of the enums categories list",
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "current_member": {
+                    "description": "this is indicative and it's not required for update APIs",
+                    "$ref": "#/definitions/Member"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "membership_questions": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "only_admins_can_create_polls": {
+                    "type": "boolean"
+                },
+                "privacy": {
+                    "description": "public or private",
+                    "type": "string"
+                },
+                "tags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "type": "string"
+                },
+                "web_url": {
                     "type": "string"
                 }
             }
@@ -2203,6 +2908,33 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "ShortMemberRecord": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }

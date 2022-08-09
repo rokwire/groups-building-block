@@ -916,10 +916,16 @@ func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string
 	}
 
 	findOptions := options.Find()
-	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
-	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+	if order == nil || "asc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
 	}
 	if limit != nil {
 		findOptions.SetLimit(*limit)
@@ -990,12 +996,43 @@ func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, 
 }
 
 //FindUserGroups finds the user groups for client id
-func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group, error) {
-	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID},
-		primitive.E{Key: "client_id", Value: clientID}}
+func (sa *Adapter) FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	filter := bson.D{
+		primitive.E{Key: "members.user_id", Value: userID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+
+	if category != nil {
+		filter = append(filter, primitive.E{Key: "category", Value: category})
+	}
+	if title != nil {
+		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
+	}
+	if privacy != nil {
+		filter = append(filter, primitive.E{Key: "privacy", Value: privacy})
+	}
+
+	findOptions := options.Find()
+	if order == nil || "asc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+	}
 
 	var list []group
-	err := sa.db.groups.Find(filter, &list, nil)
+	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}

@@ -140,7 +140,7 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 // @Param identifier path string true "Title"
 // @Param offset query string false "Offsetting result"
 // @Param limit query string false "Limiting the result"
-// @Success 200 {object} model.Group
+// @Success 200 {array} model.ShortMemberRecord
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/title/{title}/members [get]
 func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w http.ResponseWriter, r *http.Request) {
@@ -217,9 +217,7 @@ func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.Respons
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully started sync"))
 }
 
 // GroupsStats wrapper for group stats API
@@ -370,7 +368,7 @@ func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseW
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(responseData)
 }

@@ -40,11 +40,14 @@ type Services interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
-	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error)
-	GetUserGroups(clientID string, currentGetUserGroups *model.User) ([]map[string]interface{}, error)
+	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
-	GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error)
 
+	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
+	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
+
+	GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error)
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, current *model.User, groupID string) error
 	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
@@ -125,7 +128,7 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 	return s.app.deleteGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]map[string]interface{}, error) {
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	return s.app.getGroups(clientID, current, category, privacy, title, offset, limit, order)
 }
 
@@ -133,8 +136,8 @@ func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
 	return s.app.getAllGroups(clientID)
 }
 
-func (s *servicesImpl) GetUserGroups(clientID string, current *model.User) ([]map[string]interface{}, error) {
-	return s.app.getUserGroups(clientID, current)
+func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	return s.app.getUserGroups(clientID, current, category, privacy, title, offset, limit, order)
 }
 
 func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
@@ -145,8 +148,16 @@ func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
 	return s.app.deleteUser(clientID, current)
 }
 
-func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (map[string]interface{}, error) {
+func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	return s.app.getGroup(clientID, current, id)
+}
+
+func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error) {
+	return s.app.getGroupMembers(clientID, current, groupID, filter)
+}
+
+func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
+	return s.app.storage.GetGroupStats(clientID, id)
 }
 
 func (s *servicesImpl) CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
@@ -298,13 +309,15 @@ type Storage interface {
 	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	DeleteGroup(clientID string, id string) error
+	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
-	FindUserGroups(clientID string, userID string) ([]model.Group, error)
+	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
+	GetGroupMembers(clientID string, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error)
 	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
