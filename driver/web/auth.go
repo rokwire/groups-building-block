@@ -24,9 +24,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/google/uuid"
 	"golang.org/x/sync/syncmap"
-	"gopkg.in/ericchiang/go-oidc.v2"
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/authorization"
