@@ -596,6 +596,18 @@ definitions:
     required:
     - approve
     type: object
+  model.SyncConfig:
+    properties:
+      client_id:
+        type: string
+      cron:
+        type: string
+      time_threshold:
+        description: Threshold from start_time to be considered same run in minutes
+        type: integer
+      type:
+        type: string
+    type: object
   reportAbuseGroupPostRequestBody:
     properties:
       comment:
@@ -692,7 +704,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.59
+  version: 1.5.62
 paths:
   /admin/authman/synchronize:
     post:
@@ -977,8 +989,6 @@ paths:
       - Admin
   /api/admin/managed-group-configs/{id}:
     delete:
-      consumes:
-      - application/json
       description: Deletes a managed group config
       operationId: AdminDeleteManagedGroupConfig
       parameters:
@@ -990,6 +1000,53 @@ paths:
       - description: ID
         in: path
         name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/sync-configs:
+    get:
+      consumes:
+      - application/json
+      description: Gets sync config
+      operationId: AdminGetSyncConfigs
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SyncConfig'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - text/plain
+      description: Saves sync config
+      operationId: AdminSaveSyncConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.SyncConfig'
+      - description: APP
+        in: header
+        name: APP
         required: true
         type: string
       responses:

@@ -8,7 +8,7 @@ WORKDIR /groups-app
 COPY . .
 RUN make
 
-FROM alpine:3.11.6
+FROM alpine:3.16.1
 
 COPY --from=builder /groups-app/bin/groups /
 COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml

@@ -25,7 +25,6 @@ import (
 	web "groups/driver/web"
 	"log"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/rokwire/core-auth-library-go/authservice"
@@ -69,12 +68,6 @@ func main() {
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
 	authmanAdminUINList := getAuthmanAdminUINList()
 
-	syncManagedGroupPeriodStr := getEnvKey("SYNC_MANAGED_GROUP_PERIOD", false)
-	syncManagedGroupPeriod, err := strconv.Atoi(syncManagedGroupPeriodStr)
-	if err != nil {
-		log.Printf("missing or invalid SYNC_MANAGED_GROUP_PERIOD %s. Defaulting to disabled sync\n", syncManagedGroupPeriodStr)
-	}
-
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
@@ -93,7 +86,7 @@ func main() {
 		log.Fatalf("error instancing auth data loader: %s", err)
 	}
 	// Instantiate AuthService instance
-	authService, err := authservice.NewAuthService("groups", groupServiceURL, serviceLoader)
+	authService, err := authservice.NewTestAuthService("groups", groupServiceURL, serviceLoader)
 	if err != nil {
 		log.Fatalf("error instancing auth service: %s", err)
 	}
@@ -107,10 +100,9 @@ func main() {
 
 	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	config := &model.Config{
+	config := &model.ApplicationConfig{
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SyncManagedGroupsPeriod:   syncManagedGroupPeriod,
 		SupportedClientIDs:        supportedClientIDs,
 	}
 

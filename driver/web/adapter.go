@@ -43,7 +43,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.5.59
+// @version 1.5.62
 // @host localhost
 // @BasePath /gr
 // @schemes https
@@ -93,6 +93,8 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateManagedGroupConfig)).Methods("POST")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateManagedGroupConfig)).Methods("PUT")
 	adminSubrouter.HandleFunc("/managed-group-configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteManagedGroupConfig)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetSyncConfig)).Methods("GET")
+	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
 
 	// Internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
