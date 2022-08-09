@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+## [1.5.63] - 2022-08-09
+### Fixed
+- Fix merge issues
+
 ## [1.5.62] - 2022-08-08
 ### Added
 - Improve managed group admin assignment and synchronization [#209](https://github.com/rokwire/groups-building-block/issues/209)

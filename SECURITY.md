@@ -6,8 +6,8 @@ Patches for **Groups Building Block** in this repository will only be applied to
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.5.62   | :white_check_mark: |
-| <1.5.62   | :red_cross_mark: |
+| 1.5.63   | :white_check_mark: |
+| <1.5.63   | :red_cross_mark: |
 
 
 
