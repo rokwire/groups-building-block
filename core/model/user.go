@@ -16,7 +16,7 @@ package model
 
 import "time"
 
-//User represents user entity
+// User represents user entity
 type User struct {
 	ID            string     `json:"id" bson:"_id"`
 	IsAnonymous   bool       `json:"is_anonymous" bson:"is_anonymous"`

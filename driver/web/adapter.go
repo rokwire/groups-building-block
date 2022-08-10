@@ -31,7 +31,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
-//Adapter entity
+// Adapter entity
 type Adapter struct {
 	host string
 	auth *Auth
@@ -60,7 +60,7 @@ type Adapter struct {
 // @in header
 // @name INTERNAL-API-KEY
 
-//Start starts the web server
+// Start starts the web server
 func (we *Adapter) Start() {
 	router := mux.NewRouter().StrictSlash(true)
 
@@ -273,7 +273,7 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 	}
 }
 
-//NewWebAdapter creates new WebAdapter instance
+// NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
 	internalAPIKey string, authService *authservice.AuthService, groupServiceURL string) *Adapter {

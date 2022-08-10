@@ -26,12 +26,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-//AdminApisHandler handles the rest Admin APIs implementation
+// AdminApisHandler handles the rest Admin APIs implementation
 type AdminApisHandler struct {
 	app *core.Application
 }
 
-//GetUserGroups gets groups. It can be filtered by category
+// GetUserGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID AdminGetUserGroups
 // @Tags Admin-V1
@@ -235,7 +235,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 	w.Write(data)
 }
 
-//GetGroupPosts gets all posts for the desired group.
+// GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
 // @Tags Admin-V1
@@ -339,7 +339,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 	w.Write(data)
 }
 
-//DeleteGroup deletes a group
+// DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID AdminDeleteGroup
 // @Tags Admin-V1
@@ -660,7 +660,7 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 	w.WriteHeader(http.StatusOK)
 }
 
-//SynchronizeAuthman Synchronizes Authman groups membership
+// SynchronizeAuthman Synchronizes Authman groups membership
 // @Description Synchronizes Authman groups membership
 // @Tags Admin
 // @ID AdminSynchronizeAuthman

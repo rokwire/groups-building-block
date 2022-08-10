@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-//Post represents group posts
+// Post represents group posts
 type Post struct {
 	ID                *string `json:"id" bson:"_id"`
 	ClientID          *string `json:"client_id" bson:"client_id"`

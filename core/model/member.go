@@ -117,12 +117,12 @@ func (m *Member) IsPendingMember() bool {
 	return m.Status == "pending"
 }
 
-//IsRejected says if the member is a group rejected
+// IsRejected says if the member is a group rejected
 func (m *Member) IsRejected() bool {
 	return m.Status == "rejected"
 }
 
-//ToShortMemberRecord converts to ShortMemberRecord
+// ToShortMemberRecord converts to ShortMemberRecord
 func (m *Member) ToShortMemberRecord() ShortMemberRecord {
 	return ShortMemberRecord{
 		ID:         m.ID,

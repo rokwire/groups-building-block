@@ -201,7 +201,7 @@ type synchronizeAuthmanRequestBody struct {
 	GroupAutoCreateStemNames []string `json:"group_auto_create_stem_names"`
 } // @name synchronizeAuthmanRequestBody
 
-//SynchronizeAuthman Synchronizes Authman groups membership
+// SynchronizeAuthman Synchronizes Authman groups membership
 // @Description Synchronizes Authman groups membership
 // @ID SynchronizeAuthman
 // @Tags Internal

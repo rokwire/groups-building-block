@@ -30,12 +30,12 @@ import (
 	"gopkg.in/go-playground/validator.v9"
 )
 
-//ApisHandler handles the rest APIs implementation
+// ApisHandler handles the rest APIs implementation
 type ApisHandler struct {
 	app *core.Application
 }
 
-//Version gives the service version
+// Version gives the service version
 // @Description Gives the service version.
 // @ID Version
 // @Tags Client-V1
@@ -46,7 +46,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
-//GetGroupCategories gives all group categories
+// GetGroupCategories gives all group categories
 // @Description Gives all group categories.
 // @ID GetGroupCategories
 // @Tags Client-V1
@@ -106,7 +106,7 @@ type userGroupMembership struct {
 	MembershipStatus string `json:"membership_status"`
 }
 
-//CreateGroup creates a group
+// CreateGroup creates a group
 // @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
 // @ID CreateGroup
 // @Tags Client-V1
@@ -200,7 +200,7 @@ type updateGroupRequest struct {
 	AttendanceGroup            bool     `json:"attendance_group" `
 } //@name updateGroupRequest
 
-//UpdateGroup updates a group
+// UpdateGroup updates a group
 // @Description Updates a group.
 // @ID UpdateGroup
 // @Tags Client-V1
@@ -330,7 +330,7 @@ func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http
 	w.Write(data)
 }
 
-//DeleteGroup deletes a group
+// DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID DeleteGroup
 // @Tags Client-V1
@@ -416,7 +416,7 @@ type getGroupsResponse struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getGroupsResponse
 
-//GetGroups gets groups. It can be filtered by category
+// GetGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetGroups
 // @Tags Client-V1
@@ -753,7 +753,7 @@ type getGroupResponse struct {
 	DateUpdated *time.Time `json:"date_updated"`
 } // @name getGroupResponse
 
-//GetGroup gets a group
+// GetGroup gets a group
 // @Description Gives a group
 // @ID GetGroup
 // @Tags Client-V1
@@ -817,7 +817,7 @@ type createPendingMemberRequest struct {
 	} `json:"member_answers"`
 } // @name createPendingMemberRequest
 
-//CreatePendingMember creates a group pending member
+// CreatePendingMember creates a group pending member
 // @Description Creates a group pending member
 // @ID CreatePendingMember
 // @Tags Client-V1
@@ -904,7 +904,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 	w.Write([]byte("Successfully created"))
 }
 
-//DeletePendingMember deletes a group pending member
+// DeletePendingMember deletes a group pending member
 // @Description Deletes a group pending member
 // @ID DeletePendingMember
 // @Tags Client-V1
@@ -1103,7 +1103,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	w.WriteHeader(http.StatusOK)
 }
 
-//DeleteMember deletes a member membership from a group
+// DeleteMember deletes a member membership from a group
 // @Description Deletes a member membership from a group
 // @ID DeleteMember
 // @Tags Client-V1
@@ -1139,7 +1139,7 @@ type membershipApprovalRequest struct {
 	RejectedReason string `json:"reject_reason"`
 } // @name membershipApprovalRequest
 
-//MembershipApproval approve/deny a membership
+// MembershipApproval approve/deny a membership
 // @Description Аpprove/Deny a membership
 // @ID MembershipApproval
 // @Tags Client-V1
@@ -1220,7 +1220,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 	w.Write([]byte("Successfully processed"))
 }
 
-//DeleteMembership deletes membership
+// DeleteMembership deletes membership
 // @Description Deletes a membership
 // @ID DeleteMembership
 // @Tags Client-V1
@@ -1279,7 +1279,7 @@ type updateMembershipRequest struct {
 	DateAttended *time.Time `json:"date_attended"`
 } // @name updateMembershipRequest
 
-//UpdateMembership updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
+// UpdateMembership updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
 // @Description Updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
 // @ID UpdateMembership
 // @Tags Client-V1
@@ -1411,7 +1411,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 	w.WriteHeader(http.StatusOK)
 }
 
-//GetGroupEvents gives the group events
+// GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID GetGroupEvents
 // @Tags Client-V1
@@ -1486,7 +1486,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	w.Write(data)
 }
 
-//GetGroupEventsV2 gives the group events V2
+// GetGroupEventsV2 gives the group events V2
 // @Description Gives the group events.
 // @ID GetGroupEventsV2
 // @Tags Client-V1
@@ -1568,7 +1568,7 @@ type groupEventRequest struct {
 	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name groupEventRequest
 
-//CreateGroupEvent creates a group event
+// CreateGroupEvent creates a group event
 // @Description Creates a group event
 // @ID CreateGroupEvent
 // @Tags Client-V1
@@ -1723,7 +1723,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 	w.WriteHeader(http.StatusOK)
 }
 
-//DeleteGroupEvent deletes a group event
+// DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
 // @ID DeleteGroupEvent
 // @Tags Client-V1
@@ -1872,7 +1872,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	w.Write(data)
 }
 
-//CreateGroupPost creates a post within the desired group.
+// CreateGroupPost creates a post within the desired group.
 // @Description creates a post within the desired group.
 // @ID CreateGroupPost
 // @Tags Client-V1
@@ -1951,7 +1951,7 @@ type postResponse struct {
 	Private  bool   `json:"private"`
 }
 
-//UpdateGroupPost Updates a post within the desired group.
+// UpdateGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID UpdateGroupPost
 // @Tags Client-V1
@@ -2045,7 +2045,7 @@ type reportAbuseGroupPostRequestBody struct {
 	SendToDean        bool   `json:"send_to_dean" bson:"send_to_dean"`
 } // @name reportAbuseGroupPostRequestBody
 
-//ReportAbuseGroupPost Reports an abusive group post
+// ReportAbuseGroupPost Reports an abusive group post
 // @Description Reports an abusive group post
 // @ID ReportAbuseGroupPost
 // @Tags Client-V1
@@ -2125,7 +2125,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 	w.WriteHeader(http.StatusOK)
 }
 
-//DeleteGroupPost Updates a post within the desired group.
+// DeleteGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID DeleteGroupPost
 // @Tags Client-V1
@@ -2183,17 +2183,17 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 	w.WriteHeader(http.StatusOK)
 }
 
-//NewApisHandler creates new rest Handler instance
+// NewApisHandler creates new rest Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
 }
 
-//NewAdminApisHandler creates new rest Handler instance
+// NewAdminApisHandler creates new rest Handler instance
 func NewAdminApisHandler(app *core.Application) *AdminApisHandler {
 	return &AdminApisHandler{app: app}
 }
 
-//NewInternalApisHandler creates new rest Handler instance
+// NewInternalApisHandler creates new rest Handler instance
 func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 	return &InternalApisHandler{app: app}
 }
