@@ -3440,6 +3440,10 @@ const docTemplate = `{
                     "description": "Threshold from start_time to be considered same run in minutes",
                     "type": "integer"
                 },
+                "timeout": {
+                    "description": "Time from start_time to be considered a failed run in minutes",
+                    "type": "integer"
+                },
                 "type": {
                     "type": "string"
                 }

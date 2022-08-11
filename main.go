@@ -156,6 +156,9 @@ func getEnvKey(key string, required bool) string {
 func getAuthmanAdminUINList() []string {
 	//get from the environment
 	authmanAdminUINs := getEnvKey("AUTHMAN_ADMIN_UIN_LIST", true)
+	if len(authmanAdminUINs) == 0 {
+		return nil
+	}
 
 	//it is comma separated format
 	authmanAdminUINList := strings.Split(authmanAdminUINs, ",")

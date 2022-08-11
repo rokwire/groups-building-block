@@ -31,6 +31,8 @@ import (
 	"strings"
 )
 
+const defaultConfigSyncTimeout = 60
+
 func (app *Application) applyDataProtection(current *model.User, group model.Group) model.Group {
 	//1 apply data protection for "anonymous"
 	if current == nil || current.IsAnonymous {
@@ -766,25 +768,30 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		if err != nil {
 			return err
 		}
-		if times != nil {
-			if checkThreshold {
-				config, err := app.storage.FindSyncConfig(clientID)
-				if err != nil {
-					log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
-					return err
+		if times != nil && times.StartTime != nil {
+			config, err := app.storage.FindSyncConfig(clientID)
+			if err != nil {
+				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+			}
+			timeout := defaultConfigSyncTimeout
+			if config != nil && config.Timeout > 0 {
+				timeout = config.Timeout
+			}
+			if times.EndTime == nil {
+				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
+					log.Println("Another Authman sync process is running for clientID " + clientID)
+					return fmt.Errorf("another Authman sync process is running" + clientID)
 				}
+				log.Printf("Authman sync past timeout threshold %d mins\n", timeout)
+			}
+			if checkThreshold {
 				if config == nil {
 					log.Printf("missing sync configs for clientID %s", clientID)
 					return fmt.Errorf("missing sync configs for clientID %s: %v", clientID, err)
 				}
-				if times.StartTime != nil && (times.EndTime == nil || !startTime.After(times.StartTime.Add(time.Minute*time.Duration(config.TimeThreshold)))) {
+				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(config.TimeThreshold))) {
 					log.Println("Authman has already been synced for clientID " + clientID)
 					return fmt.Errorf("Authman has already been synced for clientID %s", clientID)
-				}
-			} else {
-				if times.StartTime != nil && times.EndTime == nil {
-					log.Println("Another Authman sync process is running for clientID " + clientID)
-					return fmt.Errorf("another Authman sync process is running" + clientID)
 				}
 			}
 		}
@@ -830,27 +837,27 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						return fmt.Errorf("error on requesting Authman for stem groups: %s", err)
 					}
 
+					title, adminUINs := stemGroup.GetGroupPrettyTitleAndAdmins()
+
+					defaultAdminsMapping := map[string]bool{}
+					for _, externalID := range adminUINs {
+						defaultAdminsMapping[externalID] = true
+					}
+					for _, externalID := range app.config.AuthmanAdminUINList {
+						defaultAdminsMapping[externalID] = true
+					}
+					for _, externalID := range config.AdminUINs {
+						defaultAdminsMapping[externalID] = true
+					}
+
+					constructedAdminUINs := []string{}
+					if len(defaultAdminsMapping) > 0 {
+						for key := range defaultAdminsMapping {
+							constructedAdminUINs = append(constructedAdminUINs, key)
+						}
+					}
+
 					if storedStemGroup == nil {
-						title, adminUINs := stemGroup.GetGroupPrettyTitleAndAdmins()
-
-						defaultAdminsMapping := map[string]bool{}
-						for _, adminUIN := range adminUINs {
-							defaultAdminsMapping[adminUIN] = true
-						}
-						for _, externalID := range app.config.AuthmanAdminUINList {
-							defaultAdminsMapping[externalID] = true
-						}
-						for _, externalID := range config.AdminUINs {
-							defaultAdminsMapping[externalID] = true
-						}
-
-						var constructedAdminUINs []string
-						if len(defaultAdminsMapping) > 0 {
-							for key := range defaultAdminsMapping {
-								constructedAdminUINs = append(constructedAdminUINs, key)
-							}
-						}
-
 						var members []model.Member
 						if len(constructedAdminUINs) > 0 {
 							members = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
@@ -874,10 +881,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 
 						log.Printf("Created new `%s` group", title)
 					} else {
-						title, adminUINs := stemGroup.GetGroupPrettyTitleAndAdmins()
-
-						adminUINs = append(adminUINs, config.AdminUINs...)
-
 						missedUINs := []string{}
 						groupUpdated := false
 						for _, uin := range adminUINs {
@@ -1034,7 +1037,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 				if mappedMember.Name == "" || mappedMember.Email == "" {
 					missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
 				}
-				break // TBD: Why? This flow looks complicated and needs to be revised and redesign.
+				continue //SH: This was changed from "break" to fix missing members. This flow should still be optimized // TBD: Why? This flow looks complicated and needs to be revised and redesign.
 			}
 
 			if user, ok := localUsersMapping[externalID]; ok {
@@ -1075,6 +1078,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 					DateCreated:   now,
 					DateUpdated:   &now,
 				})
+				missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
 				log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
 			}
 		}
@@ -1120,9 +1124,11 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *m
 					found := false
 					for i, innerMember := range members {
 						if member.ExternalID == innerMember.ExternalID {
-							members[i] = member
+							innerMember.Status = "admin"
+							innerMember.DateUpdated = &now
+							members[i] = innerMember
 							found = true
-							log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", member.UserID, member.Name, member.Email, authmanGroup.Title)
+							log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", innerMember.UserID, innerMember.Name, innerMember.Email, authmanGroup.Title)
 							break
 						}
 					}
