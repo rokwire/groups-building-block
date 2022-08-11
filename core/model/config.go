@@ -29,6 +29,7 @@ type SyncConfig struct {
 	ClientID      string `json:"client_id" bson:"client_id"`
 	CRON          string `json:"cron" bson:"cron"`
 	TimeThreshold int    `json:"time_threshold" bson:"time_threshold"` // Threshold from start_time to be considered same run in minutes
+	Timeout       int    `json:"timeout" bson:"timeout"`               // Time from start_time to be considered a failed run in minutes
 }
 
 // SyncTimes defines the times used to prevent concurrent syncs
