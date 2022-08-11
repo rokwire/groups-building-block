@@ -781,9 +781,8 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
 					log.Println("Another Authman sync process is running for clientID " + clientID)
 					return fmt.Errorf("another Authman sync process is running" + clientID)
-				} else {
-					log.Println("Authman sync past timeout threshold %d mins", timeout)
 				}
+				log.Printf("Authman sync past timeout threshold %d mins\n", timeout)
 			}
 			if checkThreshold {
 				if config == nil {
