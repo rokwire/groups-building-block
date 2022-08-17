@@ -246,21 +246,23 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	isAdmin, group, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	if group == nil {
-		log.Printf("there is no a group for the provided id - %s", id)
+		log.Printf("there is no a group with id - %s", id)
 		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, utils.NewNotFoundError().JSONErrorString(), http.StatusBadRequest)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
-		log.Printf("%s is not allowed to update a group", current.Email)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusBadRequest)
+	if !isAdmin {
+		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
 		return
 	}
 
@@ -1380,7 +1382,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	isAdmin, group, err := h.app.Services.IsGroupAdmin(clientID, groupID, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1392,7 +1394,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	if !isAdmin {
 		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)

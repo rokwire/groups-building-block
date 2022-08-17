@@ -65,6 +65,11 @@ type group struct {
 	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
 	CanJoinAutomatically       bool    `json:"can_join_automatically" bson:"can_join_automatically"`
 	AttendanceGroup            bool    `bson:"attendance_group"`
+
+	UsesGroupMemberships bool `json:"uses_group_memberships" bson:"uses_group_memberships"`
+
+	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
+	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
 }
 
 type member struct {
@@ -849,14 +854,15 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 
 // FindGroup finds group by id and client id
 func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
-	return sa.findGroupWithContext(clientID, id)
+	return sa.FindGroupWithContext(nil, clientID, id)
 }
 
-func (sa *Adapter) findGroupWithContext(clientID string, id string) (*model.Group, error) {
+// FindGroupWithContext finds group by id and client id with context
+func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id},
 		primitive.E{Key: "client_id", Value: clientID}}
 	var rec group
-	err := sa.db.groups.FindOne(filter, &rec, nil)
+	err := sa.db.groups.FindOneWithContext(context, filter, &rec, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -996,20 +1002,23 @@ func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, 
 }
 
 // FindUserGroups finds the user groups for client id
-func (sa *Adapter) FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	filter := bson.D{
-		primitive.E{Key: "members.user_id", Value: userID},
-		primitive.E{Key: "client_id", Value: clientID},
+func (sa *Adapter) FindUserGroups(clientID string, userID string, groupIDs []string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	filter := bson.M{
+		"$or": []bson.M{
+			{"members.user_id": userID},
+			{"_id": bson.M{"$in": groupIDs}},
+		},
+		"client_id": clientID,
 	}
 
 	if category != nil {
-		filter = append(filter, primitive.E{Key: "category", Value: category})
+		filter["category"] = category
 	}
 	if title != nil {
-		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
+		filter["title"] = primitive.Regex{Pattern: *title, Options: "i"}
 	}
 	if privacy != nil {
-		filter = append(filter, primitive.E{Key: "privacy", Value: privacy})
+		filter["privacy"] = privacy
 	}
 
 	findOptions := options.Find()
@@ -1868,7 +1877,7 @@ func (sa *Adapter) findPostWithContext(clientID string, userID *string, groupID 
 	}
 
 	if !skipMembershipCheck && userID != nil {
-		group, err := sa.findGroupWithContext(clientID, groupID)
+		group, err := sa.FindGroup(clientID, groupID)
 		if group == nil || err != nil || !group.IsGroupAdminOrMember(*userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -2457,7 +2466,8 @@ func constructGroup(gr group) model.Group {
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
-		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup,
+		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup, UsesGroupMemberships: gr.UsesGroupMemberships,
+		SyncStartTime: gr.SyncStartTime, SyncEndTime: gr.SyncEndTime,
 	}
 }
 
