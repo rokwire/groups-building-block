@@ -89,11 +89,15 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	}
 
 	if !group.IsGroupAdmin(userID) {
-		membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
-		if err != nil {
-			return false, group, err
-		}
-		if membership == nil || !membership.Admin {
+		if group.UsesGroupMemberships {
+			membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
+			if err != nil {
+				return false, group, err
+			}
+			if membership == nil || !membership.Admin {
+				return false, group, nil
+			}
+		} else {
 			return false, group, nil
 		}
 	}
