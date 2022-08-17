@@ -79,6 +79,28 @@ func (app *Application) getGroupEntityByTitle(clientID string, title string) (*m
 	return group, nil
 }
 
+func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error) {
+	group, err := app.storage.FindGroup(clientID, groupID)
+	if err != nil {
+		return false, nil, err
+	}
+	if group == nil {
+		return false, nil, fmt.Errorf("there is no a group with id - %s", groupID)
+	}
+
+	if !group.IsGroupAdmin(userID) {
+		membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
+		if err != nil {
+			return false, group, err
+		}
+		if membership == nil || !membership.Admin {
+			return false, group, nil
+		}
+	}
+
+	return true, group, nil
+}
+
 func (app *Application) getGroupStats(clientID string, id string) (*model.GroupStats, error) {
 	return app.storage.GetGroupStats(clientID, id)
 }
@@ -1099,7 +1121,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 					log.Println("Another Authman sync process is running for group ID " + group.ID)
 					return fmt.Errorf("another Authman sync process is running for group ID %s", group.ID)
 				}
-				log.Printf("Authman sync F %d mins for group ID %s\n", timeout, group.ID)
+				log.Printf("Authman sync timed out after %d mins for group ID %s\n", timeout, group.ID)
 			}
 		}
 

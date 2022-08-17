@@ -160,3 +160,137 @@ func (sa *Adapter) UpdateGroupUsesGroupMemberships(context TransactionContext, c
 
 	return nil
 }
+
+// GetGroupMembershipStats Retrieves group membership stats
+func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*model.GroupStats, error) {
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{
+			{"group_id", groupID},
+			{"client_id", clientID},
+		}}},
+		bson.D{
+			{"$facet",
+				bson.D{
+					{"total_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"_id", bson.D{{"$exists", true}}}}}},
+							bson.D{{"$count", "total_count"}},
+						},
+					},
+					{"admins_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"admin", true}}}},
+							bson.D{{"$count", "admins_count"}},
+						},
+					},
+					{"member_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"status", "member"}}}},
+							bson.D{{"$count", "member_count"}},
+						},
+					},
+					{"pending_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"status", "pending"}}}},
+							bson.D{{"$count", "pending_count"}},
+						},
+					},
+					{"rejected_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"status", "rejected"}}}},
+							bson.D{{"$count", "rejected_count"}},
+						},
+					},
+					{"attendance_count",
+						bson.A{
+							bson.D{{"$match", bson.D{{"date_attended", bson.D{
+								{"$exists", true},
+								{"$ne", nil},
+							}}}}},
+							bson.D{{"$count", "attendance_count"}},
+						},
+					},
+				},
+			},
+		},
+		bson.D{
+			{"$project",
+				bson.D{
+					{"total_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$total_count.total_count",
+									0,
+								},
+							},
+						},
+					},
+					{"admins_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$admins_count.admins_count",
+									0,
+								},
+							},
+						},
+					},
+					{"member_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$member_count.member_count",
+									0,
+								},
+							},
+						},
+					},
+					{"pending_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$pending_count.pending_count",
+									0,
+								},
+							},
+						},
+					},
+					{"rejected_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$rejected_count.rejected_count",
+									0,
+								},
+							},
+						},
+					},
+					{"attendance_count",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$attendance_count.attendance_count",
+									0,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	var stats []model.GroupStats
+	err := sa.db.groupMemberships.Aggregate(pipeline, &stats, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(stats) > 0 {
+		stat := stats[0]
+		stat.MemberCount -= stat.AdminsCount
+		return &stat, err
+	}
+	return nil, nil
+}

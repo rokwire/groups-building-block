@@ -35,6 +35,7 @@ type Services interface {
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
+	IsGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
@@ -116,6 +117,10 @@ func (s *servicesImpl) GetGroupEntityByTitle(clientID string, title string) (*mo
 	return s.app.getGroupEntityByTitle(clientID, title)
 }
 
+func (s *servicesImpl) IsGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error) {
+	return s.app.isGroupAdmin(clientID, groupID, userID)
+}
+
 func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	return s.app.createGroup(clientID, current, group)
 }
@@ -157,6 +162,16 @@ func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, gro
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
+	group, err := s.app.storage.FindGroup(clientID, id)
+	if err != nil {
+		return nil, err
+	}
+	if group == nil {
+		return &model.GroupStats{}, nil
+	}
+	if group.UsesGroupMemberships {
+		return s.app.storage.GetGroupMembershipStats(clientID, id)
+	}
 	return s.app.storage.GetGroupStats(clientID, id)
 }
 
@@ -362,6 +377,8 @@ type Storage interface {
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error)
 	DeleteGroupMembership(clientID string, userID string, groupID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error)
+
+	GetGroupMembershipStats(clientID string, groupID string) (*model.GroupStats, error)
 }
 
 type storageListenerImpl struct {
