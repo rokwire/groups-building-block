@@ -57,7 +57,8 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Members []Member `json:"members" bson:"members"`
+	Members              []Member `json:"members" bson:"members"`
+	UsesGroupMemberships bool     `json:"uses_group_memberships" bson:"uses_group_memberships"`
 
 	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
@@ -67,6 +68,9 @@ type Group struct {
 	CanJoinAutomatically       bool       `json:"can_join_automatically" bson:"can_join_automatically"`
 	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
 	AttendanceGroup            bool       `json:"attendance_group" bson:"attendance_group"`
+
+	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
+	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
 } // @name Group
 
 // IsGroupAdminOrMember says if the user is an admin or a member of the group

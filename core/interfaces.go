@@ -308,13 +308,15 @@ type Storage interface {
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupUsesGroupMemberships(context storage.TransactionContext, clientID string, group *model.Group) error
 	DeleteGroup(clientID string, id string) error
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 	FindGroup(clientID string, id string) (*model.Group, error)
+	FindGroupWithContext(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
-	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	FindUserGroups(clientID string, userID string, groupIDs []string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
 	GetGroupMembers(clientID string, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error)
@@ -351,6 +353,15 @@ type Storage interface {
 	InsertManagedGroupConfig(config model.ManagedGroupConfig) error
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
+
+	FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error)
+	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
+	CreateMissingGroupMembership(membership *model.GroupMembership) error
+	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
+		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error)
+	DeleteGroupMembership(clientID string, userID string, groupID string) error
+	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error)
 }
 
 type storageListenerImpl struct {
