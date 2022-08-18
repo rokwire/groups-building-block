@@ -12,8 +12,15 @@ import (
 )
 
 // FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error) {
+func (sa *Adapter) FindGroupMemberships(clientID string, groupID string, admin *bool) ([]model.GroupMembership, error) {
 	filter := bson.M{"client_id": clientID, "group_id": groupID}
+	if admin != nil {
+		if *admin {
+			filter["admin"] = true
+		} else {
+			filter["admin"] = bson.M{"$ne": true}
+		}
+	}
 
 	var result []model.GroupMembership
 	err := sa.db.events.Find(filter, &result, nil)
@@ -66,6 +73,8 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 
 	filter := bson.M{"client_id": clientID, "group_id": groupID, "external_id": externalID}
 
+	adminVal := false
+
 	update := bson.M{"date_updated": now}
 	if userID != nil {
 		update["user_id"] = *userID
@@ -80,13 +89,14 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 		update["status"] = *status
 	}
 	if admin != nil {
+		adminVal = *admin
 		update["admin"] = *admin
 	}
 	if syncID != nil {
 		update["sync_id"] = *syncID
 	}
 
-	onInsert := bson.M{"_id": uuid.NewString(), "member_answers": memberAnswers, "date_created": now}
+	onInsert := bson.M{"_id": uuid.NewString(), "member_answers": memberAnswers, "admin": adminVal, "date_created": now}
 
 	upsert := true
 	returnDoc := options.After
