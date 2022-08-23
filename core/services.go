@@ -164,25 +164,15 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 
 func (app *Application) getGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, category, privacy, title, offset, limit, order)
+	groups, err := app.storage.FindGroups(clientID, &current.ID, category, privacy, title, offset, limit, order)
 	if err != nil {
 		return nil, err
 	}
 
-	visibleGroups := make([]model.Group, 0)
-	for _, group := range groups {
-
-		if group.Privacy != "private" ||
-			group.IsGroupAdminOrMember(current.ID) ||
-			(title != nil && strings.EqualFold(group.Title, *title) && !group.HiddenForSearch) {
-			visibleGroups = append(visibleGroups, group)
-		}
-	}
-
 	//apply data protection
-	groupsList := make([]model.Group, len(visibleGroups))
-	for i := range visibleGroups {
-		groupsList[i] = app.applyDataProtection(current, visibleGroups[i])
+	groupsList := make([]model.Group, len(groups))
+	for i := range groups {
+		groupsList[i] = app.applyDataProtection(current, groups[i])
 	}
 
 	return groupsList, nil
@@ -190,7 +180,7 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 
 func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, nil, nil, nil, nil, nil)
+	groups, err := app.storage.FindGroups(clientID, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}
