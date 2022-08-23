@@ -40,7 +40,11 @@ func NewNotificationsAdapter(internalAPIKey string, baseURL string) *Adapter {
 }
 
 // SendNotification sends notification to a user
-func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string) error {
+func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string) {
+	go na.sendNotification(recipients, topic, title, text, data)
+}
+
+func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string) error {
 	if len(recipients) > 0 {
 		url := fmt.Sprintf("%s/api/int/message", na.baseURL)
 
@@ -83,7 +87,11 @@ func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title
 }
 
 // SendMail sends email to a user
-func (na *Adapter) SendMail(toEmail string, subject string, body string) error {
+func (na *Adapter) SendMail(toEmail string, subject string, body string) {
+	go na.sendMail(toEmail, subject, body)
+}
+
+func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
 	if len(toEmail) > 0 && len(subject) > 0 && len(body) > 0 {
 		url := fmt.Sprintf("%s/api/int/mail", na.baseURL)
 

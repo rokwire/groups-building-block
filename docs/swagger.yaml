@@ -79,6 +79,35 @@ definitions:
       web_url:
         type: string
     type: object
+  GroupMembersFilter:
+    properties:
+      external_id:
+        description: core user external id
+        type: string
+      id:
+        description: membership id
+        type: string
+      limit:
+        description: result limit
+        type: integer
+      name:
+        description: member's name
+        type: string
+      net_id:
+        description: core user net id
+        type: string
+      offset:
+        description: result offset
+        type: integer
+      statuses:
+        description: lest of membership statuses
+        items:
+          type: string
+        type: array
+      user_id:
+        description: core user id
+        type: string
+    type: object
   GroupStat:
     properties:
       authman_enabled:
@@ -92,6 +121,71 @@ definitions:
       title:
         type: string
     type: object
+  GroupStats:
+    properties:
+      admins_count:
+        type: integer
+      attendance_count:
+        type: integer
+      member_count:
+        type: integer
+      pending_count:
+        type: integer
+      rejected_count:
+        type: integer
+      total_count:
+        type: integer
+    type: object
+  GroupV2:
+    properties:
+      attendance_group:
+        type: boolean
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
+      block_new_membership_requests:
+        type: boolean
+      can_join_automatically:
+        type: boolean
+      category:
+        description: one of the enums categories list
+        type: string
+      client_id:
+        type: string
+      current_member:
+        $ref: '#/definitions/Member'
+        description: this is indicative and it's not required for update APIs
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      description:
+        type: string
+      hidden_for_search:
+        type: boolean
+      id:
+        type: string
+      image_url:
+        type: string
+      membership_questions:
+        items:
+          type: string
+        type: array
+      only_admins_can_create_polls:
+        type: boolean
+      privacy:
+        description: public or private
+        type: string
+      tags:
+        items:
+          type: string
+        type: array
+      title:
+        type: string
+      web_url:
+        type: string
+    type: object
   GroupsStats:
     properties:
       groups_count:
@@ -100,6 +194,27 @@ definitions:
         items:
           $ref: '#/definitions/GroupStat'
         type: array
+    type: object
+  ManagedGroupConfig:
+    properties:
+      admin_uins:
+        items:
+          type: string
+        type: array
+      authman_stems:
+        items:
+          type: string
+        type: array
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      id:
+        type: string
+      type:
+        type: string
     type: object
   Member:
     properties:
@@ -138,6 +253,24 @@ definitions:
       answer:
         type: string
       question:
+        type: string
+    type: object
+  ShortMemberRecord:
+    properties:
+      email:
+        type: string
+      external_id:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      net_id:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
         type: string
     type: object
   ToMember:
@@ -438,6 +571,22 @@ definitions:
     required:
     - event_id
     type: object
+  intCreateGroupEventRequestBody:
+    properties:
+      creator:
+        $ref: '#/definitions/Creator'
+      event_id:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    required:
+    - creator
+    - event_id
+    type: object
   membershipApprovalRequest:
     properties:
       approve:
@@ -446,6 +595,21 @@ definitions:
         type: string
     required:
     - approve
+    type: object
+  model.SyncConfig:
+    properties:
+      client_id:
+        type: string
+      cron:
+        type: string
+      time_threshold:
+        description: Threshold from start_time to be considered same run in minutes
+        type: integer
+      timeout:
+        description: Time from start_time to be considered a failed run in minutes
+        type: integer
+      type:
+        type: string
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -481,13 +645,6 @@ definitions:
         type: string
       title:
         type: string
-    type: object
-  synchronizeAuthmanRequestBody:
-    properties:
-      group_auto_create_stem_names:
-        items:
-          type: string
-        type: array
     type: object
   updateGroupRequest:
     properties:
@@ -550,8 +707,21 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.31
+  version: 1.5.64
 paths:
+  /admin/authman/synchronize:
+    post:
+      consumes:
+      - application/json
+      description: Synchronizes Authman groups membership
+      operationId: AdminSynchronizeAuthman
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /api/admin/group/{group-id}/event/{event-id}:
     delete:
       consumes:
@@ -584,7 +754,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin
+      - Admin-V1
   /api/admin/group/{group-id}/events:
     get:
       consumes:
@@ -612,7 +782,35 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin
+      - Admin-V1
+  /api/admin/group/{group-id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves stats for a group by id
+      operationId: GetGroupStats
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupStats'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -633,7 +831,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin
+      - Admin-V1
   /api/admin/group/{groupId}/posts/{postId}:
     delete:
       consumes:
@@ -653,7 +851,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Admin
+      - Admin-V1
   /api/admin/group/{id}:
     delete:
       consumes:
@@ -681,13 +879,13 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin
+      - Admin-V1
   /api/admin/groups:
     get:
       consumes:
       - application/json
       description: Gives the groups list. It can be filtered by category
-      operationId: GetAllGroups
+      operationId: AdminGetAllGroups
       parameters:
       - description: APP
         in: header
@@ -713,7 +911,186 @@ paths:
       - APIKeyAuth: []
       - AppUserAuth: []
       tags:
+      - Admin-V1
+  /api/admin/managed-group-configs:
+    get:
+      consumes:
+      - application/json
+      description: Gets managed group configs
+      operationId: AdminGetManagedGroupConfigs
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/ManagedGroupConfig'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
       - Admin
+    post:
+      consumes:
+      - text/plain
+      description: Creates a new managed group config
+      operationId: AdminCreateManagedGroupConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/ManagedGroupConfig'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/ManagedGroupConfig'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - text/plain
+      description: Updates an existing managed group config
+      operationId: AdminUpdateManagedGroupConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/ManagedGroupConfig'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/managed-group-configs/{id}:
+    delete:
+      description: Deletes a managed group config
+      operationId: AdminDeleteManagedGroupConfig
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/sync-configs:
+    get:
+      consumes:
+      - application/json
+      description: Gets sync config
+      operationId: AdminGetSyncConfigs
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.SyncConfig'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - text/plain
+      description: Saves sync config
+      operationId: AdminSaveSyncConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/model.SyncConfig'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/user/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category
+      operationId: AdminGetUserGroups
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title - case insensitive
+        in: query
+        name: title
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getGroupsResponse'
+            type: array
+      security:
+      - APIKeyAuth: []
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
   /api/admin/user/login:
     get:
       description: Logs in the user and refactor the user record and linked data if
@@ -725,7 +1102,130 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin
+      - Admin-V1
+  /api/admin/v2/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V2
+      operationId: AdminGetGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: category - filter by category
+        in: query
+        name: category
+        type: string
+      - description: privacy - filter by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: offset - skip number of records
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupV2'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V2
+  /api/admin/v2/groups/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Gives a group. V2
+      operationId: AdminGetGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupV2'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V2
+  /api/admin/v2/user/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the user groups. It can be filtered by category, title and
+        privacy. V2.
+      operationId: AdminGetUserGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: category - filter by category
+        in: query
+        name: category
+        type: string
+      - description: privacy - filter by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: offset - skip number of records
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupV2'
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin-V2
   /api/group-categories:
     get:
       consumes:
@@ -747,6 +1247,8 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
@@ -770,6 +1272,8 @@ paths:
           description: ""
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/event/{event-id}:
     delete:
       consumes:
@@ -801,6 +1305,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/events:
     get:
       consumes:
@@ -828,7 +1334,42 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
     post:
+      consumes:
+      - application/json
+      description: Creates a group event
+      operationId: CreateGroupEvent
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/groupEventRequest'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
+    put:
       consumes:
       - application/json
       description: Updates a group event
@@ -859,6 +1400,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/events/v2:
     get:
       consumes:
@@ -885,6 +1428,8 @@ paths:
             type: array
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/members:
     delete:
       consumes:
@@ -909,6 +1454,42 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
+    get:
+      consumes:
+      - text/plain
+      description: Gets the list of group members. The result would be empty if the
+        current user doesn't belong to the requested group.
+      operationId: CreateMember
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupMembersFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Member'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
     post:
       consumes:
       - text/plain
@@ -937,6 +1518,8 @@ paths:
           description: ""
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/pending-members:
     delete:
       consumes:
@@ -961,6 +1544,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
     post:
       consumes:
       - application/json
@@ -996,6 +1581,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -1016,6 +1603,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/group/{groupId}/posts:
     post:
       consumes:
@@ -1038,6 +1627,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/group/{groupId}/posts/{postId}:
     delete:
       consumes:
@@ -1056,6 +1647,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
     put:
       consumes:
       - application/json
@@ -1075,6 +1668,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/group/{groupId}/posts/{postId}/report/abuse:
     put:
       consumes:
@@ -1098,6 +1693,8 @@ paths:
           description: ""
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{id}:
     delete:
       consumes:
@@ -1124,6 +1721,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/groups:
     get:
       consumes:
@@ -1154,6 +1753,8 @@ paths:
       security:
       - APIKeyAuth: []
       - AppUserAuth: []
+      tags:
+      - Client-V1
     post:
       consumes:
       - application/json
@@ -1182,6 +1783,8 @@ paths:
             $ref: '#/definitions/createResponse'
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/groups/{id}:
     get:
       consumes:
@@ -1207,6 +1810,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
     put:
       consumes:
       - application/json
@@ -1238,6 +1843,40 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
+  /api/int/group/{group-id}/events:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group event
+      operationId: IntCreateGroupEvent
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/intCreateGroupEventRequestBody'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /api/int/group/{identifier}:
     get:
       consumes:
@@ -1283,7 +1922,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/Group'
+            items:
+              $ref: '#/definitions/ShortMemberRecord'
+            type: array
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -1335,6 +1976,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
     put:
       consumes:
       - application/json
@@ -1367,6 +2010,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/memberships/{membership-id}/approval:
     put:
       consumes:
@@ -1399,6 +2044,8 @@ paths:
             type: string
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/user:
     delete:
       description: Deletes a user with all the involved information from the Notifications
@@ -1411,6 +2058,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/user/group-memberships:
     get:
       consumes:
@@ -1430,6 +2079,8 @@ paths:
             $ref: '#/definitions/rest.userGroupMembership'
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/user/groups:
     get:
       consumes:
@@ -1452,6 +2103,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/user/login:
     get:
       description: Logs in the user and refactor the user record and linked data if
@@ -1463,6 +2116,8 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/user/stats:
     get:
       description: 'Gets user stat information. Responds with {"posts_count": xxx}'
@@ -1480,19 +2135,137 @@ paths:
             $ref: '#/definitions/getUserStatsResponse'
       security:
       - AppUserAuth: []
+      tags:
+      - Client-V1
+  /api/v2/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V2
+      operationId: GetGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: category - filter by category
+        in: query
+        name: category
+        type: string
+      - description: privacy - filter by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: offset - skip number of records
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupV2'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V2
+  /api/v2/groups/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Gives a group. V2
+      operationId: GetGroupV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/GroupV2'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V2
+  /api/v2/user/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gives the user groups. It can be filtered by category, title and
+        privacy. V2.
+      operationId: GetUserGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Category
+        in: query
+        name: category
+        type: string
+      - description: Filtering by group's title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: category - filter by category
+        in: query
+        name: category
+        type: string
+      - description: privacy - filter by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: offset - skip number of records
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupV2'
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Client-V2
   /int/authman/synchronize:
     post:
       consumes:
       - application/json
-      description: Synchronizes Authman groups memberhip
+      description: Synchronizes Authman groups membership
       operationId: SynchronizeAuthman
-      parameters:
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/synchronizeAuthmanRequestBody'
       responses:
         "200":
           description: ""
@@ -1526,6 +2299,8 @@ paths:
           description: OK
           schema:
             type: string
+      tags:
+      - Client-V1
 schemes:
 - https
 securityDefinitions:

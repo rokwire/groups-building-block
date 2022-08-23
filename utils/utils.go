@@ -19,7 +19,7 @@ import (
 	"net/http"
 )
 
-//LogRequest logs the request as hide some header fields because of security reasons
+// LogRequest logs the request as hide some header fields because of security reasons
 func LogRequest(req *http.Request) {
 	if req == nil {
 		return
@@ -47,7 +47,7 @@ func LogRequest(req *http.Request) {
 	log.Printf("%s %s %s", method, path, header)
 }
 
-//Equal compares two slices
+// Equal compares two slices
 func Equal(a, b []string) bool {
 	if len(a) != len(b) {
 		return false
@@ -60,7 +60,7 @@ func Equal(a, b []string) bool {
 	return true
 }
 
-//EqualPointers compares two pointers slices
+// EqualPointers compares two pointers slices
 func EqualPointers(a, b *[]string) bool {
 	if a == nil && b == nil {
 		return true //equals

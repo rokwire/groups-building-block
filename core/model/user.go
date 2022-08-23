@@ -16,7 +16,7 @@ package model
 
 import "time"
 
-//User represents user entity
+// User represents user entity
 type User struct {
 	ID            string     `json:"id" bson:"_id"`
 	IsAnonymous   bool       `json:"is_anonymous" bson:"is_anonymous"`
@@ -30,6 +30,15 @@ type User struct {
 	ClientID      string     `bson:"client_id"`
 	OriginalToken string
 } // @name User
+
+// ToCreator coverts to Creator
+func (u *User) ToCreator() *Creator {
+	return &Creator{
+		UserID: u.ID,
+		Name:   u.Name,
+		Email:  u.Email,
+	}
+}
 
 // CoreAccount wraps the account structure from the Core BB
 // @name CoreAccount

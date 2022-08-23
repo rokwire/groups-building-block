@@ -45,11 +45,11 @@ $(BIN):
 	
 $(BIN)/%: | $(BIN) $(BASE) ; $(info $(M) building $(REPOSITORY)…)
 	$Q tmp=$$(mktemp -d); \
-		(cd $(tmp) && GOPATH=$$tmp $(GO) get $(REPOSITORY) && cp $$tmp/bin/* $(BIN)/.) || ret=$$?; \
+		(cd $(tmp) && GOPATH=$$tmp $(GO) install $(REPOSITORY) && cp $$tmp/bin/* $(BIN)/.) || ret=$$?; \
 		rm -rf $$tmp ; exit $$ret
 
 GOLINT = $(BIN)/golint
-$(GOLINT): REPOSITORY=golang.org/x/lint/golint
+$(GOLINT): REPOSITORY=golang.org/x/lint/golint@latest
 
 # Tests
 
@@ -135,5 +135,4 @@ log-variables: ; $(info $(M) Log info…) @ ## Log the variables values
 	@echo "CODE_OFFSET:"$(CODE_OFFSET)
 	@echo "BUILD_NUMBER:"$(BUILD_NUMBER)
 	@echo "VERSION:"$(VERSION)
-
 

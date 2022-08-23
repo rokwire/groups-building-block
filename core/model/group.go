@@ -19,6 +19,30 @@ import (
 	"time"
 )
 
+// GroupV2 removes members list and adds just the current user as a member
+type GroupV2 struct {
+	ID                         string     `json:"id" bson:"_id"`
+	ClientID                   string     `json:"client_id" bson:"client_id"`
+	Category                   string     `json:"category" bson:"category"` //one of the enums categories list
+	Title                      string     `json:"title" bson:"title"`
+	Privacy                    string     `json:"privacy" bson:"privacy"` //public or private
+	HiddenForSearch            bool       `json:"hidden_for_search" bson:"hidden_for_search"`
+	Description                *string    `json:"description" bson:"description"`
+	ImageURL                   *string    `json:"image_url" bson:"image_url"`
+	WebURL                     *string    `json:"web_url" bson:"web_url"`
+	Tags                       []string   `json:"tags" bson:"tags"`
+	MembershipQuestions        []string   `json:"membership_questions" bson:"membership_questions"`
+	AuthmanEnabled             bool       `json:"authman_enabled" bson:"authman_enabled"`
+	AuthmanGroup               *string    `json:"authman_group" bson:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	CanJoinAutomatically       bool       `json:"can_join_automatically" bson:"can_join_automatically"`
+	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
+	AttendanceGroup            bool       `json:"attendance_group" bson:"attendance_group"`
+	CurrentMember              *Member    `json:"current_member"` // this is indicative and it's not required for update APIs
+	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
+} // @name GroupV2
+
 // Group represents group entity
 type Group struct {
 	ID                  string   `json:"id" bson:"_id"`
@@ -233,4 +257,36 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 // IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
 func (gr Group) IsAuthmanSyncEligible() bool {
 	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
+}
+
+// ToGroupV2 Converts the legacy data model to a GroupV2 model
+func (gr Group) ToGroupV2(currentUserID *string) GroupV2 {
+
+	var currentMember *Member
+	if currentUserID != nil {
+		currentMember = gr.GetMemberByUserID(*currentUserID)
+	}
+
+	return GroupV2{
+		ID:                         gr.ID,
+		ClientID:                   gr.ClientID,
+		Category:                   gr.Category,
+		Title:                      gr.Title,
+		Privacy:                    gr.Privacy,
+		HiddenForSearch:            gr.HiddenForSearch,
+		Description:                gr.Description,
+		ImageURL:                   gr.ImageURL,
+		WebURL:                     gr.WebURL,
+		Tags:                       gr.Tags,
+		MembershipQuestions:        gr.MembershipQuestions,
+		AuthmanEnabled:             gr.AuthmanEnabled,
+		AuthmanGroup:               gr.AuthmanGroup,
+		OnlyAdminsCanCreatePolls:   gr.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:       gr.CanJoinAutomatically,
+		BlockNewMembershipRequests: gr.BlockNewMembershipRequests,
+		AttendanceGroup:            gr.AttendanceGroup,
+		DateCreated:                gr.DateCreated,
+		DateUpdated:                gr.DateUpdated,
+		CurrentMember:              currentMember,
+	}
 }

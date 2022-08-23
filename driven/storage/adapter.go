@@ -18,18 +18,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"groups/core"
 	"groups/core/model"
+	"groups/utils"
 	"log"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/rokwire/logging-library-go/logs"
+	"golang.org/x/sync/syncmap"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/logs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -88,20 +90,175 @@ type memberAnswer struct {
 	Answer   string `bson:"answer"`
 }
 
-//Adapter implements the Storage interface
+// Adapter implements the Storage interface
 type Adapter struct {
 	db *database
+
+	cachedSyncConfigs *syncmap.Map
+	syncConfigsLock   *sync.RWMutex
+
+	cachedManagedGroupConfigs *syncmap.Map
+	managedGroupConfigsLock   *sync.RWMutex
 }
 
-//Start starts the storage
+// Start starts the storage
 func (sa *Adapter) Start() error {
 	err := sa.db.start()
+	if err != nil {
+		return err
+	}
+
+	//register storage listener
+	sl := storageListener{adapter: sa}
+	sa.RegisterStorageListener(&sl)
+
+	err = sa.cacheSyncConfigs()
+	if err != nil {
+		return errors.New("error caching sync configs")
+	}
+
+	err = sa.cacheManagedGroupConfigs()
+	if err != nil {
+		return errors.New("error caching managed group configs")
+	}
+
 	return err
 }
 
-//SetStorageListener sets listener for the storage
-func (sa *Adapter) SetStorageListener(storageListener core.StorageListener) {
-	sa.db.listener = storageListener
+// RegisterStorageListener registers a data change listener with the storage adapter
+func (sa *Adapter) RegisterStorageListener(storageListener Listener) {
+	sa.db.listeners = append(sa.db.listeners, storageListener)
+}
+
+// cacheSyncConfigs caches the sync configs from the DB
+func (sa *Adapter) cacheSyncConfigs() error {
+	log.Println("cacheSyncConfigs..")
+
+	configs, err := sa.LoadSyncConfigs(nil)
+	if err != nil {
+		return err
+	}
+
+	sa.setCachedSyncConfigs(&configs)
+
+	return nil
+}
+
+func (sa *Adapter) setCachedSyncConfigs(configs *[]model.SyncConfig) {
+	sa.syncConfigsLock.Lock()
+	defer sa.syncConfigsLock.Unlock()
+
+	sa.cachedSyncConfigs = &syncmap.Map{}
+	for _, config := range *configs {
+		sa.cachedSyncConfigs.Store(config.ClientID, config)
+	}
+}
+
+func (sa *Adapter) getCachedSyncConfig(clientID string) (*model.SyncConfig, error) {
+	sa.syncConfigsLock.RLock()
+	defer sa.syncConfigsLock.RUnlock()
+
+	item, _ := sa.cachedSyncConfigs.Load(clientID)
+	if item != nil {
+		config, ok := item.(model.SyncConfig)
+		if !ok {
+			return nil, fmt.Errorf("missing managed group config for clientID: %s", clientID)
+		}
+		return &config, nil
+	}
+	return nil, nil
+}
+
+func (sa *Adapter) getCachedSyncConfigs() ([]model.SyncConfig, error) {
+	sa.syncConfigsLock.RLock()
+	defer sa.syncConfigsLock.RUnlock()
+
+	var err error
+	configList := make([]model.SyncConfig, 0)
+	sa.cachedSyncConfigs.Range(func(key, item interface{}) bool {
+		if item == nil {
+			return false
+		}
+
+		config, ok := item.(model.SyncConfig)
+		if !ok {
+			err = fmt.Errorf("error casting config with client id: %s", key)
+			return false
+		}
+		configList = append(configList, config)
+		return true
+	})
+
+	return configList, err
+}
+
+// LoadSyncConfigs loads all sync configs
+func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConfig, error) {
+	filter := bson.M{"type": "sync"}
+
+	var config []model.SyncConfig
+	err := sa.db.configs.FindWithContext(context, filter, &config, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+// FindSyncConfig finds the sync config for the specified clientID
+func (sa *Adapter) FindSyncConfig(clientID string) (*model.SyncConfig, error) {
+	return sa.getCachedSyncConfig(clientID)
+}
+
+// FindSyncConfigs finds all sync configs
+func (sa *Adapter) FindSyncConfigs() ([]model.SyncConfig, error) {
+	return sa.getCachedSyncConfigs()
+}
+
+// SaveSyncConfig saves the provided sync config fields
+func (sa *Adapter) SaveSyncConfig(context TransactionContext, config model.SyncConfig) error {
+	filter := bson.M{"type": "sync", "client_id": config.ClientID}
+
+	config.Type = "sync"
+
+	upsert := true
+	opts := options.ReplaceOptions{Upsert: &upsert}
+	err := sa.db.configs.ReplaceOne(filter, config, &opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// FindSyncTimes finds the sync times for the specified clientID
+func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*model.SyncTimes, error) {
+	filter := bson.M{"client_id": clientID}
+
+	var configs []model.SyncTimes
+	err := sa.db.syncTimes.FindWithContext(context, filter, &configs, nil)
+	if err != nil {
+		return nil, err
+	}
+	if len(configs) != 1 {
+		return nil, nil
+	}
+
+	return &configs[0], nil
+}
+
+// SaveSyncTimes saves the provided sync times fields
+func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTimes) error {
+	filter := bson.M{"client_id": times.ClientID}
+
+	upsert := true
+	opts := options.ReplaceOptions{Upsert: &upsert}
+	err := sa.db.syncTimes.ReplaceOne(filter, times, &opts)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FindUser finds the user for the provided external id and client id
@@ -342,7 +499,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 	})
 
 	if err != nil {
-		return core.NewServerError()
+		return utils.NewServerError()
 	}
 
 	return nil
@@ -442,7 +599,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 	return err
 }
 
-//FindUserGroupsMemberships stores user group membership
+// FindUserGroupsMemberships stores user group membership
 func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error) {
 	userID := ""
 	var err error
@@ -488,7 +645,7 @@ func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model
 
 }
 
-//ReadAllGroupCategories reads all group categories
+// ReadAllGroupCategories reads all group categories
 func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: "categories"}}
 	var result []enumItem
@@ -505,15 +662,15 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 	return categoryItem.Values, nil
 }
 
-//CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *core.GroupError) {
+// CreateGroup creates a group. Returns the id of the created group
+func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return nil, core.NewGropDuplicationError()
+				return nil, utils.NewGroupDuplicationError()
 			}
 		}
 	}
@@ -554,14 +711,14 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		return nil
 	})
 	if err != nil {
-		return nil, core.NewServerError()
+		return nil, utils.NewServerError()
 	}
 
 	return &insertedID, nil
 }
 
 // UpdateGroupWithoutMembers updates a group except the members attribute
-func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
+func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
 	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
@@ -586,7 +743,7 @@ func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.Use
 }
 
 // UpdateGroupWithMembers updates a group along with the members
-func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *core.GroupError {
+func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "category", Value: group.Category},
@@ -610,12 +767,12 @@ func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, 
 	})
 }
 
-func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *core.GroupError {
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *utils.GroupError {
 	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return core.NewGropDuplicationError()
+				return utils.NewGroupDuplicationError()
 			}
 		}
 	}
@@ -646,12 +803,12 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		return nil
 	})
 	if err != nil {
-		return core.NewServerError()
+		return utils.NewServerError()
 	}
 	return nil
 }
 
-//DeleteGroup deletes a group.
+// DeleteGroup deletes a group.
 func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -691,7 +848,7 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 	return nil
 }
 
-//FindGroup finds group by id and client id
+// FindGroup finds group by id and client id
 func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
 	return sa.findGroupWithContext(clientID, id)
 }
@@ -709,7 +866,7 @@ func (sa *Adapter) findGroupWithContext(clientID string, id string) (*model.Grou
 	return &group, nil
 }
 
-//FindGroupByMembership finds group by membership
+// FindGroupByMembership finds group by membership
 func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "members.id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
 	var result []*group
@@ -726,7 +883,7 @@ func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (
 	return &resultEntity, nil
 }
 
-//FindGroupByTitle finds group by membership
+// FindGroupByTitle finds group by membership
 func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
@@ -746,7 +903,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 	return &resultEntity, nil
 }
 
-//FindGroups finds groups
+// FindGroups finds groups
 func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if category != nil {
@@ -760,10 +917,16 @@ func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string
 	}
 
 	findOptions := options.Find()
-	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
-	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+	if order == nil || "asc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
 	}
 	if limit != nil {
 		findOptions.SetLimit(*limit)
@@ -833,13 +996,44 @@ func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, 
 	return nil, nil
 }
 
-//FindUserGroups finds the user groups for client id
-func (sa *Adapter) FindUserGroups(clientID string, userID string) ([]model.Group, error) {
-	filter := bson.D{primitive.E{Key: "members.user_id", Value: userID},
-		primitive.E{Key: "client_id", Value: clientID}}
+// FindUserGroups finds the user groups for client id
+func (sa *Adapter) FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	filter := bson.D{
+		primitive.E{Key: "members.user_id", Value: userID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+
+	if category != nil {
+		filter = append(filter, primitive.E{Key: "category", Value: category})
+	}
+	if title != nil {
+		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
+	}
+	if privacy != nil {
+		filter = append(filter, primitive.E{Key: "privacy", Value: privacy})
+	}
+
+	findOptions := options.Find()
+	if order == nil || "asc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if order != nil && "desc" == *order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
+	}
+	if limit != nil {
+		findOptions.SetLimit(*limit)
+	}
+	if offset != nil {
+		findOptions.SetSkip(*offset)
+	}
 
 	var list []group
-	err := sa.db.groups.Find(filter, &list, nil)
+	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -876,7 +1070,7 @@ func (sa *Adapter) UpdateGroupMembers(clientID string, groupID string, members [
 	return nil
 }
 
-//CreatePendingMember creates a pending member for a specific group
+// CreatePendingMember creates a pending member for a specific group
 func (sa *Adapter) CreatePendingMember(clientID string, user *model.User, group *model.Group, member *model.Member) error {
 	if member != nil && group != nil {
 		// transaction
@@ -971,7 +1165,7 @@ func (sa *Adapter) CreatePendingMember(clientID string, user *model.User, group 
 	return nil
 }
 
-//DeletePendingMember deletes a pending member from a specific group
+// DeletePendingMember deletes a pending member from a specific group
 func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -1044,7 +1238,7 @@ func (sa *Adapter) DeletePendingMember(clientID string, groupID string, userID s
 	return nil
 }
 
-//CreateMemberUnchecked Created a member to a group
+// CreateMemberUnchecked Created a member to a group
 func (sa *Adapter) CreateMemberUnchecked(clientID string, current *model.User, group *model.Group, member *model.Member) error {
 	if group != nil {
 		if !group.IsGroupAdmin(current.ID) && !group.CanJoinAutomatically {
@@ -1093,7 +1287,7 @@ func (sa *Adapter) CreateMemberUnchecked(clientID string, current *model.User, g
 	return nil
 }
 
-//DeleteMember deletes a member membership from a specific group
+// DeleteMember deletes a member membership from a specific group
 func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string, force bool) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -1170,7 +1364,7 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string, 
 	return nil
 }
 
-//ApplyMembershipApproval applies a membership approval
+// ApplyMembershipApproval applies a membership approval
 func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -1256,7 +1450,7 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 	return nil
 }
 
-//DeleteMembership deletes a membership
+// DeleteMembership deletes a membership
 func (sa *Adapter) DeleteMembership(clientID string, current *model.User, membershipID string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -1325,7 +1519,7 @@ func (sa *Adapter) DeleteMembership(clientID string, current *model.User, member
 	return nil
 }
 
-//UpdateMembership updates a membership
+// UpdateMembership updates a membership
 func (sa *Adapter) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -1396,13 +1590,13 @@ func (sa *Adapter) UpdateMembership(clientID string, current *model.User, member
 	return nil
 }
 
-//FindEvents finds the events for a group
+// FindEvents finds the events for a group
 func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
 	filter := bson.D{
 		primitive.E{Key: "group_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID},
 	}
-	if filterByToMembers {
+	if filterByToMembers && current != nil {
 		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
 			primitive.M{"to_members": primitive.Null{}},
 			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
@@ -1416,19 +1610,41 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 	return result, err
 }
 
-//CreateEvent creates a group event
+// CreateEvent creates a group event
 func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error) {
+	var creator *model.Creator
+	if current != nil {
+		creator = current.ToCreator()
+	}
 	event := model.Event{
 		ClientID:      clientID,
 		EventID:       eventID,
 		GroupID:       groupID,
 		DateCreated:   time.Now().UTC(),
 		ToMembersList: toMemberList,
-		Creator: model.Creator{
-			UserID: current.ID,
-			Name:   current.Name,
-			Email:  current.Email,
-		},
+		Creator:       creator,
+	}
+	_, err := sa.db.events.InsertOne(event)
+	if err != nil {
+		return nil, err
+	}
+
+	if err == nil {
+		sa.resetGroupUpdatedDate(clientID, groupID)
+	}
+
+	return &event, err
+}
+
+// CreateEventWithCreator creates a group event with predefined creator record
+func (sa *Adapter) CreateEventWithCreator(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+	event := model.Event{
+		ClientID:      clientID,
+		EventID:       eventID,
+		GroupID:       groupID,
+		DateCreated:   time.Now().UTC(),
+		ToMembersList: toMemberList,
+		Creator:       creator,
 	}
 	_, err := sa.db.events.InsertOne(event)
 	if err != nil {
@@ -1463,7 +1679,7 @@ func (sa *Adapter) UpdateEvent(clientID string, _ *model.User, eventID string, g
 	return err
 }
 
-//DeleteEvent deletes a group event
+// DeleteEvent deletes a group event
 func (sa *Adapter) DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
 	filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
 		primitive.E{Key: "group_id", Value: groupID},
@@ -1633,7 +1849,7 @@ func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Pos
 	return posts, nil
 }
 
-//FindPost Retrieves a post by groupID and postID
+// FindPost Retrieves a post by groupID and postID
 func (sa *Adapter) FindPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
 	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
@@ -1919,7 +2135,7 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 	return err
 }
 
-//resetGroupUpdatedDate set the updated date to the current date time (now)
+// resetGroupUpdatedDate set the updated date to the current date time (now)
 func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -1989,7 +2205,6 @@ func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
 func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "authman_enabled", Value: true},
 		primitive.E{Key: "authman_group", Value: authmanGroupKey},
 	}
 
@@ -2009,8 +2224,184 @@ func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string
 	return nil, nil
 }
 
-//NewStorageAdapter creates a new storage adapter instance
+// cacheManagedGroupConfigs caches the managed group configs from the DB
+func (sa *Adapter) cacheManagedGroupConfigs() error {
+	log.Println("cacheManagedGroupConfigs..")
+
+	configs, err := sa.LoadManagedGroupConfigs()
+	if err != nil {
+		return err
+	}
+
+	sa.setCachedManagedGroupConfigs(&configs)
+
+	return nil
+}
+
+func (sa *Adapter) setCachedManagedGroupConfigs(configs *[]model.ManagedGroupConfig) {
+	sa.managedGroupConfigsLock.Lock()
+	defer sa.managedGroupConfigsLock.Unlock()
+
+	sa.cachedManagedGroupConfigs = &syncmap.Map{}
+	for _, config := range *configs {
+		sa.cachedManagedGroupConfigs.Store(config.ID, config)
+	}
+}
+
+func (sa *Adapter) getCachedManagedGroupConfig(id string) (*model.ManagedGroupConfig, error) {
+	sa.managedGroupConfigsLock.RLock()
+	defer sa.managedGroupConfigsLock.RUnlock()
+
+	item, _ := sa.cachedManagedGroupConfigs.Load(id)
+	if item != nil {
+		config, ok := item.(model.ManagedGroupConfig)
+		if !ok {
+			return nil, fmt.Errorf("missing managed group config with id: %s", id)
+		}
+		return &config, nil
+	}
+	return nil, nil
+}
+
+func (sa *Adapter) getCachedManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	sa.managedGroupConfigsLock.RLock()
+	defer sa.managedGroupConfigsLock.RUnlock()
+
+	var err error
+	configList := make([]model.ManagedGroupConfig, 0)
+	sa.cachedManagedGroupConfigs.Range(func(key, item interface{}) bool {
+		if item == nil {
+			return false
+		}
+
+		config, ok := item.(model.ManagedGroupConfig)
+		if !ok {
+			err = fmt.Errorf("error casting config with id: %s", key)
+			return false
+		}
+		if config.ClientID == clientID {
+			configList = append(configList, config)
+		}
+		return true
+	})
+
+	return configList, err
+}
+
+// LoadManagedGroupConfigs loads all admin group config
+func (sa *Adapter) LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error) {
+	filter := bson.M{}
+
+	findOptions := options.Find()
+
+	var list []model.ManagedGroupConfig
+	err := sa.db.managedGroupConfigs.Find(filter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+// FindManagedGroupConfig finds a managed group config by ID
+func (sa *Adapter) FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error) {
+	config, err := sa.getCachedManagedGroupConfig(id)
+	if err != nil {
+		return nil, err
+	}
+	if config.ClientID != clientID {
+		return nil, fmt.Errorf("invalid clientID %s for config ID %s", id, clientID)
+	}
+	return config, nil
+}
+
+// FindManagedGroupConfigs finds all managed group configs for a specified clientID
+func (sa *Adapter) FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	return sa.getCachedManagedGroupConfigs(clientID)
+}
+
+// InsertManagedGroupConfig inserts a new managed group config
+func (sa *Adapter) InsertManagedGroupConfig(config model.ManagedGroupConfig) error {
+	_, err := sa.db.managedGroupConfigs.InsertOne(config)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateManagedGroupConfig updates an existing managed group config
+func (sa *Adapter) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
+	filter := bson.M{"_id": config.ID, "client_id": config.ClientID}
+	update := bson.M{"$set": bson.M{
+		"authman_stems": config.AuthmanStems,
+		"admin_uins":    config.AdminUINs,
+		"type":          config.Type,
+		"date_updated":  time.Now().UTC(),
+	}}
+
+	res, err := sa.db.managedGroupConfigs.UpdateOne(filter, update, nil)
+	if err != nil {
+		return err
+	}
+	if res.ModifiedCount != 1 {
+		return fmt.Errorf("managed config could not be found for id: %s", config.ID)
+	}
+
+	return nil
+}
+
+// DeleteManagedGroupConfig deletes an existing managed group config
+func (sa *Adapter) DeleteManagedGroupConfig(id string, clientID string) error {
+	filter := bson.M{"_id": id, "client_id": clientID}
+
+	res, err := sa.db.managedGroupConfigs.DeleteOne(filter, nil)
+	if err != nil {
+		return err
+	}
+	if res.DeletedCount != 1 {
+		return fmt.Errorf("managed config could not be found for id: %s", id)
+	}
+	return nil
+}
+
+// PerformTransaction performs a transaction
+func (sa *Adapter) PerformTransaction(transaction func(context TransactionContext) error) error {
+	// transaction
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return err
+		}
+
+		err = transaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return err
+		}
+
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			sa.abortTransaction(sessionContext)
+			return err
+		}
+		return nil
+	})
+
+	return err
+}
+
+func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
+	err := sessionContext.AbortTransaction(sessionContext)
+	if err != nil {
+		log.Printf("error aborting a transaction - %s\n", err)
+	}
+}
+
+// NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string, logger *logs.Logger) *Adapter {
+
 	timeout, err := strconv.Atoi(mongoTimeout)
 	if err != nil {
 		log.Println("Set default timeout - 500")
@@ -2020,6 +2411,14 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 
 	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS, logger: logger}
 	return &Adapter{db: db}
+
+	cachedSyncConfigs := &syncmap.Map{}
+	syncConfigsLock := &sync.RWMutex{}
+
+	cachedManagedGroupConfigs := &syncmap.Map{}
+	managedGroupConfigsLock := &sync.RWMutex{}
+	return &Adapter{db: db, cachedSyncConfigs: cachedSyncConfigs, syncConfigsLock: syncConfigsLock,
+		cachedManagedGroupConfigs: cachedManagedGroupConfigs, managedGroupConfigsLock: managedGroupConfigsLock}
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {
@@ -2088,4 +2487,37 @@ func constructMember(member member) model.Member {
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
 		DateAttended: dateAttended,
 	}
+}
+
+type storageListener struct {
+	adapter *Adapter
+	DefaultListenerImpl
+}
+
+func (sl *storageListener) OnConfigsChanged() {
+	sl.adapter.cacheSyncConfigs()
+}
+
+func (sl *storageListener) OnManagedGroupConfigsChanged() {
+	sl.adapter.cacheManagedGroupConfigs()
+}
+
+// Listener  listens for change data storage events
+type Listener interface {
+	OnConfigsChanged()
+	OnManagedGroupConfigsChanged()
+}
+
+// DefaultListenerImpl default listener implementation
+type DefaultListenerImpl struct{}
+
+// OnConfigsChanged notifies configs have been updated
+func (d *DefaultListenerImpl) OnConfigsChanged() {}
+
+// OnManagedGroupConfigsChanged notifies managed group configs have been updated
+func (d *DefaultListenerImpl) OnManagedGroupConfigsChanged() {}
+
+// TransactionContext wraps mongo.SessionContext for use by external packages
+type TransactionContext interface {
+	mongo.SessionContext
 }

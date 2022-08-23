@@ -8,6 +8,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Set logger [#182](https://github.com/rokwire/groups-building-block/issues/182)
 
+## [1.5.64] - 2022-08-10
+### Fixed
+- Authman groups members missing [#218](https://github.com/rokwire/groups-building-block/issues/218)
+
+## [1.5.63] - 2022-08-09
+### Fixed
+- Fix merge issues
+
+## [1.5.62] - 2022-08-08
+### Added
+- Improve managed group admin assignment and synchronization [#209](https://github.com/rokwire/groups-building-block/issues/209)
+
+## [1.5.61] - 2022-08-05
+### Added
+- Introduce V2 group APIs and improve the legacy with additional filter options  [#212](https://github.com/rokwire/groups-building-block/issues/212)
+  - Introduced V2 APIs (the members list is omitted from the v1 response):
+    - GET /api/v2/groups
+    - GET /api/v2/groups/{id}
+    - GET /api/v2/user/groups
+    - GET /api/admin/v2/groups
+    - GET /api/admin/v2/groups/{id}
+    - GET /api/admin/v2/user/groups
+    - GET /api/admin/group/{group-id}/stats
+    - GET /api/group/{id}/stats
+    - GET /api/group/{group-id}/members
+
+## [1.5.60] - 2022-08-03 
+- Test build
+
+## [1.5.59] - 2022-07-29
+### Added
+- Create internal API for creating a group event by another BB [#210](https://github.com/rokwire/groups-building-block/issues/210)
+>>>>>>> develop
+
 ## [1.5.58] - 2022-07-27
 ### Added
 - Add internal API for retrieving group members by group title [#205](https://github.com/rokwire/groups-building-block/issues/205)

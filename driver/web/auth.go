@@ -24,20 +24,20 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/rokwire/logging-library-go/logs"
-
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/logs"
 	"golang.org/x/sync/syncmap"
-	"gopkg.in/ericchiang/go-oidc.v2"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/authorization"
+	"github.com/coreos/go-oidc"
 	"github.com/rokwire/core-auth-library-go/authservice"
 	"github.com/rokwire/core-auth-library-go/authutils"
-	"github.com/rokwire/core-auth-library-go/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v2/authorization"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
-//Auth handler
+// Auth handler
 type Auth struct {
 	apiKeysAuth  *APIKeysAuth
 	idTokenAuth  *IDTokenAuth
@@ -191,6 +191,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
 	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer, logger *logs.Logger) *Auth {
+
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -217,7 +218,7 @@ func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKe
 
 /////////////////////////////////////
 
-//APIKeysAuth entity
+// APIKeysAuth entity
 type APIKeysAuth struct {
 	appKeys []string
 
@@ -252,7 +253,7 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	return true
 }
 
-//NewAPIKeysAuth creates new api keys auth
+// NewAPIKeysAuth creates new api keys auth
 func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKeysAuth {
 	auth := APIKeysAuth{appKeys, coreTokenAuth}
 	return &auth
@@ -273,7 +274,7 @@ type userData struct {
 
 ////////////////////////////////////
 
-//InternalAuth entity
+// InternalAuth entity
 type InternalAuth struct {
 	internalAPIKey string
 }
@@ -292,7 +293,7 @@ func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) b
 	return false
 }
 
-//newInternalAuth creates new internal auth
+// newInternalAuth creates new internal auth
 func newInternalAuth(internalAPIKey string) *InternalAuth {
 	auth := InternalAuth{
 		internalAPIKey: internalAPIKey,
@@ -302,7 +303,7 @@ func newInternalAuth(internalAPIKey string) *InternalAuth {
 
 ///////////////////////////////////
 
-//IDTokenAuth entity
+// IDTokenAuth entity
 type IDTokenAuth struct {
 	app *core.Application
 
@@ -454,7 +455,7 @@ func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
 	w.Write([]byte("Internal Server Error"))
 }
 
-//newIDTokenAuth creates new id token auth
+// newIDTokenAuth creates new id token auth
 func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
 	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
 	if err != nil {
@@ -476,7 +477,7 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs str
 
 ////////////////////////////////////
 
-//AdminAuth entity
+// AdminAuth entity
 type AdminAuth struct {
 	app *core.Application
 
@@ -583,8 +584,8 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser}, false
 }
 
-//gets the token from the request - as cookie or as Authorization header.
-//returns the id token and its type - mobile or web. If the token is taken by the cookie it is web otherwise it is mobile
+// gets the token from the request - as cookie or as Authorization header.
+// returns the id token and its type - mobile or web. If the token is taken by the cookie it is web otherwise it is mobile
 func (auth *AdminAuth) getIDToken(r *http.Request) (*string, *string, error) {
 	var tokenType string
 

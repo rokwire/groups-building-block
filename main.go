@@ -90,7 +90,7 @@ func main() {
 		log.Fatalf("error instancing auth data loader: %s", err)
 	}
 	// Instantiate AuthService instance
-	authService, err := authservice.NewAuthService("groups", groupServiceURL, serviceLoader)
+	authService, err := authservice.NewTestAuthService("groups", groupServiceURL, serviceLoader)
 	if err != nil {
 		log.Fatalf("error instancing auth service: %s", err)
 	}
@@ -102,9 +102,12 @@ func main() {
 	}
 	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
-	config := &model.Config{
+	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
+
+	config := &model.ApplicationConfig{
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
+		SupportedClientIDs:        supportedClientIDs,
 	}
 
 	//application
@@ -121,7 +124,7 @@ func main() {
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, apiKeys, oidcProvider,
+	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
 		intrernalAPIKey, authService, groupServiceURL, logger)
 	webAdapter.Start()
@@ -157,6 +160,9 @@ func getEnvKey(key string, required bool) string {
 func getAuthmanAdminUINList() []string {
 	//get from the environment
 	authmanAdminUINs := getEnvKey("AUTHMAN_ADMIN_UIN_LIST", true)
+	if len(authmanAdminUINs) == 0 {
+		return nil
+	}
 
 	//it is comma separated format
 	authmanAdminUINList := strings.Split(authmanAdminUINs, ",")
