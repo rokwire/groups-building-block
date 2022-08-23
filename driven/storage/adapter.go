@@ -26,6 +26,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rokwire/logging-library-go/logs"
+
 	"golang.org/x/sync/syncmap"
 
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -96,7 +98,8 @@ type memberAnswer struct {
 
 // Adapter implements the Storage interface
 type Adapter struct {
-	db *database
+	db     *database
+	logger *logs.Logger
 
 	cachedSyncConfigs *syncmap.Map
 	syncConfigsLock   *sync.RWMutex
@@ -2408,7 +2411,7 @@ func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
 }
 
 // NewStorageAdapter creates a new storage adapter instance
-func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
+func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string, logger *logs.Logger) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)
 	if err != nil {
 		log.Println("Set default timeout - 500")
@@ -2416,7 +2419,7 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	}
 	timeoutMS := time.Millisecond * time.Duration(timeout)
 
-	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS}
+	db := &database{mongoDBAuth: mongoDBAuth, mongoDBName: mongoDBName, mongoTimeout: timeoutMS, logger: logger}
 
 	cachedSyncConfigs := &syncmap.Map{}
 	syncConfigsLock := &sync.RWMutex{}
@@ -2424,7 +2427,7 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	cachedManagedGroupConfigs := &syncmap.Map{}
 	managedGroupConfigsLock := &sync.RWMutex{}
 	return &Adapter{db: db, cachedSyncConfigs: cachedSyncConfigs, syncConfigsLock: syncConfigsLock,
-		cachedManagedGroupConfigs: cachedManagedGroupConfigs, managedGroupConfigsLock: managedGroupConfigsLock}
+		cachedManagedGroupConfigs: cachedManagedGroupConfigs, managedGroupConfigsLock: managedGroupConfigsLock, logger: logger}
 }
 
 func abortTransaction(sessionContext mongo.SessionContext) {

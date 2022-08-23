@@ -23,6 +23,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/rokwire/logging-library-go/logs"
+
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/authservice"
 
@@ -33,9 +35,9 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host string
-	auth *Auth
-
+	host                string
+	auth                *Auth
+	logger              *logs.Logger
 	apisHandler         *rest.ApisHandler
 	adminApisHandler    *rest.AdminApisHandler
 	internalApisHandler *rest.InternalApisHandler
@@ -276,14 +278,14 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, authService *authservice.AuthService, groupServiceURL string) *Adapter {
+	internalAPIKey string, authService *authservice.AuthService, groupServiceURL string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
-		oidcAdminWebClientID, authService, groupServiceURL, authorization)
+		oidcAdminWebClientID, authService, groupServiceURL, authorization, logger)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
 
-	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
+	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, logger: logger}
 }

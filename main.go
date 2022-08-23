@@ -42,6 +42,10 @@ func main() {
 	if len(Version) == 0 {
 		Version = "dev"
 	}
+
+	loggerOpts := logs.LoggerOpts{SuppressRequests: []logs.HttpRequestProperties{logs.NewAwsHealthCheckHttpRequestProperties("/groups/version")}}
+	logger := logs.NewLogger("core", &loggerOpts)
+
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 
@@ -51,7 +55,7 @@ func main() {
 	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
 	mongoDBName := getEnvKey("GR_MONGO_DATABASE", true)
 	mongoTimeout := getEnvKey("GR_MONGO_TIMEOUT", false)
-	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout)
+	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout, logger)
 	err := storageAdapter.Start()
 	if err != nil {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
@@ -122,7 +126,7 @@ func main() {
 
 	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, authService, groupServiceURL)
+		intrernalAPIKey, authService, groupServiceURL, logger)
 	webAdapter.Start()
 }
 
