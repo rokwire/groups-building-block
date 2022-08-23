@@ -26,7 +26,7 @@ import (
 	"github.com/rokwire/logging-library-go/logs"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
 
 	"github.com/gorilla/mux"
 
@@ -47,7 +47,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.5.64
+// @version 1.5.65
 // @host localhost
 // @BasePath /gr
 // @schemes https
@@ -284,7 +284,7 @@ func NewWebAdapter(app *core.Application, host string, supportedClientIDs []stri
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
-		oidcAdminWebClientID, authService, groupServiceURL, authorization, logger)
+		oidcAdminWebClientID, authService.ServiceRegManager, groupServiceURL, authorization, logger)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)

@@ -19,6 +19,56 @@ import (
 	"time"
 )
 
+///////// V3
+//
+
+// GroupMembership represents the membership of a user to a given group
+type GroupMembership struct {
+	ID            string         `json:"id" bson:"_id"`
+	ClientID      string         `json:"client_id" bson:"client_id"`
+	GroupID       string         `json:"group_id" bson:"group_id"`
+	UserID        string         `json:"user_id" bson:"user_id"`
+	ExternalID    string         `json:"external_id" bson:"external_id"`
+	Name          string         `json:"name" bson:"name"`
+	NetID         string         `json:"net_id" bson:"net_id"`
+	Email         string         `json:"email" bson:"email"`
+	PhotoURL      string         `json:"photo_url" bson:"photo_url"`
+	Status        string         `json:"status" bson:"status"` //pending, member, rejected
+	Admin         bool           `json:"admin" bson:"admin"`
+	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
+	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
+	SyncID        string         `json:"sync_id" bson:"sync_id"` //ID of sync that last updated this membership
+
+	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
+	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
+} //@name GroupMembership
+
+// ToMember converts the GroupMembership model to the Member model
+func (m GroupMembership) ToMember() Member {
+	status := m.Status
+	if m.Admin {
+		status = "admin"
+	}
+	return Member{
+		ID:            m.ID,
+		UserID:        m.UserID,
+		ExternalID:    m.ExternalID,
+		Name:          m.Name,
+		NetID:         m.NetID,
+		Email:         m.Email,
+		PhotoURL:      m.PhotoURL,
+		Status:        status,
+		RejectReason:  m.RejectReason,
+		MemberAnswers: m.MemberAnswers,
+		DateCreated:   m.DateCreated,
+		DateUpdated:   m.DateUpdated,
+		DateAttended:  m.DateAttended,
+	}
+}
+
+/////////
+
 // Member represents group member entity
 type Member struct {
 	ID            string         `json:"id" bson:"id"`
@@ -80,6 +130,34 @@ func (m *Member) ToNotificationRecipient() notifications.Recipient {
 	return notifications.Recipient{
 		UserID: m.UserID,
 		Name:   m.Name,
+	}
+}
+
+// ToGroupMembership converts the Member model to the GroupMembership model
+func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembership {
+	admin := false
+	status := m.Status
+	if status == "admin" {
+		status = "member"
+		admin = true
+	}
+	return GroupMembership{
+		ID:            m.ID,
+		ClientID:      clientID,
+		GroupID:       groupID,
+		UserID:        m.UserID,
+		ExternalID:    m.ExternalID,
+		Name:          m.Name,
+		NetID:         m.NetID,
+		Email:         m.Email,
+		PhotoURL:      m.PhotoURL,
+		Status:        status,
+		Admin:         admin,
+		RejectReason:  m.RejectReason,
+		MemberAnswers: m.MemberAnswers,
+		DateCreated:   m.DateCreated,
+		DateUpdated:   m.DateUpdated,
+		DateAttended:  m.DateAttended,
 	}
 }
 

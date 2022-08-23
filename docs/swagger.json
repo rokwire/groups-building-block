@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.5.64"
+        "version": "1.5.65"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -2632,6 +2632,12 @@
                     "description": "public or private",
                     "type": "string"
                 },
+                "sync_end_time": {
+                    "type": "string"
+                },
+                "sync_start_time": {
+                    "type": "string"
+                },
                 "tags": {
                     "type": "array",
                     "items": {
@@ -2640,6 +2646,9 @@
                 },
                 "title": {
                     "type": "string"
+                },
+                "uses_group_memberships": {
+                    "type": "boolean"
                 },
                 "web_url": {
                     "type": "string"
@@ -3431,6 +3440,10 @@
                 },
                 "cron": {
                     "type": "string"
+                },
+                "group_timeout": {
+                    "description": "Time from sync_start_time to be considered a failed run for a single group in minutes",
+                    "type": "integer"
                 },
                 "time_threshold": {
                     "description": "Threshold from start_time to be considered same run in minutes",

@@ -30,19 +30,19 @@ import (
 
 	"github.com/casbin/casbin"
 	"github.com/coreos/go-oidc"
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/core-auth-library-go/authutils"
 	"github.com/rokwire/core-auth-library-go/v2/authorization"
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authutils"
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
 // Auth handler
 type Auth struct {
-	apiKeysAuth  *APIKeysAuth
-	idTokenAuth  *IDTokenAuth
-	internalAuth *InternalAuth
-	adminAuth    *AdminAuth
+	apiKeysAuth       *APIKeysAuth
+	idTokenAuth       *IDTokenAuth
+	internalAuth      *InternalAuth
+	adminAuth         *AdminAuth
+	ServiceRegManager *authservice.ServiceRegManager
 
 	logger *logs.Logger
 
@@ -190,12 +190,12 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 //NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer, logger *logs.Logger) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer, logger *logs.Logger) *Auth {
 
 	var tokenAuth *tokenauth.TokenAuth
 	if authService != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
-		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", authService.GetServiceID())
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", "")
 
 		// Instantiate TokenAuth instance to perform token validation
 		var err error

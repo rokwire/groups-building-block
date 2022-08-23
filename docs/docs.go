@@ -2636,6 +2636,12 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
+                "sync_end_time": {
+                    "type": "string"
+                },
+                "sync_start_time": {
+                    "type": "string"
+                },
                 "tags": {
                     "type": "array",
                     "items": {
@@ -2644,6 +2650,9 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
+                },
+                "uses_group_memberships": {
+                    "type": "boolean"
                 },
                 "web_url": {
                     "type": "string"
@@ -3436,6 +3445,10 @@ const docTemplate = `{
                 "cron": {
                     "type": "string"
                 },
+                "group_timeout": {
+                    "description": "Time from sync_start_time to be considered a failed run for a single group in minutes",
+                    "type": "integer"
+                },
                 "time_threshold": {
                     "description": "Threshold from start_time to be considered same run in minutes",
                     "type": "integer"
@@ -3608,7 +3621,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.5.64",
+	Version:          "1.5.65",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"https"},

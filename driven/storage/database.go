@@ -44,6 +44,7 @@ type database struct {
 	users               *collectionWrapper
 	enums               *collectionWrapper
 	groups              *collectionWrapper
+	groupMemberships    *collectionWrapper
 	events              *collectionWrapper
 	posts               *collectionWrapper
 	managedGroupConfigs *collectionWrapper
@@ -104,6 +105,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	groupMemberships := &collectionWrapper{database: m, coll: db.Collection("group_memberships")}
+	err = m.applyGroupMembershipsChecks(groupMemberships)
+	if err != nil {
+		return err
+	}
+
 	events := &collectionWrapper{database: m, coll: db.Collection("events")}
 	err = m.applyEventsChecks(events)
 	if err != nil {
@@ -117,7 +124,7 @@ func (m *database) start() error {
 	}
 
 	managedGroupConfigs := &collectionWrapper{database: m, coll: db.Collection("managed_group_configs")}
-	err = m.applyManagedGroupConfigsChecks(posts)
+	err = m.applyManagedGroupConfigsChecks(managedGroupConfigs)
 	if err != nil {
 		return err
 	}
@@ -137,6 +144,7 @@ func (m *database) start() error {
 	m.users = users
 	m.enums = enums
 	m.groups = groups
+	m.groupMemberships = groupMemberships
 	m.events = events
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
@@ -349,6 +357,28 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 	}
 
 	log.Println("groups checks passed")
+	return nil
+}
+
+func (m *database) applyGroupMembershipsChecks(groupMemberships *collectionWrapper) error {
+	log.Println("apply group memberships checks.....")
+
+	err := groupMemberships.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}, primitive.E{Key: "group_id", Value: 1}, primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}, primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}, primitive.E{Key: "group_id", Value: 1}, primitive.E{Key: "external_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	log.Println("group memberships checks passed")
 	return nil
 }
 

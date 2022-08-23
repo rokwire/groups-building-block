@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Set logger [#182](https://github.com/rokwire/groups-building-block/issues/182)
 
+## [1.5.65] - 2022-08-17
+### Fixed
+- Maximum Mongo document size limit for groups [#222](https://github.com/rokwire/groups-building-block/issues/222)
+
 ## [1.5.64] - 2022-08-10
 ### Fixed
 - Authman groups members missing [#218](https://github.com/rokwire/groups-building-block/issues/218)
