@@ -670,7 +670,7 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 
-	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, &current.ID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -772,7 +772,7 @@ func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, 
 }
 
 func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *utils.GroupError {
-	existingGroups, err := sa.FindGroups(clientID, nil, nil, &group.Title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, &current.ID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -909,8 +909,43 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 }
 
 // FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+
+	if userID != nil {
+		innerOrFilter := bson.A{
+			bson.D{
+				{"members",
+					bson.D{
+						{"$elemMatch",
+							bson.D{
+								{"user_id", *userID},
+								{"$or",
+									bson.A{
+										bson.D{{"status", "admin"}},
+										bson.D{{"status", "member"}},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			bson.D{{"privacy", bson.D{{"$ne", "private"}}}},
+		}
+
+		if title != nil {
+			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+				primitive.M{"title": *title},
+				primitive.M{"hidden_for_search": false},
+			}})
+		}
+
+		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
+
+		filter = append(filter, orFilter)
+	}
+
 	if category != nil {
 		filter = append(filter, primitive.E{Key: "category", Value: category})
 	}
@@ -957,8 +992,8 @@ func (sa *Adapter) FindGroups(clientID string, category *string, privacy *string
 	return result, nil
 }
 
-// FindOneGroupBtID finds one groups by ID and clientID
-func (sa *Adapter) FindOneGroupBtID(clientID string, groupID string) (*model.Group, error) {
+// FindGroupByID finds one groups by ID and clientID
+func (sa *Adapter) FindGroupByID(clientID string, groupID string) (*model.Group, error) {
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "_id", Value: groupID},
