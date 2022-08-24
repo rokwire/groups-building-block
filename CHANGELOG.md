@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 -Set logger [#233] (https://github.com/rokwire/groups-building-block/issues/233)
 
+## [1.5.66] - 2022-08-24
+### Fixed
+- Fix wrong groups pagination [#232](https://github.com/rokwire/groups-building-block/issues/232)
+
 ## [1.5.65] - 2022-08-17
 ### Fixed
 - Maximum Mongo document size limit for groups [#222](https://github.com/rokwire/groups-building-block/issues/222)
