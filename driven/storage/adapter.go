@@ -935,7 +935,10 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 		}
 
 		if title != nil {
-			innerOrFilter = append(innerOrFilter, primitive.M{"title": *title})
+			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+				primitive.M{"title": *title},
+				primitive.M{"hidden_for_search": false},
+			}})
 		}
 
 		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
