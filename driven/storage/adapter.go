@@ -320,6 +320,9 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 
 	now := time.Now()
 
+	//TODO: Do we still need this migration?
+	//TODO: If so, handle group_memberships
+	//TODO: NEED TO HANDLE ADMINS AND APP USERS SEPARATELY. CURRENTLY THIS IS MIGRATING ADMINS BACK AND FORTH
 	// transaction
 	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 		err := sessionContext.StartTransaction()
@@ -2475,7 +2478,7 @@ func constructGroup(gr group) model.Group {
 		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
 		Members: members, AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
 		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
-		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup, UsesGroupMemberships: gr.UsesGroupMemberships,
+		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup,
 		SyncStartTime: gr.SyncStartTime, SyncEndTime: gr.SyncEndTime,
 	}
 }

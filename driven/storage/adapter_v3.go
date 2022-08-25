@@ -138,13 +138,11 @@ func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID strin
 	return deletedCount, nil
 }
 
-// UpdateGroupUsesGroupMemberships updates a group uses group membership
-func (sa *Adapter) UpdateGroupUsesGroupMemberships(context TransactionContext, clientID string, group *model.Group) error {
+// UpdateGroupSyncTimes updates a group uses group membership
+func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, clientID string, group *model.Group) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: group.ID}, primitive.E{Key: "client_id", Value: clientID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "members", Value: group.Members},
-			primitive.E{Key: "uses_group_memberships", Value: group.UsesGroupMemberships},
 			primitive.E{Key: "sync_start_time", Value: group.SyncStartTime},
 			primitive.E{Key: "sync_end_time", Value: group.SyncEndTime},
 		}},

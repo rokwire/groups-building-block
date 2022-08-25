@@ -35,7 +35,7 @@ type Services interface {
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
-	IsGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error)
+	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
@@ -72,7 +72,7 @@ type Services interface {
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
 	SynchronizeAuthman(clientID string) error
-	SynchronizeAuthmanGroup(clientID string, group *model.Group) error
+	SynchronizeAuthmanGroup(clientID string, groupID string) error
 
 	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
 	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
@@ -116,7 +116,7 @@ func (s *servicesImpl) GetGroupEntityByTitle(clientID string, title string) (*mo
 	return s.app.getGroupEntityByTitle(clientID, title)
 }
 
-func (s *servicesImpl) IsGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error) {
+func (s *servicesImpl) IsGroupAdmin(clientID string, groupID string, userID string) (bool, error) {
 	return s.app.isGroupAdmin(clientID, groupID, userID)
 }
 
@@ -168,10 +168,7 @@ func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupSt
 	if group == nil {
 		return &model.GroupStats{}, nil
 	}
-	if group.UsesGroupMemberships {
-		return s.app.storage.GetGroupMembershipStats(clientID, id)
-	}
-	return s.app.storage.GetGroupStats(clientID, id)
+	return s.app.storage.GetGroupMembershipStats(clientID, id)
 }
 
 func (s *servicesImpl) CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
@@ -250,8 +247,8 @@ func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
 	return s.app.synchronizeAuthman(clientID, false)
 }
 
-func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, group *model.Group) error {
-	return s.app.synchronizeAuthmanGroup(clientID, group)
+func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, groupID string) error {
+	return s.app.synchronizeAuthmanGroup(clientID, groupID)
 }
 
 func (s *servicesImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
@@ -318,7 +315,7 @@ type Storage interface {
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupUsesGroupMemberships(context storage.TransactionContext, clientID string, group *model.Group) error
+	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
 	DeleteGroup(clientID string, id string) error
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 	FindGroup(clientID string, id string) (*model.Group, error)

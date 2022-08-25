@@ -57,8 +57,7 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Members              []Member `json:"members" bson:"members"`
-	UsesGroupMemberships bool     `json:"uses_group_memberships" bson:"uses_group_memberships"`
+	Members []Member `json:"members" bson:"members"`
 
 	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`

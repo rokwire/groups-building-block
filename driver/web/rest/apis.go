@@ -246,20 +246,14 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	}
 
 	//check if allowed to update
-	isAdmin, group, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
+	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group with id - %s", id)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 	if !isAdmin {
-		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
+		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, id)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
@@ -354,20 +348,14 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group for the provided id - %s", id)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	if !group.IsGroupAdmin(current.ID) {
-		log.Printf("%s is not allowed to update a group", current.Email)
+	if !isAdmin {
+		log.Printf("%s is not allowed to delete group '%s'", current.Email, id)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
@@ -1382,27 +1370,21 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 	}
 
 	//check if allowed to update
-	isAdmin, group, err := h.app.Services.IsGroupAdmin(clientID, groupID, current.ID)
+	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, groupID, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group with id - %s", groupID)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 	if !isAdmin {
-		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
+		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, groupID)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 		return
 	}
 
-	err = h.app.Services.SynchronizeAuthmanGroup(clientID, group)
+	err = h.app.Services.SynchronizeAuthmanGroup(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
