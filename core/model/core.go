@@ -22,7 +22,7 @@ type CoreService struct {
 
 // Creator represents group member entity
 type Creator struct {
-	UserID string `json:"user_id" bson:"user_id"`
-	Name   string `json:"name" bson:"name"`
-	Email  string `json:"email" bson:"email"`
+	UserID string `json:"user_id" bson:"user_id" validate:"required"`
+	Name   string `json:"name" bson:"name" validate:"required"`
+	Email  string `json:"email" bson:"email" validate:"required"`
 } //@name Creator

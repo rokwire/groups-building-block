@@ -8,6 +8,10 @@ definitions:
         type: string
       user_id:
         type: string
+    required:
+    - email
+    - name
+    - user_id
     type: object
   Event:
     properties:
@@ -590,7 +594,6 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     required:
-    - creator
     - event_id
     type: object
   membershipApprovalRequest:
@@ -1880,6 +1883,33 @@ paths:
         type: string
       produces:
       - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
+  /api/int/group/{group-id}/events/{event-id}:
+    delete:
+      description: Deletes a group event
+      operationId: IntDeleteGroupEvent
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
       responses:
         "200":
           description: ""

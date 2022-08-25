@@ -544,17 +544,30 @@ func (app *Application) getEvents(clientID string, current *model.User, groupID 
 	return events, nil
 }
 
-func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember) (*model.Event, error) {
-	event, err := app.storage.CreateEvent(clientID, current, eventID, group.ID, toMemberList)
+func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+	var skipUserID *string
+
+	if current != nil && creator == nil {
+		creator = &model.Creator{
+			UserID: current.ID,
+			Name:   current.Name,
+			Email:  current.Email,
+		}
+	}
+	if creator != nil {
+		skipUserID = &creator.UserID
+	}
+
+	event, err := app.storage.CreateEvent(clientID, eventID, group.ID, toMemberList, creator)
 	if err != nil {
 		return nil, err
 	}
 
 	var recipients []notifications.Recipient
 	if len(event.ToMembersList) > 0 {
-		recipients = event.GetMembersAsNotificationRecipients(&current.ID)
+		recipients = event.GetMembersAsNotificationRecipients(skipUserID)
 	} else {
-		recipients = group.GetMembersAsNotificationRecipients(&current.ID)
+		recipients = group.GetMembersAsNotificationRecipients(skipUserID)
 	}
 	topic := "group.events"
 	app.notifications.SendNotification(
@@ -574,42 +587,12 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	return event, nil
 }
 
-func (app *Application) createEventWithCreator(clientID string, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
-	event, err := app.storage.CreateEventWithCreator(clientID, eventID, group.ID, toMemberList, creator)
-	if err != nil {
-		return nil, err
-	}
-
-	var recipients []notifications.Recipient
-	if len(event.ToMembersList) > 0 {
-		recipients = event.GetMembersAsNotificationRecipients(&creator.UserID)
-	} else {
-		recipients = group.GetMembersAsNotificationRecipients(&creator.UserID)
-	}
-	topic := "group.events"
-	app.notifications.SendNotification(
-		recipients,
-		&topic,
-		fmt.Sprintf("Group - %s", group.Title),
-		fmt.Sprintf("New event has been published in '%s' group", group.Title),
-		map[string]string{
-			"type":        "group",
-			"operation":   "event_created",
-			"entity_type": "group",
-			"entity_id":   group.ID,
-			"entity_name": group.Title,
-		},
-	)
-
-	return event, nil
+func (app *Application) updateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	return app.storage.UpdateEvent(clientID, eventID, groupID, toMemberList)
 }
 
-func (app *Application) updateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
-	return app.storage.UpdateEvent(clientID, current, eventID, groupID, toMemberList)
-}
-
-func (app *Application) deleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
-	err := app.storage.DeleteEvent(clientID, current, eventID, groupID)
+func (app *Application) deleteEvent(clientID string, _ *model.User, eventID string, groupID string) error {
+	err := app.storage.DeleteEvent(clientID, eventID, groupID)
 	if err != nil {
 		return err
 	}

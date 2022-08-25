@@ -1654,33 +1654,7 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 }
 
 // CreateEvent creates a group event
-func (sa *Adapter) CreateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) (*model.Event, error) {
-	var creator *model.Creator
-	if current != nil {
-		creator = current.ToCreator()
-	}
-	event := model.Event{
-		ClientID:      clientID,
-		EventID:       eventID,
-		GroupID:       groupID,
-		DateCreated:   time.Now().UTC(),
-		ToMembersList: toMemberList,
-		Creator:       creator,
-	}
-	_, err := sa.db.events.InsertOne(event)
-	if err != nil {
-		return nil, err
-	}
-
-	if err == nil {
-		sa.resetGroupUpdatedDate(clientID, groupID)
-	}
-
-	return &event, err
-}
-
-// CreateEventWithCreator creates a group event with predefined creator record
-func (sa *Adapter) CreateEventWithCreator(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
 	event := model.Event{
 		ClientID:      clientID,
 		EventID:       eventID,
@@ -1702,7 +1676,7 @@ func (sa *Adapter) CreateEventWithCreator(clientID string, eventID string, group
 }
 
 // UpdateEvent updates a group event
-func (sa *Adapter) UpdateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+func (sa *Adapter) UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error {
 
 	filter := bson.D{
 		primitive.E{Key: "event_id", Value: eventID},
@@ -1723,7 +1697,7 @@ func (sa *Adapter) UpdateEvent(clientID string, _ *model.User, eventID string, g
 }
 
 // DeleteEvent deletes a group event
-func (sa *Adapter) DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
+func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) error {
 	filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
 		primitive.E{Key: "group_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID}}
