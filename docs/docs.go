@@ -1909,6 +1909,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/{group-id}/events/{event-id}": {
+            "delete": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Deletes a group event",
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "IntDeleteGroupEvent",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/int/group/{identifier}": {
             "get": {
                 "security": [
@@ -2535,6 +2577,11 @@ const docTemplate = `{
     "definitions": {
         "Creator": {
             "type": "object",
+            "required": [
+                "email",
+                "name",
+                "user_id"
+            ],
             "properties": {
                 "email": {
                     "type": "string"
@@ -3403,7 +3450,6 @@ const docTemplate = `{
         "intCreateGroupEventRequestBody": {
             "type": "object",
             "required": [
-                "creator",
                 "event_id"
             ],
             "properties": {

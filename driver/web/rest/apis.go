@@ -1636,7 +1636,11 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	_, err = h.app.Services.CreateEvent(clientID, current, requestData.EventID, group, requestData.ToMembersList)
+	_, err = h.app.Services.CreateEvent(clientID, current, requestData.EventID, group, requestData.ToMembersList, &model.Creator{
+		UserID: current.ID,
+		Name:   current.Name,
+		Email:  current.Email,
+	})
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

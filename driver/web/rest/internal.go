@@ -291,7 +291,7 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 
 type intCreateGroupEventRequestBody struct {
 	EventID       string           `json:"event_id" bson:"event_id" validate:"required"`
-	Creator       *model.Creator   `json:"creator" bson:"creator" validate:"required"`
+	Creator       *model.Creator   `json:"creator" bson:"creator"`
 	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name intCreateGroupEventRequestBody
 
@@ -354,7 +354,7 @@ func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseW
 		return
 	}
 
-	grEvent, err := h.app.Services.CreateEventWithCreator(clientID, requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
+	grEvent, err := h.app.Services.CreateEvent(clientID, nil, requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, fmt.Sprintf("Error on creating an event - %s\n", err), http.StatusInternalServerError)
@@ -371,4 +371,41 @@ func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseW
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(responseData)
+}
+
+// DeleteGroupEvent deletes a group event
+// @Description Deletes a group event
+// @ID IntDeleteGroupEvent
+// @Tags Internal
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Param event-id path string true "Event ID"
+// @Success 200
+// @Security IntAPIKeyAuth
+// @Router /api/int/group/{group-id}/events/{event-id} [delete]
+func (h *InternalApisHandler) DeleteGroupEvent(clientID string, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+	eventID := params["event-id"]
+	if len(eventID) <= 0 {
+		log.Println("Event id is required")
+		http.Error(w, "Event id is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.DeleteEvent(clientID, nil, eventID, groupID)
+	if err != nil {
+		log.Printf("Error on deleting an event - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }

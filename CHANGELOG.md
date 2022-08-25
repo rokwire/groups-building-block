@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- Expose DELETE /api/int/group/{group-id}/events/{event-id} API for using by Events Manager [#236](https://github.com/rokwire/groups-building-block/issues/236)
 
 ## [1.5.66] - 2022-08-24
 ### Fixed
