@@ -229,7 +229,7 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return &res, nil
 }
 
-func (app *Application) getGroupMembers(clientID string, _ *model.User, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error) {
+func (app *Application) getGroupMembers(clientID string, _ *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error) {
 	return app.storage.GetGroupMembers(clientID, groupID, filter)
 }
 
@@ -1083,8 +1083,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
-	isAdmin := true
-	adminMembers, err := app.storage.FindGroupMemberships(clientID, authmanGroup.ID, &isAdmin)
+	adminMembers, err := app.storage.FindGroupMemberships(clientID, authmanGroup.ID, &model.MembershipFilter{
+		Statuses: []string{"admin"},
+	})
 	if err != nil {
 		log.Printf("Error finding admin memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
 	} else {

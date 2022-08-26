@@ -1176,7 +1176,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/GroupMembersFilter"
+                            "$ref": "#/definitions/MembershipFilter"
                         }
                     },
                     {
@@ -2698,50 +2698,7 @@ const docTemplate = `{
                 "title": {
                     "type": "string"
                 },
-                "uses_group_memberships": {
-                    "type": "boolean"
-                },
                 "web_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "GroupMembersFilter": {
-            "type": "object",
-            "properties": {
-                "external_id": {
-                    "description": "core user external id",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "membership id",
-                    "type": "string"
-                },
-                "limit": {
-                    "description": "result limit",
-                    "type": "integer"
-                },
-                "name": {
-                    "description": "member's name",
-                    "type": "string"
-                },
-                "net_id": {
-                    "description": "core user net id",
-                    "type": "string"
-                },
-                "offset": {
-                    "description": "result offset",
-                    "type": "integer"
-                },
-                "statuses": {
-                    "description": "lest of membership statuses",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "user_id": {
-                    "description": "core user id",
                     "type": "string"
                 }
             }
@@ -2964,6 +2921,46 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "question": {
+                    "type": "string"
+                }
+            }
+        },
+        "MembershipFilter": {
+            "type": "object",
+            "properties": {
+                "external_id": {
+                    "description": "core user external id",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "membership id",
+                    "type": "string"
+                },
+                "limit": {
+                    "description": "result limit",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "member's name",
+                    "type": "string"
+                },
+                "net_id": {
+                    "description": "core user net id",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "result offset",
+                    "type": "integer"
+                },
+                "statuses": {
+                    "description": "lest of membership statuses",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
+                    "description": "core user id",
                     "type": "string"
                 }
             }

@@ -84,38 +84,7 @@ definitions:
         type: array
       title:
         type: string
-      uses_group_memberships:
-        type: boolean
       web_url:
-        type: string
-    type: object
-  GroupMembersFilter:
-    properties:
-      external_id:
-        description: core user external id
-        type: string
-      id:
-        description: membership id
-        type: string
-      limit:
-        description: result limit
-        type: integer
-      name:
-        description: member's name
-        type: string
-      net_id:
-        description: core user net id
-        type: string
-      offset:
-        description: result offset
-        type: integer
-      statuses:
-        description: lest of membership statuses
-        items:
-          type: string
-        type: array
-      user_id:
-        description: core user id
         type: string
     type: object
   GroupStat:
@@ -263,6 +232,35 @@ definitions:
       answer:
         type: string
       question:
+        type: string
+    type: object
+  MembershipFilter:
+    properties:
+      external_id:
+        description: core user external id
+        type: string
+      id:
+        description: membership id
+        type: string
+      limit:
+        description: result limit
+        type: integer
+      name:
+        description: member's name
+        type: string
+      net_id:
+        description: core user net id
+        type: string
+      offset:
+        description: result offset
+        type: integer
+      statuses:
+        description: lest of membership statuses
+        items:
+          type: string
+        type: array
+      user_id:
+        description: core user id
         type: string
     type: object
   ShortMemberRecord:
@@ -1481,7 +1479,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/GroupMembersFilter'
+          $ref: '#/definitions/MembershipFilter'
       - description: APP
         in: header
         name: APP

@@ -12,11 +12,46 @@ import (
 )
 
 // FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error) {
-	filter := bson.M{"client_id": clientID, "group_id": groupID}
+func (sa *Adapter) FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) ([]model.GroupMembership, error) {
+
+	matchFilter := bson.D{
+		bson.E{"client_id", clientID},
+		bson.E{"group_id", groupID},
+	}
+	if filter.ID != nil {
+		matchFilter = append(matchFilter, bson.E{"_id", *filter.ID})
+	}
+	if filter.UserID != nil {
+		matchFilter = append(matchFilter, bson.E{"user_id", *filter.UserID})
+	}
+	if filter.NetID != nil {
+		matchFilter = append(matchFilter, bson.E{"net_id", *filter.NetID})
+	}
+	if filter.ExternalID != nil {
+		matchFilter = append(matchFilter, bson.E{"external_id", *filter.ExternalID})
+	}
+	if filter.Statuses != nil {
+		matchFilter = append(matchFilter, bson.E{"status", bson.D{{"$in", filter.Statuses}}})
+	}
+	if filter.Name != nil {
+		matchFilter = append(matchFilter, bson.E{"name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
+	}
+
+	findOptions := options.FindOptions{
+		Sort: bson.D{
+			{"members.status", 1},
+			{"members.name", 1},
+		},
+	}
+	if filter.Offset != nil {
+		findOptions.Skip = filter.Offset
+	}
+	if filter.Limit != nil {
+		findOptions.Limit = filter.Limit
+	}
 
 	var result []model.GroupMembership
-	err := sa.db.events.Find(filter, &result, nil)
+	err := sa.db.events.Find(matchFilter, &result, &findOptions)
 	return result, err
 }
 

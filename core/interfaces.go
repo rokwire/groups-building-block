@@ -48,7 +48,7 @@ type Services interface {
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 
-	GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error)
+	GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error)
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, current *model.User, groupID string) error
 	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
@@ -156,7 +156,7 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 	return s.app.getGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error) {
+func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error) {
 	return s.app.getGroupMembers(clientID, current, groupID, filter)
 }
 
@@ -326,7 +326,7 @@ type Storage interface {
 	FindUserGroups(clientID string, userID string, groupIDs []string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
-	GetGroupMembers(clientID string, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error)
+	GetGroupMembers(clientID string, groupID string, filter *model.MembershipFilter) ([]model.Member, error)
 	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
@@ -360,7 +360,7 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
-	FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error)
+	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) ([]model.GroupMembership, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
 	CreateMissingGroupMembership(membership *model.GroupMembership) error

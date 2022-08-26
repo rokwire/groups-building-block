@@ -930,7 +930,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // @ID CreateMember
 // @Tags Client-V1
 // @Accept plain
-// @Param data body model.GroupMembersFilter true "body data"
+// @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.Member
@@ -947,17 +947,17 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 
 	requestData, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error on marshal model.GroupMembersFilter request body - %s\n", err.Error())
+		log.Printf("Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	var request model.GroupMembersFilter
+	var request model.MembershipFilter
 	if len(requestData) > 0 {
 		err = json.Unmarshal(requestData, &request)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("Error on unmarshal model.GroupMembersFilter request body - %s\n", err.Error())
+			log.Printf("Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
 		}
 	}
 
