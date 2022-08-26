@@ -12,7 +12,7 @@ import (
 )
 
 // FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) ([]model.GroupMembership, error) {
+func (sa *Adapter) FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
 
 	matchFilter := bson.D{
 		bson.E{"client_id", clientID},
@@ -52,7 +52,7 @@ func (sa *Adapter) FindGroupMemberships(clientID string, groupID string, filter 
 
 	var result []model.GroupMembership
 	err := sa.db.events.Find(matchFilter, &result, &findOptions)
-	return result, err
+	return model.MembershipCollection{Items: result}, err
 }
 
 // FindGroupMembership finds the group membership for a given user and group
@@ -61,6 +61,22 @@ func (sa *Adapter) FindGroupMembership(clientID string, groupID string, userID s
 
 	var result model.GroupMembership
 	err := sa.db.groupMemberships.FindOne(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &result, err
+}
+
+// FindGroupMembershipByID finds the group membership by id
+func (sa *Adapter) FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
+	filter := bson.M{"client_id": clientID, "_id": id}
+
+	var result model.GroupMembership
+	err := sa.db.groupMemberships.FindOne(filter, &result, nil)
+	if err != nil {
+		return nil, err
+	}
 	return &result, err
 }
 

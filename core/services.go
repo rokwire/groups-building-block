@@ -37,6 +37,7 @@ const (
 	authmanUserBatchSize       = 5000
 )
 
+/*
 func (app *Application) applyDataProtection(current *model.User, group model.Group) model.Group {
 	//1 apply data protection for "anonymous"
 	if current == nil || current.IsAnonymous {
@@ -49,7 +50,7 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 		}
 	}
 	return group
-}
+}*/
 
 func (app *Application) getVersion() string {
 	return app.version
@@ -155,13 +156,7 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 		return nil, err
 	}
 
-	//apply data protection
-	groupsList := make([]model.Group, len(groups))
-	for i := range groups {
-		groupsList[i] = app.applyDataProtection(current, groups[i])
-	}
-
-	return groupsList, nil
+	return groups, nil
 }
 
 func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
@@ -191,18 +186,7 @@ func (app *Application) getUserGroups(clientID string, current *model.User, cate
 		return nil, err
 	}
 
-	//apply data protection
-	groupsList := make([]model.Group, len(groups))
-	for i, item := range groups {
-		for _, membership := range memberships {
-			if membership.GroupID == item.ID {
-				item.Members = []model.Member{membership.ToMember()}
-			}
-		}
-		groupsList[i] = app.applyDataProtection(current, item)
-	}
-
-	return groupsList, nil
+	return groups, nil
 }
 
 func (app *Application) loginUser(clientID string, current *model.User) error {
@@ -219,14 +203,8 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	if err != nil {
 		return nil, err
 	}
-	if group == nil {
-		return nil, nil
-	}
 
-	//apply data protection
-	res := app.applyDataProtection(current, *group)
-
-	return &res, nil
+	return group, nil
 }
 
 func (app *Application) getGroupMembers(clientID string, _ *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error) {
@@ -246,18 +224,17 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 		return err
 	}
 
-	group, err = app.storage.FindGroup(clientID, group.ID)
-	if err == nil && group != nil {
-		members := group.Members
-		if len(members) > 0 {
+	adminMemberships, err := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+		Statuses: []string{"admin"},
+	})
+	if err == nil && len(adminMemberships.Items) > 0 {
+		if len(adminMemberships.Items) > 0 {
 			recipients := []notifications.Recipient{}
-			for _, member := range members {
-				if member.Status == "admin" {
-					recipients = append(recipients, notifications.Recipient{
-						UserID: member.UserID,
-						Name:   member.Name,
-					})
-				}
+			for _, admin := range adminMemberships.Items {
+				recipients = append(recipients, notifications.Recipient{
+					UserID: admin.UserID,
+					Name:   admin.Name,
+				})
 			}
 			if len(recipients) > 0 {
 				topic := "group.invitations"
@@ -343,43 +320,43 @@ func (app *Application) createMember(clientID string, current *model.User, group
 		return err
 	}
 
-	group, err = app.storage.FindGroup(clientID, group.ID)
-	if err == nil && group != nil {
-		members := group.Members
-		if len(members) > 0 {
-			recipients := []notifications.Recipient{}
-			for _, adminMember := range members {
-				if adminMember.Status == "admin" && adminMember.UserID != current.ID {
-					recipients = append(recipients, notifications.Recipient{
-						UserID: adminMember.UserID,
-						Name:   adminMember.Name,
-					})
-				}
+	memberships, err := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+		Statuses: []string{"admin"},
+	})
+	if err == nil && len(memberships.Items) > 0 {
+		recipients := []notifications.Recipient{}
+		for _, adminMember := range memberships.Items {
+			if adminMember.UserID != current.ID {
+				recipients = append(recipients, notifications.Recipient{
+					UserID: adminMember.UserID,
+					Name:   adminMember.Name,
+				})
 			}
+		}
 
-			var message string
-			if member.Status == "member" || member.Status == "admin" {
-				message = fmt.Sprintf("New member joined '%s' group", group.Title)
-			} else {
-				message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
-			}
+		var message string
+		if member.Status == "member" || member.Status == "admin" {
+			message = fmt.Sprintf("New member joined '%s' group", group.Title)
+		} else {
+			message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+		}
 
-			if len(recipients) > 0 {
-				topic := "group.invitations"
-				app.notifications.SendNotification(
-					recipients,
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					message,
-					map[string]string{
-						"type":        "group",
-						"operation":   "pending_member",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
-			}
+		if len(recipients) > 0 {
+			topic := "group.invitations"
+			app.notifications.SendNotification(
+				recipients,
+				&topic,
+				fmt.Sprintf("Group - %s", group.Title),
+				message,
+				map[string]string{
+					"type":        "group",
+					"operation":   "pending_member",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+			)
+
 		}
 
 		if group.AuthmanEnabled && group.AuthmanGroup != nil {
@@ -389,7 +366,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 			}
 		}
 
-	} else {
+	} else if err != nil {
 		log.Printf("Unable to retrieve group by membership id: %s\n", err)
 		// return err // No reason to fail if the main part succeeds
 	}
@@ -430,64 +407,59 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		return fmt.Errorf("error applying membership approval: %s", err)
 	}
 
-	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
-	if err == nil && group != nil {
+	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
+	if err == nil && membership != nil {
+		group, _ := app.storage.FindGroup(clientID, membership.GroupID)
 		topic := "group.invitations"
-		member := group.GetMemberByID(membershipID)
-		if member != nil {
-			if approve {
-				app.notifications.SendNotification(
-					[]notifications.Recipient{
-						notifications.Recipient{
-							UserID: member.UserID,
-							Name:   member.Name,
-						},
+		if approve {
+			app.notifications.SendNotification(
+				[]notifications.Recipient{
+					notifications.Recipient{
+						UserID: membership.UserID,
+						Name:   membership.Name,
 					},
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
-					map[string]string{
-						"type":        "group",
-						"operation":   "membership_approve",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
+				},
+				&topic,
+				fmt.Sprintf("Group - %s", group.Title),
+				fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
+				map[string]string{
+					"type":        "group",
+					"operation":   "membership_approve",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+			)
+		} else {
+			app.notifications.SendNotification(
+				[]notifications.Recipient{
+					notifications.Recipient{
+						UserID: membership.UserID,
+						Name:   membership.Name,
 					},
-				)
-			} else {
-				app.notifications.SendNotification(
-					[]notifications.Recipient{
-						notifications.Recipient{
-							UserID: member.UserID,
-							Name:   member.Name,
-						},
-					},
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
-					map[string]string{
-						"type":        "group",
-						"operation":   "membership_reject",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
+				},
+				&topic,
+				fmt.Sprintf("Group - %s", group.Title),
+				fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
+				map[string]string{
+					"type":        "group",
+					"operation":   "membership_reject",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+			)
+		}
+
+		if approve && group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
+			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, membership.ExternalID)
+			if err != nil {
+				log.Printf("err app.applyMembershipApproval() - error storing member in Authman: %s", err)
 			}
 		}
 	} else {
 		log.Printf("Unable to retrieve group by membership id: %s\n", err)
 		// return err // No reason to fail if the main part succeeds
-	}
-
-	if err == nil && group != nil {
-		member := group.GetMemberByID(membershipID)
-		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.applyMembershipApproval() - error storing member in Authman: %s", err)
-			}
-		}
 	}
 
 	return nil
@@ -499,11 +471,11 @@ func (app *Application) deleteMembership(clientID string, current *model.User, m
 		return err
 	}
 
-	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
-	if err == nil && group != nil {
-		member := group.GetMemberByID(membershipID)
-		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
+	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
+	if membership != nil {
+		group, _ := app.storage.FindGroup(clientID, membership.GroupID)
+		if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
+			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
 			if err != nil {
 				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
 			}
@@ -551,7 +523,10 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	if len(event.ToMembersList) > 0 {
 		recipients = event.GetMembersAsNotificationRecipients(skipUserID)
 	} else {
-		recipients = group.GetMembersAsNotificationRecipients(skipUserID)
+		result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+			Statuses: []string{"member", "admin"},
+		})
+		recipients = result.GetMembersAsNotificationRecipients(skipUserID)
 	}
 	topic := "group.events"
 	app.notifications.SendNotification(
@@ -620,7 +595,10 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		recipients, _ := app.getPostNotificationRecipients(clientID, post, &current.ID)
 
 		if len(recipients) == 0 {
-			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
+			result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+				Statuses: []string{"member", "admin"},
+			})
+			recipients = result.GetMembersAsNotificationRecipients(&current.ID)
 		}
 		if len(recipients) > 0 {
 			title := fmt.Sprintf("Group - %s", group.Title)
@@ -732,7 +710,10 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		toMembers := group.GetAllAdminsAsRecipients()
+		result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+			Statuses: []string{"admin"},
+		})
+		toMembers := result.GetAllAdminsAsRecipients()
 
 		body := fmt.Sprintf(`
 Violation by: %s %s

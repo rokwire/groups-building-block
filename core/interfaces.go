@@ -327,7 +327,6 @@ type Storage interface {
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
 	GetGroupMembers(clientID string, groupID string, filter *model.MembershipFilter) ([]model.Member, error)
-	UpdateGroupMembers(clientID string, groupID string, members []model.Member) error
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
 	CreateMemberUnchecked(clientID string, current *model.User, group *model.Group, member *model.Member) error
@@ -360,8 +359,9 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
-	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) ([]model.GroupMembership, error)
+	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
 	CreateMissingGroupMembership(membership *model.GroupMembership) error
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
