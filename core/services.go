@@ -1070,7 +1070,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	if err != nil {
 		log.Printf("Error finding admin memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
 	} else {
-		for _, adminMember := range adminMembers {
+		for _, adminMember := range adminMembers.Items {
 			if len(adminMember.ExternalID) > 0 {
 				allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
 			}
@@ -1129,7 +1129,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	}
 
 	// Update admin user data
-	for _, adminMember := range adminMembers {
+	for _, adminMember := range adminMembers.Items {
 		var userID *string
 		var name *string
 		var email *string

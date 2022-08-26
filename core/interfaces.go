@@ -81,6 +81,12 @@ type Services interface {
 
 	GetSyncConfig(clientID string) (*model.SyncConfig, error)
 	UpdateSyncConfig(config model.SyncConfig) error
+
+	// V3
+	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
+	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
 }
 
 type servicesImpl struct {
@@ -273,6 +279,22 @@ func (s *servicesImpl) GetSyncConfig(clientID string) (*model.SyncConfig, error)
 
 func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
+}
+
+func (s *servicesImpl) FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+	return s.app.storage.FindGroupMemberships(clientID, groupID, filter)
+}
+
+func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
+	return s.app.storage.FindGroupMembership(clientID, groupID, userID)
+}
+
+func (s *servicesImpl) FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
+	return s.app.storage.FindGroupMembershipByID(clientID, id)
+}
+
+func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error) {
+	return s.app.storage.FindUserGroupMemberships(clientID, userID)
 }
 
 // Administration exposes administration APIs for the driver adapters

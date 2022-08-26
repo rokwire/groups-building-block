@@ -779,7 +779,8 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 			w.Write([]byte("Forbidden"))
 			return
 		}
-		if !group.IsGroupAdminOrMember(current.ID) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
+		membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+		if (membership == nil || !membership.IsAdminOrMember()) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
 			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
 
 			w.WriteHeader(http.StatusForbidden)
@@ -1065,7 +1066,9 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("error: api.CreateMemberUnchecked() - %s is not allowed to create group member", current.Email)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
@@ -1187,7 +1190,8 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to make approval", current.Email)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1244,7 +1248,8 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to delete membership", current.Email)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1327,7 +1332,8 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to make update", current.Email)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1437,7 +1443,8 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 			w.Write([]byte("Forbidden"))
 			return
 		}
-		if !group.IsGroupAdminOrMember(current.ID) {
+		membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+		if membership == nil || !membership.IsAdminOrMember() {
 			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
 
 			w.WriteHeader(http.StatusForbidden)
@@ -1446,7 +1453,9 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 		}
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, membership == nil || !membership.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1503,6 +1512,8 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
 	if group.Privacy == "private" {
 		if current == nil || current.IsAnonymous {
 			log.Println("Anonymous user cannot see the events for a private group")
@@ -1511,7 +1522,8 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 			w.Write([]byte("Forbidden"))
 			return
 		}
-		if !group.IsGroupAdminOrMember(current.ID) {
+
+		if membership == nil || !membership.IsAdminOrMember() {
 			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
 
 			w.WriteHeader(http.StatusForbidden)
@@ -1520,7 +1532,7 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 		}
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, membership == nil || !membership.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1528,7 +1540,7 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 	}
 
 	// Remove  ToMembersList for non-admins
-	if len(events) > 0 && !group.IsGroupAdmin(current.ID) {
+	if len(events) > 0 && !membership.IsAdmin() {
 		for i, event := range events {
 			event.ToMembersList = nil
 			events[i] = event
@@ -1610,7 +1622,8 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1692,7 +1705,8 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1752,7 +1766,8 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1827,7 +1842,10 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to get posts for group %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1836,12 +1854,17 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	var filterPrivatePostsValue *bool
-	if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
+	if group == nil || err != nil || membership == nil || !membership.IsAdminOrMember() {
 		filter := false
 		filterPrivatePostsValue = &filter
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, !group.IsGroupAdmin(current.ID), offset, limit, order)
+	filterByToMembers := true
+	if membership != nil && membership.IsAdmin() {
+		filterByToMembers = false
+	}
+
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1902,7 +1925,9 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil || !group.IsGroupAdminOrMember(current.ID) {
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("the user is not member of the group - %s", id)
 		// do not say to much to the user as we do not know if he/she is an admin for the group yet
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1999,7 +2024,8 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -2087,7 +2113,8 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -2152,7 +2179,8 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)

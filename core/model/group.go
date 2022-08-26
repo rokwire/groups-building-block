@@ -56,7 +56,7 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	//Members []Member `json:"members" bson:"members"`
+	Members []Member `json:"members" bson:"members"`
 
 	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
@@ -87,7 +87,52 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 	return answers
 }
 
+// GetMemberByUserID gets member by UserID field
+func (gr Group) GetMemberByUserID(userID string) *Member {
+	if gr.Members == nil {
+		return nil
+	}
+	for _, item := range gr.Members {
+		if item.UserID == userID {
+			return &item
+		}
+	}
+	return nil
+}
+
 // IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
 func (gr Group) IsAuthmanSyncEligible() bool {
 	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
+}
+
+// ToGroupV2 Converts the legacy data model to a GroupV2 model
+func (gr Group) ToGroupV2(currentUserID *string) GroupV2 {
+
+	var currentMember *Member
+	if currentUserID != nil {
+		currentMember = gr.GetMemberByUserID(*currentUserID)
+	}
+
+	return GroupV2{
+		ID:                         gr.ID,
+		ClientID:                   gr.ClientID,
+		Category:                   gr.Category,
+		Title:                      gr.Title,
+		Privacy:                    gr.Privacy,
+		HiddenForSearch:            gr.HiddenForSearch,
+		Description:                gr.Description,
+		ImageURL:                   gr.ImageURL,
+		WebURL:                     gr.WebURL,
+		Tags:                       gr.Tags,
+		MembershipQuestions:        gr.MembershipQuestions,
+		AuthmanEnabled:             gr.AuthmanEnabled,
+		AuthmanGroup:               gr.AuthmanGroup,
+		OnlyAdminsCanCreatePolls:   gr.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:       gr.CanJoinAutomatically,
+		BlockNewMembershipRequests: gr.BlockNewMembershipRequests,
+		AttendanceGroup:            gr.AttendanceGroup,
+		DateCreated:                gr.DateCreated,
+		DateUpdated:                gr.DateUpdated,
+		CurrentMember:              currentMember,
+	}
 }
