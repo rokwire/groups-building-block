@@ -922,34 +922,32 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 
 // FindGroups finds groups
 func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 
+	groupIDs := []string{}
+	var memberships model.MembershipCollection
 	if userID != nil {
-		innerOrFilter := bson.A{
-			bson.D{
-				{"members",
-					bson.D{
-						{"$elemMatch",
-							bson.D{
-								{"user_id", *userID},
-								{"$or",
-									bson.A{
-										bson.D{{"status", "admin"}},
-										bson.D{{"status", "member"}},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			bson.D{{"privacy", bson.D{{"$ne", "private"}}}},
+		// find group memberships
+		memberships, err := sa.FindUserGroupMemberships(clientID, *userID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, membership := range memberships.Items {
+			groupIDs = append(groupIDs, membership.GroupID)
+		}
+	}
+
+	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	if userID != nil {
+		innerOrFilter := []bson.M{
+			{"_id": bson.M{"$in": groupIDs}},
+			{"privacy": bson.M{"$ne": "private"}},
 		}
 
 		if title != nil {
 			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-				primitive.M{"title": *title},
-				primitive.M{"hidden_for_search": false},
+				{"title": *title},
+				{"hidden_for_search": false},
 			}})
 		}
 
@@ -987,21 +985,24 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 		findOptions.SetSkip(*offset)
 	}
 
-	var list []group
+	var list []model.Group
 	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]model.Group, len(list))
-	if list != nil {
-		for i, current := range list {
-			item := constructGroup(current)
-			result[i] = item
+	if userID != nil {
+		for index, group := range list {
+			group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+				return membership.GroupID == group.ID
+			})
+			if group.CurrentMember != nil {
+				list[index] = group
+			}
 		}
 	}
 
-	return result, nil
+	return list, nil
 }
 
 // FindGroupByID finds one groups by ID and clientID
@@ -1049,7 +1050,18 @@ func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, 
 }
 
 // FindUserGroups finds the user groups for client id
-func (sa *Adapter) FindUserGroups(clientID string, userID string, groupIDs []string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+func (sa *Adapter) FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+
+	// find group memberships
+	memberships, err := sa.FindUserGroupMemberships(clientID, userID)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := []string{}
+	for _, membership := range memberships.Items {
+		groupIDs = append(groupIDs, membership.GroupID)
+	}
+
 	filter := bson.M{
 		"$or": []bson.M{
 			{"members.user_id": userID},
@@ -1087,20 +1099,22 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupIDs []str
 		findOptions.SetSkip(*offset)
 	}
 
-	var list []group
-	err := sa.db.groups.Find(filter, &list, findOptions)
+	var list []model.Group
+	err = sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]model.Group, len(list))
-	if list != nil {
-		for i, current := range list {
-			item := constructGroup(current)
-			result[i] = item
+	for index, group := range list {
+		group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+			return membership.GroupID == group.ID
+		})
+		if group.CurrentMember != nil {
+			list[index] = group
 		}
 	}
-	return result, nil
+
+	return list, nil
 }
 
 // CreatePendingMember creates a pending member for a specific group
