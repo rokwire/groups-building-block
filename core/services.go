@@ -150,10 +150,27 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 }
 
 func (app *Application) getGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+	// find group memberships
+	memberships, err := app.storage.FindUserGroupMemberships(clientID, current.ID)
+	if err != nil {
+		return nil, err
+	}
+	groupIDs := []string{}
+	for _, membership := range memberships.Items {
+		groupIDs = append(groupIDs, membership.GroupID)
+	}
+
 	// find the groups objects
 	groups, err := app.storage.FindGroups(clientID, &current.ID, category, privacy, title, offset, limit, order)
 	if err != nil {
 		return nil, err
+	}
+
+	for index, group := range groups {
+		group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+			return membership.GroupID == group.ID
+		})
+		groups[index] = group
 	}
 
 	return groups, nil
@@ -184,6 +201,15 @@ func (app *Application) getUserGroups(clientID string, current *model.User, cate
 	groups, err := app.storage.FindUserGroups(clientID, current.ID, groupIDs, category, privacy, title, offset, limit, order)
 	if err != nil {
 		return nil, err
+	}
+
+	for index, group := range groups {
+		group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+			return membership.GroupID == group.ID
+		})
+		if group.CurrentMember != nil {
+			groups[index] = group
+		}
 	}
 
 	return groups, nil

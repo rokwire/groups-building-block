@@ -56,7 +56,8 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Members []Member `json:"members" bson:"members"`
+	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
+	Members       []Member         `json:"members" bson:"members"`
 
 	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
