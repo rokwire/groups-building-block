@@ -9,136 +9,29 @@ type MembershipCollection struct {
 	Items []GroupMembership
 }
 
-// IsGroupAdminOrMember says if the user is an admin or a member of the group
-func (c *MembershipCollection) IsGroupAdminOrMember(userID string) bool {
-	if c.Items == nil {
-		return false
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID && item.IsAdminOrMember() {
-			return true
+// GetMembershipBy Finds a membership by
+func (c *MembershipCollection) GetMembershipBy(checker func(membership GroupMembership) bool) *GroupMembership {
+	if len(c.Items) > 0 {
+		for _, membership := range c.Items {
+			if checker(membership) {
+				return &membership
+			}
 		}
 	}
-	return false
-}
 
-// IsGroupAdmin says if the user is admin of the group
-func (c *MembershipCollection) IsGroupAdmin(userID string) bool {
-	if c.Items == nil {
-		return false
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID && item.IsAdmin() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupMember says if the user is a group member
-func (c *MembershipCollection) IsGroupMember(userID string) bool {
-	if c.Items == nil {
-		return false
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID && item.IsMember() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupPending says if the user is a group pending
-func (c *MembershipCollection) IsGroupPending(userID string) bool {
-	if c.Items == nil {
-		return false
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID && item.IsPendingMember() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupRejected says if the user is a group rejected
-func (c *MembershipCollection) IsGroupRejected(userID string) bool {
-	if c.Items == nil {
-		return false
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID && item.IsRejected() {
-			return true
-		}
-	}
-	return false
-}
-
-// UserNameByID Get name of the user
-func (c *MembershipCollection) UserNameByID(userID string) *string {
-	if c.Items == nil {
-		return nil
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID {
-			name := item.Name
-			return &name
-		}
-	}
 	return nil
 }
 
-// GetMemberByID says if the user is a group rejected
-func (c *MembershipCollection) GetMemberByID(userID string) *GroupMembership {
-	if c.Items == nil {
-		return nil
+// GetMembersAsRecipients gets members as list of Recipient recipients. nil status means all users.
+func (c *MembershipCollection) GetMembersAsRecipients(status *string) []notifications.Recipient {
+	subStatusList := c.Items
+	if status != nil {
+		subStatusList = c.GetMembersByStatus(*status)
 	}
-	for _, item := range c.Items {
-		if item.ID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
-// GetMemberByUserID gets member by UserID field
-func (c *MembershipCollection) GetMemberByUserID(userID string) *GroupMembership {
-	if c.Items == nil {
-		return nil
-	}
-	for _, item := range c.Items {
-		if item.UserID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
-// GetMemberByExternalID gets member by ExternalID field
-func (c *MembershipCollection) GetMemberByExternalID(userID string) *GroupMembership {
-	if c.Items == nil {
-		return nil
-	}
-	for _, item := range c.Items {
-		if item.ExternalID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
-// GetAllAdminMembers gets all admin members
-func (c *MembershipCollection) GetAllAdminMembers() []GroupMembership {
-	return c.GetMembersByStatus("admin")
-}
-
-// GetAllAdminsAsRecipients gets all admins as list of Recipient recipients
-func (c *MembershipCollection) GetAllAdminsAsRecipients() []notifications.Recipient {
-	admins := c.GetMembersByStatus("admin")
 
 	var recipients []notifications.Recipient
-	if len(admins) > 0 {
-		for _, admin := range admins {
+	if len(subStatusList) > 0 {
+		for _, admin := range subStatusList {
 			recipients = append(recipients, admin.ToNotificationRecipient())
 		}
 	}

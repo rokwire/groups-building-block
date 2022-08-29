@@ -14,6 +14,6 @@ func (app *Application) findGroupMembershipByID(clientID string, id string) (*mo
 	return app.storage.FindGroupMembershipByID(clientID, id)
 }
 
-func (app *Application) findUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error) {
+func (app *Application) findUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
 	return app.storage.FindUserGroupMemberships(clientID, userID)
 }

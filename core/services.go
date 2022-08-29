@@ -176,7 +176,7 @@ func (app *Application) getUserGroups(clientID string, current *model.User, cate
 		return nil, err
 	}
 	groupIDs := []string{}
-	for _, membership := range memberships {
+	for _, membership := range memberships.Items {
 		groupIDs = append(groupIDs, membership.GroupID)
 	}
 
@@ -713,7 +713,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
 			Statuses: []string{"admin"},
 		})
-		toMembers := result.GetAllAdminsAsRecipients()
+		toMembers := result.GetMembersAsRecipients(nil)
 
 		body := fmt.Sprintf(`
 Violation by: %s %s

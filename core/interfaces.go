@@ -86,7 +86,7 @@ type Services interface {
 	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
-	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
+	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
 }
 
 type servicesImpl struct {
@@ -293,7 +293,7 @@ func (s *servicesImpl) FindGroupMembershipByID(clientID string, id string) (*mod
 	return s.app.storage.FindGroupMembershipByID(clientID, id)
 }
 
-func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error) {
+func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
 	return s.app.storage.FindUserGroupMemberships(clientID, userID)
 }
 
@@ -384,7 +384,7 @@ type Storage interface {
 	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
-	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
+	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
 	CreateMissingGroupMembership(membership *model.GroupMembership) error
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error)

@@ -81,12 +81,13 @@ func (sa *Adapter) FindGroupMembershipByID(clientID string, id string) (*model.G
 }
 
 // FindUserGroupMemberships finds the group memberships for a given user
-func (sa *Adapter) FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error) {
+func (sa *Adapter) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
 	filter := bson.M{"client_id": clientID, "user_id": userID}
 
 	var result []model.GroupMembership
 	err := sa.db.groupMemberships.Find(filter, &result, nil)
-	return result, err
+
+	return model.MembershipCollection{Items: result}, err
 }
 
 // CreateMissingGroupMembership creates a group membership if it does not exist by external ID
