@@ -702,6 +702,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		}
 
 		_, err = sa.db.groupMemberships.InsertOneWithContext(sessionContext, &model.GroupMembership{
+			ID:          uuid.NewString(),
 			GroupID:     insertedID,
 			UserID:      current.ID,
 			ClientID:    clientID,
@@ -1064,7 +1065,6 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, category *stri
 
 	filter := bson.M{
 		"$or": []bson.M{
-			{"members.user_id": userID},
 			{"_id": bson.M{"$in": groupIDs}},
 		},
 		"client_id": clientID,

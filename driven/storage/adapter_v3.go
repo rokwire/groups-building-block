@@ -103,6 +103,9 @@ func (sa *Adapter) CreateMissingGroupMembership(membership *model.GroupMembershi
 			return err
 		}
 		if len(result) == 0 {
+			if len(membership.ID) > 0 {
+				membership.ID = uuid.NewString()
+			}
 			_, err = sa.db.groupMemberships.InsertOneWithContext(context, membership)
 			return err
 		}

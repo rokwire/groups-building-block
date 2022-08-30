@@ -468,6 +468,20 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		return
 	}
 
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
+	}
+
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
@@ -571,6 +585,20 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 		log.Printf("error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
 	}
 
 	data, err := json.Marshal(groups)
@@ -771,6 +799,12 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 		return
 	}
 
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: []string{id},
+	})
+
+	group.ApplyLegacyMembership(membershipCollection)
+
 	if group.Privacy == "private" {
 		if current == nil || current.IsAnonymous {
 			log.Println("Anonymous user cannot see the events for a private group")
@@ -779,7 +813,9 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 			w.Write([]byte("Forbidden"))
 			return
 		}
-		membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+		membership := membershipCollection.GetMembershipBy(func(item model.GroupMembership) bool {
+			return item.UserID == current.ID
+		})
 		if (membership == nil || !membership.IsAdminOrMember()) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
 			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
 

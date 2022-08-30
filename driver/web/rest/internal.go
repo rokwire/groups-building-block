@@ -120,6 +120,12 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 		return
 	}
 
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: []string{group.ID},
+	})
+
+	group.ApplyLegacyMembership(membershipCollection)
+
 	data, err := json.Marshal(group)
 	if err != nil {
 		log.Printf("Error on marshal the user group: %s", err)
@@ -172,16 +178,15 @@ func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w 
 		return
 	}
 
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: []string{group.ID},
+		Offset:   offset,
+		Limit:    limit,
+	})
+
 	shortMembers := []model.ShortMemberRecord{}
-	if group != nil && len(group.Members) > 0 {
-		for i, member := range group.Members {
-			if offset == nil || (offset != nil && limit != nil && i >= int(*offset)) {
-				shortMembers = append(shortMembers, member.ToShortMemberRecord())
-			}
-			if limit != nil && len(shortMembers) >= int(*limit) {
-				break
-			}
-		}
+	for _, membership := range membershipCollection.Items {
+		shortMembers = append(shortMembers, membership.ToShortMemberRecord())
 	}
 
 	data, err := json.Marshal(shortMembers)

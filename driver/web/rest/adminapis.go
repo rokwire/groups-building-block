@@ -93,6 +93,20 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		return
 	}
 
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
+	}
+
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
@@ -165,6 +179,20 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
 	}
 
 	data, err := json.Marshal(groups)

@@ -15,6 +15,7 @@
 package model
 
 import (
+	"sort"
 	"time"
 )
 
@@ -71,6 +72,24 @@ type Group struct {
 	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
 } // @name Group
+
+func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection) {
+	var list []Member
+	for _, membership := range membershipCollection.Items {
+		if membership.GroupID == gr.ID {
+			list = append(list, membership.ToMember())
+		}
+	}
+
+	sort.SliceStable(list, func(p, q int) bool {
+		if list[p].Status == list[q].Status {
+			return list[p].Name < list[q].Name
+		}
+		return list[p].Status < list[q].Status
+	})
+
+	gr.Members = list
+}
 
 // CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
 func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
