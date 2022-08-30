@@ -2,8 +2,8 @@ package core
 
 import "groups/core/model"
 
-func (app *Application) findGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
-	return app.storage.FindGroupMemberships(clientID, groupID, filter)
+func (app *Application) findGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+	return app.storage.FindGroupMemberships(clientID, filter)
 }
 
 func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {

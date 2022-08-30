@@ -12,11 +12,13 @@ import (
 )
 
 // FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+func (sa *Adapter) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
 
 	matchFilter := bson.D{
 		bson.E{"client_id", clientID},
-		bson.E{"group_id", groupID},
+	}
+	if len(filter.GroupIDs) > 0 {
+		matchFilter = append(matchFilter, bson.E{"group_id", bson.M{"$in": filter.GroupIDs}})
 	}
 	if filter.ID != nil {
 		matchFilter = append(matchFilter, bson.E{"_id", *filter.ID})

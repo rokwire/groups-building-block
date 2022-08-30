@@ -215,7 +215,8 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 		return err
 	}
 
-	adminMemberships, err := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+	adminMemberships, err := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: []string{group.ID},
 		Statuses: []string{"admin"},
 	})
 	if err == nil && len(adminMemberships.Items) > 0 {
@@ -311,7 +312,8 @@ func (app *Application) createMember(clientID string, current *model.User, group
 		return err
 	}
 
-	memberships, err := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+	memberships, err := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: []string{group.ID},
 		Statuses: []string{"admin"},
 	})
 	if err == nil && len(memberships.Items) > 0 {
@@ -514,7 +516,8 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	if len(event.ToMembersList) > 0 {
 		recipients = event.GetMembersAsNotificationRecipients(skipUserID)
 	} else {
-		result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+			GroupIDs: []string{group.ID},
 			Statuses: []string{"member", "admin"},
 		})
 		recipients = result.GetMembersAsNotificationRecipients(skipUserID)
@@ -586,7 +589,8 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		recipients, _ := app.getPostNotificationRecipients(clientID, post, &current.ID)
 
 		if len(recipients) == 0 {
-			result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+			result, _ := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+				GroupIDs: []string{group.ID},
 				Statuses: []string{"member", "admin"},
 			})
 			recipients = result.GetMembersAsNotificationRecipients(&current.ID)
@@ -701,7 +705,8 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		result, _ := app.storage.FindGroupMemberships(clientID, group.ID, &model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+			GroupIDs: []string{group.ID},
 			Statuses: []string{"admin"},
 		})
 		toMembers := result.GetMembersAsRecipients(nil)
@@ -1055,7 +1060,8 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
-	adminMembers, err := app.storage.FindGroupMemberships(clientID, authmanGroup.ID, &model.MembershipFilter{
+	adminMembers, err := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+		GroupIDs: []string{authmanGroup.ID},
 		Statuses: []string{"admin"},
 	})
 	if err != nil {

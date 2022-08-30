@@ -83,7 +83,7 @@ type Services interface {
 	UpdateSyncConfig(config model.SyncConfig) error
 
 	// V3
-	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
@@ -281,8 +281,8 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
 }
 
-func (s *servicesImpl) FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
-	return s.app.storage.FindGroupMemberships(clientID, groupID, filter)
+func (s *servicesImpl) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+	return s.app.storage.FindGroupMemberships(clientID, filter)
 }
 
 func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
@@ -381,7 +381,7 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
-	FindGroupMemberships(clientID string, groupID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
