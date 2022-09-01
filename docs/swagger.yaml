@@ -768,7 +768,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.65
+  version: 1.6.1
 paths:
   /admin/authman/synchronize:
     post:

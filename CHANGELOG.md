@@ -5,6 +5,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [1.6.1b1] - 2022-09-01
+### Changed
+- Finish the transition process of splitting the group record and membership list on two separate collections [#238](https://github.com/rokwire/groups-building-block/issues/238)
 ### Added
 - Expose DELETE /api/int/group/{group-id}/events/{event-id} API for using by Events Manager [#236](https://github.com/rokwire/groups-building-block/issues/236)
 
