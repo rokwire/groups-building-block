@@ -1056,10 +1056,10 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	localUsers, err := app.storage.FindUsers(clientID, allExternalIDs, true)
 	if err != nil {
 		return fmt.Errorf("error on getting %d users for Authman %s: %s", len(allExternalIDs), *authmanGroup.AuthmanGroup, err)
-	} else {
-		for _, user := range localUsers {
-			localUsersMapping[user.ExternalID] = user
-		}
+	}
+
+	for _, user := range localUsers {
+		localUsersMapping[user.ExternalID] = user
 	}
 
 	missingInfoMembers := []model.GroupMembership{}

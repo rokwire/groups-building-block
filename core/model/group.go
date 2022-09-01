@@ -73,6 +73,7 @@ type Group struct {
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
 } // @name Group
 
+// ApplyLegacyMembership applies legacy membership to the group for backward compatibility
 func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection) {
 	var list []Member
 	for _, membership := range membershipCollection.Items {

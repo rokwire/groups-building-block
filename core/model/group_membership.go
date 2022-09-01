@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// MembershipCollection collection wrapper
 type MembershipCollection struct {
 	Items []GroupMembership
 }

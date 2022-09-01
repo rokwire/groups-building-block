@@ -11,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// FindGroupsV3 finds groups with filter
 func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
 	groupIDs := []string{}
 	var userID *string
