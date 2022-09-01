@@ -41,7 +41,7 @@ type InternalApisHandler struct {
 // @Tags Internal
 // @Accept json
 // @Param identifier path string true "Identifier"
-// @Success 200 {object} userGroupMembership
+// @Success 200 {object} userGroupShortDetail
 // @Security IntAPIKeyAuth
 // @Router /api/int/user/{identifier}/groups [get]
 func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
@@ -54,30 +54,22 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 	}
 	externalID := identifier
 
-	userGroupMemberships, user, err := h.app.Services.GetUserGroupMembershipsByExternalID(externalID)
+	groups, err := h.app.Services.FindGroupsV3(clientID, &model.GroupsFilter{
+		MemberExternalID: &externalID,
+	})
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	userGroups := make([]userGroupMembership, len(userGroupMemberships))
-	for i, group := range userGroupMemberships {
-
-		memberStatus := ""
-
-		members := group.Members
-		for _, member := range members {
-			if member.UserID == user.ID {
-				memberStatus = member.Status
-			}
-		}
-
-		ugm := userGroupMembership{
+	userGroups := make([]userGroupShortDetail, len(groups))
+	for i, group := range groups {
+		ugm := userGroupShortDetail{
 			ID:               group.ID,
 			Title:            group.Title,
 			Privacy:          group.Privacy,
-			MembershipStatus: memberStatus,
+			MembershipStatus: group.CurrentMember.Status,
 		}
 
 		userGroups[i] = ugm

@@ -29,11 +29,8 @@ type Services interface {
 	LoginUser(clientID string, currentGetUserGroups *model.User) error
 
 	GetGroupCategories() ([]string, error)
-	GetUserGroupMembershipsByID(id string) ([]*model.Group, error)
-	GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error)
 
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
-	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
 
@@ -48,7 +45,6 @@ type Services interface {
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 
-	GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error)
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, current *model.User, groupID string) error
 	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
@@ -83,6 +79,8 @@ type Services interface {
 	UpdateSyncConfig(config model.SyncConfig) error
 
 	// V3
+	FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error)
+	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
@@ -101,21 +99,8 @@ func (s *servicesImpl) GetGroupCategories() ([]string, error) {
 	return s.app.getGroupCategories()
 }
 
-func (s *servicesImpl) GetUserGroupMembershipsByID(id string) ([]*model.Group, error) {
-	memberships, _, err := s.app.getUserGroupMemberships(id, false)
-	return memberships, err
-}
-
-func (s *servicesImpl) GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error) {
-	return s.app.getUserGroupMemberships(externalID, true)
-}
-
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
 	return s.app.getGroupEntity(clientID, id)
-}
-
-func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
-	return s.app.getGroupEntityByMembership(clientID, membershipID)
 }
 
 func (s *servicesImpl) GetGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
@@ -160,10 +145,6 @@ func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
 
 func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	return s.app.getGroup(clientID, current, id)
-}
-
-func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error) {
-	return s.app.getGroupMembers(clientID, current, groupID, filter)
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
@@ -281,6 +262,14 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
 }
 
+func (s *servicesImpl) FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error) {
+	return s.app.findGroupV3(clientID, filter)
+}
+
+func (s *servicesImpl) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
+	return s.app.findGroupsV3(clientID, filter)
+}
+
 func (s *servicesImpl) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
 	return s.app.storage.FindGroupMemberships(clientID, filter)
 }
@@ -331,9 +320,6 @@ type Storage interface {
 	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
 
-	ReadAllGroupCategories() ([]string, error)
-	FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error)
-
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
@@ -342,13 +328,11 @@ type Storage interface {
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 	FindGroup(clientID string, id string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
-	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
-	GetGroupMembers(clientID string, groupID string, filter *model.MembershipFilter) ([]model.Member, error)
 	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
 	DeletePendingMember(clientID string, groupID string, userID string) error
 	CreateMemberUnchecked(clientID string, current *model.User, group *model.Group, member *model.Member) error
@@ -381,6 +365,7 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
+	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)

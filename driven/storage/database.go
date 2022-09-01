@@ -131,6 +131,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	//apply membership transition
+	//err = m.ApplyMembershipTransition(client, groups, groupMemberships)
+	//if err != nil {
+	//	return err
+	//}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -637,7 +643,7 @@ func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectio
 		}
 
 		//apply groups collection
-		var groupsList []group
+		var groupsList []model.Group
 		err = groups.FindWithContext(sessionContext, bson.D{}, &groupsList, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -703,6 +709,69 @@ func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectio
 	}
 
 	log.Println("multi-tenant checks passed")
+	return nil
+}
+
+func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *collectionWrapper, groupMemberships *collectionWrapper) error {
+	log.Println("apply memberships transition checks.....")
+
+	var migrationGroup []model.Group
+	err := groups.Find(bson.D{
+		{"members.id", bson.M{"$exists": true}},
+	}, &migrationGroup, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(migrationGroup) > 0 {
+		err = client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+			err := sessionContext.StartTransaction()
+			if err != nil {
+				log.Printf("error starting a transaction - %s", err)
+				return err
+			}
+
+			for _, group := range migrationGroup {
+				memberships := []interface{}{}
+				for _, member := range group.Members {
+					memberships = append(memberships, member.ToGroupMembership(group.ClientID, group.ID))
+				}
+
+				_, err = groupMemberships.InsertManyWithContext(sessionContext, memberships, &options.InsertManyOptions{})
+				if err != nil {
+					abortTransaction(sessionContext)
+					return err
+				}
+
+				_, err = groups.UpdateManyWithContext(sessionContext, bson.D{
+					{"client_id", group.ClientID},
+					{"_id", group.ID},
+				}, bson.D{
+					{"$set", bson.D{
+						{"members", bson.TypeNull},
+					}},
+				}, nil)
+				if err != nil {
+					abortTransaction(sessionContext)
+					return err
+				}
+			}
+
+			//commit the transaction
+			err = sessionContext.CommitTransaction(sessionContext)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("memberships transition passed")
 	return nil
 }
 

@@ -41,7 +41,7 @@ type enumItem struct {
 	Values []string `bson:"values"`
 }
 
-type group struct {
+type groupM struct {
 	ID                  string   `bson:"_id"`
 	Category            string   `bson:"category"` //one of the enums categories list
 	Title               string   `bson:"title"`
@@ -606,69 +606,6 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 	return err
 }
 
-// FindUserGroupsMemberships stores user group membership
-func (sa *Adapter) FindUserGroupsMemberships(id string, external bool) ([]*model.Group, *model.User, error) {
-	userID := ""
-	var err error
-	var user *model.User
-	if external {
-		filter := bson.D{primitive.E{Key: "external_id", Value: id}}
-		var result []*model.User
-		err := sa.db.users.Find(filter, &result, nil)
-		if err != nil {
-			return nil, nil, err
-		}
-		if result == nil || len(result) == 0 {
-			//not found
-			return nil, nil, nil
-		}
-		user = result[0]
-		userID = user.ID
-	} else {
-		userID = id
-	}
-
-	filterID := bson.D{primitive.E{Key: "members.user_id", Value: userID}}
-	var resultList []*group
-	err = sa.db.groups.Find(filterID, &resultList, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	modelGroups := make([]*model.Group, len(resultList))
-	for i, current := range resultList {
-
-		members := current.Members
-		newMembers := make([]model.Member, len(members))
-		for i, c := range members {
-			newMembers[i] = model.Member{
-				ID: c.ID, Status: c.Status, ExternalID: c.ExternalID, UserID: c.UserID,
-			}
-		}
-		modelGroups[i] = &model.Group{ID: current.ID, Title: current.Title, Privacy: current.Privacy}
-	}
-
-	return modelGroups, user, nil
-
-}
-
-// ReadAllGroupCategories reads all group categories
-func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: "categories"}}
-	var result []enumItem
-	err := sa.db.enums.Find(filter, &result, nil)
-	if err != nil {
-		return nil, err
-	}
-	if len(result) == 0 {
-		//not found
-		return nil, nil
-	}
-	categoryItem := result[0]
-
-	return categoryItem.Values, nil
-}
-
 // CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
@@ -874,31 +811,14 @@ func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
 func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id},
 		primitive.E{Key: "client_id", Value: clientID}}
-	var rec group
+
+	var rec model.Group
 	err := sa.db.groups.FindOneWithContext(context, filter, &rec, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	group := constructGroup(rec)
-	return &group, nil
-}
-
-// FindGroupByMembership finds group by membership
-func (sa *Adapter) FindGroupByMembership(clientID string, membershipID string) (*model.Group, error) {
-	filter := bson.D{primitive.E{Key: "members.id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-	var result []*group
-	err := sa.db.groups.Find(filter, &result, nil)
-	if err != nil {
-		return nil, err
-	}
-	if result == nil || len(result) == 0 {
-		//not found
-		return nil, nil
-	}
-	group := result[0]
-	resultEntity := constructGroup(*group)
-	return &resultEntity, nil
+	return &rec, nil
 }
 
 // FindGroupByTitle finds group by membership
@@ -907,7 +827,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "title", Value: title},
 	}
-	var result []*group
+	var result []model.Group
 	err := sa.db.groups.Find(filter, &result, nil)
 	if err != nil {
 		return nil, err
@@ -916,9 +836,8 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 		//not found
 		return nil, nil
 	}
-	group := result[0]
-	resultEntity := constructGroup(*group)
-	return &resultEntity, nil
+
+	return &result[0], nil
 }
 
 // FindGroups finds groups
@@ -1015,15 +934,13 @@ func (sa *Adapter) FindGroupByID(clientID string, groupID string) (*model.Group,
 
 	findOptions := options.FindOne()
 
-	var rec group
+	var rec model.Group
 	err := sa.db.groups.FindOne(filter, &rec, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	group := constructGroup(rec)
-
-	return &group, nil
+	return &rec, nil
 }
 
 type findUserGroupsCountResult struct {
@@ -1834,21 +1751,13 @@ func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
 
 	findOptions := options.Find()
 
-	var list []group
+	var list []model.Group
 	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]model.Group, len(list))
-	if list != nil {
-		for i, current := range list {
-			item := constructGroup(current)
-			result[i] = item
-		}
-	}
-
-	return result, nil
+	return list, nil
 }
 
 // FindAuthmanGroupByKey Finds an Authman group by group long name
@@ -1860,15 +1769,14 @@ func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string
 
 	findOptions := options.Find()
 
-	var list []group
+	var list []model.Group
 	err := sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(list) > 0 {
-		first := constructGroup(list[0])
-		return &first, nil
+		return &list[0], nil
 	}
 
 	return nil, nil
@@ -2073,68 +1981,6 @@ func abortTransaction(sessionContext mongo.SessionContext) {
 	err := sessionContext.AbortTransaction(sessionContext)
 	if err != nil {
 		log.Printf("error on aborting a transaction - %s", err)
-	}
-}
-
-func constructGroup(gr group) model.Group {
-	id := gr.ID
-	clientID := gr.ClientID
-	category := gr.Category
-	title := gr.Title
-	privacy := gr.Privacy
-	hiddenForSearch := gr.HiddenForSearch
-	description := gr.Description
-	imageURL := gr.ImageURL
-	webURL := gr.WebURL
-	tags := gr.Tags
-	membershipQuestions := gr.MembershipQuestions
-	authmanEnabled := gr.AuthmanEnabled
-	authmanGroup := gr.AuthmanGroup
-	onlyAdminsCanCreatePolls := gr.OnlyAdminsCanCreatePolls
-	blockNewMembershipRequests := gr.BlockNewMembershipRequests
-	canJoinAutomatically := gr.CanJoinAutomatically
-	attendanceGroup := gr.AttendanceGroup
-
-	dateCreated := gr.DateCreated
-	dateUpdated := gr.DateUpdated
-
-	members := make([]model.Member, len(gr.Members))
-	for i, current := range gr.Members {
-		members[i] = constructMember(current)
-	}
-
-	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,
-		HiddenForSearch: hiddenForSearch, Description: description, ImageURL: imageURL, WebURL: webURL,
-		Tags: tags, MembershipQuestions: membershipQuestions, DateCreated: dateCreated, DateUpdated: dateUpdated,
-		AuthmanEnabled: authmanEnabled, AuthmanGroup: authmanGroup,
-		OnlyAdminsCanCreatePolls: onlyAdminsCanCreatePolls, BlockNewMembershipRequests: blockNewMembershipRequests,
-		CanJoinAutomatically: canJoinAutomatically, AttendanceGroup: attendanceGroup,
-		SyncStartTime: gr.SyncStartTime, SyncEndTime: gr.SyncEndTime,
-	}
-}
-
-func constructMember(member member) model.Member {
-	id := member.ID
-	userID := member.UserID
-	externalID := member.ExternalID
-	netID := member.NetID
-	name := member.Name
-	email := member.Email
-	photoURL := member.PhotoURL
-	status := member.Status
-	rejectReason := member.RejectReason
-	dateCreated := member.DateCreated
-	dateUpdated := member.DateUpdated
-	dateAttended := member.DateAttended
-
-	memberAnswers := make([]model.MemberAnswer, len(member.MemberAnswers))
-	for i, current := range member.MemberAnswers {
-		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
-	}
-
-	return model.Member{ID: id, UserID: userID, ExternalID: externalID, NetID: netID, Name: name, Email: email, PhotoURL: photoURL,
-		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
-		DateAttended: dateAttended,
 	}
 }
 

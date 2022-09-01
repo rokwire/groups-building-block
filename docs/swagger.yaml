@@ -49,6 +49,9 @@ definitions:
         type: string
       client_id:
         type: string
+      current_member:
+        $ref: '#/definitions/GroupMembership'
+        description: this is indicative and it's not required for update APIs
       date_created:
         type: string
       date_updated:
@@ -85,6 +88,48 @@ definitions:
       title:
         type: string
       web_url:
+        type: string
+    type: object
+  GroupMembership:
+    properties:
+      admin:
+        type: boolean
+      client_id:
+        type: string
+      date_attended:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      email:
+        type: string
+      external_id:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      member_answers:
+        items:
+          $ref: '#/definitions/MemberAnswer'
+        type: array
+      name:
+        type: string
+      net_id:
+        type: string
+      photo_url:
+        type: string
+      reject_reason:
+        type: string
+      status:
+        description: 'TODO: This is dangerous code-breaking change. There are existing
+          clients that may use it in the old way.'
+        type: string
+      sync_id:
+        description: ID of sync that last updated this membership
+        type: string
+      user_id:
         type: string
     type: object
   GroupStat:
@@ -239,6 +284,11 @@ definitions:
       external_id:
         description: core user external id
         type: string
+      group_ids:
+        description: list of group ids
+        items:
+          type: string
+        type: array
       id:
         description: membership id
         type: string
@@ -646,7 +696,7 @@ definitions:
       subject:
         type: string
     type: object
-  rest.userGroupMembership:
+  rest.userGroupShortDetail:
     properties:
       id:
         type: string
@@ -1983,7 +2033,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.userGroupMembership'
+            $ref: '#/definitions/rest.userGroupShortDetail'
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2114,7 +2164,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.userGroupMembership'
+            $ref: '#/definitions/rest.userGroupShortDetail'
       security:
       - AppUserAuth: []
       tags:

@@ -64,14 +64,6 @@ func (app *Application) getGroupEntity(clientID string, id string) (*model.Group
 	return group, nil
 }
 
-func (app *Application) getGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
-	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
-	if err != nil {
-		return nil, err
-	}
-	return group, nil
-}
-
 func (app *Application) getGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
 	group, err := app.storage.FindGroupByTitle(clientID, title)
 	if err != nil {
@@ -97,18 +89,7 @@ func (app *Application) getGroupStats(clientID string, id string) (*model.GroupS
 }
 
 func (app *Application) getGroupCategories() ([]string, error) {
-	groupCategories, err := app.storage.ReadAllGroupCategories()
-	if err != nil {
-		return nil, err
-	}
-	return groupCategories, nil
-}
-func (app *Application) getUserGroupMemberships(id string, external bool) ([]*model.Group, *model.User, error) {
-	getUserGroupMemberships, user, err := app.storage.FindUserGroupsMemberships(id, external)
-	if err != nil {
-		return nil, nil, err
-	}
-	return getUserGroupMemberships, user, nil
+	return nil, nil
 }
 
 func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
@@ -196,10 +177,6 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	}
 
 	return group, nil
-}
-
-func (app *Application) getGroupMembers(clientID string, _ *model.User, groupID string, filter *model.MembershipFilter) ([]model.Member, error) {
-	return app.storage.GetGroupMembers(clientID, groupID, filter)
 }
 
 func (app *Application) createPendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {

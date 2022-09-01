@@ -2013,7 +2013,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.userGroupMembership"
+                            "$ref": "#/definitions/rest.userGroupShortDetail"
                         }
                     }
                 }
@@ -2217,7 +2217,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.userGroupMembership"
+                            "$ref": "#/definitions/rest.userGroupShortDetail"
                         }
                     }
                 }
@@ -2646,6 +2646,10 @@ const docTemplate = `{
                 "client_id": {
                     "type": "string"
                 },
+                "current_member": {
+                    "description": "this is indicative and it's not required for update APIs",
+                    "$ref": "#/definitions/GroupMembership"
+                },
                 "date_created": {
                     "type": "string"
                 },
@@ -2699,6 +2703,67 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "web_url": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupMembership": {
+            "type": "object",
+            "properties": {
+                "admin": {
+                    "type": "boolean"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_attended": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "member_answers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MemberAnswer"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "net_id": {
+                    "type": "string"
+                },
+                "photo_url": {
+                    "type": "string"
+                },
+                "reject_reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.",
+                    "type": "string"
+                },
+                "sync_id": {
+                    "description": "ID of sync that last updated this membership",
+                    "type": "string"
+                },
+                "user_id": {
                     "type": "string"
                 }
             }
@@ -2931,6 +2996,13 @@ const docTemplate = `{
                 "external_id": {
                     "description": "core user external id",
                     "type": "string"
+                },
+                "group_ids": {
+                    "description": "list of group ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "id": {
                     "description": "membership id",
@@ -3542,7 +3614,7 @@ const docTemplate = `{
                 }
             }
         },
-        "rest.userGroupMembership": {
+        "rest.userGroupShortDetail": {
             "type": "object",
             "properties": {
                 "id": {

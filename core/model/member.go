@@ -15,6 +15,7 @@
 package model
 
 import (
+	"github.com/google/uuid"
 	"groups/driven/notifications"
 	"time"
 )
@@ -96,8 +97,9 @@ func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembersh
 		status = "member"
 		admin = true
 	}
+
 	return GroupMembership{
-		ID:            m.ID,
+		ID:            uuid.NewString(),
 		ClientID:      clientID,
 		GroupID:       groupID,
 		UserID:        m.UserID,

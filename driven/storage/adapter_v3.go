@@ -11,6 +11,109 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
+	groupIDs := []string{}
+	var userID *string
+	var memberships model.MembershipCollection
+
+	if filter != nil && filter.MemberUserID == nil && filter.MemberExternalID != nil {
+		var user model.User
+		err := sa.db.users.Find(bson.D{
+			{"client_id", clientID},
+			{"_id", filter.MemberExternalID},
+		}, &user, nil)
+		if err != nil {
+			userID = &user.ID
+		}
+	}
+	if userID == nil && filter != nil && filter.MemberUserID == nil && filter.MemberID != nil {
+		membership, _ := sa.FindGroupMembershipByID(clientID, *filter.MemberID)
+		if membership != nil {
+			userID = &membership.UserID
+			groupIDs = append(groupIDs, membership.GroupID)
+		}
+	}
+
+	if filter.MemberUserID != nil {
+		// find group memberships
+		memberships, err := sa.FindGroupMemberships(clientID, &model.MembershipFilter{})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, membership := range memberships.Items {
+			groupIDs = append(groupIDs, membership.GroupID)
+		}
+	}
+
+	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	if userID != nil {
+		innerOrFilter := []bson.M{
+			{"_id": bson.M{"$in": groupIDs}},
+			{"privacy": bson.M{"$ne": "private"}},
+		}
+
+		if filter.Title != nil {
+			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+				{"title": *filter.Title},
+				{"hidden_for_search": false},
+			}})
+		}
+
+		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
+
+		groupFilter = append(groupFilter, orFilter)
+	}
+
+	if filter.Category != nil {
+		groupFilter = append(groupFilter, primitive.E{Key: "category", Value: *filter.Category})
+	}
+	if filter.Title != nil {
+		groupFilter = append(groupFilter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *filter.Title, Options: "i"}})
+	}
+	if filter.Privacy != nil {
+		groupFilter = append(groupFilter, primitive.E{Key: "privacy", Value: *filter.Privacy})
+	}
+
+	findOptions := options.Find()
+	if filter.Order == nil || "asc" == *filter.Order {
+		findOptions.SetSort(bson.D{
+			{"category", 1},
+			{"title", 1},
+		})
+	} else if filter.Order != nil && "desc" == *filter.Order {
+		findOptions.SetSort(bson.D{
+			{"category", -1},
+			{"title", -1},
+		})
+	}
+	if filter.Limit != nil {
+		findOptions.SetLimit(*filter.Limit)
+	}
+	if filter.Offset != nil {
+		findOptions.SetSkip(*filter.Offset)
+	}
+
+	var list []model.Group
+	err := sa.db.groups.Find(groupFilter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	if userID != nil {
+		for index, group := range list {
+			group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+				return membership.GroupID == group.ID
+			})
+			if group.CurrentMember != nil {
+				list[index] = group
+			}
+		}
+	}
+
+	return list, nil
+}
+
 // FindGroupMemberships finds the group membership for a given group
 func (sa *Adapter) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
 
@@ -53,7 +156,7 @@ func (sa *Adapter) FindGroupMemberships(clientID string, filter *model.Membershi
 	}
 
 	var result []model.GroupMembership
-	err := sa.db.events.Find(matchFilter, &result, &findOptions)
+	err := sa.db.groupMemberships.Find(matchFilter, &result, &findOptions)
 	return model.MembershipCollection{Items: result}, err
 }
 
