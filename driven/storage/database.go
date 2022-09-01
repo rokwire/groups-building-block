@@ -131,11 +131,11 @@ func (m *database) start() error {
 		return err
 	}
 
-	//apply membership transition
-	//err = m.ApplyMembershipTransition(client, groups, groupMemberships)
-	//if err != nil {
-	//	return err
-	//}
+	// apply membership transition
+	err = m.ApplyMembershipTransition(client, groups, groupMemberships)
+	if err != nil {
+		return err
+	}
 
 	//asign the db, db client and the collections
 	m.db = db
@@ -732,6 +732,7 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 			}
 
 			for _, group := range migrationGroup {
+				log.Printf("Start migrating '%s' group", group.Title)
 				memberships := []interface{}{}
 				for _, member := range group.Members {
 					memberships = append(memberships, member.ToGroupMembership(group.ClientID, group.ID))
@@ -748,13 +749,14 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 					{"_id", group.ID},
 				}, bson.D{
 					{"$set", bson.D{
-						{"members", bson.TypeNull},
+						{"members", []model.Member{}},
 					}},
 				}, nil)
 				if err != nil {
 					abortTransaction(sessionContext)
 					return err
 				}
+				log.Printf("Grouop '%s' has been migrated successfull", group.Title)
 			}
 
 			//commit the transaction
