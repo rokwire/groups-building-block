@@ -94,7 +94,6 @@ func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembersh
 	admin := false
 	status := m.Status
 	if status == "admin" {
-		status = "member"
 		admin = true
 	}
 
