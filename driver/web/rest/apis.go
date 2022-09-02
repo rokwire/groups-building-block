@@ -46,39 +46,6 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
-// GetGroupCategories gives all group categories
-// @Description Gives all group categories.
-// @ID GetGroupCategories
-// @Tags Client-V1
-// @Accept  json
-// @Param APP header string true "APP"
-// @Success 200 {array} string
-// @Security APIKeyAuth
-// @Router /api/group-categories [get]
-func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter, r *http.Request) {
-	groupCategories, err := h.app.Services.GetGroupCategories()
-	if err != nil {
-		log.Println("Error on getting the group categories")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if len(groupCategories) == 0 {
-		groupCategories = make([]string, 0)
-	}
-
-	data, err := json.Marshal(groupCategories)
-	if err != nil {
-		log.Println("Error on marshal the group categories")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-}
-
 type createGroupRequest struct {
 	Title                    string   `json:"title" validate:"required"`
 	Description              *string  `json:"description"`

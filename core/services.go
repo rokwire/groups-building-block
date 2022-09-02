@@ -88,10 +88,6 @@ func (app *Application) getGroupStats(clientID string, id string) (*model.GroupS
 	return app.storage.GetGroupStats(clientID, id)
 }
 
-func (app *Application) getGroupCategories() ([]string, error) {
-	return nil, nil
-}
-
 func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID, err := app.storage.CreateGroup(clientID, current, group)
 	if err != nil {

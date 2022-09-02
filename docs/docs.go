@@ -835,43 +835,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/group-categories": {
-            "get": {
-                "security": [
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Gives all group categories.",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Client-V1"
-                ],
-                "operationId": "GetGroupCategories",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/group/{group-id}/authman/synchronize": {
             "post": {
                 "security": [

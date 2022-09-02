@@ -28,8 +28,6 @@ type Services interface {
 
 	LoginUser(clientID string, currentGetUserGroups *model.User) error
 
-	GetGroupCategories() ([]string, error)
-
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
@@ -93,10 +91,6 @@ type servicesImpl struct {
 
 func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
-}
-
-func (s *servicesImpl) GetGroupCategories() ([]string, error) {
-	return s.app.getGroupCategories()
 }
 
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {

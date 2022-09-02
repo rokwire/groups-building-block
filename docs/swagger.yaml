@@ -1287,29 +1287,6 @@ paths:
       - APIKeyAuth: []
       tags:
       - Admin-V2
-  /api/group-categories:
-    get:
-      consumes:
-      - application/json
-      description: Gives all group categories.
-      operationId: GetGroupCategories
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      security:
-      - APIKeyAuth: []
-      tags:
-      - Client-V1
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
