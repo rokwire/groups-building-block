@@ -18,6 +18,9 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 	var userID *string
 	var memberships model.MembershipCollection
 
+	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	findOptions := options.Find()
+	
 	if filter != nil && filter.MemberUserID == nil && filter.MemberExternalID != nil {
 		var user model.User
 		err := sa.db.users.Find(bson.D{
@@ -36,64 +39,64 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		}
 	}
 
-	if filter.MemberUserID != nil {
-		// find group memberships
-		memberships, err := sa.FindGroupMemberships(clientID, &model.MembershipFilter{})
-		if err != nil {
-			return nil, err
+	if filter != nil {
+		if filter.MemberUserID != nil {
+			// find group memberships
+			memberships, err := sa.FindGroupMemberships(clientID, &model.MembershipFilter{})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, membership := range memberships.Items {
+				groupIDs = append(groupIDs, membership.GroupID)
+			}
 		}
 
-		for _, membership := range memberships.Items {
-			groupIDs = append(groupIDs, membership.GroupID)
-		}
-	}
+		if userID != nil {
+			innerOrFilter := []bson.M{
+				{"_id": bson.M{"$in": groupIDs}},
+				{"privacy": bson.M{"$ne": "private"}},
+			}
 
-	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
-	if userID != nil {
-		innerOrFilter := []bson.M{
-			{"_id": bson.M{"$in": groupIDs}},
-			{"privacy": bson.M{"$ne": "private"}},
+			if filter.Title != nil {
+				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+					{"title": *filter.Title},
+					{"hidden_for_search": false},
+				}})
+			}
+
+			orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
+
+			groupFilter = append(groupFilter, orFilter)
 		}
 
+		if filter.Category != nil {
+			groupFilter = append(groupFilter, primitive.E{Key: "category", Value: *filter.Category})
+		}
 		if filter.Title != nil {
-			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-				{"title": *filter.Title},
-				{"hidden_for_search": false},
-			}})
+			groupFilter = append(groupFilter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *filter.Title, Options: "i"}})
+		}
+		if filter.Privacy != nil {
+			groupFilter = append(groupFilter, primitive.E{Key: "privacy", Value: *filter.Privacy})
 		}
 
-		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
-
-		groupFilter = append(groupFilter, orFilter)
-	}
-
-	if filter.Category != nil {
-		groupFilter = append(groupFilter, primitive.E{Key: "category", Value: *filter.Category})
-	}
-	if filter.Title != nil {
-		groupFilter = append(groupFilter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *filter.Title, Options: "i"}})
-	}
-	if filter.Privacy != nil {
-		groupFilter = append(groupFilter, primitive.E{Key: "privacy", Value: *filter.Privacy})
-	}
-
-	findOptions := options.Find()
-	if filter.Order == nil || "asc" == *filter.Order {
-		findOptions.SetSort(bson.D{
-			{"category", 1},
-			{"title", 1},
-		})
-	} else if filter.Order != nil && "desc" == *filter.Order {
-		findOptions.SetSort(bson.D{
-			{"category", -1},
-			{"title", -1},
-		})
-	}
-	if filter.Limit != nil {
-		findOptions.SetLimit(*filter.Limit)
-	}
-	if filter.Offset != nil {
-		findOptions.SetSkip(*filter.Offset)
+		if filter.Order == nil || "asc" == *filter.Order {
+			findOptions.SetSort(bson.D{
+				{"category", 1},
+				{"title", 1},
+			})
+		} else if filter.Order != nil && "desc" == *filter.Order {
+			findOptions.SetSort(bson.D{
+				{"category", -1},
+				{"title", -1},
+			})
+		}
+		if filter.Limit != nil {
+			findOptions.SetLimit(*filter.Limit)
+		}
+		if filter.Offset != nil {
+			findOptions.SetSkip(*filter.Offset)
+		}
 	}
 
 	var list []model.Group
