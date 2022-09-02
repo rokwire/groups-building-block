@@ -1141,9 +1141,17 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string, 
 				}
 			}
 
-			filter := bson.D{primitive.E{Key: "user_id", Value: userID}, primitive.E{Key: "client_id", Value: clientID}}
+			filter := bson.D{
+				primitive.E{Key: "group_id", Value: groupID},
+				primitive.E{Key: "user_id", Value: userID},
+				primitive.E{Key: "client_id", Value: clientID},
+			}
 			_, err := sa.db.groupMemberships.DeleteOneWithContext(sessionContext, filter, nil)
-			return err
+			if err != nil {
+				abortTransaction(sessionContext)
+				log.Printf("error deleting membership - %s", err)
+				return err
+			}
 		}
 
 		err = sessionContext.CommitTransaction(sessionContext)
