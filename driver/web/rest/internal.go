@@ -112,9 +112,14 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 		return
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	group.ApplyLegacyMembership(membershipCollection)
 
@@ -170,11 +175,16 @@ func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w 
 		return
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		Offset:   offset,
 		Limit:    limit,
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	shortMembers := []model.ShortMemberRecord{}
 	for _, membership := range membershipCollection.Items {

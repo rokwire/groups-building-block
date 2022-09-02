@@ -188,7 +188,7 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 		return err
 	}
 
-	adminMemberships, err := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+	adminMemberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		Statuses: []string{"admin"},
 	})
@@ -285,7 +285,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 		return err
 	}
 
-	memberships, err := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+	memberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		Statuses: []string{"admin"},
 	})
@@ -489,7 +489,7 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	if len(event.ToMembersList) > 0 {
 		recipients = event.GetMembersAsNotificationRecipients(skipUserID)
 	} else {
-		result, _ := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 			GroupIDs: []string{group.ID},
 			Statuses: []string{"member", "admin"},
 		})
@@ -562,7 +562,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		recipients, _ := app.getPostNotificationRecipients(clientID, post, &current.ID)
 
 		if len(recipients) == 0 {
-			result, _ := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+			result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 				GroupIDs: []string{group.ID},
 				Statuses: []string{"member", "admin"},
 			})
@@ -678,7 +678,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		result, _ := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 			GroupIDs: []string{group.ID},
 			Statuses: []string{"admin"},
 		})
@@ -1033,7 +1033,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
-	adminMembers, err := app.storage.FindGroupMemberships(clientID, &model.MembershipFilter{
+	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
 		Statuses: []string{"admin"},
 	})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"groups/core/model"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,29 +21,31 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 
 	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	findOptions := options.Find()
-	
-	if filter != nil && filter.MemberUserID == nil && filter.MemberExternalID != nil {
-		var user model.User
-		err := sa.db.users.Find(bson.D{
-			{"client_id", clientID},
-			{"_id", filter.MemberExternalID},
-		}, &user, nil)
-		if err != nil {
-			userID = &user.ID
-		}
-	}
-	if userID == nil && filter != nil && filter.MemberUserID == nil && filter.MemberID != nil {
-		membership, _ := sa.FindGroupMembershipByID(clientID, *filter.MemberID)
-		if membership != nil {
-			userID = &membership.UserID
-			groupIDs = append(groupIDs, membership.GroupID)
-		}
-	}
 
 	if filter != nil {
+		if filter.MemberUserID == nil && filter.MemberExternalID != nil {
+			var user model.User
+			err := sa.db.users.Find(bson.D{
+				{"client_id", clientID},
+				{"external_id", filter.MemberExternalID},
+			}, &user, nil)
+			if err != nil {
+				userID = &user.ID
+			}
+		}
+		if userID == nil && filter.MemberUserID == nil && filter.MemberID != nil {
+			membership, _ := sa.FindGroupMembershipByID(clientID, *filter.MemberID)
+			if membership != nil {
+				userID = &membership.UserID
+				groupIDs = append(groupIDs, membership.GroupID)
+			}
+		}
+
 		if filter.MemberUserID != nil {
 			// find group memberships
-			memberships, err := sa.FindGroupMemberships(clientID, &model.MembershipFilter{})
+			memberships, err := sa.FindGroupMemberships(clientID, model.MembershipFilter{
+				UserID: filter.MemberUserID,
+			})
 			if err != nil {
 				return nil, err
 			}
@@ -120,12 +123,18 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 }
 
 // FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+func (sa *Adapter) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
 	return sa.FindGroupMembershipsWithContext(nil, clientID, filter)
 }
 
 // FindGroupMembershipsWithContext finds the group membership for a given group
-func (sa *Adapter) FindGroupMembershipsWithContext(ctx context.Context, clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+func (sa *Adapter) FindGroupMembershipsWithContext(ctx context.Context, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
+
+	if filter.ID == nil && len(filter.GroupIDs) == 0 && filter.UserID == nil && filter.ExternalID == nil && filter.Name == nil {
+		log.Print("The memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
+		return model.MembershipCollection{}, fmt.Errorf("The memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
+	}
+
 	if ctx == nil {
 		ctx = context.Background()
 	}

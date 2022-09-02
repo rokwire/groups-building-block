@@ -8,7 +8,7 @@ import (
 )
 
 // GetGroupMembers Gets all group members
-func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model.MembershipFilter) ([]model.Member, error) {
+func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter model.MembershipFilter) ([]model.Member, error) {
 	innerMatch := bson.D{
 		{"_id", groupID},
 		{"client_id", clientID},

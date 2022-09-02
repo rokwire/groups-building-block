@@ -15,7 +15,7 @@ func (app *Application) findGroupsV3(clientID string, filter *model.GroupsFilter
 	return app.storage.FindGroupsV3(clientID, filter)
 }
 
-func (app *Application) findGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
 	return app.storage.FindGroupMemberships(clientID, filter)
 }
 

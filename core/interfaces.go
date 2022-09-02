@@ -79,7 +79,7 @@ type Services interface {
 	// V3
 	FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error)
 	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
-	FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
@@ -264,7 +264,7 @@ func (s *servicesImpl) FindGroupsV3(clientID string, filter *model.GroupsFilter)
 	return s.app.findGroupsV3(clientID, filter)
 }
 
-func (s *servicesImpl) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+func (s *servicesImpl) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
 	return s.app.storage.FindGroupMemberships(clientID, filter)
 }
 
@@ -360,7 +360,7 @@ type Storage interface {
 	DeleteManagedGroupConfig(id string, clientID string) error
 
 	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
-	FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)

@@ -1131,7 +1131,7 @@ func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string, 
 		if currentMembership != nil {
 
 			if currentMembership.IsAdmin() {
-				adminMemberships, _ := sa.FindGroupMembershipsWithContext(sessionContext, clientID, &model.MembershipFilter{
+				adminMemberships, _ := sa.FindGroupMembershipsWithContext(sessionContext, clientID, model.MembershipFilter{
 					GroupIDs: []string{groupID},
 					Statuses: []string{"admin"},
 				})

@@ -98,9 +98,14 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	for index, group := range groups {
 		group.ApplyLegacyMembership(membershipCollection)
@@ -186,9 +191,14 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	for index, group := range groups {
 		group.ApplyLegacyMembership(membershipCollection)

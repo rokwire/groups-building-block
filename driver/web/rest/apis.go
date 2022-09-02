@@ -440,9 +440,14 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	for index, group := range groups {
 		group.ApplyLegacyMembership(membershipCollection)
@@ -559,9 +564,14 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	for index, group := range groups {
 		group.ApplyLegacyMembership(membershipCollection)
@@ -757,9 +767,14 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 		return
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, &model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{id},
 	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 
 	group.ApplyLegacyMembership(membershipCollection)
 
@@ -959,7 +974,7 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 	request.GroupIDs = append(request.GroupIDs, groupID)
 
 	//check if allowed to update
-	members, err := h.app.Services.FindGroupMemberships(clientID, &request)
+	members, err := h.app.Services.FindGroupMemberships(clientID, request)
 	if err != nil {
 		log.Printf("api.GetGroupMembers error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
