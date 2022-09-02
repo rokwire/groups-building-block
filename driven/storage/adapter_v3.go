@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 	"groups/core/model"
 	"time"
@@ -117,6 +118,14 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 
 // FindGroupMemberships finds the group membership for a given group
 func (sa *Adapter) FindGroupMemberships(clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+	return sa.FindGroupMembershipsWithContext(nil, clientID, filter)
+}
+
+// FindGroupMembershipsWithContext finds the group membership for a given group
+func (sa *Adapter) FindGroupMembershipsWithContext(ctx context.Context, clientID string, filter *model.MembershipFilter) (model.MembershipCollection, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	matchFilter := bson.D{
 		bson.E{"client_id", clientID},
@@ -157,16 +166,25 @@ func (sa *Adapter) FindGroupMemberships(clientID string, filter *model.Membershi
 	}
 
 	var result []model.GroupMembership
-	err := sa.db.groupMemberships.Find(matchFilter, &result, &findOptions)
+	err := sa.db.groupMemberships.FindWithContext(ctx, matchFilter, &result, &findOptions)
 	return model.MembershipCollection{Items: result}, err
 }
 
 // FindGroupMembership finds the group membership for a given user and group
 func (sa *Adapter) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
+	return sa.FindGroupMembershipWithContext(nil, clientID, groupID, userID)
+}
+
+// FindGroupMembershipWithContext finds the group membership for a given user and group
+func (sa *Adapter) FindGroupMembershipWithContext(ctx context.Context, clientID string, groupID string, userID string) (*model.GroupMembership, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	filter := bson.M{"client_id": clientID, "group_id": groupID, "user_id": userID}
 
 	var result model.GroupMembership
-	err := sa.db.groupMemberships.FindOne(filter, &result, nil)
+	err := sa.db.groupMemberships.FindOneWithContext(ctx, filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}

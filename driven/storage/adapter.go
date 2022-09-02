@@ -1120,25 +1120,42 @@ func (sa *Adapter) CreateMemberUnchecked(clientID string, current *model.User, g
 // DeleteMember deletes a member membership from a specific group
 func (sa *Adapter) DeleteMember(clientID string, groupID string, userID string, force bool) error {
 
-	currentMembership, _ := sa.FindGroupMembership(clientID, groupID, userID)
-	if currentMembership != nil {
-
-		if currentMembership.IsAdmin() {
-			adminMemberships, _ := sa.FindGroupMemberships(clientID, &model.MembershipFilter{
-				GroupIDs: []string{groupID},
-				Statuses: []string{"admin"},
-			})
-			if len(adminMemberships.Items) <= 1 && !force {
-				log.Printf("sa.DeleteMember() - there must be at least two admins in order to delete ")
-				return fmt.Errorf("there must be at least two admins in order to delete ")
-			}
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
 		}
 
-		filter := bson.D{primitive.E{Key: "user_id", Value: userID}, primitive.E{Key: "client_id", Value: clientID}}
-		_, err := sa.db.groupMemberships.DeleteOne(filter, nil)
+		currentMembership, _ := sa.FindGroupMembershipWithContext(sessionContext, clientID, groupID, userID)
+		if currentMembership != nil {
+
+			if currentMembership.IsAdmin() {
+				adminMemberships, _ := sa.FindGroupMembershipsWithContext(sessionContext, clientID, &model.MembershipFilter{
+					GroupIDs: []string{groupID},
+					Statuses: []string{"admin"},
+				})
+				if len(adminMemberships.Items) <= 1 && !force {
+					log.Printf("sa.DeleteMember() - there must be at least two admins in order to delete ")
+					return fmt.Errorf("there must be at least two admins in order to delete ")
+				}
+			}
+
+			filter := bson.D{primitive.E{Key: "user_id", Value: userID}, primitive.E{Key: "client_id", Value: clientID}}
+			_, err := sa.db.groupMemberships.DeleteOneWithContext(sessionContext, filter, nil)
+			return err
+		}
+
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
