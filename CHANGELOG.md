@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.6.1b3] - 2022-09-02
+### Fixed
+- Additional fixes and improvements related to the group membership transition [#238](https://github.com/rokwire/groups-building-block/issues/238)
+
 ## [1.6.1b2] - 2022-09-01
 ### Fixed
 - Fixed data migration issue which marks all admins as members [#238](https://github.com/rokwire/groups-building-block/issues/238)
