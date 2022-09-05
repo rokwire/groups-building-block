@@ -36,64 +36,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type enumItem struct {
-	ID     string   `bson:"_id"`
-	Values []string `bson:"values"`
-}
-
-type groupM struct {
-	ID                  string   `bson:"_id"`
-	Category            string   `bson:"category"` //one of the enums categories list
-	Title               string   `bson:"title"`
-	Privacy             string   `bson:"privacy"` //public or private
-	HiddenForSearch     bool     `bson:"hidden_for_search"`
-	Description         *string  `bson:"description"`
-	ImageURL            *string  `bson:"image_url"`
-	WebURL              *string  `bson:"web_url"`
-	Tags                []string `bson:"tags"`
-	MembershipQuestions []string `bson:"membership_questions"`
-
-	Members []member `bson:"members"`
-
-	DateCreated time.Time  `bson:"date_created"`
-	DateUpdated *time.Time `bson:"date_updated"`
-
-	ClientID                   string  `bson:"client_id"`
-	AuthmanEnabled             bool    `bson:"authman_enabled"`
-	AuthmanGroup               *string `bson:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool    `bson:"only_admins_can_create_polls"`
-	BlockNewMembershipRequests bool    `bson:"block_new_membership_requests"`
-	CanJoinAutomatically       bool    `json:"can_join_automatically" bson:"can_join_automatically"`
-	AttendanceGroup            bool    `bson:"attendance_group"`
-
-	UsesGroupMemberships bool `json:"uses_group_memberships" bson:"uses_group_memberships"`
-
-	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
-	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
-}
-
-type member struct {
-	ID            string         `bson:"id"`
-	UserID        string         `bson:"user_id"`
-	ExternalID    string         `bson:"external_id"`
-	NetID         string         `bson:"net_id"`
-	Name          string         `bson:"name"`
-	Email         string         `bson:"email"`
-	PhotoURL      string         `bson:"photo_url"`
-	Status        string         `bson:"status"` //pending, member, admin, reject
-	RejectReason  string         `bson:"reject_reason"`
-	MemberAnswers []memberAnswer `bson:"member_answers"`
-
-	DateCreated  time.Time  `bson:"date_created"`
-	DateUpdated  *time.Time `bson:"date_updated"`
-	DateAttended *time.Time `bson:"date_attended"`
-}
-
-type memberAnswer struct {
-	Question string `bson:"question"`
-	Answer   string `bson:"answer"`
-}
-
 // Adapter implements the Storage interface
 type Adapter struct {
 	db *database
