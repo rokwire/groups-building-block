@@ -89,7 +89,7 @@ func (app *Application) getGroupStats(clientID string, id string) (*model.GroupS
 }
 
 func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, current, group)
+	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
-	err := app.storage.UpdateGroupWithoutMembers(clientID, current, group)
+	err := app.storage.UpdateGroup(clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -730,6 +730,8 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			if config != nil && config.Timeout > 0 {
 				timeout = config.Timeout
 			}
+			timeout = 1
+
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
 					log.Println("Another Authman sync process is running for clientID " + clientID)
@@ -811,9 +813,9 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					}
 
 					if storedStemGroup == nil {
-						var members []model.Member
+						var memberships []model.GroupMembership
 						if len(constructedAdminUINs) > 0 {
-							members = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
+							memberships = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
 						}
 
 						emptyText := ""
@@ -826,8 +828,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 							CanJoinAutomatically: true,
 							AuthmanEnabled:       true,
 							AuthmanGroup:         &stemGroup.Name,
-							Members:              members,
-						})
+						}, memberships)
 						if err != nil {
 							return fmt.Errorf("error on create Authman stem group: '%s' - %s", stemGroup.Name, err)
 						}
@@ -836,29 +837,41 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					} else {
 						missedUINs := []string{}
 						groupUpdated := false
-						for _, uin := range adminUINs {
-							found := false
-							for index, member := range storedStemGroup.Members {
-								if member.ExternalID == uin {
-									if member.Status != "admin" {
-										now := time.Now()
-										storedStemGroup.Members[index].Status = "admin"
-										storedStemGroup.Members[index].DateUpdated = &now
-										groupUpdated = true
-										break
+
+						existingAdmins, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+							GroupIDs: []string{storedStemGroup.ID},
+							Statuses: []string{"admin"},
+						})
+
+						membershipsForUpdate := []model.GroupMembership{}
+						if len(existingAdmins.Items) > 0 {
+							for _, uin := range adminUINs {
+								found := false
+								for _, member := range existingAdmins.Items {
+									if member.ExternalID == uin {
+										if member.Status != "admin" {
+											now := time.Now()
+											member.Status = "admin"
+											member.DateUpdated = &now
+											membershipsForUpdate = append(membershipsForUpdate, member)
+											groupUpdated = true
+											break
+										}
+										found = true
 									}
-									found = true
+								}
+								if !found {
+									missedUINs = append(missedUINs, uin)
 								}
 							}
-							if !found {
-								missedUINs = append(missedUINs, uin)
-							}
+						} else if err != nil {
+							log.Printf("error rertieving admins for group: %s - %s", stemGroup.Name, err)
 						}
 
 						if len(missedUINs) > 0 {
 							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
 							if len(missedMembers) > 0 {
-								storedStemGroup.Members = append(storedStemGroup.Members, missedMembers...)
+								membershipsForUpdate = append(membershipsForUpdate, missedMembers...)
 								groupUpdated = true
 							}
 						}
@@ -874,7 +887,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						if groupUpdated {
-							err := app.storage.UpdateGroupWithMembers(clientID, nil, storedStemGroup)
+							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
 								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
@@ -902,10 +915,10 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 	return nil
 }
 
-func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.Member {
+func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.GroupMembership {
 	if len(externalIDs) > 0 {
 		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
-		members := []model.Member{}
+		members := []model.GroupMembership{}
 		userExternalIDmapping := map[string]model.User{}
 		for _, user := range users {
 			userExternalIDmapping[user.ExternalID] = user
@@ -913,7 +926,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 
 		for _, externalID := range externalIDs {
 			if value, ok := userExternalIDmapping[externalID]; ok {
-				members = append(members, model.Member{
+				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
 					UserID:      value.ID,
 					ExternalID:  externalID,
@@ -923,7 +936,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 					DateCreated: time.Now(),
 				})
 			} else {
-				members = append(members, model.Member{
+				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
 					ExternalID:  externalID,
 					Status:      memberStatus,

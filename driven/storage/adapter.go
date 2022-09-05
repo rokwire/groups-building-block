@@ -549,10 +549,10 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 }
 
 // CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
+func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 
-	existingGroups, err := sa.FindGroups(clientID, &current.ID, nil, nil, &group.Title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, nil, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -560,6 +560,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			}
 		}
 	}
+	now := time.Now()
 
 	// transaction
 	err = sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
@@ -572,7 +573,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
-		group.DateCreated = time.Now()
+		group.DateCreated = now
 
 		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
 		if err != nil {
@@ -580,22 +581,36 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			return err
 		}
 
-		_, err = sa.db.groupMemberships.InsertOneWithContext(sessionContext, &model.GroupMembership{
-			ID:          uuid.NewString(),
-			GroupID:     insertedID,
-			UserID:      current.ID,
-			ClientID:    clientID,
-			ExternalID:  current.ExternalID,
-			Email:       current.Email,
-			NetID:       current.NetID,
-			Name:        current.Name,
-			Status:      "admin", // TODO needs more consideration (status vs flag)
-			Admin:       true,
-			DateCreated: time.Now(),
-		})
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
+		castedMemberships := []interface{}{}
+		if len(defaultMemberships) > 0 {
+			for _, membership := range defaultMemberships {
+				membership.ID = uuid.NewString()
+				membership.GroupID = insertedID
+				membership.DateCreated = now
+				castedMemberships = append(castedMemberships, membership)
+			}
+		} else if current != nil {
+			castedMemberships = append(castedMemberships, model.GroupMembership{
+				ID:          uuid.NewString(),
+				GroupID:     insertedID,
+				UserID:      current.ID,
+				ClientID:    clientID,
+				ExternalID:  current.ExternalID,
+				Email:       current.Email,
+				NetID:       current.NetID,
+				Name:        current.Name,
+				Status:      "admin", // TODO needs more consideration (status vs flag)
+				Admin:       true,
+				DateCreated: now,
+			})
+		}
+
+		if len(castedMemberships) > 0 {
+			_, err = sa.db.groupMemberships.InsertManyWithContext(sessionContext, castedMemberships, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
 		}
 
 		//commit the transaction
@@ -614,7 +629,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 }
 
 // UpdateGroupWithoutMembers updates a group except the members attribute
-func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
 	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
@@ -635,11 +650,11 @@ func (sa *Adapter) UpdateGroupWithoutMembers(clientID string, current *model.Use
 			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
 			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
 		}},
-	})
+	}, nil)
 }
 
-// UpdateGroupWithMembers updates a group along with the members
-func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+// UpdateGroupWithMembership updates a group along with the memberships
+func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
 	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "category", Value: group.Category},
@@ -658,13 +673,17 @@ func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, 
 			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
 			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
 			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-			//primitive.E{Key: "members", Value: group.Members},
 		}},
-	})
+	}, memberships)
 }
 
-func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *utils.GroupError {
-	existingGroups, err := sa.FindGroups(clientID, &current.ID, nil, nil, &group.Title, nil, nil, nil)
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D, memberships []model.GroupMembership) *utils.GroupError {
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -681,13 +700,36 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 			return err
 		}
 
-		// update the group
 		filter := bson.D{primitive.E{Key: "_id", Value: group.ID},
 			primitive.E{Key: "client_id", Value: clientID}}
 		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, updateOperation, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err
+		}
+
+		if len(memberships) > 0 {
+			for _, membership := range memberships {
+				if membership.ID == "" {
+					membership.ID = uuid.NewString()
+					membership.DateCreated = time.Now()
+					_, err = sa.db.groupMemberships.InsertOneWithContext(sessionContext, membership)
+					if err != nil {
+						abortTransaction(sessionContext)
+						return err
+					}
+				} else {
+					filter := bson.D{
+						primitive.E{Key: "_id", Value: group.ID},
+						primitive.E{Key: "client_id", Value: clientID},
+					}
+					err = sa.db.groupMemberships.ReplaceOneWithContext(sessionContext, filter, membership, nil)
+					if err != nil {
+						abortTransaction(sessionContext)
+						return err
+					}
+				}
+			}
 		}
 
 		//commit the transaction

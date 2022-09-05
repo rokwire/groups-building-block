@@ -314,9 +314,9 @@ type Storage interface {
 	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
 
-	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
-	UpdateGroupWithoutMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupWithMembers(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
+	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
 	DeleteGroup(clientID string, id string) error
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
