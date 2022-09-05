@@ -628,7 +628,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	return &insertedID, nil
 }
 
-// UpdateGroupWithoutMembers updates a group except the members attribute
+// UpdateGroup updates a group except the members attribute
 func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
 	return sa.updateGroup(clientID, current, group, bson.D{
