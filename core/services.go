@@ -730,7 +730,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			if config != nil && config.Timeout > 0 {
 				timeout = config.Timeout
 			}
-			timeout = 1
 
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
