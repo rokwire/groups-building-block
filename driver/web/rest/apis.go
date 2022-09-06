@@ -2044,6 +2044,72 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 	w.Write(data)
 }
 
+// ReactToGroupPost Reacts to a post within the desired group.
+// @Description Reacts a post within the desired group.
+// @ID UpdateGroupPost
+// @Tags Client-V1
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200 {string} Success
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts/{postId}/react/{reaction} [put]
+func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "group id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID := params["postID"]
+	if len(postID) <= 0 {
+		log.Println("postID is required")
+		http.Error(w, "post id is required", http.StatusBadRequest)
+		return
+	}
+
+	reaction := params["reaction"]
+	if len(reaction) <= 0 {
+		log.Println("reaction is required")
+		http.Error(w, "reaction is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if !group.IsGroupAdminOrMember(current.ID) {
+		log.Printf("%s is not allowed to react to posts for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.ReactToPost(clientID, current, groupID, postID, reaction)
+	if err != nil {
+		log.Printf("error reacting to post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Success"))
+}
+
 // reportAbuseGroupPostRequestBody request body for report abuse API call
 type reportAbuseGroupPostRequestBody struct {
 	Comment           string `json:"comment"`

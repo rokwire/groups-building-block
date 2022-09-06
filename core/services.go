@@ -15,6 +15,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"groups/driven/rewards"
 	"groups/driven/storage"
@@ -701,6 +702,10 @@ func (app *Application) getPostNotificationRecipients(clientID string, post *mod
 
 func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 	return app.storage.UpdatePost(clientID, current.ID, post)
+}
+
+func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
+	return errors.New("unimplemented")
 }
 
 func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {

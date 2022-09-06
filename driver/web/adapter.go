@@ -142,6 +142,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupPosts)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupPost)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupPost)).Methods("PUT")
+	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/react/{reaction}", we.idTokenAuthWrapFunc(we.apisHandler.ReactToGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPost)).Methods("DELETE")
 
