@@ -2044,6 +2044,11 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 	w.Write(data)
 }
 
+// reactToGroupPostRequestBody request body for reaction API call
+type reactToGroupPostRequestBody struct {
+	Reaction string `json:"reaction"`
+} // @name reactToGroupPostRequestBody
+
 // ReactToGroupPost Reacts to a post within the desired group.
 // @Description Reacts a post within the desired group.
 // @ID UpdateGroupPost
@@ -2053,7 +2058,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 // @Success 200 {string} Success
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{groupId}/posts/{postId}/react/{reaction} [put]
+// @Router /api/group/{groupId}/posts/{postId}/reactions [put]
 func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
@@ -2070,10 +2075,18 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 		return
 	}
 
-	reaction := params["reaction"]
-	if len(reaction) <= 0 {
-		log.Println("reaction is required")
-		http.Error(w, "reaction is required", http.StatusBadRequest)
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on read reactToGroupPostRequestBody - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var body reactToGroupPostRequestBody
+	err = json.Unmarshal(data, &body)
+	if err != nil {
+		log.Printf("error on unmarshal reactToGroupPostRequestBody (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -2098,7 +2111,7 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.ReactToPost(clientID, current, groupID, postID, reaction)
+	err = h.app.Services.ReactToPost(clientID, current, groupID, postID, body.Reaction)
 	if err != nil {
 		log.Printf("error reacting to post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
