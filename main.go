@@ -17,9 +17,7 @@ package main
 import (
 	core "groups/core"
 	"groups/core/model"
-	"groups/driven/authman"
 	"groups/driven/corebb"
-	"groups/driven/notifications"
 	"groups/driven/rewards"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
@@ -58,18 +56,18 @@ func main() {
 	}
 
 	// Notification adapter
-	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
-	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
-	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
+	// notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
+	// notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
+	// notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
+	// notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
 
-	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
-	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
-	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
-	authmanAdminUINList := getAuthmanAdminUINList()
+	// authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
+	// authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
+	// authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
+	// authmanAdminUINList := getAuthmanAdminUINList()
 
 	// Authman adapter
-	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
+	// authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
 	// Core adapter
 	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
@@ -101,13 +99,13 @@ func main() {
 	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
 	config := &model.ApplicationConfig{
-		AuthmanAdminUINList:       authmanAdminUINList,
-		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SupportedClientIDs:        supportedClientIDs,
+		// AuthmanAdminUINList:       authmanAdminUINList,
+		// ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
+		SupportedClientIDs: supportedClientIDs,
 	}
 
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
+	application := core.NewApplication(Version, Build, storageAdapter, nil, nil,
 		coreAdapter, rewardsAdapter, config)
 	application.Start()
 
