@@ -2124,18 +2124,16 @@ func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *mode
 // ReactToPost React to a post
 func (sa *Adapter) ReactToPost(context TransactionContext, userID string, postID string, reaction string, on bool) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now()},
-		}},
-	}
+
 	updateOperation := "$pull"
 	if on {
 		updateOperation = "$push"
 	}
-	update = append(update, primitive.E{Key: updateOperation, Value: bson.D{
-		primitive.E{Key: "reactions." + reaction, Value: userID},
-	}})
+	update := bson.D{
+		primitive.E{Key: updateOperation, Value: bson.D{
+			primitive.E{Key: "reactions." + reaction, Value: userID},
+		}},
+	}
 
 	res, err := sa.db.posts.UpdateOneWithContext(context, filter, update, nil)
 	if err != nil {
