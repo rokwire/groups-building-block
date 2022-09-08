@@ -670,7 +670,11 @@ func (sa *Adapter) ReadAllGroupCategories() ([]string, error) {
 func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 
-	existingGroups, err := sa.FindGroups(clientID, &current.ID, nil, nil, &group.Title, nil, nil, nil)
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -772,7 +776,11 @@ func (sa *Adapter) UpdateGroupWithMembers(clientID string, current *model.User, 
 }
 
 func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D) *utils.GroupError {
-	existingGroups, err := sa.FindGroups(clientID, &current.ID, nil, nil, &group.Title, nil, nil, nil)
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {

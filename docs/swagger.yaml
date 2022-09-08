@@ -117,6 +117,11 @@ definitions:
       user_id:
         description: core user id
         type: string
+      user_ids:
+        description: core user ids
+        items:
+          type: string
+        type: array
     type: object
   GroupStat:
     properties:
