@@ -712,8 +712,8 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 		return fmt.Errorf("missing post for id %s", postID)
 	}
 
-	for _, accountID := range post.Reactions[reaction] {
-		if current.ID == accountID {
+	for _, userID := range post.Reactions[reaction] {
+		if current.ID == userID {
 			err = app.storage.ReactToPost(current.ID, postID, reaction, false)
 			if err != nil {
 				return fmt.Errorf("error removing reaction: %v", err)
