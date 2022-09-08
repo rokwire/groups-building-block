@@ -2116,8 +2116,8 @@ type reactToGroupPostRequestBody struct {
 } // @name reactToGroupPostRequestBody
 
 // ReactToGroupPost Reacts to a post within the desired group.
-// @Description Reacts a post within the desired group.
-// @ID UpdateGroupPost
+// @Description Reacts to a post within the desired group.
+// @ID ReactToGroupPost
 // @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
