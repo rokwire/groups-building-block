@@ -851,6 +851,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 										if member.Status != "admin" {
 											now := time.Now()
 											member.Status = "admin"
+											member.Admin = true
 											member.DateUpdated = &now
 											membershipsForUpdate = append(membershipsForUpdate, member)
 											groupUpdated = true
