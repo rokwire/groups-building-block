@@ -2127,7 +2127,7 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
 		log.Printf("%s is not allowed to react to posts for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
