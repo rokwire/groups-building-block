@@ -226,29 +226,6 @@ func (sa *Adapter) FindUserGroupMemberships(clientID string, userID string) (mod
 	return model.MembershipCollection{Items: result}, err
 }
 
-// CreateMissingGroupMembership creates a group membership if it does not exist by external ID
-func (sa *Adapter) CreateMissingGroupMembership(membership *model.GroupMembership) error {
-	transaction := func(context TransactionContext) error {
-		filter := bson.M{"client_id": membership.ClientID, "group_id": membership.GroupID, "external_id": membership.ExternalID}
-
-		var result []model.GroupMembership
-		err := sa.db.groupMemberships.FindWithContext(context, filter, &result, nil)
-		if err != nil {
-			return err
-		}
-		if len(result) == 0 {
-			if len(membership.ID) > 0 {
-				membership.ID = uuid.NewString()
-			}
-			_, err = sa.db.groupMemberships.InsertOneWithContext(context, membership)
-			return err
-		}
-		return nil
-	}
-
-	return sa.PerformTransaction(transaction)
-}
-
 // SaveGroupMembershipByExternalID creates or updates a group membership for a given external ID
 func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
 	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error) {
