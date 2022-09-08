@@ -56,7 +56,7 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(clientID, id)
+	group, err := app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (app *Application) getGroupEntityByTitle(clientID string, title string) (*m
 }
 
 func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error) {
-	group, err := app.storage.FindGroup(clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err != nil {
 		return false, nil, err
 	}
@@ -231,7 +231,7 @@ func (app *Application) deleteUser(clientID string, current *model.User) error {
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	// find the group
-	group, err := app.storage.FindGroup(clientID, id)
+	group, err := app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 		return err
 	}
 
-	group, err = app.storage.FindGroup(clientID, group.ID)
+	group, err = app.storage.FindGroup(nil, clientID, group.ID)
 	if err == nil && group != nil {
 		members := group.Members
 		if len(members) > 0 {
@@ -319,7 +319,7 @@ func (app *Application) deletePendingMember(clientID string, current *model.User
 		return err
 	}
 
-	group, err := app.storage.FindGroup(clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -359,7 +359,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 		return err
 	}
 
-	group, err = app.storage.FindGroup(clientID, group.ID)
+	group, err = app.storage.FindGroup(nil, clientID, group.ID)
 	if err == nil && group != nil {
 		members := group.Members
 		if len(members) > 0 {
@@ -427,7 +427,7 @@ func (app *Application) deleteMember(clientID string, current *model.User, group
 		return err
 	}
 
-	group, err := app.storage.FindGroup(clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -604,7 +604,7 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return app.storage.FindPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+	return app.storage.FindPost(nil, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
 func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
@@ -685,7 +685,7 @@ func (app *Application) getPostNotificationRecipients(clientID string, post *mod
 			break
 		}
 
-		post, err = app.storage.FindPost(clientID, nil, post.GroupID, *post.ParentID, true, false)
+		post, err = app.storage.FindPost(nil, clientID, nil, post.GroupID, *post.ParentID, true, false)
 		if err != nil {
 			log.Printf("error app.getPostToMemberList() - %s", err)
 			return nil, fmt.Errorf("error app.getPostToMemberList() - %s", err)
@@ -704,31 +704,35 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 }
 
 func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
-	post, err := app.storage.FindPost(clientID, &current.ID, groupID, postID, true, false)
-	if err != nil {
-		return fmt.Errorf("error finding post: %v", err)
-	}
-	if post == nil {
-		return fmt.Errorf("missing post for id %s", postID)
-	}
-
-	for _, userID := range post.Reactions[reaction] {
-		if current.ID == userID {
-			err = app.storage.ReactToPost(current.ID, postID, reaction, false)
-			if err != nil {
-				return fmt.Errorf("error removing reaction: %v", err)
-			}
-
-			return nil
+	transaction := func(context storage.TransactionContext) error {
+		post, err := app.storage.FindPost(context, clientID, &current.ID, groupID, postID, true, false)
+		if err != nil {
+			return fmt.Errorf("error finding post: %v", err)
 		}
+		if post == nil {
+			return fmt.Errorf("missing post for id %s", postID)
+		}
+
+		for _, userID := range post.Reactions[reaction] {
+			if current.ID == userID {
+				err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
+				if err != nil {
+					return fmt.Errorf("error removing reaction: %v", err)
+				}
+
+				return nil
+			}
+		}
+
+		err = app.storage.ReactToPost(context, current.ID, postID, reaction, true)
+		if err != nil {
+			return fmt.Errorf("error adding reaction: %v", err)
+		}
+
+		return nil
 	}
 
-	err = app.storage.ReactToPost(current.ID, postID, reaction, true)
-	if err != nil {
-		return fmt.Errorf("error adding reaction: %v", err)
-	}
-
-	return nil
+	return app.storage.PerformTransaction(transaction)
 }
 
 func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
