@@ -1073,17 +1073,6 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	missingInfoMembers := []model.GroupMembership{}
 
-	//TODO: Move this migration to handle all groups (not just authman)
-	// Transfer existing embedded group members
-	log.Printf("Transferring %d existing embedded members for Authman %s...\n", len(authmanGroup.Members), *authmanGroup.AuthmanGroup)
-	for _, member := range authmanGroup.Members {
-		membership := member.ToGroupMembership(clientID, authmanGroup.ID)
-		err := app.storage.CreateMissingGroupMembership(&membership)
-		if err != nil {
-			log.Printf("Error transferring embedded membership for external ID %s in Authman %s: %s\n", member.ExternalID, *authmanGroup.AuthmanGroup, err)
-		}
-	}
-
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
 		status := "member"
