@@ -21,19 +21,20 @@ import (
 
 // Post represents group posts
 type Post struct {
-	ID                *string `json:"id" bson:"_id"`
-	ClientID          *string `json:"client_id" bson:"client_id"`
-	GroupID           string  `json:"group_id" bson:"group_id"`
-	ParentID          *string `json:"parent_id" bson:"parent_id"`
-	TopParentID       *string `json:"top_parent_id" bson:"top_parent_id"`
-	Creator           Creator `json:"member" bson:"member"`
-	Subject           string  `json:"subject" bson:"subject"`
-	Body              string  `json:"body" bson:"body"`
-	Private           bool    `json:"private" bson:"private"`
-	UseAsNotification bool    `json:"use_as_notification" bson:"use_as_notification"`
-	IsAbuse           bool    `json:"is_abuse" bson:"is_abuse"`
-	Replies           []*Post `json:"replies,omitempty"` // This is constructed by the code (ParentID)
-	ImageURL          *string `json:"image_url" bson:"image_url"`
+	ID                *string             `json:"id" bson:"_id"`
+	ClientID          *string             `json:"client_id" bson:"client_id"`
+	GroupID           string              `json:"group_id" bson:"group_id"`
+	ParentID          *string             `json:"parent_id" bson:"parent_id"`
+	TopParentID       *string             `json:"top_parent_id" bson:"top_parent_id"`
+	Creator           Creator             `json:"member" bson:"member"`
+	Subject           string              `json:"subject" bson:"subject"`
+	Body              string              `json:"body" bson:"body"`
+	Private           bool                `json:"private" bson:"private"`
+	UseAsNotification bool                `json:"use_as_notification" bson:"use_as_notification"`
+	IsAbuse           bool                `json:"is_abuse" bson:"is_abuse"`
+	Replies           []*Post             `json:"replies,omitempty"` // This is constructed by the code (ParentID)
+	Reactions         map[string][]string `json:"reactions,omitempty" bson:"reactions"`
+	ImageURL          *string             `json:"image_url" bson:"image_url"`
 
 	ToMembersList []ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 	DateCreated   *time.Time `json:"date_created" bson:"date_created"`

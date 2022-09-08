@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Add reactions to posts [#242](https://github.com/rokwire/groups-building-block/issues/242)
 - Expose DELETE /api/int/group/{group-id}/events/{event-id} API for using by Events Manager [#236](https://github.com/rokwire/groups-building-block/issues/236)
 - Retrieve members by list of account IDs [#246](https://github.com/rokwire/groups-building-block/issues/246)
 
