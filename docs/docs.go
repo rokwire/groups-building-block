@@ -2815,6 +2815,13 @@ const docTemplate = `{
                 "user_id": {
                     "description": "core user id",
                     "type": "string"
+                },
+                "user_ids": {
+                    "description": "core user ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

@@ -4,6 +4,7 @@ package model
 type GroupMembersFilter struct {
 	ID         *string  `json:"id"`          // membership id
 	UserID     *string  `json:"user_id"`     // core user id
+	UserIDs    []string `json:"user_ids"`    // core user ids
 	ExternalID *string  `json:"external_id"` // core user external id
 	NetID      *string  `json:"net_id"`      // core user net id
 	Name       *string  `json:"name"`        // member's name
