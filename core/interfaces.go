@@ -62,6 +62,7 @@ type Services interface {
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
@@ -216,6 +217,10 @@ func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *mo
 	return s.app.updatePost(clientID, current, post)
 }
 
+func (s *servicesImpl) ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
+	return s.app.reactToPost(clientID, current, groupID, postID, reaction)
+}
+
 func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
 	return s.app.reportPostAsAbuse(clientID, current, group, post, comment, sendToDean, sendToGroupAdmins)
 }
@@ -347,6 +352,7 @@ type Storage interface {
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
+	ReactToPost(userID string, postID string, reaction string, on bool) error
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)

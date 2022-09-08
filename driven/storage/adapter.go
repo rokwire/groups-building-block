@@ -1667,6 +1667,33 @@ func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *mode
 	return err
 }
 
+// ReactToPost React to a post
+func (sa *Adapter) ReactToPost(userID string, postID string, reaction string, on bool) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		}},
+	}
+	updateOperation := "$pull"
+	if on {
+		updateOperation = "$push"
+	}
+	update = append(update, primitive.E{Key: updateOperation, Value: bson.D{
+		primitive.E{Key: "reactions." + reaction, Value: userID},
+	}})
+
+	res, err := sa.db.posts.UpdateOne(filter, update, nil)
+	if err != nil {
+		return fmt.Errorf("error updating post %s with reaction %s for %s: %v", postID, reaction, userID, err)
+	}
+	if res.ModifiedCount != 1 {
+		return fmt.Errorf("updated %d posts with reaction %s for %s, but expected 1", res.ModifiedCount, reaction, userID)
+	}
+
+	return nil
+}
+
 // DeletePost Deletes a post
 func (sa *Adapter) DeletePost(clientID string, userID string, groupID string, postID string, force bool) error {
 	return sa.deletePost(context.Background(), clientID, userID, groupID, postID, force)
