@@ -18,6 +18,7 @@ import (
 // FindGroupsV3 finds groups with filter
 func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
 	groupIDs := []string{}
+	var err error
 	var userID *string
 	var memberships model.MembershipCollection
 
@@ -45,7 +46,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 
 		if filter.MemberUserID != nil {
 			// find group memberships
-			memberships, err := sa.FindGroupMemberships(clientID, model.MembershipFilter{
+			memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
 				UserID: filter.MemberUserID,
 			})
 			if err != nil {
@@ -105,7 +106,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 	}
 
 	var list []model.Group
-	err := sa.db.groups.Find(groupFilter, &list, findOptions)
+	err = sa.db.groups.Find(groupFilter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}

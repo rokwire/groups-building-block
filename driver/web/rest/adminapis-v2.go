@@ -74,12 +74,7 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		return
 	}
 
-	groupsV2 := make([]model.GroupV2, len(groups))
-	for i, group := range groups {
-		groupsV2[i] = group.ToGroupV2(&current.ID)
-	}
-
-	data, err := json.Marshal(groupsV2)
+	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("apis.GetGroupsV2() error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -215,9 +210,7 @@ func (h *AdminApisHandler) GetGroupV2(clientID string, current *model.User, w ht
 		}
 	}
 
-	groupV2 := group.ToGroupV2(&current.ID)
-
-	data, err := json.Marshal(groupV2)
+	data, err := json.Marshal(group)
 	if err != nil {
 		log.Println("apis.GetGroupV2() error on marshal the group")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

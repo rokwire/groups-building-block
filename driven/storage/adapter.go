@@ -827,11 +827,12 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 // FindGroups finds groups
 func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
 
+	var err error
 	groupIDs := []string{}
 	var memberships model.MembershipCollection
 	if userID != nil {
 		// find group memberships
-		memberships, err := sa.FindUserGroupMemberships(clientID, *userID)
+		memberships, err = sa.FindUserGroupMemberships(clientID, *userID)
 		if err != nil {
 			return nil, err
 		}
@@ -890,7 +891,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 	}
 
 	var list []model.Group
-	err := sa.db.groups.Find(filter, &list, findOptions)
+	err = sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
