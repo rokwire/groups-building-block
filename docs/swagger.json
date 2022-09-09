@@ -29,7 +29,7 @@
                 "operationId": "AdminSynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -236,7 +236,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -414,7 +414,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             },
@@ -490,7 +490,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -565,7 +565,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -636,7 +636,7 @@
                 "operationId": "AdminLoginUser",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -707,7 +707,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -749,7 +749,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/GroupV2"
+                            "$ref": "#/definitions/Group"
                         }
                     }
                 }
@@ -824,7 +824,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -864,7 +864,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1206,7 +1206,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             },
@@ -1524,7 +1524,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1601,7 +1601,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1935,7 +1935,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1977,7 +1977,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2215,7 +2215,7 @@
                 "operationId": "DeleteUser",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2311,7 +2311,7 @@
                 "operationId": "LoginUser",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2413,7 +2413,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2455,7 +2455,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/GroupV2"
+                            "$ref": "#/definitions/Group"
                         }
                     }
                 }
@@ -2530,7 +2530,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2554,7 +2554,7 @@
                 "operationId": "SynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2796,13 +2796,6 @@
                 },
                 "user_id": {
                     "type": "string"
-                },
-                "user_ids": {
-                    "description": "core user ids",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -2846,80 +2839,6 @@
                 },
                 "total_count": {
                     "type": "integer"
-                }
-            }
-        },
-        "GroupV2": {
-            "type": "object",
-            "properties": {
-                "attendance_group": {
-                    "type": "boolean"
-                },
-                "authman_enabled": {
-                    "type": "boolean"
-                },
-                "authman_group": {
-                    "type": "string"
-                },
-                "block_new_membership_requests": {
-                    "type": "boolean"
-                },
-                "can_join_automatically": {
-                    "type": "boolean"
-                },
-                "category": {
-                    "description": "one of the enums categories list",
-                    "type": "string"
-                },
-                "client_id": {
-                    "type": "string"
-                },
-                "current_member": {
-                    "description": "this is indicative and it's not required for update APIs",
-                    "$ref": "#/definitions/Member"
-                },
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "hidden_for_search": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "membership_questions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "only_admins_can_create_polls": {
-                    "type": "boolean"
-                },
-                "privacy": {
-                    "description": "public or private",
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "web_url": {
-                    "type": "string"
                 }
             }
         },
@@ -3072,6 +2991,13 @@
                 "user_id": {
                     "description": "core user id",
                     "type": "string"
+                },
+                "user_ids": {
+                    "description": "core user ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

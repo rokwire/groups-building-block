@@ -21,7 +21,7 @@ import (
 // @Param privacy query string false "privacy - filter by privacy"
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
-// @Success 200 {array} model.GroupV2
+// @Success 200 {array} model.Group
 // @Security AppUserAuth
 // @Router /api/admin/v2/groups [get]
 func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 // @Param privacy query string false "privacy - filter by privacy"
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
-// @Success 200 {array} model.GroupV2
+// @Success 200 {array} model.Group
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/v2/user/groups [get]
@@ -172,7 +172,7 @@ func (h *AdminApisHandler) GetUserGroupsV2(clientID string, current *model.User,
 // @Accept json
 // @Param APP header string true "APP"
 // @Param id path string true "ID"
-// @Success 200 {object} model.GroupV2
+// @Success 200 {object} model.Group
 // @Security AppUserAuth
 // @Router /api/admin/v2/groups/{id} [get]
 func (h *AdminApisHandler) GetGroupV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {

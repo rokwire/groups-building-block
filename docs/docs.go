@@ -33,7 +33,7 @@ const docTemplate = `{
                 "operationId": "AdminSynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -240,7 +240,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -418,7 +418,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             },
@@ -494,7 +494,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -569,7 +569,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -640,7 +640,7 @@ const docTemplate = `{
                 "operationId": "AdminLoginUser",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -711,7 +711,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -753,7 +753,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/GroupV2"
+                            "$ref": "#/definitions/Group"
                         }
                     }
                 }
@@ -828,7 +828,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -868,7 +868,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1210,7 +1210,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             },
@@ -1227,7 +1227,7 @@ const docTemplate = `{
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "DeleteMembership",
+                "operationId": "DeleteMember",
                 "parameters": [
                     {
                         "type": "string",
@@ -1271,7 +1271,7 @@ const docTemplate = `{
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "CreatePendingMembership",
+                "operationId": "CreatePendingMember",
                 "parameters": [
                     {
                         "type": "string",
@@ -1325,7 +1325,7 @@ const docTemplate = `{
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "DeletePendingMembership",
+                "operationId": "DeletePendingMember",
                 "parameters": [
                     {
                         "type": "string",
@@ -1528,7 +1528,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1605,7 +1605,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1939,7 +1939,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -1981,7 +1981,7 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2219,7 +2219,7 @@ const docTemplate = `{
                 "operationId": "DeleteUser",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2315,7 +2315,7 @@ const docTemplate = `{
                 "operationId": "LoginUser",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2417,7 +2417,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2459,7 +2459,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/GroupV2"
+                            "$ref": "#/definitions/Group"
                         }
                     }
                 }
@@ -2534,7 +2534,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2558,7 +2558,7 @@ const docTemplate = `{
                 "operationId": "SynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": ""
                     }
                 }
             }
@@ -2800,13 +2800,6 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
-                },
-                "user_ids": {
-                    "description": "core user ids",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -2850,80 +2843,6 @@ const docTemplate = `{
                 },
                 "total_count": {
                     "type": "integer"
-                }
-            }
-        },
-        "GroupV2": {
-            "type": "object",
-            "properties": {
-                "attendance_group": {
-                    "type": "boolean"
-                },
-                "authman_enabled": {
-                    "type": "boolean"
-                },
-                "authman_group": {
-                    "type": "string"
-                },
-                "block_new_membership_requests": {
-                    "type": "boolean"
-                },
-                "can_join_automatically": {
-                    "type": "boolean"
-                },
-                "category": {
-                    "description": "one of the enums categories list",
-                    "type": "string"
-                },
-                "client_id": {
-                    "type": "string"
-                },
-                "current_member": {
-                    "description": "this is indicative and it's not required for update APIs",
-                    "$ref": "#/definitions/Member"
-                },
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "hidden_for_search": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "membership_questions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "only_admins_can_create_polls": {
-                    "type": "boolean"
-                },
-                "privacy": {
-                    "description": "public or private",
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "web_url": {
-                    "type": "string"
                 }
             }
         },
@@ -3076,6 +2995,13 @@ const docTemplate = `{
                 "user_id": {
                     "description": "core user id",
                     "type": "string"
+                },
+                "user_ids": {
+                    "description": "core user ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
