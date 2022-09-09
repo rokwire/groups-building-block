@@ -84,19 +84,6 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 	return answers
 }
 
-// GetMemberByUserID gets member by UserID field
-func (gr Group) GetMemberByUserID(userID string) *Member {
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
 // IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
 func (gr Group) IsAuthmanSyncEligible() bool {
 	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
