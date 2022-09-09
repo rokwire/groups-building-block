@@ -175,198 +175,6 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return group, nil
 }
 
-func (app *Application) createPendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
-
-	if group.CanJoinAutomatically {
-		member.Status = "member"
-	} else {
-		member.Status = "pending"
-	}
-
-	err := app.storage.CreatePendingMember(clientID, current, group, member)
-	if err != nil {
-		return err
-	}
-
-	adminMemberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: []string{group.ID},
-		Statuses: []string{"admin"},
-	})
-	if err == nil && len(adminMemberships.Items) > 0 {
-		if len(adminMemberships.Items) > 0 {
-			recipients := []notifications.Recipient{}
-			for _, admin := range adminMemberships.Items {
-				recipients = append(recipients, notifications.Recipient{
-					UserID: admin.UserID,
-					Name:   admin.Name,
-				})
-			}
-			if len(recipients) > 0 {
-				topic := "group.invitations"
-
-				message := fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
-				if group.CanJoinAutomatically {
-					message = fmt.Sprintf("%s joined '%s' group", member.GetDisplayName(), group.Title)
-				}
-
-				app.notifications.SendNotification(
-					recipients,
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					message,
-					map[string]string{
-						"type":        "group",
-						"operation":   "pending_member",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
-			}
-		}
-	} else {
-		log.Printf("Unable to retrieve group by membership id: %s\n", err)
-		// return err // No reason to fail if the main part succeeds
-	}
-
-	if group.CanJoinAutomatically && group.AuthmanEnabled {
-		err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, member.ExternalID)
-		if err != nil {
-			log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) deletePendingMember(clientID string, current *model.User, groupID string) error {
-	err := app.storage.DeletePendingMember(clientID, groupID, current.ID)
-	if err != nil {
-		return err
-	}
-
-	group, err := app.storage.FindGroup(clientID, groupID)
-	if err == nil && group != nil {
-		if group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) createMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
-
-	if (member.UserID == "" && member.ExternalID != "") ||
-		(member.UserID != "" && member.ExternalID == "") {
-		if member.ExternalID == "" {
-			user, err := app.storage.FindUser(clientID, member.UserID, false)
-			if err == nil && user != nil {
-				member.ApplyFromUserIfEmpty(user)
-			} else {
-				log.Printf("error app.createMember() - unable to find user: %s", err)
-			}
-		}
-		if member.UserID == "" {
-			user, err := app.storage.FindUser(clientID, member.ExternalID, true)
-			if err == nil && user != nil {
-				member.ApplyFromUserIfEmpty(user)
-			} else {
-				log.Printf("error app.createMember() - unable to find user: %s", err)
-			}
-		}
-	}
-
-	err := app.storage.CreateMemberUnchecked(clientID, current, group, member)
-	if err != nil {
-		return err
-	}
-
-	memberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: []string{group.ID},
-		Statuses: []string{"admin"},
-	})
-	if err == nil && len(memberships.Items) > 0 {
-		recipients := []notifications.Recipient{}
-		for _, adminMember := range memberships.Items {
-			if adminMember.UserID != current.ID {
-				recipients = append(recipients, notifications.Recipient{
-					UserID: adminMember.UserID,
-					Name:   adminMember.Name,
-				})
-			}
-		}
-
-		var message string
-		if member.Status == "member" || member.Status == "admin" {
-			message = fmt.Sprintf("New member joined '%s' group", group.Title)
-		} else {
-			message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
-		}
-
-		if len(recipients) > 0 {
-			topic := "group.invitations"
-			app.notifications.SendNotification(
-				recipients,
-				&topic,
-				fmt.Sprintf("Group - %s", group.Title),
-				message,
-				map[string]string{
-					"type":        "group",
-					"operation":   "pending_member",
-					"entity_type": "group",
-					"entity_id":   group.ID,
-					"entity_name": group.Title,
-				},
-			)
-
-		}
-
-		if group.AuthmanEnabled && group.AuthmanGroup != nil {
-			err = app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, member.ExternalID)
-			if err != nil {
-				return err
-			}
-		}
-
-	} else if err != nil {
-		log.Printf("Unable to retrieve group by membership id: %s\n", err)
-		// return err // No reason to fail if the main part succeeds
-	}
-	if err == nil && group != nil {
-		if group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) deleteMember(clientID string, current *model.User, groupID string) error {
-	err := app.storage.DeleteMember(clientID, groupID, current.ID, false)
-	if err != nil {
-		return err
-	}
-
-	group, err := app.storage.FindGroup(clientID, groupID)
-	if err == nil && group != nil {
-		if group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
 func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
 	err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
 	if err != nil {
@@ -431,30 +239,18 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) deleteMembership(clientID string, current *model.User, membershipID string) error {
-	err := app.storage.DeleteMembership(clientID, current, membershipID)
-	if err != nil {
-		return err
-	}
-
+func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
 	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
 	if membership != nil {
-		group, _ := app.storage.FindGroup(clientID, membership.GroupID)
-		if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
-			if err != nil {
-				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-			}
+		membership.Status = status
+		membership.DateAttended = dateAttended
+
+		err := app.storage.UpdateMembership(clientID, current, membershipID, membership)
+		if err != nil {
+			return err
 		}
 	}
-	return nil
-}
 
-func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
-	err := app.storage.UpdateMembership(clientID, current, membershipID, status, dateAttended)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 

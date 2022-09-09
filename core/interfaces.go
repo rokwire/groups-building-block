@@ -43,13 +43,7 @@ type Services interface {
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 
-	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
-	DeletePendingMember(clientID string, current *model.User, groupID string) error
-	CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
-	DeleteMember(clientID string, current *model.User, groupID string) error
-
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
-	DeleteMembership(clientID string, current *model.User, membershipID string) error
 	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
@@ -84,6 +78,11 @@ type Services interface {
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
+	CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
+	CreatePendingMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
+	DeleteMembership(clientID string, current *model.User, groupID string) error
+	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
+	DeletePendingMembership(clientID string, current *model.User, groupID string) error
 }
 
 type servicesImpl struct {
@@ -153,28 +152,8 @@ func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupSt
 	return s.app.storage.GetGroupMembershipStats(clientID, id)
 }
 
-func (s *servicesImpl) CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
-	return s.app.createPendingMember(clientID, current, group, member)
-}
-
-func (s *servicesImpl) DeletePendingMember(clientID string, current *model.User, groupID string) error {
-	return s.app.deletePendingMember(clientID, current, groupID)
-}
-
-func (s *servicesImpl) CreateMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
-	return s.app.createMember(clientID, current, group, member)
-}
-
-func (s *servicesImpl) DeleteMember(clientID string, current *model.User, groupID string) error {
-	return s.app.deleteMember(clientID, current, groupID)
-}
-
 func (s *servicesImpl) ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
 	return s.app.applyMembershipApproval(clientID, current, membershipID, approve, rejectReason)
-}
-
-func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, membershipID string) error {
-	return s.app.deleteMembership(clientID, current, membershipID)
 }
 
 func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
@@ -261,6 +240,8 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
 }
 
+// V3
+
 func (s *servicesImpl) FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error) {
 	return s.app.findGroupV3(clientID, filter)
 }
@@ -283,6 +264,26 @@ func (s *servicesImpl) FindGroupMembershipByID(clientID string, id string) (*mod
 
 func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
 	return s.app.storage.FindUserGroupMemberships(clientID, userID)
+}
+
+func (s *servicesImpl) CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
+	return s.app.createMembership(clientID, current, group, membership)
+}
+
+func (s *servicesImpl) CreatePendingMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
+	return s.app.createPendingMembership(clientID, current, group, membership)
+}
+
+func (s *servicesImpl) DeletePendingMembership(clientID string, current *model.User, groupID string) error {
+	return s.app.deletePendingMembership(clientID, current, groupID)
+}
+
+func (s *servicesImpl) DeleteMembershipByID(clientID string, current *model.User, membershipID string) error {
+	return s.app.deleteMembershipByID(clientID, current, membershipID)
+}
+
+func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, groupID string) error {
+	return s.app.deleteMembership(clientID, current, groupID)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -332,15 +333,6 @@ type Storage interface {
 	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
-	CreatePendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error
-	DeletePendingMember(clientID string, groupID string, userID string) error
-	CreateMemberUnchecked(clientID string, current *model.User, group *model.Group, member *model.Member) error
-	DeleteMember(clientID string, groupID string, userID string, force bool) error
-
-	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
-	DeleteMembership(clientID string, current *model.User, membershipID string) error
-	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error
-
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
@@ -365,6 +357,7 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
+	// V3
 	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
@@ -372,7 +365,13 @@ type Storage interface {
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error)
-	DeleteGroupMembership(clientID string, userID string, groupID string) error
+
+	CreateMembershipUnchecked(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
+	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
+	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
+	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
+	DeleteMembership(clientID string, groupID string, userID string) error
+	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error)
 
 	GetGroupMembershipStats(clientID string, groupID string) (*model.GroupStats, error)

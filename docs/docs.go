@@ -1227,7 +1227,7 @@ const docTemplate = `{
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "DeleteMember",
+                "operationId": "DeleteMembership",
                 "parameters": [
                     {
                         "type": "string",
@@ -1271,7 +1271,7 @@ const docTemplate = `{
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "CreatePendingMember",
+                "operationId": "CreatePendingMembership",
                 "parameters": [
                     {
                         "type": "string",
@@ -1325,7 +1325,7 @@ const docTemplate = `{
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "DeletePendingMember",
+                "operationId": "DeletePendingMembership",
                 "parameters": [
                     {
                         "type": "string",

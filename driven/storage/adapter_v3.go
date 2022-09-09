@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"groups/core/model"
 	"log"
 	"time"
@@ -226,6 +228,46 @@ func (sa *Adapter) FindUserGroupMemberships(clientID string, userID string) (mod
 	return model.MembershipCollection{Items: result}, err
 }
 
+// CreatePendingMembership creates a pending membership for a specific group
+func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, group *model.Group, membership *model.GroupMembership) error {
+	if membership != nil && group != nil {
+
+		//1. check if the user is already a member of this group - pending or member or admin or rejected
+		membership, err := sa.FindGroupMembership(clientID, group.ID, user.ID)
+		if err == nil && membership != nil {
+			switch membership.Status {
+			case "admin":
+				return errors.New("the user is an admin for the group")
+			case "member":
+				return errors.New("the user is a member for the group")
+			case "pending":
+				return errors.New("the user is pending for the group")
+			case "rejected":
+				return errors.New("the user is rejected for the group")
+			default:
+				return errors.New("error creating a pending user")
+			}
+		}
+
+		//2. check if the answers match the group questions
+		if len(group.MembershipQuestions) != len(membership.MemberAnswers) {
+			return errors.New("member answers mismatch")
+		}
+
+		membership.ID = uuid.NewString()
+		membership.ClientID = clientID
+		membership.GroupID = group.ID
+		membership.DateCreated = time.Now().UTC()
+
+		_, err = sa.db.groupMemberships.InsertOne(membership)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // SaveGroupMembershipByExternalID creates or updates a group membership for a given external ID
 func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
 	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error) {
@@ -269,21 +311,140 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 	return &result, nil
 }
 
-// DeleteGroupMembership deletes a group membership
-func (sa *Adapter) DeleteGroupMembership(clientID string, userID string, groupID string) error {
-	filter := bson.M{"client_id": clientID, "group_id": groupID, "user_id": userID}
+// CreateMembershipUnchecked Created a member to a group
+func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
+	if group != nil {
+		membership, err := sa.FindGroupMembership(clientID, group.ID, current.ID)
+		if err != nil || membership == nil || !membership.IsAdmin() {
+			log.Printf("error: storage.CreateMembershipUnchecked() - current user is not admin of the group")
+			return fmt.Errorf("current user is not admin of the group")
+		}
 
-	result, err := sa.db.groupMemberships.DeleteOne(filter, nil)
-	if err != nil {
-		return err
-	}
+		existingMembership, _ := sa.FindGroupMembership(clientID, group.ID, membership.UserID)
+		if existingMembership != nil {
+			log.Printf("error: storage.CreateMembershipUnchecked() - member of group '%s' with user id %s already exists", group.Title, membership.UserID)
+			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, membership.UserID)
+		}
 
-	deletedCount := result.DeletedCount
-	if deletedCount != 1 {
-		return fmt.Errorf("error occurred while deleting group membership for client_id=%s group_id=%s user_id=%s: %v", clientID, groupID, userID, err)
+		existingMembership, _ = sa.FindGroupMembership(clientID, group.ID, membership.ExternalID)
+		if existingMembership != nil {
+			log.Printf("error: storage.CreateMembershipUnchecked() - member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
+			return fmt.Errorf("member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
+		}
+
+		if len(membership.UserID) == 0 && len(membership.ExternalID) == 0 {
+			log.Printf("error: storage.CreateMembershipUnchecked() - expected user_id or external_id")
+			return fmt.Errorf("expected user_id or external_id")
+		}
+
+		membership.ID = uuid.NewString()
+		membership.ClientID = clientID
+		membership.GroupID = group.ID
+		membership.DateCreated = time.Now()
+		membership.MemberAnswers = group.CreateMembershipEmptyAnswers()
+
+		_, err = sa.db.groupMemberships.InsertOne(membership)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	return nil
+}
+
+// ApplyMembershipApproval applies a membership approval
+func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
+
+	status := "rejected"
+	if approve {
+		status = "member"
+	}
+
+	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "status", Value: status},
+			primitive.E{Key: "reject_reason", Value: rejectReason},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		},
+		},
+	}
+	_, err := sa.db.groupMemberships.UpdateOne(filter, update, nil)
+	return err
+}
+
+// UpdateMembership updates a membership
+func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "status", Value: membership.Status},
+			primitive.E{Key: "reject_reason", Value: membership.RejectReason},
+			primitive.E{Key: "date_attended", Value: membership.DateAttended},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		},
+		},
+	}
+	_, err := sa.db.groupMemberships.UpdateOne(filter, update, nil)
+	return err
+}
+
+// DeleteMembership deletes a member membership from a specific group
+func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID string) error {
+
+	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		currentMembership, _ := sa.FindGroupMembershipWithContext(sessionContext, clientID, groupID, userID)
+		if currentMembership != nil {
+
+			if currentMembership.IsAdmin() {
+				adminMemberships, _ := sa.FindGroupMembershipsWithContext(sessionContext, clientID, model.MembershipFilter{
+					GroupIDs: []string{groupID},
+					Statuses: []string{"admin"},
+				})
+				if len(adminMemberships.Items) <= 1 {
+					log.Printf("sa.DeleteMembership() - there must be at least two admins in order to delete ")
+					return fmt.Errorf("there must be at least two admins in order to delete ")
+				}
+			}
+
+			filter := bson.D{
+				primitive.E{Key: "group_id", Value: groupID},
+				primitive.E{Key: "user_id", Value: userID},
+				primitive.E{Key: "client_id", Value: clientID},
+			}
+			_, err := sa.db.groupMemberships.DeleteOneWithContext(sessionContext, filter, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				log.Printf("error deleting membership - %s", err)
+				return err
+			}
+		}
+
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteMembershipByID deletes a membership by ID
+func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, membershipID string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
+	_, err := sa.db.groupMemberships.DeleteOne(filter, nil)
+	return err
 }
 
 // DeleteUnsyncedGroupMemberships deletes group memberships that do not exist in the latest sync
