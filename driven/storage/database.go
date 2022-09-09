@@ -749,7 +749,7 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 					{"_id", group.ID},
 				}, bson.D{
 					{"$set", bson.D{
-						{"members", []model.Member{}},
+						{"members", nil},
 					}},
 				}, nil)
 				if err != nil {
