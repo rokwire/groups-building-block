@@ -233,9 +233,9 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 	if membership != nil && group != nil {
 
 		//1. check if the user is already a member of this group - pending or member or admin or rejected
-		membership, err := sa.FindGroupMembership(clientID, group.ID, user.ID)
-		if err == nil && membership != nil {
-			switch membership.Status {
+		storedMembership, err := sa.FindGroupMembership(clientID, group.ID, user.ID)
+		if err == nil && storedMembership != nil {
+			switch storedMembership.Status {
 			case "admin":
 				return errors.New("the user is an admin for the group")
 			case "member":
