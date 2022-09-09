@@ -162,7 +162,7 @@ func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, gro
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
-	group, err := s.app.storage.FindGroup(clientID, id)
+	group, err := s.app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ type Storage interface {
 	UpdateGroupUsesGroupMemberships(context storage.TransactionContext, clientID string, group *model.Group) error
 	DeleteGroup(clientID string, id string) error
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
-	FindGroup(clientID string, id string) (*model.Group, error)
+	FindGroup(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
@@ -351,12 +351,12 @@ type Storage interface {
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
 	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
-	FindPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
+	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
-	ReactToPost(userID string, postID string, reaction string, on bool) error
+	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
