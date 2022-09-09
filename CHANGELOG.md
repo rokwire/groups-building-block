@@ -22,8 +22,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Finish the transition process of splitting the group record and membership list on two separate collections [#238](https://github.com/rokwire/groups-building-block/issues/238)
 ### Added
+- Implement an API that returns a single Post [#244](https://github.com/rokwire/groups-building-block/issues/244)
 - Add reactions to posts [#242](https://github.com/rokwire/groups-building-block/issues/242)
 - Expose DELETE /api/int/group/{group-id}/events/{event-id} API for using by Events Manager [#236](https://github.com/rokwire/groups-building-block/issues/236)
+- Retrieve members by list of account IDs [#246](https://github.com/rokwire/groups-building-block/issues/246)
 
 ## [1.5.66] - 2022-08-24
 ### Fixed

@@ -2,9 +2,10 @@ package storage
 
 import (
 	"fmt"
+	"groups/core/model"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"groups/core/model"
 )
 
 // GetGroupMembers Gets all group members
@@ -28,6 +29,8 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter model.
 	}
 	if filter.UserID != nil {
 		matchFilter = append(matchFilter, bson.E{"members.user_id", *filter.UserID})
+	} else if filter.UserIDs != nil {
+		matchFilter = append(matchFilter, bson.E{"members.user_id", bson.D{{"$in", filter.UserIDs}}})
 	}
 	if filter.NetID != nil {
 		matchFilter = append(matchFilter, bson.E{"members.net_id", *filter.NetID})

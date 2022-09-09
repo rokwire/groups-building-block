@@ -196,7 +196,7 @@ func (app *Application) deletePendingMembership(clientID string, current *model.
 		return err
 	}
 
-	group, err := app.storage.FindGroup(clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -220,7 +220,7 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 		}
 
 		if membership != nil {
-			group, _ := app.storage.FindGroup(clientID, membership.GroupID)
+			group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID)
 			if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
 				err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
 				if err != nil {
@@ -238,7 +238,7 @@ func (app *Application) deleteMembership(clientID string, current *model.User, g
 		return err
 	}
 
-	group, err := app.storage.FindGroup(clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)

@@ -787,8 +787,8 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 }
 
 // FindGroup finds group by id and client id
-func (sa *Adapter) FindGroup(clientID string, id string) (*model.Group, error) {
-	return sa.FindGroupWithContext(nil, clientID, id)
+func (sa *Adapter) FindGroup(context TransactionContext, clientID string, id string) (*model.Group, error) {
+	return sa.FindGroupWithContext(context, clientID, id)
 }
 
 // FindGroupWithContext finds group by id and client id with context
@@ -1137,7 +1137,7 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 // FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 
-	group, errGr := sa.FindGroup(clientID, groupID)
+	group, errGr := sa.FindGroup(nil, clientID, groupID)
 	if group == nil {
 		if errGr != nil {
 			log.Printf("unable to find group with id %s: %s", groupID, errGr)
@@ -1252,7 +1252,7 @@ func (sa *Adapter) FindAllUserPosts(clientID string, userID string) ([]model.Pos
 }
 
 // FindPost Retrieves a post by groupID and postID
-func (sa *Adapter) FindPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+func (sa *Adapter) FindPost(context TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
 	return sa.findPostWithContext(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
@@ -1431,7 +1431,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 
-	originalPost, _ := sa.FindPost(clientID, &userID, post.GroupID, *post.ID, true, true)
+	originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, *post.ID, true, true)
 	if originalPost == nil {
 		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
 	}
@@ -1492,7 +1492,7 @@ func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *mode
 }
 
 // ReactToPost React to a post
-func (sa *Adapter) ReactToPost(userID string, postID string, reaction string, on bool) error {
+func (sa *Adapter) ReactToPost(context TransactionContext, userID string, postID string, reaction string, on bool) error {
 	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
@@ -1533,7 +1533,7 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 		filterToMembers = false
 	}
 
-	originalPost, _ := sa.FindPost(clientID, &userID, groupID, postID, true, filterToMembers)
+	originalPost, _ := sa.FindPost(nil, clientID, &userID, groupID, postID, true, filterToMembers)
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
 	}

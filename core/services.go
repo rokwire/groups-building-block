@@ -57,7 +57,7 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(clientID, id)
+	group, err := app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,7 @@ func (app *Application) deleteUser(clientID string, current *model.User) error {
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	// find the group
-	group, err := app.storage.FindGroup(clientID, id)
+	group, err := app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 
 	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
 	if err == nil && membership != nil {
-		group, _ := app.storage.FindGroup(clientID, membership.GroupID)
+		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID)
 		topic := "group.invitations"
 		if approve {
 			app.notifications.SendNotification(
@@ -326,7 +326,7 @@ func (app *Application) getPosts(clientID string, current *model.User, groupID s
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return app.storage.FindPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+	return app.storage.FindPost(nil, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
 func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
@@ -411,7 +411,7 @@ func (app *Application) getPostNotificationRecipients(clientID string, post *mod
 			break
 		}
 
-		post, err = app.storage.FindPost(clientID, nil, post.GroupID, *post.ParentID, true, false)
+		post, err = app.storage.FindPost(nil, clientID, nil, post.GroupID, *post.ParentID, true, false)
 		if err != nil {
 			log.Printf("error app.getPostToMemberList() - %s", err)
 			return nil, fmt.Errorf("error app.getPostToMemberList() - %s", err)
@@ -430,7 +430,7 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 }
 
 func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
-	post, err := app.storage.FindPost(clientID, &current.ID, groupID, postID, true, false)
+	post, err := app.storage.FindPost(nil, clientID, &current.ID, groupID, postID, true, false)
 	if err != nil {
 		return fmt.Errorf("error finding post: %v", err)
 	}
@@ -440,7 +440,7 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 
 	for _, userID := range post.Reactions[reaction] {
 		if current.ID == userID {
-			err = app.storage.ReactToPost(current.ID, postID, reaction, false)
+			err = app.storage.ReactToPost(nil, current.ID, postID, reaction, false)
 			if err != nil {
 				return fmt.Errorf("error removing reaction: %v", err)
 			}
@@ -449,7 +449,7 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 		}
 	}
 
-	err = app.storage.ReactToPost(current.ID, postID, reaction, true)
+	err = app.storage.ReactToPost(nil, current.ID, postID, reaction, true)
 	if err != nil {
 		return fmt.Errorf("error adding reaction: %v", err)
 	}

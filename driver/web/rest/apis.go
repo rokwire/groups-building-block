@@ -1981,6 +1981,72 @@ type postResponse struct {
 	Private  bool   `json:"private"`
 }
 
+// GetGroupPost Gets a post within the desired group.
+// @Description Gets a post within the desired group.
+// @ID GetGroupPost
+// @Tags Client-V1
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200 {object} postResponse
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts/{postId} [get]
+func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "group id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID := params["postID"]
+	if len(postID) <= 0 {
+		log.Println("postID is required")
+		http.Error(w, "post id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
+		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, false)
+	if err != nil {
+		log.Printf("error getting post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(post)
+	if err != nil {
+		log.Printf("error on marshal post (%s) - %s", postID, err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // UpdateGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID UpdateGroupPost
@@ -2075,8 +2141,8 @@ type reactToGroupPostRequestBody struct {
 } // @name reactToGroupPostRequestBody
 
 // ReactToGroupPost Reacts to a post within the desired group.
-// @Description Reacts a post within the desired group.
-// @ID UpdateGroupPost
+// @Description Reacts to a post within the desired group.
+// @ID ReactToGroupPost
 // @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
@@ -2220,7 +2286,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 
 	post, err := h.app.Services.GetPost(clientID, &current.ID, group.ID, postID, true, false)
 	if err != nil {
-		log.Printf("error retrirve post (%s) - %s", postID, err.Error())
+		log.Printf("error retrieve post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

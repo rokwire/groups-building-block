@@ -131,6 +131,11 @@ definitions:
         type: string
       user_id:
         type: string
+      user_ids:
+        description: core user ids
+        items:
+          type: string
+        type: array
     type: object
   GroupStat:
     properties:
@@ -778,7 +783,7 @@ paths:
       operationId: AdminSynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -907,7 +912,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1046,7 +1051,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1068,7 +1073,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1115,7 +1120,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1159,7 +1164,7 @@ paths:
       operationId: AdminLoginUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1307,7 +1312,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1553,7 +1558,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1681,7 +1686,28 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Client-V1
+    get:
+      consumes:
+      - application/json
+      description: Gets a post within the desired group.
+      operationId: GetGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.postResponse'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1708,6 +1734,28 @@ paths:
       - APIKeyAuth: []
       tags:
       - Client-V1
+  /api/group/{groupId}/posts/{postId}/reactions:
+    put:
+      consumes:
+      - application/json
+      description: Reacts to a post within the desired group.
+      operationId: ReactToGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Client-V1
   /api/group/{groupId}/posts/{postId}/report/abuse:
     put:
       consumes:
@@ -1728,7 +1776,7 @@ paths:
           $ref: '#/definitions/reportAbuseGroupPostRequestBody'
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1910,7 +1958,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -1937,7 +1985,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2119,7 +2167,7 @@ paths:
       operationId: DeleteUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2177,7 +2225,7 @@ paths:
       operationId: LoginUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2333,7 +2381,7 @@ paths:
       operationId: SynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
