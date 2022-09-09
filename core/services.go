@@ -430,31 +430,35 @@ func (app *Application) updatePost(clientID string, current *model.User, post *m
 }
 
 func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
-	post, err := app.storage.FindPost(nil, clientID, &current.ID, groupID, postID, true, false)
-	if err != nil {
-		return fmt.Errorf("error finding post: %v", err)
-	}
-	if post == nil {
-		return fmt.Errorf("missing post for id %s", postID)
-	}
-
-	for _, userID := range post.Reactions[reaction] {
-		if current.ID == userID {
-			err = app.storage.ReactToPost(nil, current.ID, postID, reaction, false)
-			if err != nil {
-				return fmt.Errorf("error removing reaction: %v", err)
-			}
-
-			return nil
+	transaction := func(context storage.TransactionContext) error {
+		post, err := app.storage.FindPost(context, clientID, &current.ID, groupID, postID, true, false)
+		if err != nil {
+			return fmt.Errorf("error finding post: %v", err)
 		}
+		if post == nil {
+			return fmt.Errorf("missing post for id %s", postID)
+		}
+
+		for _, userID := range post.Reactions[reaction] {
+			if current.ID == userID {
+				err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
+				if err != nil {
+					return fmt.Errorf("error removing reaction: %v", err)
+				}
+
+				return nil
+			}
+		}
+
+		err = app.storage.ReactToPost(context, current.ID, postID, reaction, true)
+		if err != nil {
+			return fmt.Errorf("error adding reaction: %v", err)
+		}
+
+		return nil
 	}
 
-	err = app.storage.ReactToPost(nil, current.ID, postID, reaction, true)
-	if err != nil {
-		return fmt.Errorf("error adding reaction: %v", err)
-	}
-
-	return nil
+	return app.storage.PerformTransaction(transaction)
 }
 
 func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
