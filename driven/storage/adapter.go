@@ -787,20 +787,29 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 }
 
 // FindGroup finds group by id and client id
-func (sa *Adapter) FindGroup(context TransactionContext, clientID string, id string) (*model.Group, error) {
-	return sa.FindGroupWithContext(context, clientID, id)
+func (sa *Adapter) FindGroup(context TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error) {
+	return sa.FindGroupWithContext(context, clientID, groupID, userID)
 }
 
 // FindGroupWithContext finds group by id and client id with context
-func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, id string) (*model.Group, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: id},
+func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID}}
 
+	var err error
+	var membership *model.GroupMembership
+	if userID != nil {
+		// find group memberships
+		membership, err = sa.FindGroupMembership(clientID, groupID, *userID)
+	}
+
 	var rec model.Group
-	err := sa.db.groups.FindOneWithContext(context, filter, &rec, nil)
+	err = sa.db.groups.FindOneWithContext(context, filter, &rec, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	rec.CurrentMember = membership
 
 	return &rec, nil
 }
@@ -1138,7 +1147,12 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 // FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 
-	group, errGr := sa.FindGroup(nil, clientID, groupID)
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+
+	group, errGr := sa.FindGroup(nil, clientID, groupID, userID)
 	if group == nil {
 		if errGr != nil {
 			log.Printf("unable to find group with id %s: %s", groupID, errGr)

@@ -17,15 +17,13 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
-
-	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/gorilla/mux"
 )
@@ -65,11 +63,17 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 
 	userGroups := make([]userGroupShortDetail, len(groups))
 	for i, group := range groups {
+
+		status := ""
+		if group.CurrentMember != nil {
+			status = group.CurrentMember.Status
+		}
+
 		ugm := userGroupShortDetail{
 			ID:               group.ID,
 			Title:            group.Title,
 			Privacy:          group.Privacy,
-			MembershipStatus: group.CurrentMember.Status,
+			MembershipStatus: status,
 		}
 
 		userGroups[i] = ugm
@@ -262,20 +266,23 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 	groupStatList := []GroupStat{}
 	if groupsCount > 0 {
 		for _, group := range groups {
-			addedLast24Count := 0
-			for _, member := range group.Members {
-				if time.Now().Unix()-member.DateCreated.Unix() < 24*60*60 {
-					addedLast24Count++
-				}
+			membersCount := 0
+			MembersAddedLast24Hours := 0
+			stats, _ := h.app.Services.GetGroupStats(clientID, group.ID)
+			if stats != nil {
+				membersCount = stats.MemberCount
+				MembersAddedLast24Hours = stats.MembersAddedLast24Hours
 			}
 
 			groupStatList = append(groupStatList, GroupStat{
 				Title:              group.Title,
 				Privacy:            group.Privacy,
 				AuthmanEnabled:     group.AuthmanEnabled,
-				MembersCount:       len(group.Members),
-				MembersAddedLast24: addedLast24Count,
+				MembersCount:       membersCount,
+				MembersAddedLast24: MembersAddedLast24Hours,
 			})
+
+			break
 		}
 	}
 

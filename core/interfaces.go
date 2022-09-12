@@ -142,7 +142,7 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
-	group, err := s.app.storage.FindGroup(nil, clientID, id)
+	group, err := s.app.storage.FindGroup(nil, clientID, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -326,8 +326,8 @@ type Storage interface {
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
 	DeleteGroup(clientID string, id string) error
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
-	FindGroup(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
-	FindGroupWithContext(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
+	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
+	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)

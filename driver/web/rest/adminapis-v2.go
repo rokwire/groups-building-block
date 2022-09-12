@@ -185,7 +185,7 @@ func (h *AdminApisHandler) GetGroupV2(clientID string, current *model.User, w ht
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if err != nil {
 		log.Printf("apis.GetGroupV2() error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

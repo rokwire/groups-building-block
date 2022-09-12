@@ -26,6 +26,13 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 	findOptions := options.Find()
 
 	if filter != nil {
+		groupIDMap := map[string]bool{}
+		if len(filter.GroupIDs) > 0 {
+			for _, groupID := range filter.GroupIDs {
+				groupIDMap[groupID] = true
+			}
+		}
+
 		if filter.MemberUserID == nil && filter.MemberExternalID != nil {
 			var user model.User
 			err := sa.db.users.Find(bson.D{
@@ -39,8 +46,13 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		if userID == nil && filter.MemberUserID == nil && filter.MemberID != nil {
 			membership, _ := sa.FindGroupMembershipByID(clientID, *filter.MemberID)
 			if membership != nil {
+				memberships = model.MembershipCollection{
+					Items: []model.GroupMembership{*membership},
+				}
 				userID = &membership.UserID
-				groupIDs = append(groupIDs, membership.GroupID)
+				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
+					groupIDs = append(groupIDs, membership.GroupID)
+				}
 			}
 		}
 
@@ -54,11 +66,29 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 
 			for _, membership := range memberships.Items {
-				groupIDs = append(groupIDs, membership.GroupID)
+				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
+					groupIDs = append(groupIDs, membership.GroupID)
+				}
 			}
 		}
 
-		if userID != nil {
+		if filter.MemberExternalID != nil {
+			// find group memberships
+			memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
+				ExternalID: filter.MemberExternalID,
+			})
+			if err != nil {
+				return nil, err
+			}
+
+			for _, membership := range memberships.Items {
+				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
+					groupIDs = append(groupIDs, membership.GroupID)
+				}
+			}
+		}
+
+		if userID != nil && (filter.MemberID == nil && filter.MemberUserID == nil && filter.MemberExternalID == nil) {
 			innerOrFilter := []bson.M{
 				{"_id": bson.M{"$in": groupIDs}},
 				{"privacy": bson.M{"$ne": "private"}},
@@ -76,6 +106,12 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			groupFilter = append(groupFilter, orFilter)
 		}
 
+		if len(filter.GroupIDs) > 0 {
+			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": filter.GroupIDs}})
+		}
+		if len(groupIDs) > 0 && (filter.MemberID != nil || filter.MemberUserID != nil || filter.MemberExternalID != nil) {
+			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": groupIDs}})
+		}
 		if filter.Category != nil {
 			groupFilter = append(groupFilter, primitive.E{Key: "category", Value: *filter.Category})
 		}
@@ -111,14 +147,12 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		return nil, err
 	}
 
-	if userID != nil {
-		for index, group := range list {
-			group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
-				return membership.GroupID == group.ID
-			})
-			if group.CurrentMember != nil {
-				list[index] = group
-			}
+	for index, group := range list {
+		group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+			return membership.GroupID == group.ID
+		})
+		if group.CurrentMember != nil {
+			list[index] = group
 		}
 	}
 
@@ -517,6 +551,15 @@ func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*mod
 							bson.D{{"$count", "member_count"}},
 						},
 					},
+					{"members_added_last_24hours",
+						bson.A{
+							bson.D{{"$match", bson.D{
+								{"status", "member"},
+								{"date_created", bson.M{"$gt": time.Now().Add(-24 * time.Hour)}},
+							}}},
+							bson.D{{"$count", "members_added_last_24hours"}},
+						},
+					},
 					{"pending_count",
 						bson.A{
 							bson.D{{"$match", bson.D{{"status", "pending"}}}},
@@ -574,6 +617,16 @@ func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*mod
 							},
 						},
 					},
+					{"members_added_last_24hours",
+						bson.D{
+							{"$arrayElemAt",
+								bson.A{
+									"$members_added_last_24hours.members_added_last_24hours",
+									0,
+								},
+							},
+						},
+					},
 					{"pending_count",
 						bson.D{
 							{"$arrayElemAt",
@@ -617,7 +670,7 @@ func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*mod
 
 	if len(stats) > 0 {
 		stat := stats[0]
-		stat.MemberCount -= stat.AdminsCount
+		//stat.MemberCount -= stat.AdminsCount
 		return &stat, err
 	}
 	return nil, nil

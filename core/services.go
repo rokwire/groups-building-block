@@ -57,7 +57,7 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(nil, clientID, id)
+	group, err := app.storage.FindGroup(nil, clientID, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +167,12 @@ func (app *Application) deleteUser(clientID string, current *model.User) error {
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	// find the group
-	group, err := app.storage.FindGroup(nil, clientID, id)
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+
+	group, err := app.storage.FindGroup(nil, clientID, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +188,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 
 	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
 	if err == nil && membership != nil {
-		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID)
+		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
 		if approve {
 			app.notifications.SendNotification(
@@ -822,7 +827,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, clientID, groupID)
+		group, err = app.storage.FindGroupWithContext(context, clientID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
