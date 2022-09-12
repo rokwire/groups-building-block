@@ -1351,9 +1351,17 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		return
 	}
 
+	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	if err != nil || membership == nil {
+		log.Printf("Membership %s not found - %s\n", membershipID, err.Error())
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	//check if allowed to update
 	group, err := h.app.Services.FindGroupV3(clientID, &model.GroupsFilter{
-		MemberID: &membershipID,
+		MemberUserID: &current.ID,
+		GroupIDs:     []string{membership.GroupID},
 	})
 	if err != nil {
 		log.Println(err.Error())
