@@ -2198,20 +2198,20 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	membership, err := h.app.Services.FindGroupMembership(clientID, groupID, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
+	if membership == nil {
 		log.Printf("there is no a group for the provided group id - %s", groupID)
 		//do not say to much to the user as we do not know if he/she is an admin for the group yet
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
-		log.Printf("%s is not allowed to react to posts for %s", current.Email, group.Title)
+	if !membership.IsAdminOrMember() {
+		log.Printf("%s is not allowed to react to posts for group %s", current.Email, groupID)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
