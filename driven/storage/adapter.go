@@ -1837,19 +1837,14 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 			postMapping[*postID] = list[i]
 		}
 		for _, post := range list {
-			var parentPost *model.Post
-			if post.ParentID != nil {
-				parentID := post.ParentID
-				parentPost = postMapping[*parentID]
-				repliesList := parentPost.Replies
-
-				repliesList = append(repliesList, post)
-				parentPost.Replies = repliesList
-			}
-		}
-		for _, post := range list {
-			if post.ParentID == nil {
-				resultList = append(resultList, post)
+			if post != nil {
+				if post.ParentID != nil {
+					if parentPost, ok := postMapping[*post.ParentID]; ok && parentPost != nil {
+						parentPost.Replies = append(parentPost.Replies, post)
+					}
+				} else {
+					resultList = append(resultList, post)
+				}
 			}
 		}
 	}
