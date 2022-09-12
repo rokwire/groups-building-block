@@ -268,6 +268,9 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 		for _, group := range groups {
 			membersCount := 0
 			MembersAddedLast24Hours := 0
+
+			// TODO Rewrite this method and imnprove performance of the aggregation!!!
+			// This one is just a low performance workaround
 			stats, _ := h.app.Services.GetGroupStats(clientID, group.ID)
 			if stats != nil {
 				membersCount = stats.MemberCount
@@ -281,8 +284,6 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 				MembersCount:       membersCount,
 				MembersAddedLast24: MembersAddedLast24Hours,
 			})
-
-			break
 		}
 	}
 
