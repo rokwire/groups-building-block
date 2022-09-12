@@ -535,7 +535,9 @@ func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*mod
 				bson.D{
 					{"total_count",
 						bson.A{
-							bson.D{{"$match", bson.D{{"_id", bson.D{{"$exists", true}}}}}},
+							bson.D{{"$match", bson.D{
+								{"status", bson.D{{"$in", []string{"member", "admin"}}}},
+							}}},
 							bson.D{{"$count", "total_count"}},
 						},
 					},
