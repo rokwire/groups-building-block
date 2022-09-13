@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Finish the transition process of splitting the group record and membership list on two separate collections [#238](https://github.com/rokwire/groups-building-block/issues/238)
+
+## [1.5.68] - 2022-09-12
+### Fixed
+- Exception on get group posts [#250](https://github.com/rokwire/groups-building-block/issues/250)
+
+## [1.5.67] - 2022-09-12
 ### Added
 - Implement an API that returns a single Post [#244](https://github.com/rokwire/groups-building-block/issues/244)
 - Add reactions to posts [#242](https://github.com/rokwire/groups-building-block/issues/242)
