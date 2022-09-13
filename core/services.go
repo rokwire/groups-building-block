@@ -84,10 +84,6 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) getGroupStats(clientID string, id string) (*model.GroupStats, error) {
-	return app.storage.GetGroupStats(clientID, id)
-}
-
 func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
 	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
 	if err != nil {
