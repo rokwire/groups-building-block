@@ -80,57 +80,54 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 		}
 
 		return members, nil
-	} else {
-		innerMatch := bson.D{
-			{"_id", groupID},
-			{"client_id", clientID},
-		}
-
-		pipeline := bson.A{
-			bson.D{
-				{"$match", innerMatch},
-			},
-			bson.D{{"$unwind", bson.D{{"path", "$members"}}}},
-			bson.D{{"$project", bson.D{{"members", 1}}}},
-		}
-
-		if len(matchFilter) > 0 {
-			pipeline = append(pipeline, bson.D{{"$match", matchFilter}})
-		}
-
-		pipeline = append(pipeline, bson.D{{"$sort", bson.D{
-			{"members.status", 1},
-			{"members.name", 1},
-		}}})
-
-		if filter.Offset != nil {
-			pipeline = append(pipeline, bson.D{{"$skip", *filter.Offset}})
-		}
-		if filter.Limit != nil {
-			pipeline = append(pipeline, bson.D{{"$limit", *filter.Limit}})
-		}
-
-		var list []struct {
-			ID     string       `json:"id" bson:"_id"`
-			Member model.Member `json:"members" bson:"members"`
-		}
-		err = sa.db.groups.Aggregate(pipeline, &list, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		var resultList []model.Member
-		resultLength := len(list)
-		if resultLength > 0 {
-			resultList = make([]model.Member, resultLength)
-			for index, member := range list {
-				resultList[index] = member.Member
-			}
-		}
-		return resultList, nil
+	}
+	innerMatch := bson.D{
+		{"_id", groupID},
+		{"client_id", clientID},
 	}
 
-	return nil, nil
+	pipeline := bson.A{
+		bson.D{
+			{"$match", innerMatch},
+		},
+		bson.D{{"$unwind", bson.D{{"path", "$members"}}}},
+		bson.D{{"$project", bson.D{{"members", 1}}}},
+	}
+
+	if len(matchFilter) > 0 {
+		pipeline = append(pipeline, bson.D{{"$match", matchFilter}})
+	}
+
+	pipeline = append(pipeline, bson.D{{"$sort", bson.D{
+		{"members.status", 1},
+		{"members.name", 1},
+	}}})
+
+	if filter.Offset != nil {
+		pipeline = append(pipeline, bson.D{{"$skip", *filter.Offset}})
+	}
+	if filter.Limit != nil {
+		pipeline = append(pipeline, bson.D{{"$limit", *filter.Limit}})
+	}
+
+	var list []struct {
+		ID     string       `json:"id" bson:"_id"`
+		Member model.Member `json:"members" bson:"members"`
+	}
+	err = sa.db.groups.Aggregate(pipeline, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var resultList []model.Member
+	resultLength := len(list)
+	if resultLength > 0 {
+		resultList = make([]model.Member, resultLength)
+		for index, member := range list {
+			resultList[index] = member.Member
+		}
+	}
+	return resultList, nil
 }
 
 // GetGroupStats Retrieves group stats
