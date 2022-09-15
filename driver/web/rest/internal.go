@@ -113,7 +113,7 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 		return
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, identifier)
+	group, err := h.app.Services.GetGroupEntity(clientID, nil, identifier)
 	if err != nil {
 		log.Printf("Unable to retrieve group with ID '%s': %s", identifier, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -341,7 +341,7 @@ func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseW
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

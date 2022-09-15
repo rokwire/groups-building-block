@@ -195,7 +195,7 @@ func (h *ApisHandler) GetGroupV2(clientID string, current *model.User, w http.Re
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroupEntity(clientID, current, id)
 	if err != nil {
 		log.Printf("apis.GetGroupV2() error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -210,12 +210,21 @@ func (h *ApisHandler) GetGroupV2(clientID string, current *model.User, w http.Re
 			w.Write([]byte("Forbidden"))
 			return
 		}
-		if !group.IsGroupAdminOrMember(current.ID) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
-			log.Printf("apis.GetGroupV2() error - %s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
+		if !group.UsesGroupMemberships && !group.IsGroupAdminOrMember(current.ID) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
+			log.Printf("apis.GetGroupV2() error - %s cannot see %s private group as he/she is not a member or admin", current.Email, group.Title)
 
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte("Forbidden"))
 			return
+		} else if group.UsesGroupMemberships {
+			membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+			if membership == nil || (!membership.IsAdminOrMember() && group.HiddenForSearch) {
+				log.Printf("apis.GetGroupV2() error - %s cannot see  %s private group as he/she is not a member or admin", current.Email, group.Title)
+
+				w.WriteHeader(http.StatusForbidden)
+				w.Write([]byte("Forbidden"))
+				return
+			}
 		}
 	}
 

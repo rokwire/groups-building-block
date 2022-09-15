@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"groups/core/model"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -10,17 +11,24 @@ import (
 
 // GetGroupMembers Gets all group members
 func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error) {
-	innerMatch := bson.D{
-		{"_id", groupID},
-		{"client_id", clientID},
+
+	var groupsAggregation []model.Group
+	var group *model.Group
+	err := sa.db.groups.Aggregate(bson.A{
+		bson.D{{"$match", bson.D{
+			{"_id", groupID},
+			{"client_id", clientID},
+		}}},
+		bson.D{{"$project", bson.D{{"members", 0}}}},
+	}, &groupsAggregation, nil)
+	if err != nil {
+		return nil, err
 	}
 
-	pipeline := bson.A{
-		bson.D{
-			{"$match", innerMatch},
-		},
-		bson.D{{"$unwind", bson.D{{"path", "$members"}}}},
-		bson.D{{"$project", bson.D{{"members", 1}}}},
+	if len(groupsAggregation) > 0 {
+		group = &groupsAggregation[0]
+	} else {
+		return nil, fmt.Errorf("group '%s' not found", groupID)
 	}
 
 	matchFilter := bson.D{}
@@ -45,41 +53,84 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 		matchFilter = append(matchFilter, bson.E{"members.name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
 	}
 
-	if len(matchFilter) > 0 {
-		pipeline = append(pipeline, bson.D{{"$match", matchFilter}})
-	}
+	if group.UsesGroupMemberships {
+		matchFilter = append(matchFilter, bson.E{"client_id", clientID})
 
-	pipeline = append(pipeline, bson.D{{"$sort", bson.D{
-		{"members.status", 1},
-		{"members.name", 1},
-	}}})
-
-	if filter.Offset != nil {
-		pipeline = append(pipeline, bson.D{{"$skip", *filter.Offset}})
-	}
-	if filter.Limit != nil {
-		pipeline = append(pipeline, bson.D{{"$limit", *filter.Limit}})
-	}
-
-	var list []struct {
-		ID     string       `json:"id" bson:"_id"`
-		Member model.Member `json:"members" bson:"members"`
-	}
-	err := sa.db.groups.Aggregate(pipeline, &list, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	var resultList []model.Member
-	resultLength := len(list)
-	if resultLength > 0 {
-		resultList = make([]model.Member, resultLength)
-		for index, member := range list {
-			resultList[index] = member.Member
+		opts := options.Find()
+		opts.Sort = bson.D{
+			{"status", 1},
+			{"name", 1},
 		}
+		if filter.Offset != nil {
+			opts.Skip = filter.Offset
+		}
+		if filter.Limit != nil {
+			opts.Limit = filter.Limit
+		}
+
+		var memberships []model.GroupMembership
+		err := sa.db.groupMemberships.Find(matchFilter, &memberships, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		members := make([]model.Member, len(memberships))
+		for index, membership := range memberships {
+			members[index] = membership.ToMember()
+		}
+
+		return members, nil
+	} else {
+		innerMatch := bson.D{
+			{"_id", groupID},
+			{"client_id", clientID},
+		}
+
+		pipeline := bson.A{
+			bson.D{
+				{"$match", innerMatch},
+			},
+			bson.D{{"$unwind", bson.D{{"path", "$members"}}}},
+			bson.D{{"$project", bson.D{{"members", 1}}}},
+		}
+
+		if len(matchFilter) > 0 {
+			pipeline = append(pipeline, bson.D{{"$match", matchFilter}})
+		}
+
+		pipeline = append(pipeline, bson.D{{"$sort", bson.D{
+			{"members.status", 1},
+			{"members.name", 1},
+		}}})
+
+		if filter.Offset != nil {
+			pipeline = append(pipeline, bson.D{{"$skip", *filter.Offset}})
+		}
+		if filter.Limit != nil {
+			pipeline = append(pipeline, bson.D{{"$limit", *filter.Limit}})
+		}
+
+		var list []struct {
+			ID     string       `json:"id" bson:"_id"`
+			Member model.Member `json:"members" bson:"members"`
+		}
+		err = sa.db.groups.Aggregate(pipeline, &list, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		var resultList []model.Member
+		resultLength := len(list)
+		if resultLength > 0 {
+			resultList = make([]model.Member, resultLength)
+			for index, member := range list {
+				resultList[index] = member.Member
+			}
+		}
+		return resultList, nil
 	}
 
-	return resultList, nil
+	return nil, nil
 }
 
 // GetGroupStats Retrieves group stats
