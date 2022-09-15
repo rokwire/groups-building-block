@@ -31,7 +31,60 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 		return nil, fmt.Errorf("group '%s' not found", groupID)
 	}
 
-	matchFilter := bson.D{}
+	if group.UsesGroupMemberships {
+		membershipFilter := bson.D{
+			{"client_id", clientID},
+			{"group_id", groupID},
+		}
+
+		if filter.ID != nil {
+			membershipFilter = append(membershipFilter, bson.E{"id", *filter.ID})
+		}
+		if filter.UserID != nil {
+			membershipFilter = append(membershipFilter, bson.E{"user_id", *filter.UserID})
+		} else if filter.UserIDs != nil {
+			membershipFilter = append(membershipFilter, bson.E{"user_id", bson.D{{"$in", filter.UserIDs}}})
+		}
+		if filter.NetID != nil {
+			membershipFilter = append(membershipFilter, bson.E{"net_id", *filter.NetID})
+		}
+		if filter.ExternalID != nil {
+			membershipFilter = append(membershipFilter, bson.E{"external_id", *filter.ExternalID})
+		}
+		if filter.Statuses != nil {
+			membershipFilter = append(membershipFilter, bson.E{"status", bson.D{{"$in", filter.Statuses}}})
+		}
+		if filter.Name != nil {
+			membershipFilter = append(membershipFilter, bson.E{"name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
+		}
+
+		opts := options.Find()
+		opts.Sort = bson.D{
+			{"status", 1},
+			{"name", 1},
+		}
+		if filter.Offset != nil {
+			opts.Skip = filter.Offset
+		}
+		if filter.Limit != nil {
+			opts.Limit = filter.Limit
+		}
+
+		var memberships []model.GroupMembership
+		err := sa.db.groupMemberships.Find(membershipFilter, &memberships, opts)
+		if err != nil {
+			return nil, err
+		}
+
+		members := make([]model.Member, len(memberships))
+		for index, membership := range memberships {
+			members[index] = membership.ToMember()
+		}
+
+		return members, nil
+	}
+
+	matchFilter := []bson.E{}
 	if filter.ID != nil {
 		matchFilter = append(matchFilter, bson.E{"members.id", *filter.ID})
 	}
@@ -53,34 +106,6 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 		matchFilter = append(matchFilter, bson.E{"members.name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
 	}
 
-	if group.UsesGroupMemberships {
-		matchFilter = append(matchFilter, bson.E{"client_id", clientID})
-
-		opts := options.Find()
-		opts.Sort = bson.D{
-			{"status", 1},
-			{"name", 1},
-		}
-		if filter.Offset != nil {
-			opts.Skip = filter.Offset
-		}
-		if filter.Limit != nil {
-			opts.Limit = filter.Limit
-		}
-
-		var memberships []model.GroupMembership
-		err := sa.db.groupMemberships.Find(matchFilter, &memberships, opts)
-		if err != nil {
-			return nil, err
-		}
-
-		members := make([]model.Member, len(memberships))
-		for index, membership := range memberships {
-			members[index] = membership.ToMember()
-		}
-
-		return members, nil
-	}
 	innerMatch := bson.D{
 		{"_id", groupID},
 		{"client_id", clientID},
@@ -95,7 +120,7 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 	}
 
 	if len(matchFilter) > 0 {
-		pipeline = append(pipeline, bson.D{{"$match", matchFilter}})
+		pipeline = append(pipeline, bson.D{{"$match", bson.E{"$and", matchFilter}}})
 	}
 
 	pipeline = append(pipeline, bson.D{{"$sort", bson.D{
