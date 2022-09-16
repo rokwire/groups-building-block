@@ -212,30 +212,8 @@ func (h *ApisHandler) GetGroupV2(clientID string, current *model.User, w http.Re
 		return
 	}
 
-	if group.Privacy == "private" {
-		if current == nil || current.IsAnonymous {
-			log.Println("apis.GetGroupV2() error - Anonymous user cannot see the events for a private group")
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
-		if !group.UsesGroupMemberships && !group.IsGroupAdminOrMember(current.ID) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
-			log.Printf("apis.GetGroupV2() error - %s cannot see %s private group as he/she is not a member or admin", current.Email, group.Title)
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		} else if group.UsesGroupMemberships {
-			membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
-			if membership == nil || (!membership.IsAdminOrMember() && group.HiddenForSearch) {
-				log.Printf("apis.GetGroupV2() error - %s cannot see  %s private group as he/she is not a member or admin", current.Email, group.Title)
-
-				w.WriteHeader(http.StatusForbidden)
-				w.Write([]byte("Forbidden"))
-				return
-			}
-		}
+	if !hasGroupMembershipPermission(h.app.Services, w, current, clientID, group) {
+		return
 	}
 
 	groupV2 := group.ToGroupV2(&current.ID)
