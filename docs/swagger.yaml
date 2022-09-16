@@ -1089,13 +1089,30 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
+      - description: Filtering by group's title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: category - filter by category
         in: query
         name: category
         type: string
-      - description: Filtering by group's title - case insensitive
+      - description: privacy - filter by privacy
         in: query
-        name: title
+        name: privacy
+        type: string
+      - description: offset - skip number of records
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      - description: include_hidden - Includes hidden groups if a search by title
+          is performed. Possible value is true. Default false.
+        in: query
+        name: include_hidden
         type: string
       responses:
         "200":
@@ -1134,10 +1151,6 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
       - description: Filtering by group's title (case-insensitive)
         in: query
         name: title
@@ -1157,6 +1170,11 @@ paths:
       - description: limit - limit the result
         in: query
         name: limit
+        type: string
+      - description: include_hidden - Includes hidden groups if a search by title
+          is performed. Possible value is true. Default false.
+        in: query
+        name: include_hidden
         type: string
       responses:
         "200":
@@ -1796,13 +1814,30 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
       - description: Filtering by group's title (case-insensitive)
         in: query
         name: title
+        type: string
+      - description: category - filter by category
+        in: query
+        name: category
+        type: string
+      - description: privacy - filter by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: offset - skip number of records
+        in: query
+        name: offset
+        type: string
+      - description: limit - limit the result
+        in: query
+        name: limit
+        type: string
+      - description: include_hidden - Includes hidden groups if a search by title
+          is performed. Possible value is true. Default false.
+        in: query
+        name: include_hidden
         type: string
       responses:
         "200":
@@ -2238,10 +2273,6 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
       - description: Filtering by group's title (case-insensitive)
         in: query
         name: title
@@ -2261,6 +2292,11 @@ paths:
       - description: limit - limit the result
         in: query
         name: limit
+        type: string
+      - description: include_hidden - Includes hidden groups if a search by title
+          is performed. Possible value is true. Default false.
+        in: query
+        name: include_hidden
         type: string
       responses:
         "200":

@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // GetGroupsV2 gets groups. It can be filtered by category, title and privacy. V2
@@ -15,12 +16,12 @@ import (
 // @Tags Admin-V2
 // @Accept  json
 // @Param APP header string true "APP"
-// @Param category query string false "Category"
 // @Param title query string false "Filtering by group's title (case-insensitive)"
 // @Param category query string false "category - filter by category"
 // @Param privacy query string false "privacy - filter by privacy"
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
+// @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
 // @Success 200 {array} model.GroupV2
 // @Security AppUserAuth
 // @Router /api/admin/v2/groups [get]
@@ -67,7 +68,16 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		order = &orders[0]
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order)
+	var includeHidden *bool
+	hiddens, ok := r.URL.Query()["include_hidden"]
+	if ok && len(hiddens[0]) > 0 {
+		if strings.ToLower(hiddens[0]) == "true" {
+			val := true
+			includeHidden = &val
+		}
+	}
+
+	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
 	if err != nil {
 		log.Printf("apis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

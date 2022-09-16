@@ -20,8 +20,8 @@ func (app *Application) getTODO() error {
 	return nil
 }
 
-func (app *Application) getGroupsUnprotected(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	groups, err := app.storage.FindGroups(clientID, nil, category, privacy, title, offset, limit, order)
+func (app *Application) getGroupsUnprotected(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
+	groups, err := app.storage.FindGroups(clientID, nil, category, privacy, title, offset, limit, order, includeHidden)
 	if err != nil {
 		return nil, err
 	}

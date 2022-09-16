@@ -674,7 +674,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	if current != nil {
 		userID = &current.ID
 	}
-	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -780,7 +780,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 	if current != nil {
 		userID = &current.ID
 	}
-	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -917,7 +917,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 }
 
 // FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 
 	if userID != nil {
@@ -943,10 +943,16 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 		}
 
 		if title != nil {
-			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-				primitive.M{"title": *title},
-				primitive.M{"hidden_for_search": false},
-			}})
+			if includeHidden != nil && *includeHidden {
+				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+					primitive.M{"title": *title},
+				}})
+			} else {
+				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+					primitive.M{"title": *title},
+					primitive.M{"hidden_for_search": false},
+				}})
+			}
 		}
 
 		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
