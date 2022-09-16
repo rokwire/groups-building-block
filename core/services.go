@@ -162,9 +162,9 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 	return nil
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+func (app *Application) getGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, &current.ID, category, privacy, title, offset, limit, order)
+	groups, err := app.storage.FindGroups(clientID, &current.ID, category, privacy, title, offset, limit, order, includeHidden)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +180,7 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 
 func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, nil, nil, nil, nil, nil, nil)
+	groups, err := app.storage.FindGroups(clientID, nil, nil, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		return nil, err
 	}

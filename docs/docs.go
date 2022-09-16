@@ -602,14 +602,38 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title - case insensitive",
-                        "name": "title",
+                        "description": "privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
                         "in": "query"
                     }
                 ],
@@ -670,12 +694,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
@@ -702,6 +720,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "limit - limit the result",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
                         "in": "query"
                     }
                 ],
@@ -1719,14 +1743,38 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
-                        "name": "title",
+                        "description": "privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
                         "in": "query"
                     }
                 ],
@@ -2413,12 +2461,6 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
                         "description": "Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
@@ -2445,6 +2487,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "limit - limit the result",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
                         "in": "query"
                     }
                 ],

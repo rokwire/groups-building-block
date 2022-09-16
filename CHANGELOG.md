@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.69] - 2022-09-16
+### Added
+- Implement additional flag for including hidden groups while searching for group name[#253](https://github.com/rokwire/groups-building-block/issues/253)
+
 ## [1.5.68] - 2022-09-12
 ### Fixed
 - Exception on get group posts [#250](https://github.com/rokwire/groups-building-block/issues/250)
