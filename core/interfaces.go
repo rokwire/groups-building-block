@@ -375,7 +375,7 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
-	FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error)
+	FindGroupMemberships(context storage.TransactionContext, clientID string, groupID string) ([]model.GroupMembership, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
 	CreateMissingGroupMembership(membership *model.GroupMembership) error

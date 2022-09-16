@@ -12,11 +12,11 @@ import (
 )
 
 // FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error) {
+func (sa *Adapter) FindGroupMemberships(context TransactionContext, clientID string, groupID string) ([]model.GroupMembership, error) {
 	filter := bson.M{"client_id": clientID, "group_id": groupID}
 
 	var result []model.GroupMembership
-	err := sa.db.events.Find(filter, &result, nil)
+	err := sa.db.groupMemberships.FindWithContext(context, filter, &result, nil)
 	return result, err
 }
 
