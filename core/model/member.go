@@ -44,6 +44,21 @@ type GroupMembership struct {
 	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
 } //@name GroupMembership
 
+// IsAdminOrMember says if the user is admin or member of the group
+func (m *GroupMembership) IsAdminOrMember() bool {
+	return m.IsMember() || m.IsAdmin()
+}
+
+// IsAdmin says if the user is admin of the group
+func (m *GroupMembership) IsAdmin() bool {
+	return m.Status == "admin"
+}
+
+// IsMember says if the user is member of the group
+func (m *GroupMembership) IsMember() bool {
+	return m.Status == "member"
+}
+
 // ToMember converts the GroupMembership model to the Member model
 func (m GroupMembership) ToMember() Member {
 	status := m.Status

@@ -82,6 +82,8 @@ type Services interface {
 
 	GetSyncConfig(clientID string) (*model.SyncConfig, error)
 	UpdateSyncConfig(config model.SyncConfig) error
+
+	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 }
 
 type servicesImpl struct {
@@ -283,6 +285,10 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
 }
 
+func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
+	return s.app.findGroupMembership(clientID, groupID, userID)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
@@ -369,7 +375,7 @@ type Storage interface {
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
 	DeleteManagedGroupConfig(id string, clientID string) error
 
-	FindGroupMemberships(clientID string, groupID string) ([]model.GroupMembership, error)
+	FindGroupMemberships(context storage.TransactionContext, clientID string, groupID string) ([]model.GroupMembership, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) ([]model.GroupMembership, error)
 	CreateMissingGroupMembership(membership *model.GroupMembership) error

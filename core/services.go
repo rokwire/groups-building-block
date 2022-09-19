@@ -1490,3 +1490,7 @@ func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error
 func (app *Application) updateSyncConfig(config model.SyncConfig) error {
 	return app.storage.SaveSyncConfig(nil, config)
 }
+
+func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
+	return app.storage.FindGroupMembership(clientID, groupID, userID)
+}

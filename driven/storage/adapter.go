@@ -876,6 +876,15 @@ func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID str
 	}
 
 	group := constructGroup(rec)
+
+	if group.UsesGroupMemberships {
+		memberships, _ := sa.FindGroupMemberships(context, clientID, id)
+		for _, membership := range memberships {
+			member := membership.ToMember()
+			group.Members = append(group.Members, member)
+		}
+	}
+
 	return &group, nil
 }
 
@@ -950,7 +959,10 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 			} else {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
 					primitive.M{"title": *title},
-					primitive.M{"hidden_for_search": false},
+					primitive.M{"$or": []primitive.M{
+						primitive.M{"hidden_for_search": false},
+						primitive.M{"hidden_for_search": primitive.M{"$exists": false}},
+					}},
 				}})
 			}
 		}
@@ -2038,7 +2050,6 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 	post.DateCreated = &now
 	post.DateUpdated = &now
 
-	group, err = sa.FindGroup(nil, clientID, post.GroupID)
 	if group != nil && err == nil && group.IsGroupAdminOrMember(current.ID) {
 		name := group.UserNameByID(current.ID) // Workaround due to missing name within the id token
 		post.Creator = model.Creator{
