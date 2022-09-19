@@ -106,21 +106,19 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 		matchFilter = append(matchFilter, bson.E{"members.name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
 	}
 
-	innerMatch := bson.D{
-		{"_id", groupID},
-		{"client_id", clientID},
-	}
-
 	pipeline := bson.A{
 		bson.D{
-			{"$match", innerMatch},
+			{"$match", bson.D{
+				{"_id", groupID},
+				{"client_id", clientID},
+			}},
 		},
 		bson.D{{"$unwind", bson.D{{"path", "$members"}}}},
 		bson.D{{"$project", bson.D{{"members", 1}}}},
 	}
 
 	if len(matchFilter) > 0 {
-		pipeline = append(pipeline, bson.D{{"$match", bson.E{"$and", matchFilter}}})
+		pipeline = append(pipeline, bson.D{{"$match", matchFilter}})
 	}
 
 	pipeline = append(pipeline, bson.D{{"$sort", bson.D{

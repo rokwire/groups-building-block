@@ -959,7 +959,10 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 			} else {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
 					primitive.M{"title": *title},
-					primitive.M{"hidden_for_search": false},
+					primitive.M{"$or": []primitive.M{
+						primitive.M{"hidden_for_search": false},
+						primitive.M{"hidden_for_search": primitive.M{"$exists": false}},
+					}},
 				}})
 			}
 		}
