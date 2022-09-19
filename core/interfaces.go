@@ -32,7 +32,7 @@ type Services interface {
 	GetUserGroupMembershipsByID(id string) ([]*model.Group, error)
 	GetUserGroupMembershipsByExternalID(externalID string) ([]*model.Group, *model.User, error)
 
-	GetGroupEntity(clientID string, current *model.User, id string) (*model.Group, error)
+	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error)
@@ -107,8 +107,8 @@ func (s *servicesImpl) GetUserGroupMembershipsByExternalID(externalID string) ([
 	return s.app.getUserGroupMemberships(externalID, true)
 }
 
-func (s *servicesImpl) GetGroupEntity(clientID string, current *model.User, id string) (*model.Group, error) {
-	return s.app.getGroupEntity(clientID, current, id)
+func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
+	return s.app.getGroupEntity(clientID, id)
 }
 
 func (s *servicesImpl) GetGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
@@ -164,7 +164,7 @@ func (s *servicesImpl) GetGroupMembers(clientID string, current *model.User, gro
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
-	group, err := s.app.storage.FindGroup(nil, nil, clientID, id)
+	group, err := s.app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -332,8 +332,8 @@ type Storage interface {
 	UpdateGroupUsesGroupMemberships(context storage.TransactionContext, clientID string, group *model.Group) error
 	DeleteGroup(clientID string, id string) error
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
-	FindGroup(context storage.TransactionContext, current *model.User, clientID string, id string) (*model.Group, error)
-	FindGroupWithContext(context storage.TransactionContext, current *model.User, clientID string, id string) (*model.Group, error)
+	FindGroup(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
+	FindGroupWithContext(context storage.TransactionContext, clientID string, id string) (*model.Group, error)
 	FindGroupByMembership(clientID string, membershipID string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)

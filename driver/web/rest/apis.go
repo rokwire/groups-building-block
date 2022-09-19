@@ -355,7 +355,7 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, id)
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -790,7 +790,7 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, id)
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -866,7 +866,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1067,7 +1067,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1436,7 +1436,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1498,7 +1498,7 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1593,7 +1593,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1675,7 +1675,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1735,7 +1735,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1810,7 +1810,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, id)
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1891,7 +1891,7 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 	}
 
 	// check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, id)
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1961,7 +1961,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2048,7 +2048,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2134,7 +2134,7 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2215,7 +2215,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2280,7 +2280,7 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, nil, groupID)
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

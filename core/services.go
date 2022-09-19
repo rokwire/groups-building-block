@@ -55,8 +55,8 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) getGroupEntity(clientID string, current *model.User, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(nil, current, clientID, id)
+func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
+	group, err := app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func (app *Application) getGroupEntityByTitle(clientID string, title string) (*m
 }
 
 func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error) {
-	group, err := app.storage.FindGroup(nil, nil, clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err != nil {
 		return false, nil, err
 	}
@@ -231,7 +231,7 @@ func (app *Application) deleteUser(clientID string, current *model.User) error {
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	// find the group
-	group, err := app.storage.FindGroup(nil, nil, clientID, id)
+	group, err := app.storage.FindGroup(nil, clientID, id)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +262,7 @@ func (app *Application) createPendingMember(clientID string, current *model.User
 		return err
 	}
 
-	group, err = app.storage.FindGroup(nil, nil, clientID, group.ID)
+	group, err = app.storage.FindGroup(nil, clientID, group.ID)
 	if err == nil && group != nil {
 		members := group.Members
 		if len(members) > 0 {
@@ -319,7 +319,7 @@ func (app *Application) deletePendingMember(clientID string, current *model.User
 		return err
 	}
 
-	group, err := app.storage.FindGroup(nil, nil, clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -359,7 +359,7 @@ func (app *Application) createMember(clientID string, current *model.User, group
 		return err
 	}
 
-	group, err = app.storage.FindGroup(nil, nil, clientID, group.ID)
+	group, err = app.storage.FindGroup(nil, clientID, group.ID)
 	if err == nil && group != nil {
 		members := group.Members
 		if len(members) > 0 {
@@ -427,7 +427,7 @@ func (app *Application) deleteMember(clientID string, current *model.User, group
 		return err
 	}
 
-	group, err := app.storage.FindGroup(nil, nil, clientID, groupID)
+	group, err := app.storage.FindGroup(nil, clientID, groupID)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -1109,7 +1109,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, nil, clientID, groupID)
+		group, err = app.storage.FindGroupWithContext(context, clientID, groupID)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}

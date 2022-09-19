@@ -861,12 +861,12 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 }
 
 // FindGroup finds group by id and client id
-func (sa *Adapter) FindGroup(context TransactionContext, current *model.User, clientID string, id string) (*model.Group, error) {
-	return sa.FindGroupWithContext(context, current, clientID, id)
+func (sa *Adapter) FindGroup(context TransactionContext, clientID string, id string) (*model.Group, error) {
+	return sa.FindGroupWithContext(context, clientID, id)
 }
 
 // FindGroupWithContext finds group by id and client id with context
-func (sa *Adapter) FindGroupWithContext(context TransactionContext, current *model.User, clientID string, id string) (*model.Group, error) {
+func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, id string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: id},
 		primitive.E{Key: "client_id", Value: clientID}}
 	var rec group
@@ -1119,7 +1119,7 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupIDs []str
 
 // UpdateGroupMembers Updates members for specific group
 func (sa *Adapter) UpdateGroupMembers(clientID string, groupID string, members []model.Member) error {
-	group, err := sa.FindGroup(nil, nil, clientID, groupID)
+	group, err := sa.FindGroup(nil, clientID, groupID)
 	if err != nil {
 		log.Printf("error on find group %s: %s", groupID, err)
 		return err
@@ -1778,7 +1778,7 @@ func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID 
 // FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 
-	group, errGr := sa.FindGroup(nil, nil, clientID, groupID)
+	group, errGr := sa.FindGroup(nil, clientID, groupID)
 	if group == nil {
 		if errGr != nil {
 			log.Printf("unable to find group with id %s: %s", groupID, errGr)
@@ -1907,7 +1907,7 @@ func (sa *Adapter) findPostWithContext(context TransactionContext, clientID stri
 	}
 
 	if !skipMembershipCheck && userID != nil {
-		group, err := sa.FindGroup(context, nil, clientID, groupID)
+		group, err := sa.FindGroup(context, clientID, groupID)
 		if group == nil || err != nil || !group.IsGroupAdminOrMember(*userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -1927,7 +1927,7 @@ func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, g
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: parentID}}
 
 	if !skipMembershipCheck {
-		group, err := sa.FindGroup(nil, nil, clientID, groupID)
+		group, err := sa.FindGroup(nil, clientID, groupID)
 		if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -1955,7 +1955,7 @@ func (sa *Adapter) FindPostsByParentID(clientID string, userID string, groupID s
 	}
 
 	if !skipMembershipCheck {
-		group, err := sa.FindGroup(nil, nil, clientID, groupID)
+		group, err := sa.FindGroup(nil, clientID, groupID)
 		if group == nil || err != nil || !group.IsGroupAdminOrMember(userID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -1996,7 +1996,7 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "top_parent_id", Value: topParentID}}
 
 	if !skipMembershipCheck {
-		group, err := sa.FindGroup(nil, nil, clientID, groupID)
+		group, err := sa.FindGroup(nil, clientID, groupID)
 		if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -2021,7 +2021,7 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 // CreatePost Created a post
 func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 
-	group, err := sa.FindGroup(nil, nil, clientID, post.GroupID)
+	group, err := sa.FindGroup(nil, clientID, post.GroupID)
 	if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
 		return nil, fmt.Errorf("the user is not member or admin of the group")
 	}
@@ -2164,7 +2164,7 @@ func (sa *Adapter) DeletePost(clientID string, userID string, groupID string, po
 }
 
 func (sa *Adapter) deletePost(context TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error {
-	group, _ := sa.FindGroup(context, nil, clientID, groupID)
+	group, _ := sa.FindGroup(context, clientID, groupID)
 	originalPost, _ := sa.FindPost(context, clientID, &userID, groupID, postID, true, !group.IsGroupAdmin(userID))
 	if originalPost == nil {
 		return fmt.Errorf("unable to find post with id (%s) ", postID)
