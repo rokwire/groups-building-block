@@ -552,7 +552,12 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 
-	existingGroups, err := sa.FindGroups(clientID, nil, nil, nil, &group.Title, nil, nil, nil)
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -683,7 +688,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		userID = &current.ID
 	}
 
-	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil)
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -834,8 +839,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 }
 
 // FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-
+func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
 	var err error
 	groupIDs := []string{}
 	var memberships model.MembershipCollection
@@ -859,10 +863,19 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, category *string,
 		}
 
 		if title != nil {
-			innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-				{"title": *title},
-				{"hidden_for_search": false},
-			}})
+			if includeHidden != nil && *includeHidden {
+				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+					primitive.M{"title": *title},
+				}})
+			} else {
+				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
+					primitive.M{"title": *title},
+					primitive.M{"$or": []primitive.M{
+						primitive.M{"hidden_for_search": false},
+						primitive.M{"hidden_for_search": primitive.M{"$exists": false}},
+					}},
+				}})
+			}
 		}
 
 		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
@@ -1395,110 +1408,117 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 // CreatePost Created a post
 func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
 
-	membership, err := sa.FindGroupMembership(clientID, post.GroupID, current.ID)
-	if membership == nil || err != nil || !membership.IsAdminOrMember() {
-		return nil, fmt.Errorf("the user is not member or admin of the group")
-	}
-
-	if post.ClientID == nil { // Always required
-		post.ClientID = &clientID
-	}
-
-	if post.ID == nil { // Always required
-		id := uuid.New().String()
-		post.ID = &id
-	}
-
-	if post.Replies != nil { // This is constructed only for GET all for group
-		post.Replies = nil
-	}
-
-	if post.ParentID != nil {
-		topPost, _ := sa.FindTopPostByParentID(clientID, current, post.GroupID, *post.ParentID, false)
-		if topPost != nil && topPost.ParentID == nil {
-			post.TopParentID = topPost.ID
+	if current != nil && post != nil {
+		membership, err := sa.FindGroupMembership(clientID, post.GroupID, current.ID)
+		if membership == nil || err != nil || !membership.IsAdminOrMember() {
+			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
+
+		if post.ClientID == nil { // Always required
+			post.ClientID = &clientID
+		}
+
+		if post.ID == nil { // Always required
+			id := uuid.New().String()
+			post.ID = &id
+		}
+
+		if post.Replies != nil { // This is constructed only for GET all for group
+			post.Replies = nil
+		}
+
+		if post.ParentID != nil {
+			topPost, _ := sa.FindTopPostByParentID(clientID, current, post.GroupID, *post.ParentID, false)
+			if topPost != nil && topPost.ParentID == nil {
+				post.TopParentID = topPost.ID
+			}
+		}
+
+		now := time.Now()
+		post.DateCreated = &now
+		post.DateUpdated = &now
+		post.Creator = model.Creator{
+			UserID: current.ID,
+			Email:  current.Email,
+			Name:   current.Name,
+		}
+
+		_, err = sa.db.posts.InsertOne(post)
+
+		if err == nil {
+			sa.resetGroupUpdatedDate(clientID, post.GroupID)
+		}
+
+		return post, err
 	}
-
-	now := time.Now()
-	post.DateCreated = &now
-	post.DateUpdated = &now
-	post.Creator = model.Creator{
-		UserID: current.ID,
-		Email:  current.Email,
-		Name:   current.Name,
-	}
-
-	_, err = sa.db.posts.InsertOne(post)
-
-	if err == nil {
-		sa.resetGroupUpdatedDate(clientID, post.GroupID)
-	}
-
-	return post, err
+	return nil, nil
 }
 
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
+	if post != nil {
+		originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, *post.ID, true, true)
+		if originalPost == nil {
+			return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
+		}
+		if originalPost.Creator.UserID != userID {
+			return nil, fmt.Errorf("only creator of the post can update it")
+		}
 
-	originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, *post.ID, true, true)
-	if originalPost == nil {
-		return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
+		if post.ClientID == nil { // Always required
+			post.ClientID = &clientID
+		}
+
+		if post.ID == nil { // Always required
+			return nil, fmt.Errorf("Missing id")
+		}
+
+		now := time.Now()
+		post.DateUpdated = &now
+
+		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "subject", Value: post.Subject},
+				primitive.E{Key: "body", Value: post.Body},
+				primitive.E{Key: "private", Value: post.Private},
+				primitive.E{Key: "use_as_notification", Value: post.UseAsNotification},
+				primitive.E{Key: "is_abuse", Value: post.IsAbuse},
+				primitive.E{Key: "image_url", Value: post.ImageURL},
+				primitive.E{Key: "date_updated", Value: post.DateUpdated},
+				primitive.E{Key: "to_members", Value: post.ToMembersList},
+			},
+			},
+		}
+		_, err := sa.db.posts.UpdateOne(filter, update, nil)
+
+		if err == nil {
+			sa.resetGroupUpdatedDate(clientID, post.GroupID)
+		}
+
+		return post, err
 	}
-	if originalPost.Creator.UserID != userID {
-		return nil, fmt.Errorf("only creator of the post can update it")
-	}
-
-	if post.ClientID == nil { // Always required
-		post.ClientID = &clientID
-	}
-
-	if post.ID == nil { // Always required
-		return nil, fmt.Errorf("Missing id")
-	}
-
-	now := time.Now()
-	post.DateUpdated = &now
-
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
-
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "subject", Value: post.Subject},
-			primitive.E{Key: "body", Value: post.Body},
-			primitive.E{Key: "private", Value: post.Private},
-			primitive.E{Key: "use_as_notification", Value: post.UseAsNotification},
-			primitive.E{Key: "is_abuse", Value: post.IsAbuse},
-			primitive.E{Key: "image_url", Value: post.ImageURL},
-			primitive.E{Key: "date_updated", Value: post.DateUpdated},
-			primitive.E{Key: "to_members", Value: post.ToMembersList},
-		},
-		},
-	}
-	_, err := sa.db.posts.UpdateOne(filter, update, nil)
-
-	if err == nil {
-		sa.resetGroupUpdatedDate(clientID, post.GroupID)
-	}
-
-	return post, err
+	return nil, nil
 }
 
 // ReportPostAsAbuse Report post as abuse
 func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error {
+	if post != nil {
+		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
 
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "is_abuse", Value: true},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			},
+			},
+		}
+		_, err := sa.db.posts.UpdateOne(filter, update, nil)
 
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "is_abuse", Value: true},
-			primitive.E{Key: "date_updated", Value: time.Now()},
-		},
-		},
+		return err
 	}
-	_, err := sa.db.posts.UpdateOne(filter, update, nil)
-
-	return err
+	return nil
 }
 
 // ReactToPost React to a post

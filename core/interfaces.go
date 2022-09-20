@@ -36,7 +36,7 @@ type Services interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
-	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
 	GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
 
@@ -72,6 +72,7 @@ type Services interface {
 	UpdateSyncConfig(config model.SyncConfig) error
 
 	// V3
+	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
 	FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error)
 	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
@@ -117,8 +118,8 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 	return s.app.deleteGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	return s.app.getGroups(clientID, current, category, privacy, title, offset, limit, order)
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
+	return s.app.getGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
 }
 
 func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
@@ -242,6 +243,10 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 
 // V3
 
+func (s *servicesImpl) CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
+	return s.app.checkUserGroupMembershipPermission(clientID, current, groupID)
+}
+
 func (s *servicesImpl) FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error) {
 	return s.app.findGroupV3(clientID, filter)
 }
@@ -288,15 +293,15 @@ func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, gr
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
 }
 
 type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order)
+func (s *administrationImpl) GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
+	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order, includeHidden)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
@@ -328,7 +333,7 @@ type Storage interface {
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
@@ -359,6 +364,8 @@ type Storage interface {
 	// V3
 	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
+
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)

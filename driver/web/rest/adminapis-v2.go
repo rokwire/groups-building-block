@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 // GetGroupsV2 gets groups. It can be filtered by category, title and privacy. V2
@@ -15,12 +16,12 @@ import (
 // @Tags Admin-V2
 // @Accept  json
 // @Param APP header string true "APP"
-// @Param category query string false "Category"
 // @Param title query string false "Filtering by group's title (case-insensitive)"
 // @Param category query string false "category - filter by category"
 // @Param privacy query string false "privacy - filter by privacy"
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
+// @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
 // @Success 200 {array} model.Group
 // @Security AppUserAuth
 // @Router /api/admin/v2/groups [get]
@@ -67,7 +68,16 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		order = &orders[0]
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order)
+	var includeHidden *bool
+	hiddens, ok := r.URL.Query()["include_hidden"]
+	if ok && len(hiddens[0]) > 0 {
+		if strings.ToLower(hiddens[0]) == "true" {
+			val := true
+			includeHidden = &val
+		}
+	}
+
+	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
 	if err != nil {
 		log.Printf("apis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -185,29 +195,10 @@ func (h *AdminApisHandler) GetGroupV2(clientID string, current *model.User, w ht
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroup(clientID, current, id)
-	if err != nil {
-		log.Printf("apis.GetGroupV2() error getting a group - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, id)
+	if group == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
-	}
-
-	if group.Privacy == "private" {
-		if current == nil || current.IsAnonymous {
-			log.Println("apis.GetGroupV2() error - Anonymous user cannot see the events for a private group")
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
-		membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
-		if (membership == nil || !membership.IsAdminOrMember()) && group.HiddenForSearch { // NB: group detail panel needs it for user not belonging to the group
-			log.Printf("apis.GetGroupV2() error - %s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
 	}
 
 	data, err := json.Marshal(group)

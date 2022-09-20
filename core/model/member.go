@@ -20,11 +20,6 @@ import (
 	"time"
 )
 
-///////// V3
-//
-
-/////////
-
 // Member represents group member entity
 type Member struct {
 	ID            string         `json:"id" bson:"id"`

@@ -7,6 +7,28 @@ import (
 	"log"
 )
 
+func (app *Application) checkUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
+	group, err := app.getGroup(clientID, current, groupID)
+	if err != nil {
+		log.Printf("app.checkUserGroupMembershipPermission() error - unable to find group %s - %s", groupID, err)
+		return group, false
+	}
+	if group != nil {
+		if group.Privacy == "private" {
+			if current == nil || current.IsAnonymous {
+				log.Println("app.checkUserGroupMembershipPermission() error - Anonymous user cannot see the events for a private group")
+				return group, false
+			}
+			if group.CurrentMember == nil || (!group.CurrentMember.IsAdminOrMember() && group.HiddenForSearch && !group.CanJoinAutomatically) {
+				log.Printf("app.checkUserGroupMembershipPermission() error - %s cannot see  %s private group as he/she is not a member or admin", current.Email, group.Title)
+				return group, false
+			}
+		}
+		return group, true
+	}
+	return nil, false
+}
+
 func (app *Application) findGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error) {
 	// assume we filter one nd just return the first one. Enough for now
 	groups, err := app.findGroupsV3(clientID, filter)
@@ -22,10 +44,6 @@ func (app *Application) findGroupsV3(clientID string, filter *model.GroupsFilter
 
 func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
 	return app.storage.FindGroupMemberships(clientID, filter)
-}
-
-func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return app.storage.FindGroupMembership(clientID, groupID, userID)
 }
 
 func (app *Application) findGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
