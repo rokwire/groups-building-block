@@ -19,7 +19,8 @@ func (app *Application) checkUserGroupMembershipPermission(clientID string, curr
 				log.Println("app.checkUserGroupMembershipPermission() error - Anonymous user cannot see the events for a private group")
 				return group, false
 			}
-			if group.CurrentMember == nil || (!group.CurrentMember.IsAdminOrMember() && group.HiddenForSearch && !group.CanJoinAutomatically) {
+			if (group.CurrentMember != nil && !group.CurrentMember.IsAdminOrMember() && !group.HiddenForSearch) ||
+				(group.CurrentMember == nil && group.HiddenForSearch) {
 				log.Printf("app.checkUserGroupMembershipPermission() error - %s cannot see  %s private group as he/she is not a member or admin", current.Email, group.Title)
 				return group, false
 			}
