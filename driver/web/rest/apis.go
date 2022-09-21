@@ -887,6 +887,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		UserID:        current.ID,
 		ExternalID:    current.ExternalID,
 		Name:          current.Name,
+		NetID:         current.NetID,
 		Email:         current.Email,
 		MemberAnswers: mAnswers,
 	}
@@ -1001,6 +1002,7 @@ type createMemberRequest struct {
 	UserID        string     `json:"user_id" bson:"user_id"`
 	ExternalID    string     `json:"external_id" bson:"external_id"`
 	Name          string     `json:"name" bson:"name"`
+	NetID         string     `json:"net_id" bson:"net_id"`
 	Email         string     `json:"email" bson:"email"`
 	PhotoURL      string     `json:"photo_url" bson:"photo_url"`
 	Status        string     `json:"status" bson:"status"` //pending, member, admin, rejected
@@ -1091,6 +1093,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		ExternalID:   requestData.ExternalID,
 		Email:        requestData.Email,
 		Name:         requestData.Name,
+		NetID:        requestData.NetID,
 		PhotoURL:     requestData.PhotoURL,
 		Status:       requestData.Status,
 		DateAttended: requestData.DateAttended,

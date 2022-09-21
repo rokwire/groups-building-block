@@ -984,9 +984,7 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, category *stri
 	}
 
 	filter := bson.M{
-		"$or": []bson.M{
-			{"_id": bson.M{"$in": groupIDs}},
-		},
+		"_id":       bson.M{"$in": groupIDs},
 		"client_id": clientID,
 	}
 
