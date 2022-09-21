@@ -77,6 +77,8 @@ definitions:
       privacy:
         description: public or private
         type: string
+      stats:
+        $ref: '#/definitions/GroupStats'
       sync_end_time:
         type: string
       sync_start_time:
@@ -136,12 +138,10 @@ definitions:
     properties:
       authman_enabled:
         type: boolean
-      members_added_last_24:
-        type: integer
-      members_count:
-        type: integer
       privacy:
         type: string
+      stats:
+        $ref: '#/definitions/GroupStats'
       title:
         type: string
     type: object
@@ -153,13 +153,12 @@ definitions:
         type: integer
       member_count:
         type: integer
-      members_added_last_24hours:
-        type: integer
       pending_count:
         type: integer
       rejected_count:
         type: integer
       total_count:
+        description: pending and rejected are excluded
         type: integer
     type: object
   GroupsStats:
@@ -365,6 +364,8 @@ definitions:
           type: object
         type: array
       name:
+        type: string
+      net_id:
         type: string
       photo_url:
         type: string

@@ -2770,6 +2770,9 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
+                "stats": {
+                    "$ref": "#/definitions/GroupStats"
+                },
                 "sync_end_time": {
                     "type": "string"
                 },
@@ -2857,14 +2860,11 @@ const docTemplate = `{
                 "authman_enabled": {
                     "type": "boolean"
                 },
-                "members_added_last_24": {
-                    "type": "integer"
-                },
-                "members_count": {
-                    "type": "integer"
-                },
                 "privacy": {
                     "type": "string"
+                },
+                "stats": {
+                    "$ref": "#/definitions/GroupStats"
                 },
                 "title": {
                     "type": "string"
@@ -2883,9 +2883,6 @@ const docTemplate = `{
                 "member_count": {
                     "type": "integer"
                 },
-                "members_added_last_24hours": {
-                    "type": "integer"
-                },
                 "pending_count": {
                     "type": "integer"
                 },
@@ -2893,6 +2890,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "total_count": {
+                    "description": "pending and rejected are excluded",
                     "type": "integer"
                 }
             }
@@ -3198,6 +3196,9 @@ const docTemplate = `{
                     }
                 },
                 "name": {
+                    "type": "string"
+                },
+                "net_id": {
                     "type": "string"
                 },
                 "photo_url": {
