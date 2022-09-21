@@ -265,21 +265,12 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 	groupStatList := []GroupStat{}
 	if groupsCount > 0 {
 		for _, group := range groups {
-			var stats model.GroupStats
-			if group.Stats != nil {
-				stats = *group.Stats
-			} else {
-				generatedStats, _ := h.app.Services.GetGroupStats(clientID, group.ID)
-				if generatedStats != nil {
-					stats = *generatedStats
-				}
-			}
 
 			groupStatList = append(groupStatList, GroupStat{
 				Title:          group.Title,
 				Privacy:        group.Privacy,
 				AuthmanEnabled: group.AuthmanEnabled,
-				Stats:          stats,
+				Stats:          group.Stats,
 			})
 		}
 	}

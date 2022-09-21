@@ -277,14 +277,20 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 		return
 	}
 
-	stats, err := h.app.Services.GetGroupStats(clientID, groupID)
+	group, err := h.app.Services.GetGroup(clientID, current, groupID)
 	if err != nil {
+		log.Printf("error getting group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if group == nil {
 		log.Printf("error getting group stats - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	data, err := json.Marshal(stats)
+	data, err := json.Marshal(group.Stats)
 	if err != nil {
 		log.Println("Error on marshal the group stats")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
