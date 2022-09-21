@@ -698,18 +698,13 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 	}
 
 	// transaction
-	err = sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
+	err = sa.PerformTransaction(func(context TransactionContext) error {
+		_, err = sa.db.groups.UpdateOneWithContext(
+			context,
+			bson.D{primitive.E{Key: "_id", Value: group.ID},
+				primitive.E{Key: "client_id", Value: clientID},
+			}, updateOperation, nil)
 		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		filter := bson.D{primitive.E{Key: "_id", Value: group.ID},
-			primitive.E{Key: "client_id", Value: clientID}}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, updateOperation, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
 			return err
 		}
 
@@ -718,9 +713,8 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 				if membership.ID == "" {
 					membership.ID = uuid.NewString()
 					membership.DateCreated = time.Now()
-					_, err = sa.db.groupMemberships.InsertOneWithContext(sessionContext, membership)
+					_, err = sa.db.groupMemberships.InsertOneWithContext(context, membership)
 					if err != nil {
-						abortTransaction(sessionContext)
 						return err
 					}
 				} else {
@@ -728,66 +722,68 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 						primitive.E{Key: "_id", Value: group.ID},
 						primitive.E{Key: "client_id", Value: clientID},
 					}
-					err = sa.db.groupMemberships.ReplaceOneWithContext(sessionContext, filter, membership, nil)
+					err = sa.db.groupMemberships.ReplaceOneWithContext(context, filter, membership, nil)
 					if err != nil {
-						abortTransaction(sessionContext)
 						return err
 					}
 				}
 			}
-		}
-
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
 		}
 		return nil
 	})
 	if err != nil {
 		return utils.NewServerError()
 	}
+
 	return nil
 }
 
 // DeleteGroup deletes a group.
 func (sa *Adapter) DeleteGroup(clientID string, id string) error {
-	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
+	err := sa.PerformTransaction(func(context TransactionContext) error {
+
+		// 1. delete mapped group events
+		_, err := sa.db.events.DeleteManyWithContext(context, bson.D{
+			primitive.E{Key: "group_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID},
+		}, nil)
 		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
 			return err
 		}
 
-		//1. delete mapped group events
-		eventFilter := bson.D{primitive.E{Key: "group_id", Value: id}, primitive.E{Key: "client_id", Value: clientID}}
-		_, err = sa.db.events.DeleteOne(eventFilter, nil)
+		// 2. delete mapped group posts
+		_, err = sa.db.posts.DeleteManyWithContext(context, bson.D{
+			primitive.E{Key: "group_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID},
+		}, nil)
 		if err != nil {
-			abortTransaction(sessionContext)
 			return err
 		}
 
-		//2. delete the group
-		filter := bson.D{primitive.E{Key: "_id", Value: id}, primitive.E{Key: "client_id", Value: clientID}}
-		_, err = sa.db.groups.DeleteOne(filter, nil)
+		// 3. delete mapped group memberships
+		_, err = sa.db.groupMemberships.DeleteManyWithContext(context, bson.D{
+			primitive.E{Key: "group_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID},
+		}, nil)
 		if err != nil {
-			abortTransaction(sessionContext)
 			return err
 		}
 
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
+		// 4. delete the group
+		_, err = sa.db.groups.DeleteOneWithContext(context, bson.D{
+			primitive.E{Key: "_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID},
+		}, nil)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
+
 		return nil
 	})
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -1071,59 +1067,62 @@ func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string, 
 		ToMembersList: toMemberList,
 		Creator:       creator,
 	}
-	_, err := sa.db.events.InsertOne(event)
-	if err != nil {
-		return nil, err
-	}
 
-	if err == nil {
-		sa.resetGroupUpdatedDate(clientID, groupID)
-	}
+	err := sa.PerformTransaction(func(context TransactionContext) error {
+		_, err := sa.db.events.InsertOne(event)
+		if err != nil {
+			return err
+		}
+
+		return sa.resetGroupState(nil, clientID, groupID, true, false)
+	})
 
 	return &event, err
 }
 
 // UpdateEvent updates a group event
 func (sa *Adapter) UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error {
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.D{
+			primitive.E{Key: "event_id", Value: eventID},
+			primitive.E{Key: "group_id", Value: groupID},
+			primitive.E{Key: "client_id", Value: clientID},
+		}
+		change := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "date_updated", Value: time.Now()},
+				primitive.E{Key: "to_members", Value: toMemberList},
+			}},
+		}
+		_, err := sa.db.events.UpdateOneWithContext(context, filter, change, nil)
+		if err == nil {
+			return err
+		}
 
-	filter := bson.D{
-		primitive.E{Key: "event_id", Value: eventID},
-		primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID},
-	}
-	change := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "date_updated", Value: time.Now()},
-			primitive.E{Key: "to_members", Value: toMemberList},
-		}},
-	}
-	_, err := sa.db.events.UpdateOne(filter, change, nil)
-	if err == nil {
-		sa.resetGroupUpdatedDate(clientID, groupID)
-	}
-	return err
+		return sa.resetGroupState(context, clientID, groupID, true, false)
+	})
 }
 
 // DeleteEvent deletes a group event
 func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) error {
-	filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
-		primitive.E{Key: "group_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID}}
-	result, err := sa.db.events.DeleteOne(filter, nil)
-	if err != nil {
-		return err
-	}
-	if result == nil {
-		return errors.New("result is nil for event with event id " + eventID)
-	}
-	deletedCount := result.DeletedCount
-	if deletedCount != 1 {
-		return errors.New("error occured while deleting an event with event id " + eventID)
-	}
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.D{primitive.E{Key: "event_id", Value: eventID},
+			primitive.E{Key: "group_id", Value: groupID},
+			primitive.E{Key: "client_id", Value: clientID}}
+		result, err := sa.db.events.DeleteOneWithContext(context, filter, nil)
+		if err != nil {
+			return err
+		}
+		if result == nil {
+			return errors.New("result is nil for event with event id " + eventID)
+		}
+		deletedCount := result.DeletedCount
+		if deletedCount != 1 {
+			return errors.New("error occured while deleting an event with event id " + eventID)
+		}
 
-	sa.resetGroupUpdatedDate(clientID, groupID)
-
-	return nil
+		return sa.resetGroupState(context, clientID, groupID, true, false)
+	})
 }
 
 func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID string) (*int, error) {
@@ -1443,10 +1442,21 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 			Name:   current.Name,
 		}
 
-		_, err = sa.db.posts.InsertOne(post)
+		err = sa.PerformTransaction(func(context TransactionContext) error {
+			_, err := sa.db.posts.InsertOneWithContext(context, post)
+			if err != nil {
+				return err
+			}
 
-		if err == nil {
-			sa.resetGroupUpdatedDate(clientID, post.GroupID)
+			err = sa.resetGroupState(context, clientID, post.GroupID, true, false)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
 
 		return post, err
@@ -1491,10 +1501,17 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 			},
 			},
 		}
-		_, err := sa.db.posts.UpdateOne(filter, update, nil)
 
-		if err == nil {
-			sa.resetGroupUpdatedDate(clientID, post.GroupID)
+		err := sa.PerformTransaction(func(context TransactionContext) error {
+			_, err := sa.db.posts.UpdateOneWithContext(context, filter, update, nil)
+			if err != nil {
+				return err
+			}
+
+			return sa.resetGroupState(context, clientID, post.GroupID, true, false)
+		})
+		if err != nil {
+			return nil, err
 		}
 
 		return post, err
@@ -1579,55 +1596,48 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 		}
 	}
 
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
 
-	_, err = sa.db.posts.DeleteOne(filter, nil)
+		_, err = sa.db.posts.DeleteOneWithContext(context, filter, nil)
+		if err != nil {
+			return err
+		}
 
-	if err == nil {
-		sa.resetGroupUpdatedDate(clientID, groupID)
-	}
-
-	return err
+		return sa.resetGroupState(context, clientID, groupID, true, false)
+	})
 }
 
-// resetGroupUpdatedDate set the updated date to the current date time (now)
-func (sa *Adapter) resetGroupUpdatedDate(clientID string, id string) error {
-	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
+// resetGroupState set the updated date to the current date time (now)
+func (sa *Adapter) resetGroupState(context TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error {
 
-		// update the group
-		filter := bson.D{
-			primitive.E{Key: "_id", Value: id},
-			primitive.E{Key: "client_id", Value: clientID},
-		}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "date_updated", Value: time.Now()},
-			}},
-		}
-		_, err = sa.db.groups.UpdateOneWithContext(sessionContext, filter, update, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
+	innerUpdate := bson.D{}
 
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
+	if resetStats {
+		stats, err := sa.GetGroupMembershipStats(context, clientID, id)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
-		return nil
-	})
-	if err != nil {
-		return err
+		if stats != nil {
+			innerUpdate = append(innerUpdate, primitive.E{Key: "stats", Value: stats})
+		}
 	}
-	return nil
+
+	if resetUpdateDate {
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: time.Now()})
+	}
+
+	// update the group
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: id},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: innerUpdate},
+	}
+
+	_, err := sa.db.groups.UpdateOneWithContext(context, filter, update, nil)
+	return err
 }
 
 // FindAuthmanGroups finds all groups that are associated with Authman

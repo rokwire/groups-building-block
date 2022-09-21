@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Finish the transition process of splitting the group record and membership list on two separate collections [#238](https://github.com/rokwire/groups-building-block/issues/238)
+- Store group stats [#227](https://github.com/rokwire/groups-building-block/issues/227)
+
 ## [1.5.70] - 2022-09-19
 ### Fixed
 - Fix inconsistent mix of memberships between the groups & group_membership collections [#252](https://github.com/rokwire/groups-building-block/issues/252)

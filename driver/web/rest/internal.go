@@ -239,11 +239,10 @@ type GroupsStats struct {
 
 // GroupStat wrapper for single group stat
 type GroupStat struct {
-	Title              string `json:"title"`
-	Privacy            string `json:"privacy"`
-	AuthmanEnabled     bool   `json:"authman_enabled"`
-	MembersCount       int    `json:"members_count"`
-	MembersAddedLast24 int    `json:"members_added_last_24"`
+	Title          string           `json:"title"`
+	Privacy        string           `json:"privacy"`
+	AuthmanEnabled bool             `json:"authman_enabled"`
+	Stats          model.GroupStats `json:"stats"`
 } // @name GroupStat
 
 // GroupStats Retrieve group stats
@@ -266,23 +265,21 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 	groupStatList := []GroupStat{}
 	if groupsCount > 0 {
 		for _, group := range groups {
-			membersCount := 0
-			MembersAddedLast24Hours := 0
-
-			// TODO Rewrite this method and imnprove performance of the aggregation!!!
-			// This one is just a low performance workaround
-			stats, _ := h.app.Services.GetGroupStats(clientID, group.ID)
-			if stats != nil {
-				membersCount = stats.MemberCount
-				MembersAddedLast24Hours = stats.MembersAddedLast24Hours
+			var stats model.GroupStats
+			if group.Stats != nil {
+				stats = *group.Stats
+			} else {
+				generatedStats, _ := h.app.Services.GetGroupStats(clientID, group.ID)
+				if generatedStats != nil {
+					stats = *generatedStats
+				}
 			}
 
 			groupStatList = append(groupStatList, GroupStat{
-				Title:              group.Title,
-				Privacy:            group.Privacy,
-				AuthmanEnabled:     group.AuthmanEnabled,
-				MembersCount:       membersCount,
-				MembersAddedLast24: MembersAddedLast24Hours,
+				Title:          group.Title,
+				Privacy:        group.Privacy,
+				AuthmanEnabled: group.AuthmanEnabled,
+				Stats:          stats,
 			})
 		}
 	}

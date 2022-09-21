@@ -143,14 +143,7 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
-	group, err := s.app.storage.FindGroup(nil, clientID, id, nil)
-	if err != nil {
-		return nil, err
-	}
-	if group == nil {
-		return &model.GroupStats{}, nil
-	}
-	return s.app.storage.GetGroupMembershipStats(clientID, id)
+	return s.app.storage.GetGroupMembershipStats(nil, clientID, id)
 }
 
 func (s *servicesImpl) ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
@@ -380,7 +373,7 @@ type Storage interface {
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error)
 
-	GetGroupMembershipStats(clientID string, groupID string) (*model.GroupStats, error)
+	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 }
 
 type storageListenerImpl struct {

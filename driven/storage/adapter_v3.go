@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
 	"groups/core/model"
 	"log"
 	"time"
@@ -290,7 +289,14 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 		membership.GroupID = group.ID
 		membership.DateCreated = time.Now().UTC()
 
-		_, err = sa.db.groupMemberships.InsertOne(membership)
+		err = sa.PerformTransaction(func(context TransactionContext) error {
+			_, err := sa.db.groupMemberships.InsertOneWithContext(context, membership)
+			if err != nil {
+				return err
+			}
+
+			return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+		})
 		if err != nil {
 			return err
 		}
@@ -327,14 +333,21 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 		update["sync_id"] = *syncID
 	}
 
-	onInsert := bson.M{"_id": uuid.NewString(), "member_answers": memberAnswers, "date_created": now}
-
-	upsert := true
-	returnDoc := options.After
-	opts := options.FindOneAndUpdateOptions{Upsert: &upsert, ReturnDocument: &returnDoc}
-
 	var result model.GroupMembership
-	err := sa.db.groupMemberships.FindOneAndUpdate(filter, bson.M{"$set": update, "$setOnInsert": onInsert}, &result, &opts)
+	err := sa.PerformTransaction(func(context TransactionContext) error {
+		onInsert := bson.M{"_id": uuid.NewString(), "member_answers": memberAnswers, "date_created": now}
+
+		upsert := true
+		returnDoc := options.After
+		opts := options.FindOneAndUpdateOptions{Upsert: &upsert, ReturnDocument: &returnDoc}
+
+		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, bson.M{"$set": update, "$setOnInsert": onInsert}, &result, &opts)
+		if err != nil {
+			return err
+		}
+
+		return sa.resetGroupState(context, clientID, groupID, true, true)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -345,13 +358,13 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 // CreateMembershipUnchecked Created a member to a group
 func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
 	if group != nil {
-		membership, err := sa.FindGroupMembership(clientID, group.ID, current.ID)
-		if err != nil || membership == nil || !membership.IsAdmin() {
+		existingMembership, err := sa.FindGroupMembership(clientID, group.ID, current.ID)
+		if err != nil || existingMembership == nil || !existingMembership.IsAdmin() {
 			log.Printf("error: storage.CreateMembershipUnchecked() - current user is not admin of the group")
 			return fmt.Errorf("current user is not admin of the group")
 		}
 
-		existingMembership, _ := sa.FindGroupMembership(clientID, group.ID, membership.UserID)
+		existingMembership, _ = sa.FindGroupMembership(clientID, group.ID, membership.UserID)
 		if existingMembership != nil {
 			log.Printf("error: storage.CreateMembershipUnchecked() - member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, membership.UserID)
@@ -374,7 +387,14 @@ func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.Use
 		membership.DateCreated = time.Now()
 		membership.MemberAnswers = group.CreateMembershipEmptyAnswers()
 
-		_, err = sa.db.groupMemberships.InsertOne(membership)
+		sa.PerformTransaction(func(context TransactionContext) error {
+			_, err := sa.db.groupMemberships.InsertOne(membership)
+			if err != nil {
+				return err
+			}
+
+			return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+		})
 		if err != nil {
 			return err
 		}
@@ -386,56 +406,64 @@ func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.Use
 
 // ApplyMembershipApproval applies a membership approval
 func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		status := "rejected"
+		if approve {
+			status = "member"
+		}
 
-	status := "rejected"
-	if approve {
-		status = "member"
-	}
+		var membership model.GroupMembership
+		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "status", Value: status},
+				primitive.E{Key: "reject_reason", Value: rejectReason},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			},
+			},
+		}
+		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
+		if err != nil {
+			return err
+		}
 
-	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "status", Value: status},
-			primitive.E{Key: "reject_reason", Value: rejectReason},
-			primitive.E{Key: "date_updated", Value: time.Now()},
-		},
-		},
-	}
-	_, err := sa.db.groupMemberships.UpdateOne(filter, update, nil)
-	return err
+		return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+	})
 }
 
 // UpdateMembership updates a membership
 func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-	update := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "status", Value: membership.Status},
-			primitive.E{Key: "reject_reason", Value: membership.RejectReason},
-			primitive.E{Key: "date_attended", Value: membership.DateAttended},
-			primitive.E{Key: "date_updated", Value: time.Now()},
-		},
-		},
-	}
-	_, err := sa.db.groupMemberships.UpdateOne(filter, update, nil)
-	return err
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "status", Value: membership.Status},
+				primitive.E{Key: "reject_reason", Value: membership.RejectReason},
+				primitive.E{Key: "date_attended", Value: membership.DateAttended},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			},
+			},
+		}
+		var membership model.GroupMembership
+		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
+		if err != nil {
+			return err
+		}
+
+		return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+	})
+
 }
 
 // DeleteMembership deletes a member membership from a specific group
 func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID string) error {
 
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		currentMembership, _ := sa.FindGroupMembershipWithContext(sessionContext, clientID, groupID, userID)
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		currentMembership, _ := sa.FindGroupMembershipWithContext(context, clientID, groupID, userID)
 		if currentMembership != nil {
 
 			if currentMembership.IsAdmin() {
-				adminMemberships, _ := sa.FindGroupMembershipsWithContext(sessionContext, clientID, model.MembershipFilter{
+				adminMemberships, _ := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 					GroupIDs: []string{groupID},
 					Statuses: []string{"admin"},
 				})
@@ -450,56 +478,66 @@ func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID stri
 				primitive.E{Key: "user_id", Value: userID},
 				primitive.E{Key: "client_id", Value: clientID},
 			}
-			_, err := sa.db.groupMemberships.DeleteOneWithContext(sessionContext, filter, nil)
+			_, err := sa.db.groupMemberships.DeleteOneWithContext(context, filter, nil)
 			if err != nil {
-				abortTransaction(sessionContext)
 				log.Printf("error deleting membership - %s", err)
 				return err
 			}
-		}
-
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
+			return sa.resetGroupState(context, clientID, groupID, true, true)
 		}
 		return nil
 	})
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 // DeleteMembershipByID deletes a membership by ID
 func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, membershipID string) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-	_, err := sa.db.groupMemberships.DeleteOne(filter, nil)
-	return err
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		membership, err := sa.FindGroupMembershipByID(clientID, membershipID)
+		if err != nil || membership == nil {
+			return fmt.Errorf("membership %s not found", membershipID)
+		}
+
+		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
+		_, err = sa.db.groupMemberships.DeleteManyWithContext(context, filter, nil)
+		if err != nil {
+			return err
+		}
+
+		return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+	})
 }
 
 // DeleteUnsyncedGroupMemberships deletes group memberships that do not exist in the latest sync
 func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error) {
-	filter := bson.M{"client_id": clientID, "group_id": groupID, "sync_id": bson.M{"$ne": syncID}}
-	if admin != nil {
-		if *admin {
-			filter["admin"] = true
-		} else {
-			filter["admin"] = bson.M{"$ne": true}
+	var deletedCount int64 = 0
+	err := sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.M{"client_id": clientID, "group_id": groupID, "sync_id": bson.M{"$ne": syncID}}
+		if admin != nil {
+			if *admin {
+				filter["admin"] = true
+			} else {
+				filter["admin"] = bson.M{"$ne": true}
+			}
 		}
-	}
 
-	result, err := sa.db.groupMemberships.DeleteMany(filter, nil)
-	if err != nil {
-		return 0, err
-	}
+		result, err := sa.db.groupMemberships.DeleteMany(filter, nil)
+		if err != nil {
+			return err
+		}
 
-	deletedCount := result.DeletedCount
-	return deletedCount, nil
+		deletedCount = result.DeletedCount
+		if deletedCount > 0 {
+			return sa.resetGroupState(context, clientID, groupID, true, true)
+		}
+
+		return nil
+	})
+	return deletedCount, err
 }
 
 // UpdateGroupSyncTimes updates a group uses group membership
 func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, clientID string, group *model.Group) error {
+
 	filter := bson.D{primitive.E{Key: "_id", Value: group.ID}, primitive.E{Key: "client_id", Value: clientID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
@@ -520,7 +558,7 @@ func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, clientID str
 }
 
 // GetGroupMembershipStats Retrieves group membership stats
-func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*model.GroupStats, error) {
+func (sa Adapter) GetGroupMembershipStats(context TransactionContext, clientID string, groupID string) (*model.GroupStats, error) {
 	pipeline := bson.A{
 		bson.D{{"$match", bson.D{
 			{"group_id", groupID},
@@ -661,14 +699,13 @@ func (sa Adapter) GetGroupMembershipStats(clientID string, groupID string) (*mod
 	}
 
 	var stats []model.GroupStats
-	err := sa.db.groupMemberships.Aggregate(pipeline, &stats, nil)
+	err := sa.db.groupMemberships.AggregateWithContext(context, pipeline, &stats, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if len(stats) > 0 {
 		stat := stats[0]
-		//stat.MemberCount -= stat.AdminsCount
 		return &stat, err
 	}
 	return nil, nil

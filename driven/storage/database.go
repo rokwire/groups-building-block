@@ -766,10 +766,37 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 				return err
 			}
 
+			_, err = groups.UpdateManyWithContext(sessionContext, bson.D{}, bson.D{
+				{"$set", bson.D{
+					{"stats", model.GroupStats{}},
+				}},
+			}, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+
 			for _, group := range migrationGroup {
 				log.Printf("Start migrating '%s' group", group.Title)
 				memberships := []interface{}{}
+				stats := model.GroupStats{}
 				for _, member := range group.Members {
+					if member.Status == "pending" {
+						stats.PendingCount++
+					} else if member.Status == "rejected" {
+						stats.RejectedCount++
+					} else if member.Status == "member" {
+						stats.TotalCount++
+						stats.MemberCount++
+					} else if member.Status == "admin" {
+						stats.TotalCount++
+						stats.AdminsCount++
+					}
+
+					if member.DateAttended != nil {
+						stats.AttendanceCount++
+					}
+
 					memberships = append(memberships, member.ToGroupMembership(group.ClientID, group.ID))
 				}
 
@@ -779,18 +806,20 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 					return err
 				}
 
-				_, err = groups.UpdateManyWithContext(sessionContext, bson.D{
+				_, err = groups.UpdateOneWithContext(sessionContext, bson.D{
 					{"client_id", group.ClientID},
 					{"_id", group.ID},
 				}, bson.D{
 					{"$set", bson.D{
 						{"members", nil},
+						{"stats", stats},
 					}},
 				}, nil)
 				if err != nil {
 					abortTransaction(sessionContext)
 					return err
 				}
+
 				log.Printf("Grouop '%s' has been migrated successfull", group.Title)
 			}
 
