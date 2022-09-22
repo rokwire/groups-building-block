@@ -87,24 +87,6 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 		}
 
-		if len(groupIDs) > 0 {
-			innerOrFilter := []bson.M{
-				{"_id": bson.M{"$in": groupIDs}},
-				{"privacy": bson.M{"$ne": "private"}},
-			}
-
-			if filter.Title != nil {
-				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					{"title": *filter.Title},
-					{"hidden_for_search": false},
-				}})
-			}
-
-			orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
-
-			groupFilter = append(groupFilter, orFilter)
-		}
-
 		if len(filter.GroupIDs) > 0 {
 			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": filter.GroupIDs}})
 		}
