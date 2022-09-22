@@ -73,7 +73,6 @@ type Services interface {
 
 	// V3
 	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
-	FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error)
 	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
@@ -238,10 +237,6 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 
 func (s *servicesImpl) CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
 	return s.app.checkUserGroupMembershipPermission(clientID, current, groupID)
-}
-
-func (s *servicesImpl) FindGroupV3(clientID string, filter *model.GroupsFilter) (*model.Group, error) {
-	return s.app.findGroupV3(clientID, filter)
 }
 
 func (s *servicesImpl) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {

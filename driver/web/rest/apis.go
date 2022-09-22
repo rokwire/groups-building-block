@@ -1199,11 +1199,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.FindGroupV3(clientID, &model.GroupsFilter{
-		MemberUserID: &current.ID,
-		GroupIDs:     []string{membership.GroupID},
-	})
-
+	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1361,10 +1357,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.FindGroupV3(clientID, &model.GroupsFilter{
-		MemberUserID: &current.ID,
-		GroupIDs:     []string{membership.GroupID},
-	})
+	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

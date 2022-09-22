@@ -28,6 +28,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		groupIDMap := map[string]bool{}
 		if len(filter.GroupIDs) > 0 {
 			for _, groupID := range filter.GroupIDs {
+				groupIDs = append(groupIDs, groupID)
 				groupIDMap[groupID] = true
 			}
 		}
@@ -49,8 +50,9 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 					Items: []model.GroupMembership{*membership},
 				}
 				userID = &membership.UserID
-				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
+				if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
 					groupIDs = append(groupIDs, membership.GroupID)
+					groupIDMap[membership.GroupID] = true
 				}
 			}
 		}
@@ -65,8 +67,9 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 
 			for _, membership := range memberships.Items {
-				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
+				if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
 					groupIDs = append(groupIDs, membership.GroupID)
+					groupIDMap[membership.GroupID] = true
 				}
 			}
 		}
@@ -82,15 +85,15 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 
 			for _, membership := range memberships.Items {
 				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
-					groupIDs = append(groupIDs, membership.GroupID)
+					if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
+						groupIDs = append(groupIDs, membership.GroupID)
+						groupIDMap[membership.GroupID] = true
+					}
 				}
 			}
 		}
 
-		if len(filter.GroupIDs) > 0 {
-			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": filter.GroupIDs}})
-		}
-		if len(groupIDs) > 0 && (filter.MemberID != nil || filter.MemberUserID != nil || filter.MemberExternalID != nil) {
+		if len(groupIDs) > 0 {
 			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": groupIDs}})
 		}
 		if filter.Category != nil {
