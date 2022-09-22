@@ -125,7 +125,7 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 		}
 	}
 
-	err := app.storage.CreateMembershipUnchecked(clientID, current, group, membership)
+	err := app.storage.CreateMembership(clientID, current, group, membership)
 	if err != nil {
 		return err
 	}

@@ -340,30 +340,30 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 	return &result, nil
 }
 
-// CreateMembershipUnchecked Created a member to a group
-func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
+// CreateMembership Created a member to a group
+func (sa *Adapter) CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
 	if group != nil {
 
 		if len(membership.UserID) == 0 && len(membership.ExternalID) == 0 {
-			log.Printf("error: storage.CreateMembershipUnchecked() - expected user_id or external_id")
+			log.Printf("error: storage.CreateMembership() - expected user_id or external_id")
 			return fmt.Errorf("expected user_id or external_id")
 		}
-		
+
 		existingMembership, err := sa.FindGroupMembership(clientID, group.ID, current.ID)
 		if err != nil || existingMembership == nil || !existingMembership.IsAdmin() {
-			log.Printf("error: storage.CreateMembershipUnchecked() - current user is not admin of the group")
+			log.Printf("error: storage.CreateMembership() - current user is not admin of the group")
 			return fmt.Errorf("current user is not admin of the group")
 		}
 
 		existingMembership, _ = sa.FindGroupMembership(clientID, group.ID, membership.UserID)
 		if existingMembership != nil {
-			log.Printf("error: storage.CreateMembershipUnchecked() - member of group '%s' with user id %s already exists", group.Title, membership.UserID)
+			log.Printf("error: storage.CreateMembership() - member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 		}
 
 		existingMembership, _ = sa.FindGroupMembership(clientID, group.ID, membership.ExternalID)
 		if existingMembership != nil {
-			log.Printf("error: storage.CreateMembershipUnchecked() - member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
+			log.Printf("error: storage.CreateMembership() - member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
 			return fmt.Errorf("member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
 		}
 

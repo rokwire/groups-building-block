@@ -360,7 +360,7 @@ type Storage interface {
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error)
 
-	CreateMembershipUnchecked(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
+	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
 	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error

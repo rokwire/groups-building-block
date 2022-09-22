@@ -1049,7 +1049,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	}
 
 	if len(requestData.UserID) == 0 && len(requestData.ExternalID) == 0 {
-		log.Printf("error: api.CreateMembershipUnchecked() - expected user_id or external_id")
+		log.Printf("error: api.CreateMember() - expected user_id or external_id")
 		http.Error(w, "expected user_id or external_id", http.StatusBadRequest)
 		return
 	}
@@ -1059,7 +1059,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 			requestData.Status == "admin" ||
 			requestData.Status == "rejected" ||
 			requestData.Status == "pending") {
-		log.Printf("error: api.CreateMembershipUnchecked() - expected status with possible value (member, admin, rejected, pending)")
+		log.Printf("error: api.CreateMember() - expected status with possible value (member, admin, rejected, pending)")
 		http.Error(w, "expected status with possible value (member, admin, rejected, pending)", http.StatusBadRequest)
 		return
 	} else if requestData.Status == "" {
@@ -1074,14 +1074,14 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		return
 	}
 	if group == nil {
-		log.Printf("error: api.CreateMembershipUnchecked() - there is no a group for the provided id - %s", groupID)
+		log.Printf("error: api.CreateMember() - there is no a group for the provided id - %s", groupID)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
 	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdmin() {
-		log.Printf("error: api.CreateMembershipUnchecked() - %s is not allowed to create group member", current.Email)
+		log.Printf("error: api.CreateMember() - %s is not allowed to create group member", current.Email)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 		return
