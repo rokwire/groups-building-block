@@ -16,7 +16,7 @@ import (
 
 // FindGroupsV3 finds groups with filter
 func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
-	groupIDs := []string{}
+	var groupIDs []string
 	var err error
 	var userID *string
 	var memberships model.MembershipCollection
@@ -87,7 +87,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 		}
 
-		if userID != nil && (filter.MemberID == nil && filter.MemberUserID == nil && filter.MemberExternalID == nil) {
+		if len(groupIDs) > 0 {
 			innerOrFilter := []bson.M{
 				{"_id": bson.M{"$in": groupIDs}},
 				{"privacy": bson.M{"$ne": "private"}},
@@ -168,7 +168,7 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 
 	if filter.ID == nil && len(filter.GroupIDs) == 0 && filter.UserID == nil && filter.ExternalID == nil && filter.Name == nil {
 		log.Print("The memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
-		return model.MembershipCollection{}, fmt.Errorf("The memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
+		return model.MembershipCollection{}, fmt.Errorf("the memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
 	}
 
 	matchFilter := bson.D{
@@ -387,7 +387,7 @@ func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.Use
 		membership.DateCreated = time.Now()
 		membership.MemberAnswers = group.CreateMembershipEmptyAnswers()
 
-		sa.PerformTransaction(func(context TransactionContext) error {
+		return sa.PerformTransaction(func(context TransactionContext) error {
 			_, err := sa.db.groupMemberships.InsertOne(membership)
 			if err != nil {
 				return err
@@ -395,10 +395,6 @@ func (sa *Adapter) CreateMembershipUnchecked(clientID string, current *model.Use
 
 			return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
 		})
-		if err != nil {
-			return err
-		}
-
 	}
 
 	return nil

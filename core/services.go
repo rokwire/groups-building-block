@@ -186,12 +186,10 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
 		if approve {
+
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					notifications.Recipient{
-						UserID: membership.UserID,
-						Name:   membership.Name,
-					},
+					membership.ToNotificationRecipient(),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -207,10 +205,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		} else {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					notifications.Recipient{
-						UserID: membership.UserID,
-						Name:   membership.Name,
-					},
+					membership.ToNotificationRecipient(),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),

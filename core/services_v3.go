@@ -76,10 +76,7 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 		if len(adminMemberships.Items) > 0 {
 			recipients := []notifications.Recipient{}
 			for _, admin := range adminMemberships.Items {
-				recipients = append(recipients, notifications.Recipient{
-					UserID: admin.UserID,
-					Name:   admin.Name,
-				})
+				recipients = append(recipients, admin.ToNotificationRecipient())
 			}
 			if len(recipients) > 0 {
 				topic := "group.invitations"
@@ -121,23 +118,19 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 
 func (app *Application) createMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
 
-	if (membership.UserID == "" && membership.ExternalID != "") ||
-		(membership.UserID != "" && membership.ExternalID == "") {
-		if membership.ExternalID == "" {
-			user, err := app.storage.FindUser(clientID, membership.UserID, false)
-			if err == nil && user != nil {
-				membership.ApplyFromUserIfEmpty(user)
-			} else {
-				log.Printf("error app.createMembership() - unable to find user: %s", err)
-			}
+	if membership.UserID != "" {
+		user, err := app.storage.FindUser(clientID, membership.UserID, false)
+		if err == nil && user != nil {
+			membership.ApplyFromUserIfEmpty(user)
+		} else {
+			log.Printf("error app.createMembership() - unable to find user: %s", err)
 		}
-		if membership.UserID == "" {
-			user, err := app.storage.FindUser(clientID, membership.ExternalID, true)
-			if err == nil && user != nil {
-				membership.ApplyFromUserIfEmpty(user)
-			} else {
-				log.Printf("error app.createMembership() - unable to find user: %s", err)
-			}
+	} else if membership.ExternalID != "" {
+		user, err := app.storage.FindUser(clientID, membership.ExternalID, true)
+		if err == nil && user != nil {
+			membership.ApplyFromUserIfEmpty(user)
+		} else {
+			log.Printf("error app.createMembership() - unable to find user: %s", err)
 		}
 	}
 
@@ -154,10 +147,7 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 		recipients := []notifications.Recipient{}
 		for _, adminMember := range memberships.Items {
 			if adminMember.UserID != current.ID {
-				recipients = append(recipients, notifications.Recipient{
-					UserID: adminMember.UserID,
-					Name:   adminMember.Name,
-				})
+				recipients = append(recipients, adminMember.ToNotificationRecipient())
 			}
 		}
 

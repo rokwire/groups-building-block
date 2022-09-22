@@ -285,8 +285,8 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 	}
 
 	if group == nil {
-		log.Printf("error getting group stats - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("error getting group stats")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
