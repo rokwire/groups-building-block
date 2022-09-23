@@ -2,8 +2,9 @@ package storage
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"groups/core/model"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -147,7 +148,12 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 	if resultLength > 0 {
 		resultList = make([]model.Member, resultLength)
 		for index, member := range list {
-			resultList[index] = member.Member
+			if group.Privacy != "public" {
+				resultList[index] = member.Member
+			} else {
+
+				resultList[index] = constructPublicMember(&member.Member)
+			}
 		}
 	}
 	return resultList, nil

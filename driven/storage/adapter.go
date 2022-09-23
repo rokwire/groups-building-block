@@ -2547,6 +2547,30 @@ func constructMember(member member) model.Member {
 	}
 }
 
+func constructPublicMember(member *model.Member) model.Member {
+	id := member.ID
+	userID := member.UserID
+	netID := member.NetID
+	name := member.Name
+	photoURL := member.PhotoURL
+	status := member.Status
+	rejectReason := member.RejectReason
+	dateCreated := member.DateCreated
+	dateUpdated := member.DateUpdated
+	dateAttended := member.DateAttended
+
+	memberAnswers := make([]model.MemberAnswer, len(member.MemberAnswers))
+	for i, current := range member.MemberAnswers {
+		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
+	}
+
+	publicMember := model.Member{ID: id, UserID: userID, NetID: netID, Name: name, PhotoURL: photoURL,
+		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
+		DateAttended: dateAttended}
+	return publicMember
+
+}
+
 type storageListener struct {
 	adapter *Adapter
 	DefaultListenerImpl
