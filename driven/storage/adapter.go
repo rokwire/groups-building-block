@@ -2509,7 +2509,12 @@ func constructGroup(gr group) model.Group {
 
 	members := make([]model.Member, len(gr.Members))
 	for i, current := range gr.Members {
-		members[i] = constructMember(current)
+		if gr.Privacy != "public" {
+			members[i] = constructMember(current)
+		} else {
+			members[i] = constructPublicMemberFromStorage(current)
+		}
+
 	}
 
 	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,
@@ -2568,7 +2573,29 @@ func constructPublicMember(member *model.Member) model.Member {
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
 		DateAttended: dateAttended}
 	return publicMember
+}
 
+func constructPublicMemberFromStorage(member member) model.Member {
+	id := member.ID
+	userID := member.UserID
+	netID := member.NetID
+	name := member.Name
+	photoURL := member.PhotoURL
+	status := member.Status
+	rejectReason := member.RejectReason
+	dateCreated := member.DateCreated
+	dateUpdated := member.DateUpdated
+	dateAttended := member.DateAttended
+
+	memberAnswers := make([]model.MemberAnswer, len(member.MemberAnswers))
+	for i, current := range member.MemberAnswers {
+		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
+	}
+
+	publicMember := model.Member{ID: id, UserID: userID, NetID: netID, Name: name, PhotoURL: photoURL,
+		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
+		DateAttended: dateAttended}
+	return publicMember
 }
 
 type storageListener struct {
