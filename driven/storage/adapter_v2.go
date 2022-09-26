@@ -2,8 +2,9 @@ package storage
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"groups/core/model"
+
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -78,7 +79,11 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 
 		members := make([]model.Member, len(memberships))
 		for index, membership := range memberships {
-			members[index] = membership.ToMember()
+			if group.Privacy == "public" {
+				members[index] = membership.ToPublicMember()
+			} else {
+				members[index] = membership.ToMember()
+			}
 		}
 
 		return members, nil
@@ -147,7 +152,11 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 	if resultLength > 0 {
 		resultList = make([]model.Member, resultLength)
 		for index, member := range list {
-			resultList[index] = member.Member
+			if group.Privacy == "public" {
+				resultList[index] = constructPublicMember(&member.Member)
+			} else {
+				resultList[index] = member.Member
+			}
 		}
 	}
 	return resultList, nil

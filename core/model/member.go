@@ -82,6 +82,27 @@ func (m GroupMembership) ToMember() Member {
 	}
 }
 
+// ToPublicMember converts to public member (hide external id & email)
+func (m GroupMembership) ToPublicMember() Member {
+	status := m.Status
+	if m.Admin {
+		status = "admin"
+	}
+	return Member{
+		ID:            m.ID,
+		UserID:        m.UserID,
+		Name:          m.Name,
+		NetID:         m.NetID,
+		PhotoURL:      m.PhotoURL,
+		Status:        status,
+		RejectReason:  m.RejectReason,
+		MemberAnswers: m.MemberAnswers,
+		DateCreated:   m.DateCreated,
+		DateUpdated:   m.DateUpdated,
+		DateAttended:  m.DateAttended,
+	}
+}
+
 /////////
 
 // Member represents group member entity
