@@ -2509,12 +2509,11 @@ func constructGroup(gr group) model.Group {
 
 	members := make([]model.Member, len(gr.Members))
 	for i, current := range gr.Members {
-		if gr.Privacy != "public" {
-			members[i] = constructMember(current)
-		} else {
+		if gr.Privacy == "public" {
 			members[i] = constructPublicMemberFromStorage(current)
+		} else {
+			members[i] = constructMember(current)
 		}
-
 	}
 
 	return model.Group{ID: id, ClientID: clientID, Category: category, Title: title, Privacy: privacy,

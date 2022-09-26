@@ -79,12 +79,11 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 
 		members := make([]model.Member, len(memberships))
 		for index, membership := range memberships {
-			if group.Privacy != "public" {
-				members[index] = membership.ToMember()
-			} else {
+			if group.Privacy == "public" {
 				members[index] = membership.ToPublicMember()
+			} else {
+				members[index] = membership.ToMember()
 			}
-
 		}
 
 		return members, nil
@@ -153,10 +152,10 @@ func (sa Adapter) GetGroupMembers(clientID string, groupID string, filter *model
 	if resultLength > 0 {
 		resultList = make([]model.Member, resultLength)
 		for index, member := range list {
-			if group.Privacy != "public" {
-				resultList[index] = member.Member
-			} else {
+			if group.Privacy == "public" {
 				resultList[index] = constructPublicMember(&member.Member)
+			} else {
+				resultList[index] = member.Member
 			}
 		}
 	}

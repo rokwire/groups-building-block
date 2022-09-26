@@ -82,6 +82,7 @@ func (m GroupMembership) ToMember() Member {
 	}
 }
 
+// ToPublicMember converts to public member (hide external id & email)
 func (m GroupMembership) ToPublicMember() Member {
 	status := m.Status
 	if m.Admin {
