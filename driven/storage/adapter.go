@@ -2554,8 +2554,16 @@ func constructMember(member member) model.Member {
 func constructPublicMember(member *model.Member) model.Member {
 	id := member.ID
 	userID := member.UserID
+	externalID := member.ExternalID
+	if externalID != "" {
+		externalID = "*********"
+	}
 	netID := member.NetID
 	name := member.Name
+	email := member.Email
+	if email != "" {
+		email = "*********"
+	}
 	photoURL := member.PhotoURL
 	status := member.Status
 	rejectReason := member.RejectReason
@@ -2568,7 +2576,7 @@ func constructPublicMember(member *model.Member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	publicMember := model.Member{ID: id, UserID: userID, NetID: netID, Name: name, PhotoURL: photoURL,
+	publicMember := model.Member{ID: id, UserID: userID, ExternalID: externalID, NetID: netID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
 		DateAttended: dateAttended}
 	return publicMember
@@ -2577,8 +2585,16 @@ func constructPublicMember(member *model.Member) model.Member {
 func constructPublicMemberFromStorage(member member) model.Member {
 	id := member.ID
 	userID := member.UserID
+	externalID := member.ExternalID
+	if externalID != "" {
+		externalID = "*********"
+	}
 	netID := member.NetID
 	name := member.Name
+	email := member.Email
+	if email != "" {
+		email = "*********"
+	}
 	photoURL := member.PhotoURL
 	status := member.Status
 	rejectReason := member.RejectReason
@@ -2591,7 +2607,7 @@ func constructPublicMemberFromStorage(member member) model.Member {
 		memberAnswers[i] = model.MemberAnswer{Question: current.Question, Answer: current.Answer}
 	}
 
-	publicMember := model.Member{ID: id, UserID: userID, NetID: netID, Name: name, PhotoURL: photoURL,
+	publicMember := model.Member{ID: id, UserID: userID, ExternalID: externalID, NetID: netID, Name: name, Email: email, PhotoURL: photoURL,
 		Status: status, RejectReason: rejectReason, DateCreated: dateCreated, DateUpdated: dateUpdated, MemberAnswers: memberAnswers,
 		DateAttended: dateAttended}
 	return publicMember
