@@ -240,23 +240,6 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 	w.Write(data)
 }
 
-// LoginUser Logs in the user and refactor the user record and linked data if need
-// @Description Logs in the user and refactor the user record and linked data if need
-// @ID AdminLoginUser
-// @Tags Admin-V1
-// @Success 200
-// @Security AppUserAuth
-// @Router /api/admin/user/login [get]
-func (h *AdminApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.LoginUser(clientID, current)
-	if err != nil {
-		log.Printf("error getting user groups - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
 // GetGroupStats Retrieves stats for a group by id
 // @Description Retrieves stats for a group by id
 // @ID AdminGetGroupStats
