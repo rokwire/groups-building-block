@@ -18,7 +18,6 @@ import (
 func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
 	var groupIDs []string
 	var err error
-	var userID *string
 	var memberships model.MembershipCollection
 
 	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
@@ -33,50 +32,12 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 		}
 
-		if filter.MemberUserID == nil && filter.MemberExternalID != nil {
-			var user model.User
-			err := sa.db.users.Find(bson.D{
-				{"client_id", clientID},
-				{"external_id", filter.MemberExternalID},
-			}, &user, nil)
-			if err != nil {
-				userID = &user.ID
-			}
-		}
-		if userID == nil && filter.MemberUserID == nil && filter.MemberID != nil {
-			membership, _ := sa.FindGroupMembershipByID(clientID, *filter.MemberID)
-			if membership != nil {
-				memberships = model.MembershipCollection{
-					Items: []model.GroupMembership{*membership},
-				}
-				userID = &membership.UserID
-				if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
-					groupIDs = append(groupIDs, membership.GroupID)
-					groupIDMap[membership.GroupID] = true
-				}
-			}
-		}
-
-		if filter.MemberUserID != nil {
+		// Credits to Ryan Oberlander suggest
+		if filter.MemberUserID != nil || filter.MemberID != nil || filter.MemberExternalID != nil {
 			// find group memberships
 			memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
-				UserID: filter.MemberUserID,
-			})
-			if err != nil {
-				return nil, err
-			}
-
-			for _, membership := range memberships.Items {
-				if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
-					groupIDs = append(groupIDs, membership.GroupID)
-					groupIDMap[membership.GroupID] = true
-				}
-			}
-		}
-
-		if filter.MemberExternalID != nil {
-			// find group memberships
-			memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
+				ID:         filter.MemberID,
+				UserID:     filter.MemberUserID,
 				ExternalID: filter.MemberExternalID,
 			})
 			if err != nil {
@@ -84,11 +45,9 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 
 			for _, membership := range memberships.Items {
-				if len(groupIDMap) == 0 || groupIDMap[membership.GroupID] {
-					if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
-						groupIDs = append(groupIDs, membership.GroupID)
-						groupIDMap[membership.GroupID] = true
-					}
+				if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
+					groupIDs = append(groupIDs, membership.GroupID)
+					groupIDMap[membership.GroupID] = true
 				}
 			}
 		}
