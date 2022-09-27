@@ -258,161 +258,53 @@ func (sa *Adapter) FindUsers(clientID string, id []string, external bool) ([]mod
 // LoginUser Login a user's and refactor legacy record if need
 func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 
-	legacyUser, _ := sa.FindUser(clientID, current.ExternalID, true)
-
 	now := time.Now()
 
 	//TODO: Do we still need this migration?
 	//TODO: If so, handle group_memberships
 	//TODO: NEED TO HANDLE ADMINS AND APP USERS SEPARATELY. CURRENTLY THIS IS MIGRATING ADMINS BACK AND FORTH
 	// transaction
-	err := sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		if legacyUser != nil && legacyUser.ID != current.ID {
-			if legacyUser != nil {
-				// delete the old user
-				filter := bson.D{primitive.E{Key: "_id", Value: legacyUser.ID}, primitive.E{Key: "client_id", Value: clientID}}
-				_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
-				if err != nil {
-					log.Printf("error deleting user - %s", err)
-					abortTransaction(sessionContext)
-					return err
-				}
-			}
-
-			// insert the new user
-			coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email, Name: current.Name,
-				ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
-			_, err = sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
-			if err != nil {
-				log.Printf("error inserting user - %s", err)
-				abortTransaction(sessionContext)
-				return err
-			}
-
-			if legacyUser != nil {
-				// Guess it may use $or but didnt managed to succeed with two positional arguments
-				// 1.1 update all user's groups
-				filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.user_id", Value: legacyUser.ID}}
-				update := bson.D{
-					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "members.$.user_id", Value: current.ID},
-						primitive.E{Key: "members.$.date_updated", Value: now},
-					}},
-				}
-				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
-				if err != nil {
-					log.Printf("error updating groups - %s", err)
-					abortTransaction(sessionContext)
-					return err
-				}
-
-				// 1.2 update all user's groups again for the email
-				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "members.email", Value: legacyUser.Email}}
-				update = bson.D{
-					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "members.$.email", Value: legacyUser.Email},
-						primitive.E{Key: "members.$.user_id", Value: current.ID},
-						primitive.E{Key: "members.$.date_updated", Value: now},
-					}},
-				}
-				_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
-				if err != nil {
-					log.Printf("error updating groups - %s", err)
-					abortTransaction(sessionContext)
-					return err
-				}
-
-				// 1.3. update all user's posts
-				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "member.user_id", Value: current.ID}}
-				update = bson.D{
-					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "member.user_id", Value: current.ID},
-					}},
-				}
-				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
-				if err != nil {
-					log.Printf("error updating posts - %s", err)
-					abortTransaction(sessionContext)
-					return err
-				}
-
-				// 1.4. update all user's posts again but for the email
-				filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "member.email", Value: legacyUser.Email}}
-				update = bson.D{
-					primitive.E{Key: "$set", Value: bson.D{
-						primitive.E{Key: "member.email", Value: legacyUser.Email},
-						primitive.E{Key: "member.user_id", Value: current.ID},
-						primitive.E{Key: "member.date_updated", Value: now},
-					}},
-				}
-				_, err = sa.db.posts.UpdateManyWithContext(sessionContext, filter, update, nil)
-				if err != nil {
-					log.Printf("error updating posts - %s", err)
-					abortTransaction(sessionContext)
-					return err
-				}
-			}
-		} else {
-			coreUser, _ := sa.FindUser(clientID, current.ID, false)
-			if coreUser == nil {
-				coreUser := model.User{ID: current.ID, ClientID: clientID, Email: current.Email, Name: current.Name,
-					ExternalID: current.ExternalID, DateCreated: now, DateUpdated: &now, IsCoreUser: true}
-
-				_, err := sa.db.users.InsertOneWithContext(sessionContext, &coreUser)
-				if err != nil {
-					abortTransaction(sessionContext)
-					log.Printf("error inserting user - %s", err)
-					return fmt.Errorf("error inserting user - %s", err)
-				}
-			}
-		}
-
+	err := sa.PerformTransaction(func(context TransactionContext) error {
 		if current.IsCoreUser {
 			// Repopulate and keep sync of external_id & user_id. Part 1
 			filter := bson.D{
 				primitive.E{Key: "client_id", Value: clientID},
-				primitive.E{Key: "members.external_id", Value: current.ExternalID},
+				primitive.E{Key: "external_id", Value: current.ExternalID},
 			}
 			update := bson.D{
 				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "members.$.name", Value: current.Name},
-					primitive.E{Key: "members.$.email", Value: current.Email},
-					primitive.E{Key: "members.$.user_id", Value: current.ID},
-					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
-					primitive.E{Key: "members.$.net_id", Value: current.NetID},
-					primitive.E{Key: "members.$.date_updated", Value: now},
+					primitive.E{Key: "name", Value: current.Name},
+					primitive.E{Key: "email", Value: current.Email},
+					primitive.E{Key: "user_id", Value: current.ID},
+					primitive.E{Key: "external_id", Value: current.ExternalID},
+					primitive.E{Key: "net_id", Value: current.NetID},
+					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
-			_, err := sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+			_, err := sa.db.groupMemberships.UpdateManyWithContext(context, filter, update, nil)
 			if err != nil {
-				log.Printf("error updating dummy member records for user(%s | %s) Part 1: %s", current.ID, current.ExternalID, err)
+				log.Printf("error updating dummy membership records for user(%s | %s) Part 1: %s", current.ID, current.ExternalID, err)
 				return err
 			}
 
 			// Repopulate and keep sync of external_id & user_id. Part 2
 			filter = bson.D{
 				primitive.E{Key: "client_id", Value: clientID},
-				primitive.E{Key: "members.user_id", Value: current.ID},
+				primitive.E{Key: "user_id", Value: current.ID},
 			}
 			update = bson.D{
 				primitive.E{Key: "$set", Value: bson.D{
-					primitive.E{Key: "members.$.name", Value: current.Name},
-					primitive.E{Key: "members.$.email", Value: current.Email},
-					primitive.E{Key: "members.$.user_id", Value: current.ID},
-					primitive.E{Key: "members.$.external_id", Value: current.ExternalID},
-					primitive.E{Key: "members.$.net_id", Value: current.NetID},
-					primitive.E{Key: "members.$.date_updated", Value: now},
+					primitive.E{Key: "name", Value: current.Name},
+					primitive.E{Key: "email", Value: current.Email},
+					primitive.E{Key: "user_id", Value: current.ID},
+					primitive.E{Key: "external_id", Value: current.ExternalID},
+					primitive.E{Key: "net_id", Value: current.NetID},
+					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
-			_, err = sa.db.groups.UpdateManyWithContext(sessionContext, filter, update, nil)
+			_, err = sa.db.groupMemberships.UpdateManyWithContext(context, filter, update, nil)
 			if err != nil {
-				log.Printf("error updating dummy member records for user(%s | %s) Part 2: %s", current.ID, current.ExternalID, err)
+				log.Printf("error updating dummy membership records for user(%s | %s) Part 2: %s", current.ID, current.ExternalID, err)
 				return err
 			}
 
@@ -431,26 +323,18 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "date_updated", Value: now},
 				}},
 			}
-			_, err = sa.db.users.UpdateOneWithContext(sessionContext, filter, update, nil)
+			_, err = sa.db.users.UpdateOneWithContext(context, filter, update, nil)
 			if err != nil {
 				log.Printf("error updating user(%s | %s) Part 3: %s", current.ID, current.ExternalID, err)
 				return err
 			}
 		}
 
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
 		return nil
 	})
-
 	if err != nil {
 		return utils.NewServerError()
 	}
-
 	return nil
 }
 
