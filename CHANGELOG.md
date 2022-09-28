@@ -6,12 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Fixed
-- Fix Group Members [#261](https://github.com/rokwire/groups-building-block/issues/261)
-
+-  Returning the empty strings for the privacy(public) group members response [#261](https://github.com/rokwire/groups-building-block/issues/261)
 
 ## [1.5.72] - 2022-09-27
 ### Fixed
-- Returning the empty strings for the privacy(public) group members response [#259](https://github.com/rokwire/groups-building-block/issues/259)
+- Fix Get Group Members [#259](https://github.com/rokwire/groups-building-block/issues/259)
 
 ## [1.5.71] - 2022-09-26
 ### Addend
