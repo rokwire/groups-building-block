@@ -91,10 +91,8 @@ func (m GroupMembership) ToPublicMember() Member {
 	return Member{
 		ID:            m.ID,
 		UserID:        m.UserID,
-		ExternalID:    m.ExternalID,
 		Name:          m.Name,
 		NetID:         m.NetID,
-		Email:         m.Email,
 		PhotoURL:      m.PhotoURL,
 		Status:        status,
 		RejectReason:  m.RejectReason,
