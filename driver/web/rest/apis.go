@@ -150,6 +150,12 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
+	if requestData.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
+		log.Printf("Only managed_group_admin could create a managed group")
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
@@ -264,6 +270,12 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
+		log.Printf("Only managed_group_admin could update a managed group")
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
 
