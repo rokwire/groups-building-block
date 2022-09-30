@@ -370,27 +370,31 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
 	if group == nil {
 		log.Printf("there is no a group for the provided id - %s", id)
 		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
 	if !group.IsGroupAdmin(current.ID) {
 		log.Printf("%s is not allowed to update a group", current.Email)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
 
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
+	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
+		log.Printf("Only managed_group_admin could update a managed group")
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
 
 	err = h.app.Services.DeleteGroup(clientID, current, id)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
 

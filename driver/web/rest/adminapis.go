@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"groups/core"
 	"groups/core/model"
+	"groups/utils"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -383,7 +384,19 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	err := h.app.Services.DeleteGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
+		return
+	}
+	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
+		log.Printf("Only managed_group_admin could update a managed group")
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
+	err = h.app.Services.DeleteGroup(clientID, current, id)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
