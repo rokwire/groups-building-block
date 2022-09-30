@@ -6,17 +6,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.5.74] - 2022-09-30
+### Added
+- Allow editing of a managed group only if managed_group_admin permission presents for the user [#263](https://github.com/rokwire/groups-building-block/issues/263)
 
 ## [1.5.73] - 2022-09-28
 ### Fixed
--  Returning the empty strings for the privacy(public) group members response [#261](https://github.com/rokwire/groups-building-block/issues/261)
+- Returning the empty strings for the privacy(public) group members response [#261](https://github.com/rokwire/groups-building-block/issues/261)
 
 ## [1.5.72] - 2022-09-27
 ### Fixed
 - Fix Get Group Members [#259](https://github.com/rokwire/groups-building-block/issues/259)
 
 ## [1.5.71] - 2022-09-26
-### Addend
+### Added
 - Set privacy members dependence [#257](https://github.com/rokwire/groups-building-block/issues/257)
 
 ## [1.5.70] - 2022-09-19

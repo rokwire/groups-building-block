@@ -255,14 +255,14 @@ func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKe
 ////////////////////////////////////
 
 type userData struct {
-	UIuceduUIN        *string   `json:"uiucedu_uin"`
-	Sub               *string   `json:"sub"`
-	Aud               *string   `json:"aud"`
-	Email             *string   `json:"email"`
-	Name              *string   `json:"name"`
-	Uin               *string   `json:"uin"`
-	NetID             *string   `json:"net_id"`
-	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
+	UIuceduUIN  *string  `json:"uiucedu_uin"`
+	Sub         *string  `json:"sub"`
+	Aud         *string  `json:"aud"`
+	Email       *string  `json:"email"`
+	Name        *string  `json:"name"`
+	Uin         *string  `json:"uin"`
+	NetID       *string  `json:"net_id"`
+	Permissions []string `json:"uiucedu_is_member_of"`
 }
 
 ////////////////////////////////////
@@ -333,7 +333,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
-				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID, NetID: netID}
+				Permissions: permissions, UIuceduUIN: &claims.UID, NetID: netID}
 			isCoreUser = true
 			isAnonymous = claims.Anonymous
 		}
@@ -423,8 +423,11 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	if data.NetID != nil {
 		netID = *data.NetID
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, NetID: netID,
-		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous}
+	return &model.User{
+		ID: userID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
+		Permissions: data.Permissions,
+	}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
@@ -505,7 +508,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
-				UIuceduIsMemberOf: &permissions, UIuceduUIN: &claims.UID}
+				Permissions: permissions, UIuceduUIN: &claims.UID}
 			isCoreUser = true
 		}
 	}
@@ -540,7 +543,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		act := r.Method   // the operation that the user performs on the resource.
 
 		hasAccess := false
-		for _, s := range *data.UIuceduIsMemberOf {
+		for _, s := range data.Permissions {
 			hasAccess = auth.authorization.Enforce(s, obj, act)
 			if hasAccess {
 				break
@@ -558,10 +561,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		return nil, false
 	}
 
-	var name = ""
-	var externalID = ""
-	var email = ""
-	var userID = ""
+	var name, externalID, email, userID string
 	if data.Sub != nil {
 		userID = *data.Sub
 	}
@@ -574,7 +574,18 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	if data.Email != nil {
 		email = *data.Email
 	}
-	return &model.User{ID: userID, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, IsCoreUser: isCoreUser}, false
+	if data.Email != nil {
+		email = *data.Email
+	}
+	return &model.User{
+		ID:          userID,
+		ClientID:    clientID,
+		ExternalID:  externalID,
+		Email:       email,
+		Name:        name,
+		IsCoreUser:  isCoreUser,
+		Permissions: data.Permissions,
+	}, false
 }
 
 // gets the token from the request - as cookie or as Authorization header.
