@@ -28,6 +28,7 @@ type User struct {
 	DateCreated   time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated   *time.Time `json:"date_updated" bson:"date_updated"`
 	ClientID      string     `bson:"client_id"`
+	Permissions   []string   `bson:"permissions"`
 	OriginalToken string
 } // @name User
 
@@ -38,6 +39,17 @@ func (u *User) ToCreator() *Creator {
 		Name:   u.Name,
 		Email:  u.Email,
 	}
+}
+
+// HasPermission Checks if the user has desired permission
+func (u *User) HasPermission(name string) bool {
+	for _, permission := range u.Permissions {
+		if permission == name {
+			return true
+		}
+	}
+
+	return false
 }
 
 // CoreAccount wraps the account structure from the Core BB
