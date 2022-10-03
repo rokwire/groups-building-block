@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.74] - 2022-09-30
 ### Added
-- Allow editing of a managed group only if managed_group_admin permission presents for the user [#263](https://github.com/rokwire/groups-building-block/issues/263)
+- Allow editing & deleting of a managed groups only if managed_group_admin permission presents for the user [#263](https://github.com/rokwire/groups-building-block/issues/263)
 
 ## [1.5.73] - 2022-09-28
 ### Fixed
