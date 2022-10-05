@@ -220,17 +220,10 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	}
 
 	//check if allowed to update
-	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if !isAdmin {
-		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, id)
-
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
+	group, err := h.app.Services.GetGroup(clientID, current, id)
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+		log.Printf("%s is not allowed to update group settings '%s'", current.Email, id)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
 
