@@ -334,7 +334,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupsResponse"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -643,28 +643,9 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupsResponse"
+                                "$ref": "#/definitions/Group"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/admin/user/login": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Logs in the user and refactor the user record and linked data if need",
-                "tags": [
-                    "Admin-V1"
-                ],
-                "operationId": "AdminLoginUser",
-                "responses": {
-                    "200": {
-                        "description": ""
                     }
                 }
             }
@@ -1747,7 +1728,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupsResponse"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -3241,96 +3222,6 @@ const docTemplate = `{
             }
         },
         "getGroupResponse": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "members": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "date_created": {
-                                "type": "string"
-                            },
-                            "date_updated": {
-                                "type": "string"
-                            },
-                            "email": {
-                                "type": "string"
-                            },
-                            "id": {
-                                "type": "string"
-                            },
-                            "member_answers": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "answer": {
-                                            "type": "string"
-                                        },
-                                        "question": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            },
-                            "name": {
-                                "type": "string"
-                            },
-                            "photo_url": {
-                                "type": "string"
-                            },
-                            "rejected_reason": {
-                                "type": "string"
-                            },
-                            "status": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "membership_questions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "privacy": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "web_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "getGroupsResponse": {
             "type": "object",
             "properties": {
                 "category": {

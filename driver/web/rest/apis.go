@@ -222,13 +222,12 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	//check if allowed to update
 	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
-		log.Printf("%s is not allowed to update group settings '%s'", current.Email, id)
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could update a group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
-
 	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
-		log.Printf("Only managed_group_admin could update a managed group")
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
@@ -326,18 +325,21 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	//check if allowed to update
-	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
-	if !isAdmin {
-		log.Printf("%s is not allowed to delete group '%s'", current.Email, id)
-
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could delete group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could delete a managed group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
 
@@ -353,38 +355,6 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	w.Write([]byte("Successfully deleted"))
 }
 
-type getGroupsResponse struct {
-	ID                  string   `json:"id"`
-	Category            string   `json:"category"`
-	Title               string   `json:"title"`
-	Privacy             string   `json:"privacy"`
-	Description         *string  `json:"description"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	Tags                []string `json:"tags"`
-	MembershipQuestions []string `json:"membership_questions"`
-
-	Members []struct {
-		ID             string `json:"id"`
-		Name           string `json:"name"`
-		Email          string `json:"email"`
-		PhotoURL       string `json:"photo_url"`
-		Status         string `json:"status"`
-		RejectedReason string `json:"rejected_reason"`
-
-		MemberAnswers []struct {
-			Question string `json:"question"`
-			Answer   string `json:"answer"`
-		} `json:"member_answers"`
-
-		DateCreated time.Time  `json:"date_created"`
-		DateUpdated *time.Time `json:"date_updated"`
-	} `json:"members"`
-
-	DateCreated time.Time  `json:"date_created"`
-	DateUpdated *time.Time `json:"date_updated"`
-} // @name getGroupsResponse
-
 // GetGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetGroups
@@ -397,7 +367,7 @@ type getGroupsResponse struct {
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
 // @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
-// @Success 200 {array} getGroupsResponse
+// @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/groups [get]

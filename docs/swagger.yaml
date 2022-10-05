@@ -451,65 +451,6 @@ definitions:
       web_url:
         type: string
     type: object
-  getGroupsResponse:
-    properties:
-      category:
-        type: string
-      date_created:
-        type: string
-      date_updated:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      image_url:
-        type: string
-      members:
-        items:
-          properties:
-            date_created:
-              type: string
-            date_updated:
-              type: string
-            email:
-              type: string
-            id:
-              type: string
-            member_answers:
-              items:
-                properties:
-                  answer:
-                    type: string
-                  question:
-                    type: string
-                type: object
-              type: array
-            name:
-              type: string
-            photo_url:
-              type: string
-            rejected_reason:
-              type: string
-            status:
-              type: string
-          type: object
-        type: array
-      membership_questions:
-        items:
-          type: string
-        type: array
-      privacy:
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
-        type: string
-      web_url:
-        type: string
-    type: object
   getUserGroupsResponse:
     properties:
       category:
@@ -924,7 +865,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - APIKeyAuth: []
@@ -1120,22 +1061,10 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - APIKeyAuth: []
-      - AppUserAuth: []
-      tags:
-      - Admin-V1
-  /api/admin/user/login:
-    get:
-      description: Logs in the user and refactor the user record and linked data if
-        need
-      operationId: AdminLoginUser
-      responses:
-        "200":
-          description: ""
-      security:
       - AppUserAuth: []
       tags:
       - Admin-V1
@@ -1822,7 +1751,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - APIKeyAuth: []

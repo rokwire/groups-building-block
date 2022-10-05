@@ -45,7 +45,7 @@ type AdminApisHandler struct {
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
 // @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
-// @Success 200 {array} getGroupsResponse
+// @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/user/groups [get]
@@ -147,7 +147,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
 // @Param title query string false "Filtering by group's title - case insensitive"
-// @Success 200 {array} getGroupsResponse
+// @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/groups [get]
@@ -418,7 +418,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
-		log.Printf("Only managed_group_admin could update a managed group")
+		log.Printf("%s is not allowed to update group settings '%s'. Only user with managed_group_admin permission could delete a managed group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
