@@ -956,7 +956,7 @@ func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string, 
 			return err
 		}
 
-		return sa.resetGroupState(nil, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(nil, clientID, groupID, true, false)
 	})
 
 	return &event, err
@@ -981,7 +981,7 @@ func (sa *Adapter) UpdateEvent(clientID string, eventID string, groupID string, 
 			return err
 		}
 
-		return sa.resetGroupState(context, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(context, clientID, groupID, true, false)
 	})
 }
 
@@ -1003,7 +1003,7 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 			return errors.New("error occured while deleting an event with event id " + eventID)
 		}
 
-		return sa.resetGroupState(context, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(context, clientID, groupID, true, false)
 	})
 }
 
@@ -1330,7 +1330,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 				return err
 			}
 
-			err = sa.resetGroupState(context, clientID, post.GroupID, true, false)
+			err = sa.UpdateGroupStats(context, clientID, post.GroupID, true, false)
 			if err != nil {
 				return err
 			}
@@ -1390,7 +1390,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 				return err
 			}
 
-			return sa.resetGroupState(context, clientID, post.GroupID, true, false)
+			return sa.UpdateGroupStats(context, clientID, post.GroupID, true, false)
 		})
 		if err != nil {
 			return nil, err
@@ -1486,12 +1486,12 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 			return err
 		}
 
-		return sa.resetGroupState(context, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(context, clientID, groupID, true, false)
 	})
 }
 
-// resetGroupState set the updated date to the current date time (now)
-func (sa *Adapter) resetGroupState(context TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error {
+// UpdateGroupStats set the updated date to the current date time (now)
+func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error {
 
 	innerUpdate := bson.D{}
 

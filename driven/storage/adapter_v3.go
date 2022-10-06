@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo"
 	"groups/core/model"
 	"log"
 	"time"
@@ -239,7 +240,7 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 				return err
 			}
 
-			return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
 		})
 		if err != nil {
 			return err
@@ -249,9 +250,74 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 	return nil
 }
 
+type SingleMembershipOperation struct {
+	ClientID   string
+	GroupID    string
+	ExternalID string
+	UserID     *string
+	Status     *string
+	Admin      *bool
+	Email      *string
+	Name       *string
+	Answers    []model.MemberAnswer
+	SyncID     *string
+}
+
+func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []SingleMembershipOperation, updateGroupStats bool) error {
+	now := time.Now()
+
+	var updateModels []mongo.WriteModel
+	upsert := true
+	for _, operation := range saveOperations {
+		filter := bson.M{"client_id": operation.ClientID, "group_id": operation.GroupID, "external_id": operation.ExternalID}
+		update := bson.M{"date_updated": now}
+		if operation.UserID != nil {
+			update["user_id"] = *operation.UserID
+		}
+		if operation.Name != nil {
+			update["name"] = *operation.Name
+		}
+		if operation.Email != nil {
+			update["email"] = *operation.Email
+		}
+		if operation.Status != nil {
+			update["status"] = *operation.Status
+		}
+		if operation.Admin != nil {
+			update["admin"] = *operation.Admin
+		}
+		if operation.SyncID != nil {
+			update["sync_id"] = *operation.SyncID
+		}
+		onInsert := bson.M{"_id": uuid.NewString(), "member_answers": operation.Answers, "date_created": now}
+		updateModels = append(updateModels, &mongo.UpdateOneModel{
+			Filter: filter,
+			Update: bson.M{"$set": update, "$setOnInsert": onInsert},
+			Upsert: &upsert,
+		})
+	}
+
+	if len(updateModels) > 0 {
+		return sa.PerformTransaction(func(context TransactionContext) error {
+			_, err := sa.db.groupMemberships.BulkWrite(updateModels, nil)
+			if err != nil {
+				return err
+			}
+
+			if updateGroupStats {
+				return sa.UpdateGroupStats(context, clientID, groupID, true, true)
+			}
+
+			return nil
+		})
+	}
+
+	return nil
+}
+
 // SaveGroupMembershipByExternalID creates or updates a group membership for a given external ID
 func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
-	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) (*model.GroupMembership, error) {
+	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error) {
 
 	now := time.Now()
 
@@ -290,7 +356,10 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 			return err
 		}
 
-		return sa.resetGroupState(context, clientID, groupID, true, true)
+		if updateGroupStats {
+			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
+		}
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -338,7 +407,7 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 				return err
 			}
 
-			return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
 		})
 	}
 
@@ -368,7 +437,7 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 			return err
 		}
 
-		return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+		return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
 	})
 }
 
@@ -391,7 +460,7 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 			return err
 		}
 
-		return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+		return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
 	})
 
 }
@@ -424,7 +493,7 @@ func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID stri
 				log.Printf("error deleting membership - %s", err)
 				return err
 			}
-			return sa.resetGroupState(context, clientID, groupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
 		}
 		return nil
 	})
@@ -444,7 +513,7 @@ func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, me
 			return err
 		}
 
-		return sa.resetGroupState(context, clientID, membership.GroupID, true, true)
+		return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
 	})
 }
 
@@ -468,7 +537,7 @@ func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID strin
 
 		deletedCount = result.DeletedCount
 		if deletedCount > 0 {
-			return sa.resetGroupState(context, clientID, groupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
 		}
 
 		return nil

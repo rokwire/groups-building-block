@@ -895,7 +895,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	}
 
 	missingInfoMembers := []model.GroupMembership{}
-
+	updateOperations := []storage.SingleMembershipOperation{}
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
 		status := "member"
@@ -914,12 +914,32 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 
-		membership, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, externalID, userID, &status, nil, email,
-			name, authmanGroup.CreateMembershipEmptyAnswers(), &syncID)
+		updateOperations = append(updateOperations, storage.SingleMembershipOperation{
+			ClientID:   clientID,
+			GroupID:    authmanGroup.ID,
+			ExternalID: externalID,
+			UserID:     userID,
+			Status:     &status,
+			Email:      email,
+			Name:       name,
+			SyncID:     &syncID,
+			Answers:    authmanGroup.CreateMembershipEmptyAnswers(),
+		})
+	}
+	if len(updateOperations) > 0 {
+		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
 		if err != nil {
-			log.Printf("Error saving membership for external ID %s in Authman %s: %s\n", externalID, *authmanGroup.AuthmanGroup, err)
-		} else if membership.Email == "" || membership.Name == "" {
-			missingInfoMembers = append(missingInfoMembers, *membership)
+			log.Printf("Error on bulk saving membership (phase 1) in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
+		} else {
+			log.Printf("Successful bulk saving membership (phase 1) in Authman '%s'", *authmanGroup.AuthmanGroup)
+			memberships, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+				GroupIDs: []string{authmanGroup.ID},
+			})
+			for _, membership := range memberships.Items {
+				if membership.Email == "" || membership.Name == "" {
+					missingInfoMembers = append(missingInfoMembers, membership)
+				}
+			}
 		}
 	}
 
@@ -944,9 +964,11 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 		if updatedInfo {
-			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, nil, email, name, nil, nil)
+			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, nil, email, name, nil, nil, false)
 			if err != nil {
 				log.Printf("Error saving admin membership with missing info for external ID %s in Authman %s: %s\n", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
+			} else {
+				log.Printf("Update admin member %s for group '%s'", adminMember.ExternalID, authmanGroup.Title)
 			}
 		}
 	}
@@ -968,6 +990,8 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		if err != nil {
 			log.Printf("error on retrieving missing user info for %d members: %s\n", len(externalIDs), err)
 		} else if len(authmanUsers) > 0 {
+
+			updateOperations = []storage.SingleMembershipOperation{}
 			for _, member := range members {
 				var name *string
 				var email *string
@@ -986,10 +1010,23 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 					}
 				}
 				if updatedInfo {
-					_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, member.ExternalID, nil, nil, nil, email, name, nil, nil)
-					if err != nil {
-						log.Printf("Error saving membership with missing info for external ID %s in Authman %s: %s\n", member.ExternalID, *authmanGroup.AuthmanGroup, err)
-					}
+					updateOperations = append(updateOperations, storage.SingleMembershipOperation{
+						ClientID:   clientID,
+						GroupID:    authmanGroup.ID,
+						ExternalID: member.ExternalID,
+						Email:      email,
+						Name:       name,
+						SyncID:     &syncID,
+					})
+				}
+			}
+
+			if len(updateOperations) > 0 {
+				err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
+				if err != nil {
+					log.Printf("Error on bulk saving membership (phase 2) in Authman '%s': %s\n", *authmanGroup.AuthmanGroup, err)
+				} else {
+					log.Printf("Successful bulk saving membership (phase 2) in Authman '%s'", *authmanGroup.AuthmanGroup)
 				}
 			}
 		}
@@ -1003,6 +1040,11 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		log.Printf("Error deleting removed memberships in Authman %s\n", *authmanGroup.AuthmanGroup)
 	} else {
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
+	}
+
+	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, true, true)
+	if err != nil {
+		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
 	}
 
 	return nil

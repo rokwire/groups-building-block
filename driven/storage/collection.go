@@ -237,6 +237,26 @@ func (collWrapper *collectionWrapper) UpdateOneWithContext(ctx context.Context, 
 	return updateResult, nil
 }
 
+func (collWrapper *collectionWrapper) BulkWrite(models []mongo.WriteModel, opts *options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	return collWrapper.BulkWriteWithContext(nil, models, opts)
+}
+
+func (collWrapper *collectionWrapper) BulkWriteWithContext(ctx context.Context, models []mongo.WriteModel, opts *options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	defer cancel()
+
+	writeResult, err := collWrapper.coll.BulkWrite(ctx, models, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return writeResult, nil
+}
+
 func (collWrapper *collectionWrapper) UpdateMany(filter interface{}, update interface{}, opts *options.UpdateOptions) (*mongo.UpdateResult, error) {
 	return collWrapper.UpdateManyWithContext(context.Background(), filter, update, opts)
 }
