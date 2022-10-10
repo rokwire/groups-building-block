@@ -194,10 +194,16 @@ func (h *ApisHandler) GetGroupV2(clientID string, current *model.User, w http.Re
 		return
 	}
 
-	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, id)
-	if group == nil || !hasPermission {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
+	if err != nil {
+		log.Printf("apis.GetGroupV2() error on getting group %s - %s", id, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if group == nil {
+		log.Printf("apis.GetGroupV2() group %s not found", id)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 

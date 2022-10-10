@@ -754,10 +754,10 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 		return
 	}
 
-	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, id)
-	if group == nil || !hasPermission {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
+	if err != nil {
+		log.Printf("adminapis.GetGroupV2() error on getting group %s", err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
@@ -1434,38 +1434,13 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group for the provided group id - %s", groupID)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	if group.Privacy == "private" {
-		if current == nil || current.IsAnonymous {
-			log.Println("Anonymous user cannot see the events for a private group")
 
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
-		if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
-			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
-	}
-
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
-
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, membership == nil || !membership.IsAdminOrMember())
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1510,39 +1485,13 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if group == nil {
-		log.Printf("there is no a group for the provided group id - %s", groupID)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	if group.Privacy == "private" {
-		if current == nil || current.IsAnonymous {
-			log.Println("Anonymous user cannot see the events for a private group")
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
-
-		if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
-			log.Printf("%s cannot see the events for the %s private group as he/she is not a member or admin", current.Email, group.Title)
-
-			w.WriteHeader(http.StatusForbidden)
-			w.Write([]byte("Forbidden"))
-			return
-		}
-	}
-
-	filterByToMember := group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember()
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, filterByToMember)
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

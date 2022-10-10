@@ -587,7 +587,7 @@ func (sa Adapter) GetGroupMembershipStats(context TransactionContext, clientID s
 					},
 					{"admins_count",
 						bson.A{
-							bson.D{{"$match", bson.D{{"admin", true}}}},
+							bson.D{{"$match", bson.D{{"status", "admin"}}}},
 							bson.D{{"$count", "admins_count"}},
 						},
 					},

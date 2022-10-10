@@ -189,21 +189,27 @@ func (h *AdminApisHandler) GetGroupV2(clientID string, current *model.User, w ht
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
-		log.Println("apis.GetGroupV2() id is required")
+		log.Println("adminapis.GetGroupV2() id is required")
 		http.Error(w, "id is required", http.StatusBadRequest)
 		return
 	}
 
-	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, id)
-	if group == nil || !hasPermission {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
+	if err != nil {
+		log.Printf("adminapis.GetGroupV2() error on getting group %s - %s", id, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if group == nil {
+		log.Printf("adminapis.GetGroupV2() group %s not found", id)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
 	data, err := json.Marshal(group)
 	if err != nil {
-		log.Println("apis.GetGroupV2() error on marshal the group")
+		log.Println("adminapis.GetGroupV2() error on marshal the group")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

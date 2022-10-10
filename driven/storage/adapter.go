@@ -1007,37 +1007,6 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 	})
 }
 
-func (sa *Adapter) findAdminsCount(sessionContext mongo.SessionContext, groupID string) (*int, error) {
-	pipeline := []bson.M{
-		{"$match": bson.M{"_id": groupID}},
-		{"$unwind": "$members"},
-		{"$group": bson.M{"_id": "$members.status", "count": bson.M{"$sum": 1}}},
-	}
-	var result []struct {
-		ID    string `bson:"_id"`
-		Count int    `bson:"count"`
-	}
-	err := sa.db.groups.AggregateWithContext(sessionContext, pipeline, &result, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if result == nil || len(result) == 0 {
-		//no data - return 0
-		noDataCount := 0
-		return &noDataCount, nil
-	}
-
-	for _, item := range result {
-		if item.ID == "admin" {
-			return &item.Count, nil
-		}
-	}
-	//no data - return 0
-	noDataCount := 0
-	return &noDataCount, nil
-}
-
 // FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 

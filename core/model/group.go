@@ -54,19 +54,22 @@ type Group struct {
 func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection) {
 	var list []Member
 	for _, membership := range membershipCollection.Items {
-		if membership.GroupID == gr.ID {
+		if membership.GroupID == gr.ID && (gr.CurrentMember != nil && (gr.CurrentMember.IsAdminOrMember() || membership.UserID == gr.CurrentMember.UserID)) {
 			list = append(list, membership.ToMember())
 		}
 	}
 
-	sort.SliceStable(list, func(p, q int) bool {
-		if list[p].Status == list[q].Status {
-			return list[p].Name < list[q].Name
-		}
-		return list[p].Status < list[q].Status
-	})
+	if len(list) > 1 {
+		sort.SliceStable(list, func(p, q int) bool {
+			if list[p].Status == list[q].Status {
+				return list[p].Name < list[q].Name
+			}
+			return list[p].Status < list[q].Status
+		})
+	}
 
 	gr.Members = list
+
 }
 
 // CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions

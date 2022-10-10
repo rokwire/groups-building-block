@@ -8,24 +8,20 @@ import (
 )
 
 func (app *Application) checkUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
+	if current == nil || current.IsAnonymous {
+		log.Println("app.checkUserGroupMembershipPermission() error - Anonymous user cannot see the events for a private group")
+		return nil, false
+	}
+
 	group, err := app.getGroup(clientID, current, groupID)
 	if err != nil {
 		log.Printf("app.checkUserGroupMembershipPermission() error - unable to find group %s - %s", groupID, err)
 		return group, false
 	}
 	if group != nil {
-		if group.Privacy == "private" {
-			if current == nil || current.IsAnonymous {
-				log.Println("app.checkUserGroupMembershipPermission() error - Anonymous user cannot see the events for a private group")
-				return group, false
-			}
-			if (group.CurrentMember != nil && !group.CurrentMember.IsAdminOrMember() && !group.HiddenForSearch) ||
-				(group.CurrentMember == nil && group.HiddenForSearch) {
-				log.Printf("app.checkUserGroupMembershipPermission() error - %s cannot see  %s private group as he/she is not a member or admin", current.Email, group.Title)
-				return group, false
-			}
+		if group.CurrentMember != nil && group.CurrentMember.IsAdminOrMember() {
+			return group, true
 		}
-		return group, true
 	}
 	return nil, false
 }
