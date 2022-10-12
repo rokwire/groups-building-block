@@ -131,6 +131,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	// apply membership transition
+	err = m.ApplyMembershipTransition(client, groups, groupMemberships)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -370,6 +376,41 @@ func (m *database) applyGroupMembershipsChecks(groupMemberships *collectionWrapp
 	}
 
 	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}, primitive.E{Key: "group_id", Value: 1}, primitive.E{Key: "external_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "group_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "user_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "name", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "net_id", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "email", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "status", Value: 1}}, false)
+	if err != nil {
+		return err
+	}
+
+	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "date_created", Value: 1}}, false)
 	if err != nil {
 		return err
 	}
@@ -637,7 +678,7 @@ func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectio
 		}
 
 		//apply groups collection
-		var groupsList []group
+		var groupsList []model.Group
 		err = groups.FindWithContext(sessionContext, bson.D{}, &groupsList, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
@@ -703,6 +744,100 @@ func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectio
 	}
 
 	log.Println("multi-tenant checks passed")
+	return nil
+}
+
+func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *collectionWrapper, groupMemberships *collectionWrapper) error {
+	log.Println("apply memberships transition checks.....")
+
+	var migrationGroup []model.Group
+	err := groups.Find(bson.D{
+		{"members.id", bson.M{"$exists": true}},
+	}, &migrationGroup, nil)
+	if err != nil {
+		return err
+	}
+
+	if len(migrationGroup) > 0 {
+		err = client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+			err := sessionContext.StartTransaction()
+			if err != nil {
+				log.Printf("error starting a transaction - %s", err)
+				return err
+			}
+
+			_, err = groups.UpdateManyWithContext(sessionContext, bson.D{}, bson.D{
+				{"$set", bson.D{
+					{"stats", model.GroupStats{}},
+				}},
+			}, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+
+			for _, group := range migrationGroup {
+				log.Printf("Start migrating '%s' group", group.Title)
+				memberships := []interface{}{}
+				stats := model.GroupStats{}
+				for _, member := range group.Members {
+					if member.Status == "pending" {
+						stats.PendingCount++
+					} else if member.Status == "rejected" {
+						stats.RejectedCount++
+					} else if member.Status == "member" {
+						stats.TotalCount++
+						stats.MemberCount++
+					} else if member.Status == "admin" {
+						stats.TotalCount++
+						stats.AdminsCount++
+					}
+
+					if member.DateAttended != nil {
+						stats.AttendanceCount++
+					}
+
+					memberships = append(memberships, member.ToGroupMembership(group.ClientID, group.ID))
+				}
+
+				_, err = groupMemberships.InsertManyWithContext(sessionContext, memberships, &options.InsertManyOptions{})
+				if err != nil {
+					abortTransaction(sessionContext)
+					return err
+				}
+
+				_, err = groups.UpdateOneWithContext(sessionContext, bson.D{
+					{"client_id", group.ClientID},
+					{"_id", group.ID},
+				}, bson.D{
+					{"$set", bson.D{
+						{"members", nil},
+						{"stats", stats},
+					}},
+				}, nil)
+				if err != nil {
+					abortTransaction(sessionContext)
+					return err
+				}
+
+				log.Printf("Grouop '%s' has been migrated successfull", group.Title)
+			}
+
+			//commit the transaction
+			err = sessionContext.CommitTransaction(sessionContext)
+			if err != nil {
+				fmt.Println(err)
+				return err
+			}
+			return nil
+		})
+
+		if err != nil {
+			return err
+		}
+	}
+
+	log.Println("memberships transition passed")
 	return nil
 }
 

@@ -45,7 +45,7 @@ type AdminApisHandler struct {
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
 // @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
-// @Success 200 {array} getGroupsResponse
+// @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/user/groups [get]
@@ -108,6 +108,25 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		return
 	}
 
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
+	}
+
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
@@ -128,7 +147,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Param APP header string true "APP"
 // @Param category query string false "Category"
 // @Param title query string false "Filtering by group's title - case insensitive"
-// @Success 200 {array} getGroupsResponse
+// @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/groups [get]
@@ -191,6 +210,25 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		return
 	}
 
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
+	}
+
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the groups items")
@@ -201,23 +239,6 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
-}
-
-// LoginUser Logs in the user and refactor the user record and linked data if need
-// @Description Logs in the user and refactor the user record and linked data if need
-// @ID AdminLoginUser
-// @Tags Admin-V1
-// @Success 200
-// @Security AppUserAuth
-// @Router /api/admin/user/login [get]
-func (h *AdminApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.LoginUser(clientID, current)
-	if err != nil {
-		log.Printf("error getting user groups - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
 }
 
 // GetGroupStats Retrieves stats for a group by id
@@ -240,14 +261,20 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 		return
 	}
 
-	stats, err := h.app.Services.GetGroupStats(clientID, groupID)
+	group, err := h.app.Services.GetGroup(clientID, current, groupID)
 	if err != nil {
-		log.Printf("error getting group stats - %s", err.Error())
+		log.Printf("error getting group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	data, err := json.Marshal(stats)
+	if group == nil {
+		log.Printf("error getting group stats")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(group.Stats)
 	if err != nil {
 		log.Println("Error on marshal the group stats")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -391,7 +418,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
-		log.Printf("Only managed_group_admin could update a managed group")
+		log.Printf("%s is not allowed to update group settings '%s'. Only user with managed_group_admin permission could delete a managed group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}

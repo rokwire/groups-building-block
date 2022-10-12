@@ -15,33 +15,9 @@
 package model
 
 import (
-	"groups/driven/notifications"
+	"sort"
 	"time"
 )
-
-// GroupV2 removes members list and adds just the current user as a member
-type GroupV2 struct {
-	ID                         string     `json:"id" bson:"_id"`
-	ClientID                   string     `json:"client_id" bson:"client_id"`
-	Category                   string     `json:"category" bson:"category"` //one of the enums categories list
-	Title                      string     `json:"title" bson:"title"`
-	Privacy                    string     `json:"privacy" bson:"privacy"` //public or private
-	HiddenForSearch            bool       `json:"hidden_for_search" bson:"hidden_for_search"`
-	Description                *string    `json:"description" bson:"description"`
-	ImageURL                   *string    `json:"image_url" bson:"image_url"`
-	WebURL                     *string    `json:"web_url" bson:"web_url"`
-	Tags                       []string   `json:"tags" bson:"tags"`
-	MembershipQuestions        []string   `json:"membership_questions" bson:"membership_questions"`
-	AuthmanEnabled             bool       `json:"authman_enabled" bson:"authman_enabled"`
-	AuthmanGroup               *string    `json:"authman_group" bson:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
-	CanJoinAutomatically       bool       `json:"can_join_automatically" bson:"can_join_automatically"`
-	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
-	AttendanceGroup            bool       `json:"attendance_group" bson:"attendance_group"`
-	CurrentMember              *Member    `json:"current_member"` // this is indicative and it's not required for update APIs
-	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
-} // @name GroupV2
 
 // Group represents group entity
 type Group struct {
@@ -57,8 +33,9 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Members              []Member `json:"members" bson:"members"`
-	UsesGroupMemberships bool     `json:"uses_group_memberships" bson:"uses_group_memberships"`
+	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
+	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`
+	Stats         GroupStats       `json:"stats" bson:"stats"`
 
 	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
@@ -73,173 +50,26 @@ type Group struct {
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
 } // @name Group
 
-// IsGroupAdminOrMember says if the user is an admin or a member of the group
-func (gr Group) IsGroupAdminOrMember(userID string) bool {
-	if gr.Members == nil {
-		return false
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID && item.IsAdminOrMember() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupAdmin says if the user is admin of the group
-func (gr Group) IsGroupAdmin(userID string) bool {
-	if gr.Members == nil {
-		return false
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID && item.IsAdmin() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupMember says if the user is a group member
-func (gr Group) IsGroupMember(userID string) bool {
-	if gr.Members == nil {
-		return false
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID && item.IsMember() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupPending says if the user is a group pending
-func (gr Group) IsGroupPending(userID string) bool {
-	if gr.Members == nil {
-		return false
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID && item.IsPendingMember() {
-			return true
-		}
-	}
-	return false
-}
-
-// IsGroupRejected says if the user is a group rejected
-func (gr Group) IsGroupRejected(userID string) bool {
-	if gr.Members == nil {
-		return false
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID && item.IsRejected() {
-			return true
-		}
-	}
-	return false
-}
-
-// UserNameByID Get name of the user
-func (gr Group) UserNameByID(userID string) *string {
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID {
-			name := item.Name
-			return &name
-		}
-	}
-	return nil
-}
-
-// GetMemberByID says if the user is a group rejected
-func (gr Group) GetMemberByID(userID string) *Member {
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.ID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
-// GetMemberByUserID gets member by UserID field
-func (gr Group) GetMemberByUserID(userID string) *Member {
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.UserID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
-// GetMemberByExternalID gets member by ExternalID field
-func (gr Group) GetMemberByExternalID(userID string) *Member {
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.ExternalID == userID {
-			return &item
-		}
-	}
-	return nil
-}
-
-// GetAllAdminMembers gets all admin members
-func (gr Group) GetAllAdminMembers() []Member {
-	return gr.GetMembersByStatus("admin")
-}
-
-// GetAllAdminsAsRecipients gets all admins as list of Recipient recipients
-func (gr Group) GetAllAdminsAsRecipients() []notifications.Recipient {
-	admins := gr.GetMembersByStatus("admin")
-
-	var recipients []notifications.Recipient
-	if len(admins) > 0 {
-		for _, admin := range admins {
-			recipients = append(recipients, admin.ToNotificationRecipient())
+// ApplyLegacyMembership applies legacy membership to the group for backward compatibility
+func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection) {
+	var list []Member
+	for _, membership := range membershipCollection.Items {
+		if membership.GroupID == gr.ID && (gr.CurrentMember != nil && (gr.CurrentMember.IsAdminOrMember() || membership.UserID == gr.CurrentMember.UserID)) {
+			list = append(list, membership.ToMember())
 		}
 	}
 
-	return recipients
-}
-
-// GetMembersByStatus gets members by status field
-func (gr Group) GetMembersByStatus(status string) []Member {
-	var members []Member
-	if gr.Members == nil {
-		return nil
-	}
-	for _, item := range gr.Members {
-		if item.Status == status {
-			members = append(members, item)
-		}
-	}
-	return members
-}
-
-// GetMembersAsNotificationRecipients constructs all official members as notification recipients
-func (gr Group) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
-
-	recipients := []notifications.Recipient{}
-
-	if len(gr.Members) > 0 {
-		for _, member := range gr.Members {
-			if member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID) {
-				recipients = append(recipients, notifications.Recipient{
-					UserID: member.UserID,
-					Name:   member.Name,
-				})
+	if len(list) > 1 {
+		sort.SliceStable(list, func(p, q int) bool {
+			if list[p].Status == list[q].Status {
+				return list[p].Name < list[q].Name
 			}
-		}
+			return list[p].Status < list[q].Status
+		})
 	}
-	return recipients
+
+	gr.Members = list
+
 }
 
 // CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
@@ -261,36 +91,4 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 // IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
 func (gr Group) IsAuthmanSyncEligible() bool {
 	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
-}
-
-// ToGroupV2 Converts the legacy data model to a GroupV2 model
-func (gr Group) ToGroupV2(currentUserID *string) GroupV2 {
-
-	var currentMember *Member
-	if currentUserID != nil {
-		currentMember = gr.GetMemberByUserID(*currentUserID)
-	}
-
-	return GroupV2{
-		ID:                         gr.ID,
-		ClientID:                   gr.ClientID,
-		Category:                   gr.Category,
-		Title:                      gr.Title,
-		Privacy:                    gr.Privacy,
-		HiddenForSearch:            gr.HiddenForSearch,
-		Description:                gr.Description,
-		ImageURL:                   gr.ImageURL,
-		WebURL:                     gr.WebURL,
-		Tags:                       gr.Tags,
-		MembershipQuestions:        gr.MembershipQuestions,
-		AuthmanEnabled:             gr.AuthmanEnabled,
-		AuthmanGroup:               gr.AuthmanGroup,
-		OnlyAdminsCanCreatePolls:   gr.OnlyAdminsCanCreatePolls,
-		CanJoinAutomatically:       gr.CanJoinAutomatically,
-		BlockNewMembershipRequests: gr.BlockNewMembershipRequests,
-		AttendanceGroup:            gr.AttendanceGroup,
-		DateCreated:                gr.DateCreated,
-		DateUpdated:                gr.DateUpdated,
-		CurrentMember:              currentMember,
-	}
 }

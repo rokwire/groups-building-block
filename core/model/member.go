@@ -15,95 +15,10 @@
 package model
 
 import (
+	"github.com/google/uuid"
 	"groups/driven/notifications"
 	"time"
 )
-
-///////// V3
-//
-
-// GroupMembership represents the membership of a user to a given group
-type GroupMembership struct {
-	ID            string         `json:"id" bson:"_id"`
-	ClientID      string         `json:"client_id" bson:"client_id"`
-	GroupID       string         `json:"group_id" bson:"group_id"`
-	UserID        string         `json:"user_id" bson:"user_id"`
-	ExternalID    string         `json:"external_id" bson:"external_id"`
-	Name          string         `json:"name" bson:"name"`
-	NetID         string         `json:"net_id" bson:"net_id"`
-	Email         string         `json:"email" bson:"email"`
-	PhotoURL      string         `json:"photo_url" bson:"photo_url"`
-	Status        string         `json:"status" bson:"status"` //pending, member, rejected
-	Admin         bool           `json:"admin" bson:"admin"`
-	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
-	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
-	SyncID        string         `json:"sync_id" bson:"sync_id"` //ID of sync that last updated this membership
-
-	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
-	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
-} //@name GroupMembership
-
-// IsAdminOrMember says if the user is admin or member of the group
-func (m *GroupMembership) IsAdminOrMember() bool {
-	return m.IsMember() || m.IsAdmin()
-}
-
-// IsAdmin says if the user is admin of the group
-func (m *GroupMembership) IsAdmin() bool {
-	return m.Status == "admin"
-}
-
-// IsMember says if the user is member of the group
-func (m *GroupMembership) IsMember() bool {
-	return m.Status == "member"
-}
-
-// ToMember converts the GroupMembership model to the Member model
-func (m GroupMembership) ToMember() Member {
-	status := m.Status
-	if m.Admin {
-		status = "admin"
-	}
-	return Member{
-		ID:            m.ID,
-		UserID:        m.UserID,
-		ExternalID:    m.ExternalID,
-		Name:          m.Name,
-		NetID:         m.NetID,
-		Email:         m.Email,
-		PhotoURL:      m.PhotoURL,
-		Status:        status,
-		RejectReason:  m.RejectReason,
-		MemberAnswers: m.MemberAnswers,
-		DateCreated:   m.DateCreated,
-		DateUpdated:   m.DateUpdated,
-		DateAttended:  m.DateAttended,
-	}
-}
-
-// ToPublicMember converts to public member (hide external id & email)
-func (m GroupMembership) ToPublicMember() Member {
-	status := m.Status
-	if m.Admin {
-		status = "admin"
-	}
-	return Member{
-		ID:            m.ID,
-		UserID:        m.UserID,
-		Name:          m.Name,
-		NetID:         m.NetID,
-		PhotoURL:      m.PhotoURL,
-		Status:        status,
-		RejectReason:  m.RejectReason,
-		MemberAnswers: m.MemberAnswers,
-		DateCreated:   m.DateCreated,
-		DateUpdated:   m.DateUpdated,
-		DateAttended:  m.DateAttended,
-	}
-}
-
-/////////
 
 // Member represents group member entity
 type Member struct {
@@ -174,11 +89,11 @@ func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembersh
 	admin := false
 	status := m.Status
 	if status == "admin" {
-		status = "member"
 		admin = true
 	}
+
 	return GroupMembership{
-		ID:            m.ID,
+		ID:            uuid.NewString(),
 		ClientID:      clientID,
 		GroupID:       groupID,
 		UserID:        m.UserID,

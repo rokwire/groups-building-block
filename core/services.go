@@ -15,11 +15,11 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"groups/driven/rewards"
 	"groups/driven/storage"
 	"groups/utils"
-	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -37,6 +37,7 @@ const (
 	authmanUserBatchSize       = 5000
 )
 
+/*
 func (app *Application) applyDataProtection(current *model.User, group model.Group) model.Group {
 	//1 apply data protection for "anonymous"
 	if current == nil || current.IsAnonymous {
@@ -49,22 +50,14 @@ func (app *Application) applyDataProtection(current *model.User, group model.Gro
 		}
 	}
 	return group
-}
+}*/
 
 func (app *Application) getVersion() string {
 	return app.version
 }
 
 func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(nil, clientID, id)
-	if err != nil {
-		return nil, err
-	}
-	return group, nil
-}
-
-func (app *Application) getGroupEntityByMembership(clientID string, membershipID string) (*model.Group, error) {
-	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
+	group, err := app.storage.FindGroup(nil, clientID, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -79,53 +72,20 @@ func (app *Application) getGroupEntityByTitle(clientID string, title string) (*m
 	return group, nil
 }
 
-func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, *model.Group, error) {
-	group, err := app.storage.FindGroup(nil, clientID, groupID)
+func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, error) {
+	membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
-	if group == nil {
-		return false, nil, fmt.Errorf("there is no a group with id - %s", groupID)
-	}
-
-	if !group.IsGroupAdmin(userID) {
-		if group.UsesGroupMemberships {
-			membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
-			if err != nil {
-				return false, group, err
-			}
-			if membership == nil || !membership.Admin {
-				return false, group, nil
-			}
-		} else {
-			return false, group, nil
-		}
+	if membership == nil || !membership.Admin {
+		return false, nil
 	}
 
-	return true, group, nil
-}
-
-func (app *Application) getGroupStats(clientID string, id string) (*model.GroupStats, error) {
-	return app.storage.GetGroupStats(clientID, id)
-}
-
-func (app *Application) getGroupCategories() ([]string, error) {
-	groupCategories, err := app.storage.ReadAllGroupCategories()
-	if err != nil {
-		return nil, err
-	}
-	return groupCategories, nil
-}
-func (app *Application) getUserGroupMemberships(id string, external bool) ([]*model.Group, *model.User, error) {
-	getUserGroupMemberships, user, err := app.storage.FindUserGroupsMemberships(id, external)
-	if err != nil {
-		return nil, nil, err
-	}
-	return getUserGroupMemberships, user, nil
+	return true, nil
 }
 
 func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, current, group)
+	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +107,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
-	err := app.storage.UpdateGroupWithoutMembers(clientID, current, group)
+	err := app.storage.UpdateGroup(clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -169,13 +129,7 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 		return nil, err
 	}
 
-	//apply data protection
-	groupsList := make([]model.Group, len(groups))
-	for i := range groups {
-		groupsList[i] = app.applyDataProtection(current, groups[i])
-	}
-
-	return groupsList, nil
+	return groups, nil
 }
 
 func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
@@ -189,36 +143,13 @@ func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 }
 
 func (app *Application) getUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	// find group memberships
-	memberships, err := app.storage.FindUserGroupMemberships(clientID, current.ID)
-	if err != nil {
-		return nil, err
-	}
-	groupIDs := []string{}
-	for _, membership := range memberships {
-		groupIDs = append(groupIDs, membership.GroupID)
-	}
-
 	// find the user groups
-	groups, err := app.storage.FindUserGroups(clientID, current.ID, groupIDs, category, privacy, title, offset, limit, order)
+	groups, err := app.storage.FindUserGroups(clientID, current.ID, category, privacy, title, offset, limit, order)
 	if err != nil {
 		return nil, err
 	}
 
-	//apply data protection
-	groupsList := make([]model.Group, len(groups))
-	for i, item := range groups {
-		if item.UsesGroupMemberships {
-			for _, membership := range memberships {
-				if membership.GroupID == item.ID {
-					item.Members = []model.Member{membership.ToMember()}
-				}
-			}
-		}
-		groupsList[i] = app.applyDataProtection(current, item)
-	}
-
-	return groupsList, nil
+	return groups, nil
 }
 
 func (app *Application) loginUser(clientID string, current *model.User) error {
@@ -231,213 +162,17 @@ func (app *Application) deleteUser(clientID string, current *model.User) error {
 
 func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
 	// find the group
-	group, err := app.storage.FindGroup(nil, clientID, id)
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+
+	group, err := app.storage.FindGroup(nil, clientID, id, userID)
 	if err != nil {
 		return nil, err
 	}
-	if group == nil {
-		return nil, nil
-	}
 
-	//apply data protection
-	res := app.applyDataProtection(current, *group)
-
-	return &res, nil
-}
-
-func (app *Application) getGroupMembers(clientID string, _ *model.User, groupID string, filter *model.GroupMembersFilter) ([]model.Member, error) {
-	return app.storage.GetGroupMembers(clientID, groupID, filter)
-}
-
-func (app *Application) createPendingMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
-
-	if group.CanJoinAutomatically {
-		member.Status = "member"
-	} else {
-		member.Status = "pending"
-	}
-
-	err := app.storage.CreatePendingMember(clientID, current, group, member)
-	if err != nil {
-		return err
-	}
-
-	group, err = app.storage.FindGroup(nil, clientID, group.ID)
-	if err == nil && group != nil {
-		members := group.Members
-		if len(members) > 0 {
-			recipients := []notifications.Recipient{}
-			for _, member := range members {
-				if member.Status == "admin" {
-					recipients = append(recipients, notifications.Recipient{
-						UserID: member.UserID,
-						Name:   member.Name,
-					})
-				}
-			}
-			if len(recipients) > 0 {
-				topic := "group.invitations"
-
-				message := fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
-				if group.CanJoinAutomatically {
-					message = fmt.Sprintf("%s joined '%s' group", member.GetDisplayName(), group.Title)
-				}
-
-				app.notifications.SendNotification(
-					recipients,
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					message,
-					map[string]string{
-						"type":        "group",
-						"operation":   "pending_member",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
-			}
-		}
-	} else {
-		log.Printf("Unable to retrieve group by membership id: %s\n", err)
-		// return err // No reason to fail if the main part succeeds
-	}
-
-	if group.CanJoinAutomatically && group.AuthmanEnabled {
-		err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, member.ExternalID)
-		if err != nil {
-			log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) deletePendingMember(clientID string, current *model.User, groupID string) error {
-	err := app.storage.DeletePendingMember(clientID, groupID, current.ID)
-	if err != nil {
-		return err
-	}
-
-	group, err := app.storage.FindGroup(nil, clientID, groupID)
-	if err == nil && group != nil {
-		if group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) createMember(clientID string, current *model.User, group *model.Group, member *model.Member) error {
-
-	if (member.UserID == "" && member.ExternalID != "") ||
-		(member.UserID != "" && member.ExternalID == "") {
-		if member.ExternalID == "" {
-			user, err := app.storage.FindUser(clientID, member.UserID, false)
-			if err == nil && user != nil {
-				member.ApplyFromUserIfEmpty(user)
-			} else {
-				log.Printf("error app.createMember() - unable to find user: %s", err)
-			}
-		}
-		if member.UserID == "" {
-			user, err := app.storage.FindUser(clientID, member.ExternalID, true)
-			if err == nil && user != nil {
-				member.ApplyFromUserIfEmpty(user)
-			} else {
-				log.Printf("error app.createMember() - unable to find user: %s", err)
-			}
-		}
-	}
-
-	err := app.storage.CreateMemberUnchecked(clientID, current, group, member)
-	if err != nil {
-		return err
-	}
-
-	group, err = app.storage.FindGroup(nil, clientID, group.ID)
-	if err == nil && group != nil {
-		members := group.Members
-		if len(members) > 0 {
-			recipients := []notifications.Recipient{}
-			for _, adminMember := range members {
-				if adminMember.Status == "admin" && adminMember.UserID != current.ID {
-					recipients = append(recipients, notifications.Recipient{
-						UserID: adminMember.UserID,
-						Name:   adminMember.Name,
-					})
-				}
-			}
-
-			var message string
-			if member.Status == "member" || member.Status == "admin" {
-				message = fmt.Sprintf("New member joined '%s' group", group.Title)
-			} else {
-				message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
-			}
-
-			if len(recipients) > 0 {
-				topic := "group.invitations"
-				app.notifications.SendNotification(
-					recipients,
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					message,
-					map[string]string{
-						"type":        "group",
-						"operation":   "pending_member",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
-			}
-		}
-
-		if group.AuthmanEnabled && group.AuthmanGroup != nil {
-			err = app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, member.ExternalID)
-			if err != nil {
-				return err
-			}
-		}
-
-	} else {
-		log.Printf("Unable to retrieve group by membership id: %s\n", err)
-		// return err // No reason to fail if the main part succeeds
-	}
-	if err == nil && group != nil {
-		if group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) deleteMember(clientID string, current *model.User, groupID string) error {
-	err := app.storage.DeleteMember(clientID, groupID, current.ID, false)
-	if err != nil {
-		return err
-	}
-
-	group, err := app.storage.FindGroup(nil, clientID, groupID)
-	if err == nil && group != nil {
-		if group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
+	return group, nil
 }
 
 func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
@@ -446,49 +181,49 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		return fmt.Errorf("error applying membership approval: %s", err)
 	}
 
-	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
-	if err == nil && group != nil {
+	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
+	if err == nil && membership != nil {
+		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
-		member := group.GetMemberByID(membershipID)
-		if member != nil {
-			if approve {
-				app.notifications.SendNotification(
-					[]notifications.Recipient{
-						notifications.Recipient{
-							UserID: member.UserID,
-							Name:   member.Name,
-						},
-					},
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
-					map[string]string{
-						"type":        "group",
-						"operation":   "membership_approve",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
-			} else {
-				app.notifications.SendNotification(
-					[]notifications.Recipient{
-						notifications.Recipient{
-							UserID: member.UserID,
-							Name:   member.Name,
-						},
-					},
-					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
-					fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
-					map[string]string{
-						"type":        "group",
-						"operation":   "membership_reject",
-						"entity_type": "group",
-						"entity_id":   group.ID,
-						"entity_name": group.Title,
-					},
-				)
+		if approve {
+
+			app.notifications.SendNotification(
+				[]notifications.Recipient{
+					membership.ToNotificationRecipient(),
+				},
+				&topic,
+				fmt.Sprintf("Group - %s", group.Title),
+				fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
+				map[string]string{
+					"type":        "group",
+					"operation":   "membership_approve",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+			)
+		} else {
+			app.notifications.SendNotification(
+				[]notifications.Recipient{
+					membership.ToNotificationRecipient(),
+				},
+				&topic,
+				fmt.Sprintf("Group - %s", group.Title),
+				fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
+				map[string]string{
+					"type":        "group",
+					"operation":   "membership_reject",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+			)
+		}
+
+		if approve && group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
+			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, membership.ExternalID)
+			if err != nil {
+				log.Printf("err app.applyMembershipApproval() - error storing member in Authman: %s", err)
 			}
 		}
 	} else {
@@ -496,43 +231,21 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		// return err // No reason to fail if the main part succeeds
 	}
 
-	if err == nil && group != nil {
-		member := group.GetMemberByID(membershipID)
-		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.AddAuthmanMemberToGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.applyMembershipApproval() - error storing member in Authman: %s", err)
-			}
-		}
-	}
-
-	return nil
-}
-
-func (app *Application) deleteMembership(clientID string, current *model.User, membershipID string) error {
-	err := app.storage.DeleteMembership(clientID, current, membershipID)
-	if err != nil {
-		return err
-	}
-
-	group, err := app.storage.FindGroupByMembership(clientID, membershipID)
-	if err == nil && group != nil {
-		member := group.GetMemberByID(membershipID)
-		if member != nil && group.CanJoinAutomatically && group.AuthmanEnabled {
-			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
-			if err != nil {
-				log.Printf("err app.createPendingMember() - error storing member in Authman: %s", err)
-			}
-		}
-	}
 	return nil
 }
 
 func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
-	err := app.storage.UpdateMembership(clientID, current, membershipID, status, dateAttended)
-	if err != nil {
-		return err
+	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
+	if membership != nil {
+		membership.Status = status
+		membership.DateAttended = dateAttended
+
+		err := app.storage.UpdateMembership(clientID, current, membershipID, membership)
+		if err != nil {
+			return err
+		}
 	}
+
 	return nil
 }
 
@@ -567,7 +280,11 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	if len(event.ToMembersList) > 0 {
 		recipients = event.GetMembersAsNotificationRecipients(skipUserID)
 	} else {
-		recipients = group.GetMembersAsNotificationRecipients(skipUserID)
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{group.ID},
+			Statuses: []string{"member", "admin"},
+		})
+		recipients = result.GetMembersAsNotificationRecipients(skipUserID)
 	}
 	topic := "group.events"
 	app.notifications.SendNotification(
@@ -636,7 +353,11 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		recipients, _ := app.getPostNotificationRecipients(clientID, post, &current.ID)
 
 		if len(recipients) == 0 {
-			recipients = group.GetMembersAsNotificationRecipients(&current.ID)
+			result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+				GroupIDs: []string{group.ID},
+				Statuses: []string{"member", "admin"},
+			})
+			recipients = result.GetMembersAsNotificationRecipients(&current.ID)
 		}
 		if len(recipients) > 0 {
 			title := fmt.Sprintf("Group - %s", group.Title)
@@ -780,7 +501,11 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		toMembers := group.GetAllAdminsAsRecipients()
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{group.ID},
+			Statuses: []string{"admin"},
+		})
+		toMembers := result.GetMembersAsRecipients(nil)
 
 		body := fmt.Sprintf(`
 Violation by: %s %s
@@ -828,6 +553,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			if config != nil && config.Timeout > 0 {
 				timeout = config.Timeout
 			}
+
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
 					log.Println("Another Authman sync process is running for clientID " + clientID)
@@ -909,9 +635,9 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					}
 
 					if storedStemGroup == nil {
-						var members []model.Member
+						var memberships []model.GroupMembership
 						if len(constructedAdminUINs) > 0 {
-							members = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
+							memberships = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
 						}
 
 						emptyText := ""
@@ -924,8 +650,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 							CanJoinAutomatically: true,
 							AuthmanEnabled:       true,
 							AuthmanGroup:         &stemGroup.Name,
-							Members:              members,
-						})
+						}, memberships)
 						if err != nil {
 							return fmt.Errorf("error on create Authman stem group: '%s' - %s", stemGroup.Name, err)
 						}
@@ -934,29 +659,42 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					} else {
 						missedUINs := []string{}
 						groupUpdated := false
-						for _, uin := range adminUINs {
-							found := false
-							for index, member := range storedStemGroup.Members {
-								if member.ExternalID == uin {
-									if member.Status != "admin" {
-										now := time.Now()
-										storedStemGroup.Members[index].Status = "admin"
-										storedStemGroup.Members[index].DateUpdated = &now
-										groupUpdated = true
-										break
+
+						existingAdmins, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+							GroupIDs: []string{storedStemGroup.ID},
+							Statuses: []string{"admin"},
+						})
+
+						membershipsForUpdate := []model.GroupMembership{}
+						if len(existingAdmins.Items) > 0 {
+							for _, uin := range adminUINs {
+								found := false
+								for _, member := range existingAdmins.Items {
+									if member.ExternalID == uin {
+										if member.Status != "admin" {
+											now := time.Now()
+											member.Status = "admin"
+											member.Admin = true
+											member.DateUpdated = &now
+											membershipsForUpdate = append(membershipsForUpdate, member)
+											groupUpdated = true
+											break
+										}
+										found = true
 									}
-									found = true
+								}
+								if !found {
+									missedUINs = append(missedUINs, uin)
 								}
 							}
-							if !found {
-								missedUINs = append(missedUINs, uin)
-							}
+						} else if err != nil {
+							log.Printf("error rertieving admins for group: %s - %s", stemGroup.Name, err)
 						}
 
 						if len(missedUINs) > 0 {
 							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
 							if len(missedMembers) > 0 {
-								storedStemGroup.Members = append(storedStemGroup.Members, missedMembers...)
+								membershipsForUpdate = append(membershipsForUpdate, missedMembers...)
 								groupUpdated = true
 							}
 						}
@@ -972,7 +710,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						if groupUpdated {
-							err := app.storage.UpdateGroupWithMembers(clientID, nil, storedStemGroup)
+							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
 								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
@@ -990,7 +728,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 
 	if len(authmanGroups) > 0 {
 		for _, authmanGroup := range authmanGroups {
-			err := app.synchronizeAuthmanGroup(clientID, &authmanGroup)
+			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
 			if err != nil {
 				fmt.Errorf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 			}
@@ -1000,10 +738,10 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 	return nil
 }
 
-func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.Member {
+func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.GroupMembership {
 	if len(externalIDs) > 0 {
 		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
-		members := []model.Member{}
+		members := []model.GroupMembership{}
 		userExternalIDmapping := map[string]model.User{}
 		for _, user := range users {
 			userExternalIDmapping[user.ExternalID] = user
@@ -1011,7 +749,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 
 		for _, externalID := range externalIDs {
 			if value, ok := userExternalIDmapping[externalID]; ok {
-				members = append(members, model.Member{
+				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
 					UserID:      value.ID,
 					ExternalID:  externalID,
@@ -1021,7 +759,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 					DateCreated: time.Now(),
 				})
 			} else {
-				members = append(members, model.Member{
+				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
 					ExternalID:  externalID,
 					Status:      memberStatus,
@@ -1035,70 +773,40 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthmanGroup(clientID string, authmanGroup *model.Group) error {
-	if !authmanGroup.IsAuthmanSyncEligible() {
-		log.Printf("Authman synchronization failed for group '%s' due to bad settings", authmanGroup.Title)
-		return nil // Pass only Authman enabled groups
+func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string) error {
+	if groupID == "" {
+		return errors.New("Missing group ID")
+	}
+	var group *model.Group
+	var err error
+	group, err = app.checkGroupSyncTimes(clientID, groupID)
+	if err != nil {
+		return err
 	}
 
-	log.Printf("Authman synchronization for group %s started", authmanGroup.Title)
-	defer log.Printf("Authman synchronization for group %s finished", authmanGroup.Title)
+	log.Printf("Authman synchronization for group %s started", *group.AuthmanGroup)
 
-	if authmanGroup.AuthmanGroup != nil {
-		var group *model.Group
-		var err error
-		if authmanGroup.UsesGroupMemberships {
-			group, err = app.checkGroupSyncTimes(clientID, authmanGroup.ID)
-			if err != nil {
-				return err
-			}
+	authmanExternalIDs, authmanErr := app.authman.RetrieveAuthmanGroupMembers(*group.AuthmanGroup)
+	if authmanErr != nil {
+		return fmt.Errorf("error on requesting Authman for %s: %s", *group.AuthmanGroup, authmanErr)
+	}
+
+	app.authmanSyncInProgress = true
+	finishAuthmanSync := func() {
+		endTime := time.Now()
+		group.SyncEndTime = &endTime
+		err = app.storage.UpdateGroupSyncTimes(nil, clientID, group)
+		if err != nil {
+			log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
+			return
 		}
+		log.Printf("Authman synchronization for group %s finished", *group.AuthmanGroup)
+	}
+	defer finishAuthmanSync()
 
-		authmanExternalIDs, authmanErr := app.authman.RetrieveAuthmanGroupMembers(*authmanGroup.AuthmanGroup)
-		if authmanErr != nil {
-			return fmt.Errorf("error on requesting Authman for %s: %s", *authmanGroup.AuthmanGroup, authmanErr)
-		}
-
-		localUsersMapping := map[string]model.User{}
-		localUsers, userErr := app.storage.FindUsers(clientID, authmanExternalIDs, true)
-		if authmanErr != nil {
-			return fmt.Errorf("error on getting users(%+v) for Authman %s: %s", authmanExternalIDs, *authmanGroup.AuthmanGroup, userErr)
-		} else if len(localUsers) > 0 {
-			for _, user := range localUsers {
-				localUsersMapping[user.ExternalID] = user
-			}
-		}
-
-		if authmanGroup.UsesGroupMemberships || len(authmanExternalIDs) > maxEmbeddedMemberGroupSize {
-			if group == nil {
-				group, err = app.checkGroupSyncTimes(clientID, authmanGroup.ID)
-				if err != nil {
-					return err
-				}
-			}
-
-			app.authmanSyncInProgress = true
-			finishAuthmanSync := func() {
-				endTime := time.Now()
-				group.SyncEndTime = &endTime
-				err = app.storage.UpdateGroupUsesGroupMemberships(nil, clientID, group)
-				if err != nil {
-					log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
-					return
-				}
-			}
-			defer finishAuthmanSync()
-
-			err = app.syncAuthmanGroupMemberships(clientID, authmanGroup, authmanExternalIDs, localUsersMapping)
-			if err != nil {
-				return fmt.Errorf("error updating group memberships for Authman %s: %s", *authmanGroup.AuthmanGroup, err)
-			}
-		} else {
-			err := app.syncEmbeddedAuthmanGroupMembers(clientID, authmanGroup, authmanExternalIDs, localUsersMapping)
-			if err != nil {
-				return fmt.Errorf("error updating embedded group members for Authman %s: %s", *authmanGroup.AuthmanGroup, err)
-			}
-		}
+	err = app.syncAuthmanGroupMemberships(clientID, group, authmanExternalIDs)
+	if err != nil {
+		return fmt.Errorf("error updating group memberships for Authman %s: %s", *group.AuthmanGroup, err)
 	}
 
 	return nil
@@ -1109,13 +817,17 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, clientID, groupID)
+		group, err = app.storage.FindGroupWithContext(context, clientID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
 		if group == nil {
 			return fmt.Errorf("missing group for ID %s", groupID)
 		}
+		if !group.IsAuthmanSyncEligible() {
+			return fmt.Errorf("Authman synchronization failed for group '%s' due to bad settings", group.Title)
+		}
+
 		if group.SyncStartTime != nil {
 			config, err := app.storage.FindSyncConfig(clientID)
 			if err != nil {
@@ -1134,11 +846,9 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 			}
 		}
 
-		group.UsesGroupMemberships = true
-		group.Members = nil
 		group.SyncStartTime = &startTime
 		group.SyncEndTime = nil
-		err = app.storage.UpdateGroupUsesGroupMemberships(context, clientID, group)
+		err = app.storage.UpdateGroupSyncTimes(context, clientID, group)
 		if err != nil {
 			return fmt.Errorf("error switching to group memberships for Authman %s: %s", *group.AuthmanGroup, err)
 		}
@@ -1153,97 +863,174 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	return group, nil
 }
 
-func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGroup *model.Group, authmanExternalIDs []string,
-	localUsersMapping map[string]model.User) error {
+func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGroup *model.Group, authmanExternalIDs []string) error {
 	syncID := uuid.NewString()
+	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
-	missingInfoExternalIDs := []string{}
-
-	// Transfer existing embedded group members
-	log.Printf("Transferring %d existing embedded members for Authman %s...\n", len(authmanGroup.Members), *authmanGroup.AuthmanGroup)
-	for _, member := range authmanGroup.Members {
-		membership := member.ToGroupMembership(clientID, authmanGroup.ID)
-		err := app.storage.CreateMissingGroupMembership(&membership)
-		if err != nil {
-			log.Printf("Error transferring embedded membership for external ID %s in Authman %s: %s\n", member.ExternalID, *authmanGroup.AuthmanGroup, err)
+	// Get list of all member external IDs (Authman members + admins)
+	allExternalIDs := append([]string{}, authmanExternalIDs...)
+	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{authmanGroup.ID},
+		Statuses: []string{"admin"},
+	})
+	if err != nil {
+		log.Printf("Error finding admin memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
+	} else {
+		for _, adminMember := range adminMembers.Items {
+			if len(adminMember.ExternalID) > 0 {
+				allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
+			}
 		}
 	}
 
+	// Load user records for all members
+	localUsersMapping := map[string]model.User{}
+	localUsers, err := app.storage.FindUsers(clientID, allExternalIDs, true)
+	if err != nil {
+		return fmt.Errorf("error on getting %d users for Authman %s: %s", len(allExternalIDs), *authmanGroup.AuthmanGroup, err)
+	}
+
+	for _, user := range localUsers {
+		localUsersMapping[user.ExternalID] = user
+	}
+
+	missingInfoMembers := []model.GroupMembership{}
+	updateOperations := []storage.SingleMembershipOperation{}
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
-		// Handle transfer of existing admins
-		var admin *bool
-		member := authmanGroup.GetMemberByExternalID(externalID)
-		if member != nil && member.IsAdmin() {
-			isAdmin := true
-			admin = &isAdmin
-		}
-
 		status := "member"
 		var userID *string
 		var name *string
 		var email *string
 		if user, ok := localUsersMapping[externalID]; ok {
-			userID = &user.ID
-			name = &user.Name
-			email = &user.Email
-			// log.Printf("User(%s, %s, %s) is set as member '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
-		} else {
-			// log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
-		}
-
-		membership, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, externalID, userID, &status, admin, email,
-			name, authmanGroup.CreateMembershipEmptyAnswers(), &syncID)
-		if err != nil {
-			log.Printf("Error saving membership for external ID %s in Authman %s: %s\n", externalID, *authmanGroup.AuthmanGroup, err)
-		} else if membership.Email == "" || membership.Name == "" {
-			missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
-		}
-	}
-
-	// Fetch user info for the required users
-	log.Printf("Processing %d members missing info for Authman %s...\n", len(missingInfoExternalIDs), *authmanGroup.AuthmanGroup)
-	if len(missingInfoExternalIDs) > 0 {
-		for i := 0; i < len(missingInfoExternalIDs); i += authmanUserBatchSize {
-			j := i + authmanUserBatchSize
-			if j > len(missingInfoExternalIDs) {
-				j = len(missingInfoExternalIDs)
+			if user.ID != "" {
+				userID = &user.ID
 			}
-			log.Printf("Processing members missing info %d - %d for Authman %s...\n", i, j, *authmanGroup.AuthmanGroup)
-			externalIDs := missingInfoExternalIDs[i:j]
-			authmanUsers, err := app.authman.RetrieveAuthmanUsers(externalIDs)
-			if err != nil {
-				log.Printf("error on retrieving missing user info for %d members: %s\n", len(externalIDs), err)
-			} else if len(authmanUsers) > 0 {
-				for _, externalID := range externalIDs {
-					var name *string
-					var email *string
-					updatedInfo := false
-					if mappedUser, ok := authmanUsers[externalID]; ok {
-						if mappedUser.Name != "" {
-							name = &mappedUser.Name
-							updatedInfo = true
-						}
-						if len(mappedUser.AttributeValues) > 0 {
-							email = &mappedUser.AttributeValues[0]
-							updatedInfo = true
-						}
-						if !updatedInfo {
-							log.Printf("The user has missing info: %+v Group: '%s' Authman Group: '%s'\n", mappedUser, authmanGroup.Title, *authmanGroup.AuthmanGroup)
-						}
-					}
-					if updatedInfo {
-						_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, externalID, nil, nil, nil, email, name, nil, nil)
-						if err != nil {
-							log.Printf("Error saving membership with missing info for external ID %s in Authman %s\n", externalID, *authmanGroup.AuthmanGroup)
-						}
-					}
+			if user.Name != "" {
+				name = &user.Name
+			}
+			if user.Email != "" {
+				email = &user.Email
+			}
+		}
+
+		updateOperations = append(updateOperations, storage.SingleMembershipOperation{
+			ClientID:   clientID,
+			GroupID:    authmanGroup.ID,
+			ExternalID: externalID,
+			UserID:     userID,
+			Status:     &status,
+			Email:      email,
+			Name:       name,
+			SyncID:     &syncID,
+			Answers:    authmanGroup.CreateMembershipEmptyAnswers(),
+		})
+	}
+	if len(updateOperations) > 0 {
+		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
+		if err != nil {
+			log.Printf("Error on bulk saving membership (phase 1) in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
+		} else {
+			log.Printf("Successful bulk saving membership (phase 1) in Authman '%s'", *authmanGroup.AuthmanGroup)
+			memberships, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+				GroupIDs: []string{authmanGroup.ID},
+			})
+			for _, membership := range memberships.Items {
+				if membership.Email == "" || membership.Name == "" {
+					missingInfoMembers = append(missingInfoMembers, membership)
 				}
 			}
 		}
 	}
 
-	// TODO: Handle updating user info for admins that are not in the Authman group
+	// Update admin user data
+	for _, adminMember := range adminMembers.Items {
+		var userID *string
+		var name *string
+		var email *string
+		updatedInfo := false
+		if mappedUser, ok := localUsersMapping[adminMember.ExternalID]; ok {
+			if mappedUser.ID != "" && mappedUser.ID != adminMember.UserID {
+				userID = &mappedUser.ID
+				updatedInfo = true
+			}
+			if mappedUser.Name != "" && mappedUser.Name != adminMember.Name {
+				name = &mappedUser.Name
+				updatedInfo = true
+			}
+			if mappedUser.Email != "" && mappedUser.Email != adminMember.Email {
+				email = &mappedUser.Email
+				updatedInfo = true
+			}
+		}
+		if updatedInfo {
+			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, nil, email, name, nil, nil, false)
+			if err != nil {
+				log.Printf("Error saving admin membership with missing info for external ID %s in Authman %s: %s\n", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
+			} else {
+				log.Printf("Update admin member %s for group '%s'", adminMember.ExternalID, authmanGroup.Title)
+			}
+		}
+	}
+
+	// Fetch user info for the required users
+	log.Printf("Processing %d members missing info for Authman %s...\n", len(missingInfoMembers), *authmanGroup.AuthmanGroup)
+	for i := 0; i < len(missingInfoMembers); i += authmanUserBatchSize {
+		j := i + authmanUserBatchSize
+		if j > len(missingInfoMembers) {
+			j = len(missingInfoMembers)
+		}
+		log.Printf("Processing members missing info %d - %d for Authman %s...\n", i, j, *authmanGroup.AuthmanGroup)
+		members := missingInfoMembers[i:j]
+		externalIDs := make([]string, j-i)
+		for i, member := range members {
+			externalIDs[i] = member.ExternalID
+		}
+		authmanUsers, err := app.authman.RetrieveAuthmanUsers(externalIDs)
+		if err != nil {
+			log.Printf("error on retrieving missing user info for %d members: %s\n", len(externalIDs), err)
+		} else if len(authmanUsers) > 0 {
+
+			updateOperations = []storage.SingleMembershipOperation{}
+			for _, member := range members {
+				var name *string
+				var email *string
+				updatedInfo := false
+				if mappedUser, ok := authmanUsers[member.ExternalID]; ok {
+					if member.Name == "" && mappedUser.Name != "" {
+						name = &mappedUser.Name
+						updatedInfo = true
+					}
+					if member.Email == "" && len(mappedUser.AttributeValues) > 0 {
+						email = &mappedUser.AttributeValues[0]
+						updatedInfo = true
+					}
+					if !updatedInfo {
+						log.Printf("The user has missing info: %+v Group: '%s' Authman Group: '%s'\n", mappedUser, authmanGroup.Title, *authmanGroup.AuthmanGroup)
+					}
+				}
+				if updatedInfo {
+					updateOperations = append(updateOperations, storage.SingleMembershipOperation{
+						ClientID:   clientID,
+						GroupID:    authmanGroup.ID,
+						ExternalID: member.ExternalID,
+						Email:      email,
+						Name:       name,
+						SyncID:     &syncID,
+					})
+				}
+			}
+
+			if len(updateOperations) > 0 {
+				err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
+				if err != nil {
+					log.Printf("Error on bulk saving membership (phase 2) in Authman '%s': %s\n", *authmanGroup.AuthmanGroup, err)
+				} else {
+					log.Printf("Successful bulk saving membership (phase 2) in Authman '%s'", *authmanGroup.AuthmanGroup)
+				}
+			}
+		}
+	}
 
 	// Delete removed non-admin members
 	log.Printf("Deleting removed members for Authman %s...\n", *authmanGroup.AuthmanGroup)
@@ -1255,205 +1042,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
 	}
 
-	return nil
-}
-
-func (app *Application) syncEmbeddedAuthmanGroupMembers(clientID string, authmanGroup *model.Group, authmanExternalIDs []string,
-	localUsersMapping map[string]model.User) error {
-
-	now := time.Now().UTC()
-
-	defaultAdminsMapping := map[string]bool{}
-	admins := authmanGroup.GetAllAdminMembers()
-	if len(admins) > 0 {
-		for _, admin := range admins {
-			defaultAdminsMapping[admin.ExternalID] = true
-		}
-	}
-
-	externalIDMapping := map[string]model.Member{}
-	for _, member := range authmanGroup.Members {
-		if _, ok := externalIDMapping[member.ExternalID]; !ok {
-			externalIDMapping[member.ExternalID] = member
-		}
-	}
-
-	members := []model.Member{}
-	userIDMapping := map[string]interface{}{}
-	missingInfoExternalIDs := []string{}
-	for _, externalID := range authmanExternalIDs {
-		if mappedMember, ok := externalIDMapping[externalID]; ok {
-			members = append(members, mappedMember)
-			if mappedMember.UserID != "" {
-				userIDMapping[mappedMember.UserID] = true
-			}
-			if mappedMember.Name == "" || mappedMember.Email == "" {
-				missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
-			}
-			continue //SH: This was changed from "break" to fix missing members. This flow should still be optimized // TBD: Why? This flow looks complicated and needs to be revised and redesign.
-		}
-
-		if user, ok := localUsersMapping[externalID]; ok {
-			// Add missed members
-			member := authmanGroup.GetMemberByUserID(user.ID)
-			if member != nil {
-				if member.IsPendingMember() || member.IsRejected() || member.IsMember() {
-					member.Status = "member"
-					member.DateUpdated = &now
-					members = append(members, *member)
-					log.Printf("User(%s, %s, %s) is set as member '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
-				} else if member.IsAdmin() {
-					members = append(members, *member)
-				} else {
-					log.Printf("User(%s, %s, %s) is already a member or admin of '%s'", user.ID, user.ExternalID, user.Email, authmanGroup.Title)
-				}
-			} else {
-				members = append(members, model.Member{
-					ID:            uuid.NewString(),
-					UserID:        user.ID,
-					Status:        "member",
-					ExternalID:    externalID,
-					Name:          user.Name,
-					Email:         user.Email,
-					MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
-					DateCreated:   now,
-					DateUpdated:   &now,
-				})
-				log.Printf("User(%s, %s, %s) has been created as regular member of '%s'", externalID, user.Name, user.Email, authmanGroup.Title)
-			}
-			userIDMapping[user.ID] = true
-		} else {
-			members = append(members, model.Member{
-				ID:            uuid.NewString(),
-				Status:        "member",
-				ExternalID:    externalID,
-				MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
-				DateCreated:   now,
-				DateUpdated:   &now,
-			})
-			missingInfoExternalIDs = append(missingInfoExternalIDs, externalID)
-			log.Printf("Empty User(ExternalID: %s) has been created as regular member of '%s'", externalID, authmanGroup.Title)
-		}
-	}
-
-	// Fetch user info for the required users
-	if len(missingInfoExternalIDs) > 0 {
-		userMapping, err := app.authman.RetrieveAuthmanUsers(missingInfoExternalIDs)
-		if err != nil {
-			log.Printf("error on retriving missing user info for(%+v): %s", missingInfoExternalIDs, err)
-		} else if len(userMapping) > 0 {
-			for i, member := range members {
-				updatedInfo := false
-				if mappedUser, ok := userMapping[member.ExternalID]; ok {
-					if member.Name == "" && mappedUser.Name != "" {
-						member.Name = mappedUser.Name
-						updatedInfo = true
-					}
-					if member.Email == "" && len(mappedUser.AttributeValues) > 0 {
-						member.Email = mappedUser.AttributeValues[0]
-						updatedInfo = true
-					}
-					if !updatedInfo {
-						log.Printf("The user has missing info: %+v Group: '%s' Authman Group: '%s'", mappedUser, authmanGroup.Title, *authmanGroup.AuthmanGroup)
-					}
-				}
-				if updatedInfo {
-					members[i] = member
-				}
-			}
-		}
-	}
-
-	newExternalMembersMapping := map[string]interface{}{}
-	for _, member := range members {
-		newExternalMembersMapping[member.ExternalID] = true
-	}
-
-	// Add remaining admins
-	if len(authmanGroup.Members) > 0 {
-		for _, member := range authmanGroup.Members {
-			val := userIDMapping[member.UserID]
-			if val == nil && member.IsAdmin() {
-				found := false
-				for i, innerMember := range members {
-					if member.ExternalID == innerMember.ExternalID {
-						innerMember.Status = "admin"
-						innerMember.DateUpdated = &now
-						members[i] = innerMember
-						found = true
-						log.Printf("set user(%s, %s, %s) to 'admin' in '%s'", innerMember.UserID, innerMember.Name, innerMember.Email, authmanGroup.Title)
-						break
-					}
-				}
-				if !found {
-					members = append(members, member)
-					log.Printf("add remaining admin user(%s, %s, %s, %s) to '%s'", member.UserID, member.ExternalID, member.Name, member.Email, authmanGroup.Title)
-				}
-			} else if _, ok := newExternalMembersMapping[member.ExternalID]; !ok {
-				log.Printf("User(%s, %s) will be removed as a member of '%s', because it's not defined in Authman group", member.ExternalID, member.Name, authmanGroup.Title)
-			}
-		}
-	}
-
-	// Setup default admins - (check user exists, member exists or not exists and cover all possible scenarios) - separately
-	membersMapping := map[string]bool{}
-	for _, member := range members {
-		membersMapping[member.ExternalID] = true
-	}
-	if len(defaultAdminsMapping) > 0 {
-		for key := range defaultAdminsMapping {
-			if _, ok := membersMapping[key]; ok {
-				for index, innerMember := range members {
-					if innerMember.ExternalID == key {
-						innerMember.Status = "admin"
-						innerMember.DateUpdated = &now
-						members[index] = innerMember
-					}
-				}
-			} else {
-				user, err := app.storage.FindUser(clientID, key, true)
-				if err != nil {
-					return fmt.Errorf("error on retrieving  authman admin user(%s) for group(%s, %s): %s", key, authmanGroup.ID, authmanGroup.Title, err)
-				}
-				if user != nil {
-					members = append(members, model.Member{
-						ID:            uuid.NewString(),
-						UserID:        user.ID,
-						Status:        "admin",
-						ExternalID:    user.ExternalID,
-						Name:          user.Name,
-						Email:         user.Email,
-						MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
-						DateCreated:   now,
-						DateUpdated:   &now,
-					})
-				} else {
-					members = append(members, model.Member{
-						ID:            uuid.NewString(),
-						Status:        "admin",
-						ExternalID:    key,
-						MemberAnswers: authmanGroup.CreateMembershipEmptyAnswers(),
-						DateCreated:   now,
-						DateUpdated:   &now,
-					})
-				}
-			}
-		}
-	}
-
-	// Sort
-	if len(members) > 1 {
-		sort.SliceStable(members, func(i, j int) bool {
-			if members[j].Status != "admin" && members[i].Status == "admin" {
-				return true
-			}
-			return false
-		})
-	}
-
-	err := app.storage.UpdateGroupMembers(clientID, authmanGroup.ID, members)
+	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, true, true)
 	if err != nil {
-		return fmt.Errorf("error on updating authman group(%s, %s): %s", authmanGroup.ID, authmanGroup.Title, err)
+		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
 	}
 
 	return nil

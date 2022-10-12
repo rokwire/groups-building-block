@@ -140,3 +140,4 @@ This repository is configured with a [pre-commit](https://pre-commit.com/) hook 
 $ git pull  # Pull in pre-commit configuration & baseline 
 $ pip install pre-commit 
 $ pre-commit install
+```

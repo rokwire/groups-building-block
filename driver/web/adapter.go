@@ -43,7 +43,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.5.68
+// @version 1.6.1
 // @host localhost
 // @BasePath /gr
 // @schemes https
@@ -81,7 +81,6 @@ func (we *Adapter) Start() {
 	// Admin V1 APIs
 	adminSubrouter.HandleFunc("/authman/synchronize", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
-	adminSubrouter.HandleFunc("/user/login", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.LoginUser)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
@@ -111,7 +110,6 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET")
 
 	//V1 Client APIs
-	restSubrouter.HandleFunc("/group-categories", we.apiKeysAuthWrapFunc(we.apisHandler.GetGroupCategories)).Methods("GET")
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")

@@ -49,6 +49,9 @@ definitions:
         type: string
       client_id:
         type: string
+      current_member:
+        $ref: '#/definitions/GroupMembership'
+        description: this is indicative and it's not required for update APIs
       date_created:
         type: string
       date_updated:
@@ -74,6 +77,8 @@ definitions:
       privacy:
         description: public or private
         type: string
+      stats:
+        $ref: '#/definitions/GroupStats'
       sync_end_time:
         type: string
       sync_start_time:
@@ -84,55 +89,59 @@ definitions:
         type: array
       title:
         type: string
-      uses_group_memberships:
-        type: boolean
       web_url:
         type: string
     type: object
-  GroupMembersFilter:
+  GroupMembership:
     properties:
+      admin:
+        type: boolean
+      client_id:
+        type: string
+      date_attended:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      email:
+        type: string
       external_id:
-        description: core user external id
+        type: string
+      group_id:
         type: string
       id:
-        description: membership id
         type: string
-      limit:
-        description: result limit
-        type: integer
+      member_answers:
+        items:
+          $ref: '#/definitions/MemberAnswer'
+        type: array
       name:
-        description: member's name
         type: string
       net_id:
-        description: core user net id
         type: string
-      offset:
-        description: result offset
-        type: integer
-      statuses:
-        description: lest of membership statuses
-        items:
-          type: string
-        type: array
+      photo_url:
+        type: string
+      reject_reason:
+        type: string
+      status:
+        description: 'TODO: This is dangerous code-breaking change. There are existing
+          clients that may use it in the old way.'
+        type: string
+      sync_id:
+        description: ID of sync that last updated this membership
+        type: string
       user_id:
-        description: core user id
         type: string
-      user_ids:
-        description: core user ids
-        items:
-          type: string
-        type: array
     type: object
   GroupStat:
     properties:
       authman_enabled:
         type: boolean
-      members_added_last_24:
-        type: integer
-      members_count:
-        type: integer
       privacy:
         type: string
+      stats:
+        $ref: '#/definitions/GroupStats'
       title:
         type: string
     type: object
@@ -149,57 +158,8 @@ definitions:
       rejected_count:
         type: integer
       total_count:
+        description: pending and rejected are excluded
         type: integer
-    type: object
-  GroupV2:
-    properties:
-      attendance_group:
-        type: boolean
-      authman_enabled:
-        type: boolean
-      authman_group:
-        type: string
-      block_new_membership_requests:
-        type: boolean
-      can_join_automatically:
-        type: boolean
-      category:
-        description: one of the enums categories list
-        type: string
-      client_id:
-        type: string
-      current_member:
-        $ref: '#/definitions/Member'
-        description: this is indicative and it's not required for update APIs
-      date_created:
-        type: string
-      date_updated:
-        type: string
-      description:
-        type: string
-      hidden_for_search:
-        type: boolean
-      id:
-        type: string
-      image_url:
-        type: string
-      membership_questions:
-        items:
-          type: string
-        type: array
-      only_admins_can_create_polls:
-        type: boolean
-      privacy:
-        description: public or private
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
-        type: string
-      web_url:
-        type: string
     type: object
   GroupsStats:
     properties:
@@ -269,6 +229,45 @@ definitions:
         type: string
       question:
         type: string
+    type: object
+  MembershipFilter:
+    properties:
+      external_id:
+        description: core user external id
+        type: string
+      group_ids:
+        description: list of group ids
+        items:
+          type: string
+        type: array
+      id:
+        description: membership id
+        type: string
+      limit:
+        description: result limit
+        type: integer
+      name:
+        description: member's name
+        type: string
+      net_id:
+        description: core user net id
+        type: string
+      offset:
+        description: result offset
+        type: integer
+      statuses:
+        description: lest of membership statuses
+        items:
+          type: string
+        type: array
+      user_id:
+        description: core user id
+        type: string
+      user_ids:
+        description: core user ids
+        items:
+          type: string
+        type: array
     type: object
   ShortMemberRecord:
     properties:
@@ -366,6 +365,8 @@ definitions:
         type: array
       name:
         type: string
+      net_id:
+        type: string
       photo_url:
         type: string
       status:
@@ -392,65 +393,6 @@ definitions:
         type: string
     type: object
   getGroupResponse:
-    properties:
-      category:
-        type: string
-      date_created:
-        type: string
-      date_updated:
-        type: string
-      description:
-        type: string
-      id:
-        type: string
-      image_url:
-        type: string
-      members:
-        items:
-          properties:
-            date_created:
-              type: string
-            date_updated:
-              type: string
-            email:
-              type: string
-            id:
-              type: string
-            member_answers:
-              items:
-                properties:
-                  answer:
-                    type: string
-                  question:
-                    type: string
-                type: object
-              type: array
-            name:
-              type: string
-            photo_url:
-              type: string
-            rejected_reason:
-              type: string
-            status:
-              type: string
-          type: object
-        type: array
-      membership_questions:
-        items:
-          type: string
-        type: array
-      privacy:
-        type: string
-      tags:
-        items:
-          type: string
-        type: array
-      title:
-        type: string
-      web_url:
-        type: string
-    type: object
-  getGroupsResponse:
     properties:
       category:
         type: string
@@ -653,7 +595,7 @@ definitions:
       subject:
         type: string
     type: object
-  rest.userGroupMembership:
+  rest.userGroupShortDetail:
     properties:
       id:
         type: string
@@ -725,7 +667,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.5.68
+  version: 1.6.1
 paths:
   /admin/authman/synchronize:
     post:
@@ -923,7 +865,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - APIKeyAuth: []
@@ -1119,22 +1061,10 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - APIKeyAuth: []
-      - AppUserAuth: []
-      tags:
-      - Admin-V1
-  /api/admin/user/login:
-    get:
-      description: Logs in the user and refactor the user record and linked data if
-        need
-      operationId: AdminLoginUser
-      responses:
-        "200":
-          description: ""
-      security:
       - AppUserAuth: []
       tags:
       - Admin-V1
@@ -1181,7 +1111,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/GroupV2'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - AppUserAuth: []
@@ -1208,7 +1138,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/GroupV2'
+            $ref: '#/definitions/Group'
       security:
       - AppUserAuth: []
       tags:
@@ -1255,36 +1185,13 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/GroupV2'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
       - Admin-V2
-  /api/group-categories:
-    get:
-      consumes:
-      - application/json
-      description: Gives all group categories.
-      operationId: GetGroupCategories
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              type: string
-            type: array
-      security:
-      - APIKeyAuth: []
-      tags:
-      - Client-V1
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
@@ -1504,7 +1411,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/GroupMembersFilter'
+          $ref: '#/definitions/MembershipFilter'
       - description: APP
         in: header
         name: APP
@@ -1844,7 +1751,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - APIKeyAuth: []
@@ -2068,7 +1975,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.userGroupMembership'
+            $ref: '#/definitions/rest.userGroupShortDetail'
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2199,7 +2106,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.userGroupMembership'
+            $ref: '#/definitions/rest.userGroupShortDetail'
       security:
       - AppUserAuth: []
       tags:
@@ -2303,7 +2210,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/GroupV2'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - AppUserAuth: []
@@ -2330,7 +2237,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/GroupV2'
+            $ref: '#/definitions/Group'
       security:
       - AppUserAuth: []
       tags:
@@ -2377,7 +2284,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/GroupV2'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - AppUserAuth: []

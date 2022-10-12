@@ -17,15 +17,13 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
-	"time"
-
-	"gopkg.in/go-playground/validator.v9"
 
 	"github.com/gorilla/mux"
 )
@@ -41,7 +39,7 @@ type InternalApisHandler struct {
 // @Tags Internal
 // @Accept json
 // @Param identifier path string true "Identifier"
-// @Success 200 {object} userGroupMembership
+// @Success 200 {object} userGroupShortDetail
 // @Security IntAPIKeyAuth
 // @Router /api/int/user/{identifier}/groups [get]
 func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
@@ -54,30 +52,28 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 	}
 	externalID := identifier
 
-	userGroupMemberships, user, err := h.app.Services.GetUserGroupMembershipsByExternalID(externalID)
+	groups, err := h.app.Services.FindGroupsV3(clientID, &model.GroupsFilter{
+		MemberExternalID: &externalID,
+	})
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	userGroups := make([]userGroupMembership, len(userGroupMemberships))
-	for i, group := range userGroupMemberships {
+	userGroups := make([]userGroupShortDetail, len(groups))
+	for i, group := range groups {
 
-		memberStatus := ""
-
-		members := group.Members
-		for _, member := range members {
-			if member.UserID == user.ID {
-				memberStatus = member.Status
-			}
+		status := ""
+		if group.CurrentMember != nil {
+			status = group.CurrentMember.Status
 		}
 
-		ugm := userGroupMembership{
+		ugm := userGroupShortDetail{
 			ID:               group.ID,
 			Title:            group.Title,
 			Privacy:          group.Privacy,
-			MembershipStatus: memberStatus,
+			MembershipStatus: status,
 		}
 
 		userGroups[i] = ugm
@@ -119,6 +115,17 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{group.ID},
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	group.ApplyLegacyMembership(membershipCollection)
 
 	data, err := json.Marshal(group)
 	if err != nil {
@@ -172,16 +179,20 @@ func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w 
 		return
 	}
 
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{group.ID},
+		Offset:   offset,
+		Limit:    limit,
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
 	shortMembers := []model.ShortMemberRecord{}
-	if group != nil && len(group.Members) > 0 {
-		for i, member := range group.Members {
-			if offset == nil || (offset != nil && limit != nil && i >= int(*offset)) {
-				shortMembers = append(shortMembers, member.ToShortMemberRecord())
-			}
-			if limit != nil && len(shortMembers) >= int(*limit) {
-				break
-			}
-		}
+	for _, membership := range membershipCollection.Items {
+		shortMembers = append(shortMembers, membership.ToShortMemberRecord())
 	}
 
 	data, err := json.Marshal(shortMembers)
@@ -228,11 +239,10 @@ type GroupsStats struct {
 
 // GroupStat wrapper for single group stat
 type GroupStat struct {
-	Title              string `json:"title"`
-	Privacy            string `json:"privacy"`
-	AuthmanEnabled     bool   `json:"authman_enabled"`
-	MembersCount       int    `json:"members_count"`
-	MembersAddedLast24 int    `json:"members_added_last_24"`
+	Title          string           `json:"title"`
+	Privacy        string           `json:"privacy"`
+	AuthmanEnabled bool             `json:"authman_enabled"`
+	Stats          model.GroupStats `json:"stats"`
 } // @name GroupStat
 
 // GroupStats Retrieve group stats
@@ -255,19 +265,12 @@ func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter,
 	groupStatList := []GroupStat{}
 	if groupsCount > 0 {
 		for _, group := range groups {
-			addedLast24Count := 0
-			for _, member := range group.Members {
-				if time.Now().Unix()-member.DateCreated.Unix() < 24*60*60 {
-					addedLast24Count++
-				}
-			}
 
 			groupStatList = append(groupStatList, GroupStat{
-				Title:              group.Title,
-				Privacy:            group.Privacy,
-				AuthmanEnabled:     group.AuthmanEnabled,
-				MembersCount:       len(group.Members),
-				MembersAddedLast24: addedLast24Count,
+				Title:          group.Title,
+				Privacy:        group.Privacy,
+				AuthmanEnabled: group.AuthmanEnabled,
+				Stats:          group.Stats,
 			})
 		}
 	}

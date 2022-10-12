@@ -153,6 +153,22 @@ func (collWrapper *collectionWrapper) InsertMany(documents []interface{}, opts *
 	return result, nil
 }
 
+func (collWrapper *collectionWrapper) InsertManyWithContext(ctx context.Context, documents []interface{}, opts *options.InsertManyOptions) (*mongo.InsertManyResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	defer cancel()
+
+	result, err := collWrapper.coll.InsertMany(ctx, documents, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (collWrapper *collectionWrapper) DeleteMany(filter interface{}, opts *options.DeleteOptions) (*mongo.DeleteResult, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
 	defer cancel()
@@ -219,6 +235,26 @@ func (collWrapper *collectionWrapper) UpdateOneWithContext(ctx context.Context, 
 	}
 
 	return updateResult, nil
+}
+
+func (collWrapper *collectionWrapper) BulkWrite(models []mongo.WriteModel, opts *options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	return collWrapper.BulkWriteWithContext(nil, models, opts)
+}
+
+func (collWrapper *collectionWrapper) BulkWriteWithContext(ctx context.Context, models []mongo.WriteModel, opts *options.BulkWriteOptions) (*mongo.BulkWriteResult, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, collWrapper.database.mongoTimeout)
+	defer cancel()
+
+	writeResult, err := collWrapper.coll.BulkWrite(ctx, models, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	return writeResult, nil
 }
 
 func (collWrapper *collectionWrapper) UpdateMany(filter interface{}, update interface{}, opts *options.UpdateOptions) (*mongo.UpdateResult, error) {

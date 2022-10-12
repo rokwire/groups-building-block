@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.5.68"
+        "version": "1.6.1"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -330,7 +330,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupsResponse"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -639,28 +639,9 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupsResponse"
+                                "$ref": "#/definitions/Group"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/admin/user/login": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Logs in the user and refactor the user record and linked data if need",
-                "tags": [
-                    "Admin-V1"
-                ],
-                "operationId": "AdminLoginUser",
-                "responses": {
-                    "200": {
-                        "description": ""
                     }
                 }
             }
@@ -731,7 +712,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -773,7 +754,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/GroupV2"
+                            "$ref": "#/definitions/Group"
                         }
                     }
                 }
@@ -848,44 +829,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/group-categories": {
-            "get": {
-                "security": [
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Gives all group categories.",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Client-V1"
-                ],
-                "operationId": "GetGroupCategories",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -1196,7 +1140,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/GroupMembersFilter"
+                            "$ref": "#/definitions/MembershipFilter"
                         }
                     },
                     {
@@ -1780,7 +1724,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupsResponse"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2129,7 +2073,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.userGroupMembership"
+                            "$ref": "#/definitions/rest.userGroupShortDetail"
                         }
                     }
                 }
@@ -2333,7 +2277,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.userGroupMembership"
+                            "$ref": "#/definitions/rest.userGroupShortDetail"
                         }
                     }
                 }
@@ -2498,7 +2442,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2540,7 +2484,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/GroupV2"
+                            "$ref": "#/definitions/Group"
                         }
                     }
                 }
@@ -2615,7 +2559,7 @@
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/GroupV2"
+                                "$ref": "#/definitions/Group"
                             }
                         }
                     }
@@ -2762,6 +2706,10 @@
                 "client_id": {
                     "type": "string"
                 },
+                "current_member": {
+                    "description": "this is indicative and it's not required for update APIs",
+                    "$ref": "#/definitions/GroupMembership"
+                },
                 "date_created": {
                     "type": "string"
                 },
@@ -2799,6 +2747,9 @@
                     "description": "public or private",
                     "type": "string"
                 },
+                "stats": {
+                    "$ref": "#/definitions/GroupStats"
+                },
                 "sync_end_time": {
                     "type": "string"
                 },
@@ -2814,58 +2765,69 @@
                 "title": {
                     "type": "string"
                 },
-                "uses_group_memberships": {
-                    "type": "boolean"
-                },
                 "web_url": {
                     "type": "string"
                 }
             }
         },
-        "GroupMembersFilter": {
+        "GroupMembership": {
             "type": "object",
             "properties": {
+                "admin": {
+                    "type": "boolean"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_attended": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
                 "external_id": {
-                    "description": "core user external id",
+                    "type": "string"
+                },
+                "group_id": {
                     "type": "string"
                 },
                 "id": {
-                    "description": "membership id",
                     "type": "string"
                 },
-                "limit": {
-                    "description": "result limit",
-                    "type": "integer"
+                "member_answers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MemberAnswer"
+                    }
                 },
                 "name": {
-                    "description": "member's name",
                     "type": "string"
                 },
                 "net_id": {
-                    "description": "core user net id",
                     "type": "string"
                 },
-                "offset": {
-                    "description": "result offset",
-                    "type": "integer"
+                "photo_url": {
+                    "type": "string"
                 },
-                "statuses": {
-                    "description": "lest of membership statuses",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "reject_reason": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.",
+                    "type": "string"
+                },
+                "sync_id": {
+                    "description": "ID of sync that last updated this membership",
+                    "type": "string"
                 },
                 "user_id": {
-                    "description": "core user id",
                     "type": "string"
-                },
-                "user_ids": {
-                    "description": "core user ids",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
                 }
             }
         },
@@ -2875,14 +2837,11 @@
                 "authman_enabled": {
                     "type": "boolean"
                 },
-                "members_added_last_24": {
-                    "type": "integer"
-                },
-                "members_count": {
-                    "type": "integer"
-                },
                 "privacy": {
                     "type": "string"
+                },
+                "stats": {
+                    "$ref": "#/definitions/GroupStats"
                 },
                 "title": {
                     "type": "string"
@@ -2908,81 +2867,8 @@
                     "type": "integer"
                 },
                 "total_count": {
+                    "description": "pending and rejected are excluded",
                     "type": "integer"
-                }
-            }
-        },
-        "GroupV2": {
-            "type": "object",
-            "properties": {
-                "attendance_group": {
-                    "type": "boolean"
-                },
-                "authman_enabled": {
-                    "type": "boolean"
-                },
-                "authman_group": {
-                    "type": "string"
-                },
-                "block_new_membership_requests": {
-                    "type": "boolean"
-                },
-                "can_join_automatically": {
-                    "type": "boolean"
-                },
-                "category": {
-                    "description": "one of the enums categories list",
-                    "type": "string"
-                },
-                "client_id": {
-                    "type": "string"
-                },
-                "current_member": {
-                    "description": "this is indicative and it's not required for update APIs",
-                    "$ref": "#/definitions/Member"
-                },
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "hidden_for_search": {
-                    "type": "boolean"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "membership_questions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "only_admins_can_create_polls": {
-                    "type": "boolean"
-                },
-                "privacy": {
-                    "description": "public or private",
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "web_url": {
-                    "type": "string"
                 }
             }
         },
@@ -3088,6 +2974,60 @@
                 },
                 "question": {
                     "type": "string"
+                }
+            }
+        },
+        "MembershipFilter": {
+            "type": "object",
+            "properties": {
+                "external_id": {
+                    "description": "core user external id",
+                    "type": "string"
+                },
+                "group_ids": {
+                    "description": "list of group ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "id": {
+                    "description": "membership id",
+                    "type": "string"
+                },
+                "limit": {
+                    "description": "result limit",
+                    "type": "integer"
+                },
+                "name": {
+                    "description": "member's name",
+                    "type": "string"
+                },
+                "net_id": {
+                    "description": "core user net id",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "result offset",
+                    "type": "integer"
+                },
+                "statuses": {
+                    "description": "lest of membership statuses",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "user_id": {
+                    "description": "core user id",
+                    "type": "string"
+                },
+                "user_ids": {
+                    "description": "core user ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
@@ -3235,6 +3175,9 @@
                 "name": {
                     "type": "string"
                 },
+                "net_id": {
+                    "type": "string"
+                },
                 "photo_url": {
                     "type": "string"
                 },
@@ -3275,96 +3218,6 @@
             }
         },
         "getGroupResponse": {
-            "type": "object",
-            "properties": {
-                "category": {
-                    "type": "string"
-                },
-                "date_created": {
-                    "type": "string"
-                },
-                "date_updated": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "image_url": {
-                    "type": "string"
-                },
-                "members": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "date_created": {
-                                "type": "string"
-                            },
-                            "date_updated": {
-                                "type": "string"
-                            },
-                            "email": {
-                                "type": "string"
-                            },
-                            "id": {
-                                "type": "string"
-                            },
-                            "member_answers": {
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "properties": {
-                                        "answer": {
-                                            "type": "string"
-                                        },
-                                        "question": {
-                                            "type": "string"
-                                        }
-                                    }
-                                }
-                            },
-                            "name": {
-                                "type": "string"
-                            },
-                            "photo_url": {
-                                "type": "string"
-                            },
-                            "rejected_reason": {
-                                "type": "string"
-                            },
-                            "status": {
-                                "type": "string"
-                            }
-                        }
-                    }
-                },
-                "membership_questions": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "privacy": {
-                    "type": "string"
-                },
-                "tags": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "title": {
-                    "type": "string"
-                },
-                "web_url": {
-                    "type": "string"
-                }
-            }
-        },
-        "getGroupsResponse": {
             "type": "object",
             "properties": {
                 "category": {
@@ -3668,7 +3521,7 @@
                 }
             }
         },
-        "rest.userGroupMembership": {
+        "rest.userGroupShortDetail": {
             "type": "object",
             "properties": {
                 "id": {

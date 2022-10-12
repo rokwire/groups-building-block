@@ -47,39 +47,6 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(h.app.Services.GetVersion()))
 }
 
-// GetGroupCategories gives all group categories
-// @Description Gives all group categories.
-// @ID GetGroupCategories
-// @Tags Client-V1
-// @Accept  json
-// @Param APP header string true "APP"
-// @Success 200 {array} string
-// @Security APIKeyAuth
-// @Router /api/group-categories [get]
-func (h *ApisHandler) GetGroupCategories(clientID string, w http.ResponseWriter, r *http.Request) {
-	groupCategories, err := h.app.Services.GetGroupCategories()
-	if err != nil {
-		log.Println("Error on getting the group categories")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	if len(groupCategories) == 0 {
-		groupCategories = make([]string, 0)
-	}
-
-	data, err := json.Marshal(groupCategories)
-	if err != nil {
-		log.Println("Error on marshal the group categories")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-}
-
 type createGroupRequest struct {
 	Title                    string   `json:"title" validate:"required"`
 	Description              *string  `json:"description"`
@@ -100,7 +67,7 @@ type createGroupRequest struct {
 	AttendanceGroup          bool     `json:"attendance_group" `
 } //@name createGroupRequest
 
-type userGroupMembership struct {
+type userGroupShortDetail struct {
 	ID               string `json:"id"`
 	Title            string `json:"title"`
 	Privacy          string `json:"privacy"`
@@ -253,28 +220,14 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	}
 
 	//check if allowed to update
-	isAdmin, group, err := h.app.Services.IsGroupAdmin(clientID, id, current.ID)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could update a group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group with id - %s", id)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-	if !isAdmin {
-		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
-
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
-		return
-	}
-
 	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
-		log.Printf("Only managed_group_admin could update a managed group")
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
@@ -326,14 +279,20 @@ func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http
 		return
 	}
 
-	stats, err := h.app.Services.GetGroupStats(clientID, groupID)
+	group, err := h.app.Services.GetGroup(clientID, current, groupID)
 	if err != nil {
+		log.Printf("error getting group - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if group == nil {
 		log.Printf("error getting group stats - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	data, err := json.Marshal(stats)
+	data, err := json.Marshal(group.Stats)
 	if err != nil {
 		log.Println("Error on marshal the group stats")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -366,27 +325,20 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group for the provided id - %s", id)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
-		return
-	}
-	if !group.IsGroupAdmin(current.ID) {
-		log.Printf("%s is not allowed to update a group", current.Email)
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could delete group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
-
 	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
-		log.Printf("Only managed_group_admin could update a managed group")
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could delete a managed group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
@@ -394,7 +346,7 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	err = h.app.Services.DeleteGroup(clientID, current, id)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
-		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
@@ -402,38 +354,6 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
 }
-
-type getGroupsResponse struct {
-	ID                  string   `json:"id"`
-	Category            string   `json:"category"`
-	Title               string   `json:"title"`
-	Privacy             string   `json:"privacy"`
-	Description         *string  `json:"description"`
-	ImageURL            *string  `json:"image_url"`
-	WebURL              *string  `json:"web_url"`
-	Tags                []string `json:"tags"`
-	MembershipQuestions []string `json:"membership_questions"`
-
-	Members []struct {
-		ID             string `json:"id"`
-		Name           string `json:"name"`
-		Email          string `json:"email"`
-		PhotoURL       string `json:"photo_url"`
-		Status         string `json:"status"`
-		RejectedReason string `json:"rejected_reason"`
-
-		MemberAnswers []struct {
-			Question string `json:"question"`
-			Answer   string `json:"answer"`
-		} `json:"member_answers"`
-
-		DateCreated time.Time  `json:"date_created"`
-		DateUpdated *time.Time `json:"date_updated"`
-	} `json:"members"`
-
-	DateCreated time.Time  `json:"date_created"`
-	DateUpdated *time.Time `json:"date_updated"`
-} // @name getGroupsResponse
 
 // GetGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
@@ -447,7 +367,7 @@ type getGroupsResponse struct {
 // @Param offset query string false "offset - skip number of records"
 // @Param limit query string false "limit - limit the result"
 // @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
-// @Success 200 {array} getGroupsResponse
+// @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/groups [get]
@@ -508,6 +428,25 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
 	}
 
 	data, err := json.Marshal(groups)
@@ -615,6 +554,25 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 		return
 	}
 
+	groupIDs := []string{}
+	for _, grouop := range groups {
+		groupIDs = append(groupIDs, grouop.ID)
+	}
+
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: groupIDs,
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	for index, group := range groups {
+		group.ApplyLegacyMembership(membershipCollection)
+		groups[index] = group
+	}
+
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("Error on marshal the user groups items")
@@ -708,40 +666,31 @@ func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.Re
 // @Tags Client-V1
 // @Accept json
 // @Param identifier path string true "Identifier"
-// @Success 200 {object} userGroupMembership
+// @Success 200 {object} userGroupShortDetail
 // @Security AppUserAuth
 // @Router /api/user/group-memberships [get]
 func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	userGroupMemberships, err := h.app.Services.GetUserGroupMembershipsByID(current.ID)
+	userGroups, err := h.app.Services.GetUserGroups(clientID, current, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	userGroups := make([]userGroupMembership, len(userGroupMemberships))
-	for i, group := range userGroupMemberships {
+	userGroupShortDetailList := make([]userGroupShortDetail, len(userGroups))
+	for i, group := range userGroups {
 
-		memberStatus := ""
-
-		members := group.Members
-		for _, member := range members {
-			if member.UserID == current.ID {
-				memberStatus = member.Status
-			}
-		}
-
-		ugm := userGroupMembership{
+		ugm := userGroupShortDetail{
 			ID:               group.ID,
 			Title:            group.Title,
 			Privacy:          group.Privacy,
-			MembershipStatus: memberStatus,
+			MembershipStatus: group.CurrentMember.Status,
 		}
 
-		userGroups[i] = ugm
+		userGroupShortDetailList[i] = ugm
 	}
 
-	data, err := json.Marshal(userGroups)
+	data, err := json.Marshal(userGroupShortDetailList)
 	if err != nil {
 		log.Println("Error on marshal the user group membership")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -805,17 +754,23 @@ func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.Resp
 		return
 	}
 
-	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if err != nil {
-		log.Printf("error getting a group - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Printf("adminapis.GetGroupV2() error on getting group %s", err)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	if !hasGroupMembershipPermission(h.app.Services, w, current, clientID, group) {
+	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{id},
+	})
+	if err != nil {
+		log.Printf("Unable to retrieve memberships: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
+
+	group.ApplyLegacyMembership(membershipCollection)
 
 	data, err := json.Marshal(group)
 	if err != nil {
@@ -903,15 +858,16 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		}
 	}
 
-	member := &model.Member{
+	member := &model.GroupMembership{
 		UserID:        current.ID,
 		ExternalID:    current.ExternalID,
 		Name:          current.Name,
+		NetID:         current.NetID,
 		Email:         current.Email,
 		MemberAnswers: mAnswers,
 	}
 
-	err = h.app.Services.CreatePendingMember(clientID, current, group, member)
+	err = h.app.Services.CreatePendingMembership(clientID, current, group, member)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -942,7 +898,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	err := h.app.Services.DeletePendingMember(clientID, current, groupID)
+	err := h.app.Services.DeletePendingMembership(clientID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -959,7 +915,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // @ID CreateMember
 // @Tags Client-V1
 // @Accept plain
-// @Param data body model.GroupMembersFilter true "body data"
+// @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.Member
@@ -976,33 +932,35 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 
 	requestData, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("Error on marshal model.GroupMembersFilter request body - %s\n", err.Error())
+		log.Printf("Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	var request model.GroupMembersFilter
+	var request model.MembershipFilter
 	if len(requestData) > 0 {
 		err = json.Unmarshal(requestData, &request)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("Error on unmarshal model.GroupMembersFilter request body - %s\n", err.Error())
+			log.Printf("Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
 		}
 	}
 
+	request.GroupIDs = append(request.GroupIDs, groupID)
+
 	//check if allowed to update
-	members, err := h.app.Services.GetGroupMembers(clientID, current, groupID, &request)
+	members, err := h.app.Services.FindGroupMemberships(clientID, request)
 	if err != nil {
 		log.Printf("api.GetGroupMembers error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	if members == nil {
-		members = []model.Member{}
+	if members.Items == nil {
+		members.Items = []model.GroupMembership{}
 	}
 
-	data, err := json.Marshal(members)
+	data, err := json.Marshal(members.Items)
 	if err != nil {
 		log.Printf("api.GetGroupMembers error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1019,6 +977,7 @@ type createMemberRequest struct {
 	UserID        string     `json:"user_id" bson:"user_id"`
 	ExternalID    string     `json:"external_id" bson:"external_id"`
 	Name          string     `json:"name" bson:"name"`
+	NetID         string     `json:"net_id" bson:"net_id"`
 	Email         string     `json:"email" bson:"email"`
 	PhotoURL      string     `json:"photo_url" bson:"photo_url"`
 	Status        string     `json:"status" bson:"status"` //pending, member, admin, rejected
@@ -1065,7 +1024,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	}
 
 	if len(requestData.UserID) == 0 && len(requestData.ExternalID) == 0 {
-		log.Printf("error: api.CreateMemberUnchecked() - expected user_id or external_id")
+		log.Printf("error: api.CreateMember() - expected user_id or external_id")
 		http.Error(w, "expected user_id or external_id", http.StatusBadRequest)
 		return
 	}
@@ -1075,7 +1034,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 			requestData.Status == "admin" ||
 			requestData.Status == "rejected" ||
 			requestData.Status == "pending") {
-		log.Printf("error: api.CreateMemberUnchecked() - expected status with possible value (member, admin, rejected, pending)")
+		log.Printf("error: api.CreateMember() - expected status with possible value (member, admin, rejected, pending)")
 		http.Error(w, "expected status with possible value (member, admin, rejected, pending)", http.StatusBadRequest)
 		return
 	} else if requestData.Status == "" {
@@ -1090,28 +1049,32 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		return
 	}
 	if group == nil {
-		log.Printf("error: api.CreateMemberUnchecked() - there is no a group for the provided id - %s", groupID)
+		log.Printf("error: api.CreateMember() - there is no a group for the provided id - %s", groupID)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
-		log.Printf("error: api.CreateMemberUnchecked() - %s is not allowed to create group member", current.Email)
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
+		log.Printf("error: api.CreateMember() - %s is not allowed to create group member", current.Email)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 		return
 	}
 
-	member := model.Member{
+	member := model.GroupMembership{
+		GroupID:      groupID,
 		UserID:       requestData.UserID,
 		ExternalID:   requestData.ExternalID,
 		Email:        requestData.Email,
 		Name:         requestData.Name,
+		NetID:        requestData.NetID,
 		PhotoURL:     requestData.PhotoURL,
 		Status:       requestData.Status,
 		DateAttended: requestData.DateAttended,
 	}
 
-	err = h.app.Services.CreateMember(clientID, current, group, &member)
+	err = h.app.Services.CreateMembership(clientID, current, group, &member)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1141,7 +1104,7 @@ func (h *ApisHandler) DeleteMember(clientID string, current *model.User, w http.
 		return
 	}
 
-	err := h.app.Services.DeleteMember(clientID, current, groupID)
+	err := h.app.Services.DeleteMembership(clientID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1203,8 +1166,15 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 		return
 	}
 
+	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	if err != nil || membership == nil {
+		log.Printf("Membership %s not found - %s\n", membershipID, err.Error())
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntityByMembership(clientID, membershipID)
+	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1216,7 +1186,8 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
 		log.Printf("%s is not allowed to make approval", current.Email)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1260,8 +1231,18 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 		return
 	}
 
+	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if membership == nil {
+		log.Printf("Membership %s not found", membershipID)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
+
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntityByMembership(clientID, membershipID)
+	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1273,7 +1254,7 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
 		log.Printf("%s is not allowed to delete membership", current.Email)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1281,7 +1262,7 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.DeleteMembership(clientID, current, membershipID)
+	err = h.app.Services.DeleteMembershipByID(clientID, current, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1343,8 +1324,15 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		return
 	}
 
+	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	if err != nil || membership == nil {
+		log.Printf("Membership %s not found - %s\n", membershipID, err.Error())
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntityByMembership(clientID, membershipID)
+	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1356,7 +1344,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
 		log.Printf("%s is not allowed to make update", current.Email)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1399,27 +1387,21 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 	}
 
 	//check if allowed to update
-	isAdmin, group, err := h.app.Services.IsGroupAdmin(clientID, groupID, current.ID)
+	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, groupID, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
-		log.Printf("there is no a group with id - %s", groupID)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
 	if !isAdmin {
-		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, group.Title)
+		log.Printf("%s is not allowed to make Authman Synch for group '%s'", current.Email, groupID)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 		return
 	}
 
-	err = h.app.Services.SynchronizeAuthmanGroup(clientID, group)
+	err = h.app.Services.SynchronizeAuthmanGroup(clientID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1452,24 +1434,13 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if group == nil {
-		log.Printf("there is no a group for the provided group id - %s", groupID)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	if !hasGroupMembershipPermission(h.app.Services, w, current, clientID, group) {
-		return
-	}
-
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1514,24 +1485,13 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
-	if err != nil {
-		log.Println(err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if group == nil {
-		log.Printf("there is no a group for the provided group id - %s", groupID)
-		//do not say to much to the user as we do not know if he/she is an admin for the group yet
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	if !hasGroupMembershipPermission(h.app.Services, w, current, clientID, group) {
-		return
-	}
-
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, !group.IsGroupAdmin(current.ID))
+	events, err := h.app.Services.GetEvents(clientID, current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1539,7 +1499,7 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 	}
 
 	// Remove  ToMembersList for non-admins
-	if len(events) > 0 && !group.IsGroupAdmin(current.ID) {
+	if len(events) > 0 && !group.CurrentMember.IsAdmin() {
 		for i, event := range events {
 			event.ToMembersList = nil
 			events[i] = event
@@ -1621,7 +1581,8 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1703,7 +1664,8 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1763,7 +1725,8 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdmin(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1838,7 +1801,10 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to get posts for group %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -1847,12 +1813,17 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	var filterPrivatePostsValue *bool
-	if group == nil || err != nil || !group.IsGroupAdminOrMember(current.ID) {
+	if group == nil || err != nil || membership == nil || !membership.IsAdminOrMember() {
 		filter := false
 		filterPrivatePostsValue = &filter
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, !group.IsGroupAdmin(current.ID), offset, limit, order)
+	filterByToMembers := true
+	if membership != nil && membership.IsAdmin() {
+		filterByToMembers = false
+	}
+
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1913,7 +1884,9 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil || !group.IsGroupAdminOrMember(current.ID) {
+
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("the user is not member of the group - %s", id)
 		// do not say to much to the user as we do not know if he/she is an admin for the group yet
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1989,7 +1962,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -2076,7 +2049,8 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -2150,20 +2124,20 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	membership, err := h.app.Services.FindGroupMembership(clientID, groupID, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if group == nil {
+	if membership == nil {
 		log.Printf("there is no a group for the provided group id - %s", groupID)
 		//do not say to much to the user as we do not know if he/she is an admin for the group yet
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
-		log.Printf("%s is not allowed to react to posts for %s", current.Email, group.Title)
+	if !membership.IsAdminOrMember() {
+		log.Printf("%s is not allowed to react to posts for group %s", current.Email, groupID)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
@@ -2243,7 +2217,8 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
@@ -2308,7 +2283,8 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if !group.IsGroupAdminOrMember(current.ID) {
+	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
