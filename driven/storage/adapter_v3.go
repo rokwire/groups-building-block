@@ -250,6 +250,7 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 	return nil
 }
 
+// SingleMembershipOperation wraps single membership operation for possible updates
 type SingleMembershipOperation struct {
 	ClientID   string
 	GroupID    string
@@ -263,6 +264,7 @@ type SingleMembershipOperation struct {
 	SyncID     *string
 }
 
+// BulkUpdateGroupMembershipsByExternalID Bulk update with a list of memberships
 func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []SingleMembershipOperation, updateGroupStats bool) error {
 	now := time.Now()
 
