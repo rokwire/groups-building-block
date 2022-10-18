@@ -24,8 +24,10 @@ import (
 
 // Adapter implements the Notifications interface
 type Adapter struct {
-	internalAPIKey string
-	baseURL        string
+	internalAPIKey     string
+	baseURL            string
+	notificationsAppID string
+	notificationsOrgID string
 }
 
 // Recipient struct
@@ -35,8 +37,8 @@ type Recipient struct {
 }
 
 // NewNotificationsAdapter creates a new Notifications BB adapter instance
-func NewNotificationsAdapter(internalAPIKey string, baseURL string) *Adapter {
-	return &Adapter{internalAPIKey: internalAPIKey, baseURL: baseURL}
+func NewNotificationsAdapter(internalAPIKey string, baseURL string, ntAppID string, ntOrgID string) *Adapter {
+	return &Adapter{internalAPIKey: internalAPIKey, baseURL: baseURL, notificationsAppID: ntAppID, notificationsOrgID: ntOrgID}
 }
 
 // SendNotification sends notification to a user
