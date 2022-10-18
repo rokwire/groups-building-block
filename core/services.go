@@ -182,7 +182,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	}
 
 	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
-	if err == nil && membership != nil && membership.NotificationsPreferences.CanSendInvitationsNotification() {
+	if err == nil && membership != nil {
 		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
 		if approve {
@@ -234,18 +234,11 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
+func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
 	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
 	if membership != nil {
-		if status != nil {
-			membership.Status = *status
-		}
-		if dateAttended != nil {
-			membership.DateAttended = dateAttended
-		}
-		if notificationsPreferences != nil {
-			membership.NotificationsPreferences = *notificationsPreferences
-		}
+		membership.Status = status
+		membership.DateAttended = dateAttended
 
 		err := app.storage.UpdateMembership(clientID, current, membershipID, membership)
 		if err != nil {
@@ -283,38 +276,30 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 		return nil, err
 	}
 
-	var userIDs []string
 	var recipients []notifications.Recipient
 	if len(event.ToMembersList) > 0 {
-		userIDs = event.GetMembersAsUserIDs(skipUserID)
+		recipients = event.GetMembersAsNotificationRecipients(skipUserID)
 	} else {
-		userIDs = []string{group.ID}
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{group.ID},
+			Statuses: []string{"member", "admin"},
+		})
+		recipients = result.GetMembersAsNotificationRecipients(skipUserID)
 	}
-
-	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: userIDs,
-		Statuses: []string{"member", "admin"},
-	})
-	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) bool {
-		return member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID) && member.NotificationsPreferences.CanSendEventsNotification()
-	})
-
-	if len(recipients) > 0 {
-		topic := "group.events"
-		go app.notifications.SendNotification(
-			recipients,
-			&topic,
-			fmt.Sprintf("Group - %s", group.Title),
-			fmt.Sprintf("New event has been published in '%s' group", group.Title),
-			map[string]string{
-				"type":        "group",
-				"operation":   "event_created",
-				"entity_type": "group",
-				"entity_id":   group.ID,
-				"entity_name": group.Title,
-			},
-		)
-	}
+	topic := "group.events"
+	app.notifications.SendNotification(
+		recipients,
+		&topic,
+		fmt.Sprintf("Group - %s", group.Title),
+		fmt.Sprintf("New event has been published in '%s' group", group.Title),
+		map[string]string{
+			"type":        "group",
+			"operation":   "event_created",
+			"entity_type": "group",
+			"entity_id":   group.ID,
+			"entity_name": group.Title,
+		},
+	)
 
 	return event, nil
 }
@@ -365,17 +350,15 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 
 	handleNotification := func() {
 
-		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, &current.ID)
+		recipients, _ := app.getPostNotificationRecipients(clientID, post, &current.ID)
 
-		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-			GroupIDs: []string{group.ID},
-			UserIDs:  recipientsUserIDs,
-			Statuses: []string{"member", "admin"},
-		})
-		recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) bool {
-			return member.IsAdminOrMember() && (current.ID != member.UserID) && member.NotificationsPreferences.CanSendPostsNotification()
-		})
-
+		if len(recipients) == 0 {
+			result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+				GroupIDs: []string{group.ID},
+				Statuses: []string{"member", "admin"},
+			})
+			recipients = result.GetMembersAsNotificationRecipients(&current.ID)
+		}
 		if len(recipients) > 0 {
 			title := fmt.Sprintf("Group - %s", group.Title)
 			body := fmt.Sprintf("New post has been published in '%s' group", group.Title)
@@ -408,13 +391,13 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	return post, nil
 }
 
-func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, post *model.Post, skipUserID *string) ([]string, error) {
+func (app *Application) getPostNotificationRecipients(clientID string, post *model.Post, skipUserID *string) ([]notifications.Recipient, error) {
 	if post == nil {
 		return nil, nil
 	}
 
 	if len(post.ToMembersList) > 0 {
-		return post.GetMembersAsUserIDs(skipUserID), nil
+		return post.GetMembersAsNotificationRecipients(skipUserID), nil
 	}
 
 	var err error
@@ -430,7 +413,7 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 		}
 
 		if post != nil && len(post.ToMembersList) > 0 {
-			return post.GetMembersAsUserIDs(skipUserID), nil
+			return post.GetMembersAsNotificationRecipients(skipUserID), nil
 		}
 	}
 

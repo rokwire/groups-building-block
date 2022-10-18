@@ -54,16 +54,14 @@ func (c *MembershipCollection) GetMembersByStatus(status string) []GroupMembersh
 	return members
 }
 
-type filterPredicate = func(member GroupMembership) bool
-
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
-func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate filterPredicate) []notifications.Recipient {
+func (c *MembershipCollection) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 
 	recipients := []notifications.Recipient{}
 
 	if len(c.Items) > 0 {
 		for _, member := range c.Items {
-			if predicate(member) {
+			if member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID) {
 				recipients = append(recipients, notifications.Recipient{
 					UserID: member.UserID,
 					Name:   member.Name,
@@ -93,8 +91,6 @@ type GroupMembership struct {
 	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
 	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
 	SyncID        string         `json:"sync_id" bson:"sync_id"` //ID of sync that last updated this membership
-
-	NotificationsPreferences NotificationsPreferences `json:"notification_preferences" bson:"notification_preferences"`
 
 	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
@@ -196,33 +192,4 @@ func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 		Name:       m.Name,
 		Status:     m.Status,
 	}
-}
-
-// NotificationsPreferences overrides default notification preferences on group level
-type NotificationsPreferences struct {
-	OverridePreferences bool `json:"override_preferences" bson:"override_preferences"`
-	InvitationsEnabled  bool `json:"invitations_enabled" bson:"invitations_enabled"`
-	PostsEnabled        bool `json:"posts_enabled" bson:"posts_enabled"`
-	EventsEnabled       bool `json:"events_enabled" bson:"events_enabled"`
-	PollsEnabled        bool `json:"polls_enabled" bson:"polls_enabled"`
-} // @name NotificationsPreferences
-
-// CanSendInvitationsNotification Checks if can send invitation notifications to this member
-func (n *NotificationsPreferences) CanSendInvitationsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.InvitationsEnabled)
-}
-
-// CanSendPostsNotification Checks if can send post notifications to this member
-func (n *NotificationsPreferences) CanSendPostsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.PostsEnabled)
-}
-
-// CanSendEventsNotification Checks if can send events notifications to this member
-func (n *NotificationsPreferences) CanSendEventsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.EventsEnabled)
-}
-
-// CanSendPollsNotification Checks if can send polls notifications to this member
-func (n *NotificationsPreferences) CanSendPollsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.PollsEnabled)
 }
