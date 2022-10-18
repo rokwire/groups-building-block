@@ -48,7 +48,7 @@ func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title
 
 func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string) error {
 	if len(recipients) > 0 {
-		url := fmt.Sprintf("%s/api/int/message", na.baseURL)
+		url := fmt.Sprintf("%s/api/int/v2/message", na.baseURL)
 
 		bodyData := map[string]interface{}{
 			"priority":   10,
