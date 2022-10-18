@@ -44,7 +44,7 @@ type Services interface {
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
-	UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error
+	UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
@@ -149,8 +149,8 @@ func (s *servicesImpl) ApplyMembershipApproval(clientID string, current *model.U
 	return s.app.applyMembershipApproval(clientID, current, membershipID, approve, rejectReason)
 }
 
-func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status string, dateAttended *time.Time) error {
-	return s.app.updateMembership(clientID, current, membershipID, status, dateAttended)
+func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
+	return s.app.updateMembership(clientID, current, membershipID, status, dateAttended, notificationsPreferences)
 }
 
 func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {

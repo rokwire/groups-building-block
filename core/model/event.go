@@ -29,6 +29,19 @@ type Event struct {
 	ToMembersList []ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name Event
 
+// GetMembersAsUserIDs Gets all members as list of user ids
+func (e Event) GetMembersAsUserIDs(skipUserID *string) []string {
+	userIDs := []string{}
+	if len(e.ToMembersList) > 0 {
+		for _, member := range e.ToMembersList {
+			if skipUserID == nil || *skipUserID != member.UserID {
+				userIDs = append(userIDs, member.UserID)
+			}
+		}
+	}
+	return userIDs
+}
+
 // GetMembersAsNotificationRecipients constructs all to members as notification recipients
 func (e Event) GetMembersAsNotificationRecipients(skipUserID *string) []notifications.Recipient {
 	recipients := []notifications.Recipient{}

@@ -1275,12 +1275,13 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 }
 
 type updateMembershipRequest struct {
-	Status       string     `json:"status" validate:"required,oneof=member admin"`
-	DateAttended *time.Time `json:"date_attended"`
+	Status                   *string                         `json:"status" validate:"required,oneof=member admin"`
+	DateAttended             *time.Time                      `json:"date_attended"`
+	NotificationsPreferences *model.NotificationsPreferences `json:"notification_preferences"`
 } // @name updateMembershipRequest
 
-// UpdateMembership updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
-// @Description Updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.
+// UpdateMembership updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.
+// @Description Updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.
 // @ID UpdateMembership
 // @Tags Client-V1
 // @Accept json
@@ -1344,18 +1345,26 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
-		log.Printf("%s is not allowed to make update", current.Email)
+	if group.CurrentMember == nil || (!group.CurrentMember.IsAdmin() && group.CurrentMember.UserID != membership.UserID) {
+		log.Printf("%s is not allowed to make update on membership record %s", current.Email, membershipID)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 		return
 	}
 
-	status := requestData.Status
-	dateAttended := requestData.DateAttended
+	var status *string
+	var dateAttended *time.Time
+	var notificationsPreferences *model.NotificationsPreferences
+	if group.CurrentMember.IsAdmin() {
+		status = requestData.Status
+		dateAttended = requestData.DateAttended
+	}
+	if group.CurrentMember.UserID == membership.UserID {
+		notificationsPreferences = requestData.NotificationsPreferences
+	}
 
-	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, dateAttended)
+	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, dateAttended, notificationsPreferences)
 	if err != nil {
 		log.Printf("Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

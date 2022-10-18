@@ -127,6 +127,8 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 	}
 	if filter.UserID != nil {
 		matchFilter = append(matchFilter, bson.E{"user_id", *filter.UserID})
+	} else if len(filter.UserIDs) > 0 {
+		matchFilter = append(matchFilter, bson.E{"user_id", bson.D{{"$in", filter.UserIDs}}})
 	}
 	if filter.NetID != nil {
 		matchFilter = append(matchFilter, bson.E{"net_id", *filter.NetID})
@@ -452,6 +454,7 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 				primitive.E{Key: "status", Value: membership.Status},
 				primitive.E{Key: "reject_reason", Value: membership.RejectReason},
 				primitive.E{Key: "date_attended", Value: membership.DateAttended},
+				primitive.E{Key: "notifications_preferences", Value: membership.NotificationsPreferences},
 				primitive.E{Key: "date_updated", Value: time.Now()},
 			},
 			},
