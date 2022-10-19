@@ -237,10 +237,11 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
 	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
 	if membership != nil {
-		if status != nil {
+		if status != nil && membership.Status != *status {
 			membership.Status = *status
+			membership.Admin = membership.IsAdmin()
 		}
-		if dateAttended != nil {
+		if dateAttended != nil && membership.DateAttended == nil {
 			membership.DateAttended = dateAttended
 		}
 		if notificationsPreferences != nil {

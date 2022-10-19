@@ -452,6 +452,7 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "status", Value: membership.Status},
+				primitive.E{Key: "admin", Value: membership.Admin},
 				primitive.E{Key: "reject_reason", Value: membership.RejectReason},
 				primitive.E{Key: "date_attended", Value: membership.DateAttended},
 				primitive.E{Key: "notifications_preferences", Value: membership.NotificationsPreferences},
