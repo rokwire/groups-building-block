@@ -789,6 +789,7 @@ type createPendingMemberRequest struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
 	} `json:"member_answers"`
+	NotificationsPreferences *model.NotificationsPreferences `json:"notification_preferences"`
 } // @name createPendingMemberRequest
 
 // CreatePendingMember creates a group pending member
@@ -865,6 +866,10 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		NetID:         current.NetID,
 		Email:         current.Email,
 		MemberAnswers: mAnswers,
+	}
+
+	if requestData.NotificationsPreferences != nil {
+		member.NotificationsPreferences = *requestData.NotificationsPreferences
 	}
 
 	err = h.app.Services.CreatePendingMembership(clientID, current, group, member)

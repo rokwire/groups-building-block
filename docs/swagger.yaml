@@ -120,6 +120,8 @@ definitions:
         type: string
       net_id:
         type: string
+      notifications_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
       photo_url:
         type: string
       reject_reason:
@@ -269,6 +271,19 @@ definitions:
           type: string
         type: array
     type: object
+  NotificationsPreferences:
+    properties:
+      events_enabled:
+        type: boolean
+      invitations_enabled:
+        type: boolean
+      override_preferences:
+        type: boolean
+      polls_enabled:
+        type: boolean
+      posts_enabled:
+        type: boolean
+    type: object
   ShortMemberRecord:
     properties:
       email:
@@ -386,6 +401,8 @@ definitions:
               type: string
           type: object
         type: array
+      notification_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
     type: object
   createResponse:
     properties:
@@ -654,6 +671,8 @@ definitions:
     properties:
       date_attended:
         type: string
+      notification_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
         - member
@@ -2011,8 +2030,9 @@ paths:
     put:
       consumes:
       - application/json
-      description: Updates a membership. Only admin can update membership. Member
-        is not allowed to update his/her own record.
+      description: Updates a membership. Only admin can update the status and date_attended
+        fields of a membership record. Member is allowed to update only his/her notification
+        preferences.
       operationId: UpdateMembership
       parameters:
       - description: APP

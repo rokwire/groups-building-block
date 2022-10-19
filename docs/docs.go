@@ -2090,7 +2090,7 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Updates a membership. Only admin can update membership. Member is not allowed to update his/her own record.",
+                "description": "Updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.",
                 "consumes": [
                     "application/json"
                 ],
@@ -2816,6 +2816,9 @@ const docTemplate = `{
                 "net_id": {
                     "type": "string"
                 },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "photo_url": {
                     "type": "string"
                 },
@@ -3035,6 +3038,26 @@ const docTemplate = `{
                 }
             }
         },
+        "NotificationsPreferences": {
+            "type": "object",
+            "properties": {
+                "events_enabled": {
+                    "type": "boolean"
+                },
+                "invitations_enabled": {
+                    "type": "boolean"
+                },
+                "override_preferences": {
+                    "type": "boolean"
+                },
+                "polls_enabled": {
+                    "type": "boolean"
+                },
+                "posts_enabled": {
+                    "type": "boolean"
+                }
+            }
+        },
         "ShortMemberRecord": {
             "type": "object",
             "properties": {
@@ -3210,6 +3233,9 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "notification_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
                 }
             }
         },
@@ -3615,6 +3641,9 @@ const docTemplate = `{
             "properties": {
                 "date_attended": {
                     "type": "string"
+                },
+                "notification_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
                 },
                 "status": {
                     "type": "string",

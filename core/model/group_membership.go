@@ -94,7 +94,7 @@ type GroupMembership struct {
 	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
 	SyncID        string         `json:"sync_id" bson:"sync_id"` //ID of sync that last updated this membership
 
-	NotificationsPreferences NotificationsPreferences `json:"notification_preferences" bson:"notification_preferences"`
+	NotificationsPreferences NotificationsPreferences `json:"notifications_preferences" bson:"notifications_preferences"`
 
 	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
