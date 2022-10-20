@@ -57,8 +57,8 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 			"subject":    title,
 			"body":       text,
 			"data":       data,
-			"app_ID":     na.appID,
-			"org_ID":     na.orgID,
+			"app_id":     na.appID,
+			"org_id":     na.orgID,
 		}
 		bodyBytes, err := json.Marshal(bodyData)
 		if err != nil {
