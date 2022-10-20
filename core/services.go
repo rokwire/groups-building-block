@@ -288,12 +288,11 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	var recipients []notifications.Recipient
 	if len(event.ToMembersList) > 0 {
 		userIDs = event.GetMembersAsUserIDs(skipUserID)
-	} else {
-		userIDs = []string{group.ID}
 	}
 
 	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: userIDs,
+		GroupIDs: []string{group.ID},
+		UserIDs:  userIDs,
 		Statuses: []string{"member", "admin"},
 	})
 	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) bool {

@@ -31,7 +31,7 @@ type Event struct {
 
 // GetMembersAsUserIDs Gets all members as list of user ids
 func (e Event) GetMembersAsUserIDs(skipUserID *string) []string {
-	userIDs := []string{}
+	var userIDs []string
 	if len(e.ToMembersList) > 0 {
 		for _, member := range e.ToMembersList {
 			if skipUserID == nil || *skipUserID != member.UserID {
