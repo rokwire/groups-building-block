@@ -58,12 +58,12 @@ func main() {
 	}
 
 	// Notification adapter
-	ntAppID := getEnvKey("NOTIFICATIONS_APP_ID", true)
-	ntOrgID := getEnvKey("NOTIFICATIONS_ORG_ID", true)
+	appID := getEnvKey("GROUPS_APP_ID", true)
+	orgID := getEnvKey("GROUPS_ORG_ID", true)
 	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
 	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL, ntAppID, ntOrgID)
+	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL, appID, orgID)
 
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
