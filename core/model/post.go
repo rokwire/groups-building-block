@@ -71,3 +71,16 @@ func (p Post) GetMembersAsNotificationRecipients(skipUserID *string) []notificat
 	}
 	return recipients
 }
+
+// GetMembersAsUserIDs constructs a list of user ids
+func (p Post) GetMembersAsUserIDs(skipUserID *string) []string {
+	var recipients []string
+	if len(p.ToMembersList) > 0 {
+		for _, member := range p.ToMembersList {
+			if skipUserID == nil || *skipUserID != member.UserID {
+				recipients = append(recipients, member.UserID)
+			}
+		}
+	}
+	return recipients
+}
