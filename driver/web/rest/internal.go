@@ -17,6 +17,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
@@ -24,9 +25,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
-
-	"github.com/gorilla/mux"
 )
 
 // InternalApisHandler handles the rest Internal APIs implementation
@@ -430,7 +428,6 @@ type sendGroupNotificationRequestBody struct {
 // @Tags Internal
 // @Accept json
 // @Param APP header string true "APP"
-// @Param async query string false "Run this request asynchronously. Possible values: 'true' will return with status code 200 no matter of producing an error.  or 'false' - it will wait until the request finished the job and return with the real status code and/or error. Default: 'false'"
 // @Param data body sendGroupNotificationRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200
@@ -444,12 +441,6 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 		log.Println("group-id is required")
 		http.Error(w, "group-id is required", http.StatusBadRequest)
 		return
-	}
-
-	asyncBoolValue := false
-	asyncValue := getStringQueryParam(r, "async")
-	if asyncValue != nil {
-		asyncBoolValue = strings.ToLower(*asyncValue) == "true"
 	}
 
 	data, err := ioutil.ReadAll(r.Body)
@@ -484,16 +475,11 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 		Topic:          requestData.Topic,
 		Data:           requestData.Data,
 	}
-
-	if asyncBoolValue {
-		go h.app.Services.SendGroupNotification(clientID, notification)
-	} else {
-		err = h.app.Services.SendGroupNotification(clientID, notification)
-		if err != nil {
-			log.Println(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	err = h.app.Services.SendGroupNotification(clientID, notification)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

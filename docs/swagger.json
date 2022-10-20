@@ -2035,12 +2035,6 @@
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Run this request asynchronously. Possible values: 'true' will return with status code 200 no matter of producing an error.  or 'false' - it will wait until the request finished the job and return with the real status code and/or error. Default: 'false'",
-                        "name": "async",
-                        "in": "query"
-                    },
-                    {
                         "description": "body data",
                         "name": "data",
                         "in": "body",

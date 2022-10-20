@@ -1076,6 +1076,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 	members, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{notification.GroupID},
 		UserIDs:  notification.MemberIDs.ToUserIDs(),
+		Statuses: memberStatuses,
 	})
 
 	if err != nil {
