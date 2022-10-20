@@ -83,6 +83,9 @@ type Services interface {
 	DeleteMembership(clientID string, current *model.User, groupID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeletePendingMembership(clientID string, current *model.User, groupID string) error
+
+	// Group Notifications
+	SendGroupNotification(clientID string, notification model.GroupNotification) error
 }
 
 type servicesImpl struct {
@@ -277,6 +280,10 @@ func (s *servicesImpl) DeleteMembershipByID(clientID string, current *model.User
 
 func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, groupID string) error {
 	return s.app.deleteMembership(clientID, current, groupID)
+}
+
+func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification) error {
+	return s.app.sendGroupNotification(clientID, notification)
 }
 
 // Administration exposes administration APIs for the driver adapters

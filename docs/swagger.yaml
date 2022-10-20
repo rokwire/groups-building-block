@@ -232,6 +232,11 @@ definitions:
       question:
         type: string
     type: object
+  MemberRef:
+    properties:
+      user_id:
+        type: string
+    type: object
   MembershipFilter:
     properties:
       external_id:
@@ -622,6 +627,31 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  sendGroupNotificationRequestBody:
+    properties:
+      body:
+        type: string
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      member_statuses:
+        description: 'default: ["admin", "member"]'
+        items:
+          type: string
+        type: array
+      members:
+        items:
+          $ref: '#/definitions/MemberRef'
+        type: array
+      subject:
+        type: string
+      topic:
+        type: string
+    required:
+    - body
+    - subject
     type: object
   updateGroupRequest:
     properties:
@@ -1917,6 +1947,43 @@ paths:
       - description: Event ID
         in: path
         name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
+  /api/int/group/{group-id}/notification:
+    post:
+      consumes:
+      - application/json
+      description: Sends a notification to members of a group
+      operationId: SendGroupNotification
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: 'Run this request asynchronously. Possible values: ''true'' will
+          return with status code 200 no matter of producing an error.  or ''false''
+          - it will wait until the request finished the job and return with the real
+          status code and/or error. Default: ''false'''
+        in: query
+        name: async
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/sendGroupNotificationRequestBody'
+      - description: Group ID
+        in: path
+        name: group-id
         required: true
         type: string
       responses:
