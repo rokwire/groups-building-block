@@ -232,11 +232,6 @@ definitions:
       question:
         type: string
     type: object
-  MemberRef:
-    properties:
-      user_id:
-        type: string
-    type: object
   MembershipFilter:
     properties:
       external_id:
@@ -289,6 +284,14 @@ definitions:
       posts_enabled:
         type: boolean
     type: object
+  Sender:
+    properties:
+      type:
+        description: user or system
+        type: string
+      user:
+        $ref: '#/definitions/UserRef'
+    type: object
   ShortMemberRecord:
     properties:
       email:
@@ -313,6 +316,13 @@ definitions:
         type: string
       external_id:
         type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  UserRef:
+    properties:
       name:
         type: string
       user_id:
@@ -643,8 +653,10 @@ definitions:
         type: array
       members:
         items:
-          $ref: '#/definitions/MemberRef'
+          $ref: '#/definitions/UserRef'
         type: array
+      sender:
+        $ref: '#/definitions/Sender'
       subject:
         type: string
       topic:

@@ -415,7 +415,8 @@ func (h *InternalApisHandler) DeleteGroupEvent(clientID string, w http.ResponseW
 // sendGroupNotificationRequestBody Request body wrapper for sending a notifications to members of a group
 type sendGroupNotificationRequestBody struct {
 	MemberStatuses []string          `json:"member_statuses"` // default: ["admin", "member"]
-	MemberIDs      model.MemberIDs   `json:"members"`
+	Members        model.UserRefs    `json:"members"`
+	Sender         *model.Sender     `json:"sender"`
 	Subject        string            `json:"subject" validate:"required"`
 	Topic          *string           `json:"topic"`
 	Body           string            `json:"body" validate:"required"`
@@ -468,7 +469,8 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 
 	notification := model.GroupNotification{
 		GroupID:        groupID,
-		MemberIDs:      requestData.MemberIDs,
+		Members:        requestData.Members,
+		Sender:         requestData.Sender,
 		MemberStatuses: requestData.MemberStatuses,
 		Subject:        requestData.Subject,
 		Body:           requestData.Body,

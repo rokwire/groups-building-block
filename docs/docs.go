@@ -3031,14 +3031,6 @@ const docTemplate = `{
                 }
             }
         },
-        "MemberRef": {
-            "type": "object",
-            "properties": {
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
         "MembershipFilter": {
             "type": "object",
             "properties": {
@@ -3113,6 +3105,18 @@ const docTemplate = `{
                 }
             }
         },
+        "Sender": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "user or system",
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/UserRef"
+                }
+            }
+        },
         "ShortMemberRecord": {
             "type": "object",
             "properties": {
@@ -3149,6 +3153,17 @@ const docTemplate = `{
                 "external_id": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserRef": {
+            "type": "object",
+            "properties": {
                 "name": {
                     "type": "string"
                 },
@@ -3649,8 +3664,11 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/MemberRef"
+                        "$ref": "#/definitions/UserRef"
                     }
+                },
+                "sender": {
+                    "$ref": "#/definitions/Sender"
                 },
                 "subject": {
                     "type": "string"
