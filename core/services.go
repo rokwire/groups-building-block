@@ -182,14 +182,13 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	}
 
 	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
-	if err == nil && membership != nil && membership.NotificationsPreferences.CanSendInvitationsNotification() {
+	if err == nil && membership != nil {
 		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
 		if approve {
-
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					membership.ToNotificationRecipient(),
+					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences && membership.NotificationsPreferences.InvitationsMuted),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -205,7 +204,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		} else {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					membership.ToNotificationRecipient(),
+					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences && membership.NotificationsPreferences.InvitationsMuted),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -295,8 +294,9 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 		UserIDs:  userIDs,
 		Statuses: []string{"member", "admin"},
 	})
-	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) bool {
-		return member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID) && member.NotificationsPreferences.CanSendEventsNotification()
+	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+		return member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID),
+			member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.EventsMuted
 	})
 
 	if len(recipients) > 0 {
@@ -372,8 +372,9 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 			UserIDs:  recipientsUserIDs,
 			Statuses: []string{"member", "admin"},
 		})
-		recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) bool {
-			return member.IsAdminOrMember() && (current.ID != member.UserID) && member.NotificationsPreferences.CanSendPostsNotification()
+		recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+			return member.IsAdminOrMember() && (current.ID != member.UserID),
+				member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.PostsMuted
 		})
 
 		if len(recipients) > 0 {
@@ -522,7 +523,9 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 			GroupIDs: []string{group.ID},
 			Statuses: []string{"admin"},
 		})
-		toMembers := result.GetMembersAsRecipients(nil)
+		toMembers := result.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
+			return membership.UserID != current.ID, false
+		})
 
 		body := fmt.Sprintf(`
 Violation by: %s %s
