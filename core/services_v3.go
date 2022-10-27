@@ -3,7 +3,6 @@ package core
 import (
 	"fmt"
 	"groups/core/model"
-	"groups/driven/notifications"
 	"log"
 )
 
@@ -61,10 +60,10 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 	})
 	if err == nil && len(adminMemberships.Items) > 0 {
 		if len(adminMemberships.Items) > 0 {
-			recipients := []notifications.Recipient{}
-			for _, admin := range adminMemberships.Items {
-				recipients = append(recipients, admin.ToNotificationRecipient())
-			}
+			recipients := adminMemberships.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+				return true, member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.InvitationsMuted
+			})
+
 			if len(recipients) > 0 {
 				topic := "group.invitations"
 
@@ -131,12 +130,9 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 		Statuses: []string{"admin"},
 	})
 	if err == nil && len(memberships.Items) > 0 {
-		recipients := []notifications.Recipient{}
-		for _, adminMember := range memberships.Items {
-			if adminMember.UserID != current.ID {
-				recipients = append(recipients, adminMember.ToNotificationRecipient())
-			}
-		}
+		recipients := memberships.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+			return member.UserID != current.ID, member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.InvitationsMuted
+		})
 
 		var message string
 		if membership.Status == "membership" || membership.Status == "admin" {
