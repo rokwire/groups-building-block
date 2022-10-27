@@ -1086,8 +1086,8 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 		return err
 	}
 
-	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) bool {
-		return true
+	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+		return true, true // Should it be a separate notification preference?
 	}), notification.Topic, notification.Subject, notification.Body, notification.Data)
 
 	return nil
