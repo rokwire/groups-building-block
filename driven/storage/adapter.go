@@ -441,9 +441,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		userID = &current.ID
 	}
 
-	existingGroups, err := sa.FindGroups(clientID, userID, model.GroupsFilter{
-		Title: &group.Title,
-	})
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil, nil)
 	if err == nil && len(existingGroups) > 0 {
 		for _, persistedGrop := range existingGroups {
 			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
@@ -521,32 +519,8 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 
 // UpdateGroup updates a group except the members attribute
 func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
-	return sa.updateGroup(clientID, current, group, nil)
-}
 
-// UpdateGroupWithMembership updates a group along with the memberships
-func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
-	return sa.updateGroup(clientID, current, group, memberships)
-}
-
-func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
-
-	existingGroups, err := sa.FindGroups(clientID, userID, model.GroupsFilter{
-		Title: &group.Title,
-	})
-	if err == nil && len(existingGroups) > 0 {
-		for _, persistedGrop := range existingGroups {
-			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return utils.NewGroupDuplicationError()
-			}
-		}
-	}
-
-	updateOperation := bson.D{
+	return sa.updateGroup(clientID, current, group, bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "category", Value: group.Category},
 			primitive.E{Key: "title", Value: group.Title},
@@ -564,10 +538,47 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
 			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
 			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-			primitive.E{Key: "research_group", Value: group.ResearchGroup},
-			primitive.E{Key: "research_description", Value: group.ResearchDescription},
-			primitive.E{Key: "matching_profile", Value: group.ResearchAnswers},
 		}},
+	}, nil)
+}
+
+// UpdateGroupWithMembership updates a group along with the memberships
+func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
+	return sa.updateGroup(clientID, current, group, bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "category", Value: group.Category},
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "tags", Value: group.Tags},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+		}},
+	}, memberships)
+}
+
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, updateOperation bson.D, memberships []model.GroupMembership) *utils.GroupError {
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
+
+	existingGroups, err := sa.FindGroups(clientID, userID, nil, nil, &group.Title, nil, nil, nil, nil)
+	if err == nil && len(existingGroups) > 0 {
+		for _, persistedGrop := range existingGroups {
+			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
+				return utils.NewGroupDuplicationError()
+			}
+		}
 	}
 
 	// transaction
@@ -708,7 +719,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 }
 
 // FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter model.GroupsFilter) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
 	var err error
 	groupIDs := []string{}
 	var memberships model.MembershipCollection
@@ -731,14 +742,14 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 			{"privacy": bson.M{"$ne": "private"}},
 		}
 
-		if groupsFilter.Title != nil {
-			if groupsFilter.IncludeHidden != nil && *groupsFilter.IncludeHidden {
+		if title != nil {
+			if includeHidden != nil && *includeHidden {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					primitive.M{"title": *groupsFilter.Title},
+					primitive.M{"title": *title},
 				}})
 			} else {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					primitive.M{"title": *groupsFilter.Title},
+					primitive.M{"title": *title},
 					primitive.M{"$or": []primitive.M{
 						primitive.M{"hidden_for_search": false},
 						primitive.M{"hidden_for_search": primitive.M{"$exists": false}},
@@ -752,46 +763,33 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		filter = append(filter, orFilter)
 	}
 
-	if groupsFilter.Category != nil {
-		filter = append(filter, primitive.E{Key: "category", Value: groupsFilter.Category})
+	if category != nil {
+		filter = append(filter, primitive.E{Key: "category", Value: category})
 	}
-	if len(groupsFilter.Tags) > 0 {
-		filter = append(filter, primitive.E{Key: "tags", Value: bson.M{"$in": groupsFilter.Tags}})
+	if title != nil {
+		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *title, Options: "i"}})
 	}
-	if groupsFilter.Title != nil {
-		filter = append(filter, primitive.E{Key: "title", Value: primitive.Regex{Pattern: *groupsFilter.Title, Options: "i"}})
-	}
-	if groupsFilter.Privacy != nil {
-		filter = append(filter, primitive.E{Key: "privacy", Value: groupsFilter.Privacy})
-	}
-	if groupsFilter.ResearchAnswers != nil {
-		for outerKey, outerValue := range *groupsFilter.ResearchAnswers {
-			for innerKey, innerValue := range outerValue {
-				filter = append(filter, primitive.E{
-					Key:   fmt.Sprintf("matching_profile.%s.%s", outerKey, innerKey),
-					Value: bson.M{"$elemMatch": bson.M{"$in": innerValue}},
-				})
-			}
-		}
+	if privacy != nil {
+		filter = append(filter, primitive.E{Key: "privacy", Value: privacy})
 	}
 
 	findOptions := options.Find()
-	if groupsFilter.Order == nil || "asc" == *groupsFilter.Order {
+	if order == nil || "asc" == *order {
 		findOptions.SetSort(bson.D{
 			{"category", 1},
 			{"title", 1},
 		})
-	} else if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
+	} else if order != nil && "desc" == *order {
 		findOptions.SetSort(bson.D{
 			{"category", -1},
 			{"title", -1},
 		})
 	}
-	if groupsFilter.Limit != nil {
-		findOptions.SetLimit(*groupsFilter.Limit)
+	if limit != nil {
+		findOptions.SetLimit(*limit)
 	}
-	if groupsFilter.Offset != nil {
-		findOptions.SetSkip(*groupsFilter.Offset)
+	if offset != nil {
+		findOptions.SetSkip(*offset)
 	}
 
 	var list []model.Group

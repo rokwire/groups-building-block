@@ -26,53 +26,58 @@ import (
 // @Security AppUserAuth
 // @Router /api/admin/v2/groups [get]
 func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	var groupsFilter model.GroupsFilter
-
+	var category *string
 	catogies, ok := r.URL.Query()["category"]
 	if ok && len(catogies[0]) > 0 {
-		groupsFilter.Category = &catogies[0]
+		category = &catogies[0]
 	}
 
+	var privacy *string
 	privacyParam, ok := r.URL.Query()["privacy"]
 	if ok && len(privacyParam[0]) > 0 {
-		groupsFilter.Privacy = &privacyParam[0]
+		privacy = &privacyParam[0]
 	}
 
+	var title *string
 	titles, ok := r.URL.Query()["title"]
 	if ok && len(titles[0]) > 0 {
-		groupsFilter.Title = &titles[0]
+		title = &titles[0]
 	}
 
+	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			groupsFilter.Offset = &val
+			offset = &val
 		}
 	}
 
+	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			groupsFilter.Limit = &val
+			limit = &val
 		}
 	}
 
+	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		groupsFilter.Order = &orders[0]
+		order = &orders[0]
 	}
 
+	var includeHidden *bool
 	hiddens, ok := r.URL.Query()["include_hidden"]
 	if ok && len(hiddens[0]) > 0 {
 		if strings.ToLower(hiddens[0]) == "true" {
 			val := true
-			groupsFilter.IncludeHidden = &val
+			includeHidden = &val
 		}
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
 	if err != nil {
 		log.Printf("apis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

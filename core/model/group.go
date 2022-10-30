@@ -37,20 +37,14 @@ type Group struct {
 	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`
 	Stats         GroupStats       `json:"stats" bson:"stats"`
 
-	DateCreated time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
-
-	AuthmanEnabled             bool    `json:"authman_enabled" bson:"authman_enabled"`
-	AuthmanGroup               *string `json:"authman_group" bson:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool    `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
-	CanJoinAutomatically       bool    `json:"can_join_automatically" bson:"can_join_automatically"`
-	BlockNewMembershipRequests bool    `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
-	AttendanceGroup            bool    `json:"attendance_group" bson:"attendance_group"`
-
-	ResearchOpen        bool                           `json:"research_open" bson:"research_open"`
-	ResearchGroup       bool                           `json:"research_group" bson:"research_group"`
-	ResearchDescription string                         `json:"research_description" bson:"research_description"`
-	ResearchAnswers     map[string]map[string][]string `json:"research_answers" bson:"research_answers"`
+	DateCreated                time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated                *time.Time `json:"date_updated" bson:"date_updated"`
+	AuthmanEnabled             bool       `json:"authman_enabled" bson:"authman_enabled"`
+	AuthmanGroup               *string    `json:"authman_group" bson:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool       `json:"only_admins_can_create_polls" bson:"only_admins_can_create_polls"`
+	CanJoinAutomatically       bool       `json:"can_join_automatically" bson:"can_join_automatically"`
+	BlockNewMembershipRequests bool       `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
+	AttendanceGroup            bool       `json:"attendance_group" bson:"attendance_group"`
 
 	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`

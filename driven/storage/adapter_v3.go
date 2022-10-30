@@ -56,9 +56,6 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		if len(groupIDs) > 0 {
 			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": groupIDs}})
 		}
-		if len(filter.Tags) > 0 {
-			groupFilter = append(groupFilter, primitive.E{Key: "tags", Value: primitive.M{"$in": filter.Tags}})
-		}
 		if filter.Category != nil {
 			groupFilter = append(groupFilter, primitive.E{Key: "category", Value: *filter.Category})
 		}
