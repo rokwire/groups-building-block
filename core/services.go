@@ -1070,6 +1070,29 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	return nil
 }
 
+func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification) error {
+	memberStatuses := notification.MemberStatuses
+	if len(memberStatuses) == 0 {
+		memberStatuses = []string{"admin", "member"}
+	}
+
+	members, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{notification.GroupID},
+		UserIDs:  notification.Members.ToUserIDs(),
+		Statuses: memberStatuses,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+		return true, true // Should it be a separate notification preference?
+	}), notification.Topic, notification.Subject, notification.Body, notification.Data)
+
+	return nil
+}
+
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
 	app.notifications.SendNotification(recipients, topic, title, text, data)
 }

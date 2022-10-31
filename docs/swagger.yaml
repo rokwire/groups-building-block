@@ -284,6 +284,14 @@ definitions:
       posts_enabled:
         type: boolean
     type: object
+  Sender:
+    properties:
+      type:
+        description: user or system
+        type: string
+      user:
+        $ref: '#/definitions/UserRef'
+    type: object
   ShortMemberRecord:
     properties:
       email:
@@ -308,6 +316,13 @@ definitions:
         type: string
       external_id:
         type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  UserRef:
+    properties:
       name:
         type: string
       user_id:
@@ -622,6 +637,33 @@ definitions:
         type: string
       title:
         type: string
+    type: object
+  sendGroupNotificationRequestBody:
+    properties:
+      body:
+        type: string
+      data:
+        additionalProperties:
+          type: string
+        type: object
+      member_statuses:
+        description: 'default: ["admin", "member"]'
+        items:
+          type: string
+        type: array
+      members:
+        items:
+          $ref: '#/definitions/UserRef'
+        type: array
+      sender:
+        $ref: '#/definitions/Sender'
+      subject:
+        type: string
+      topic:
+        type: string
+    required:
+    - body
+    - subject
     type: object
   updateGroupRequest:
     properties:
@@ -1917,6 +1959,36 @@ paths:
       - description: Event ID
         in: path
         name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
+  /api/int/group/{group-id}/notification:
+    post:
+      consumes:
+      - application/json
+      description: Sends a notification to members of a group
+      operationId: SendGroupNotification
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/sendGroupNotificationRequestBody'
+      - description: Group ID
+        in: path
+        name: group-id
         required: true
         type: string
       responses:

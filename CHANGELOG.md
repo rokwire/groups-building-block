@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
 - Override update notifications preferences [#270](https://github.com/rokwire/groups-building-block/issues/270)
+- Group notification internal API [#241](https://github.com/rokwire/groups-building-block/issues/241)
 
 ## [1.6.1] - 2022-10-12
 ### Changed

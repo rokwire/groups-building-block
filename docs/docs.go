@@ -2015,6 +2015,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/{group-id}/notification": {
+            "post": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Sends a notification to members of a group",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "SendGroupNotification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sendGroupNotificationRequestBody"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/int/group/{identifier}": {
             "get": {
                 "security": [
@@ -3058,6 +3105,18 @@ const docTemplate = `{
                 }
             }
         },
+        "Sender": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "user or system",
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/UserRef"
+                }
+            }
+        },
         "ShortMemberRecord": {
             "type": "object",
             "properties": {
@@ -3094,6 +3153,17 @@ const docTemplate = `{
                 "external_id": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserRef": {
+            "type": "object",
+            "properties": {
                 "name": {
                     "type": "string"
                 },
@@ -3564,6 +3634,46 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "sendGroupNotificationRequestBody": {
+            "type": "object",
+            "required": [
+                "body",
+                "subject"
+            ],
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "member_statuses": {
+                    "description": "default: [\"admin\", \"member\"]",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UserRef"
+                    }
+                },
+                "sender": {
+                    "$ref": "#/definitions/Sender"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "topic": {
                     "type": "string"
                 }
             }
