@@ -19,6 +19,7 @@ import (
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -50,58 +51,53 @@ type AdminApisHandler struct {
 // @Security AppUserAuth
 // @Router /api/admin/user/groups [get]
 func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	var category *string
+	var groupsFilter model.GroupsFilter
+
 	catogies, ok := r.URL.Query()["category"]
 	if ok && len(catogies[0]) > 0 {
-		category = &catogies[0]
+		groupsFilter.Category = &catogies[0]
 	}
 
-	var privacy *string
 	privacyParam, ok := r.URL.Query()["privacy"]
 	if ok && len(privacyParam[0]) > 0 {
-		privacy = &privacyParam[0]
+		groupsFilter.Privacy = &privacyParam[0]
 	}
 
-	var title *string
 	titles, ok := r.URL.Query()["title"]
 	if ok && len(titles[0]) > 0 {
-		title = &titles[0]
+		groupsFilter.Title = &titles[0]
 	}
 
-	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			groupsFilter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			groupsFilter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		groupsFilter.Order = &orders[0]
 	}
 
-	var includeHidden *bool
 	hiddens, ok := r.URL.Query()["include_hidden"]
 	if ok && len(hiddens[0]) > 0 {
 		if strings.ToLower(hiddens[0]) == "true" {
 			val := true
-			includeHidden = &val
+			groupsFilter.IncludeHidden = &val
 		}
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
+	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -152,60 +148,70 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Security AppUserAuth
 // @Router /api/admin/groups [get]
 func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	var category *string
+	var groupsFilter model.GroupsFilter
+
 	catogies, ok := r.URL.Query()["category"]
 	if ok && len(catogies[0]) > 0 {
-		category = &catogies[0]
+		groupsFilter.Category = &catogies[0]
 	}
 
-	var privacy *string
 	privacyParam, ok := r.URL.Query()["privacy"]
 	if ok && len(privacyParam[0]) > 0 {
-		privacy = &privacyParam[0]
+		groupsFilter.Privacy = &privacyParam[0]
 	}
 
-	var title *string
 	titles, ok := r.URL.Query()["title"]
 	if ok && len(titles[0]) > 0 {
-		title = &titles[0]
+		groupsFilter.Title = &titles[0]
 	}
 
-	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			groupsFilter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			groupsFilter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		groupsFilter.Order = &orders[0]
 	}
 
-	var includeHidden *bool
 	hiddens, ok := r.URL.Query()["include_hidden"]
 	if ok && len(hiddens[0]) > 0 {
 		if strings.ToLower(hiddens[0]) == "true" {
 			val := true
-			includeHidden = &val
+			groupsFilter.IncludeHidden = &val
 		}
 	}
 
-	groups, err := h.app.Administration.GetGroups(clientID, category, privacy, title, offset, limit, order, includeHidden)
+	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("error getting groups - %s", err.Error())
+		log.Printf("apis.GetAllGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &groupsFilter)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("apis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+		}
+	}
+
+	groups, err := h.app.Administration.GetGroups(clientID, groupsFilter)
+	if err != nil {
+		log.Printf("apis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -219,7 +225,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
-		log.Printf("Unable to retrieve memberships: %s", err)
+		log.Printf("apis.GetAllGroups() unable to retrieve memberships: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -231,7 +237,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 
 	data, err := json.Marshal(groups)
 	if err != nil {
-		log.Println("Error on marshal the groups items")
+		log.Println("apis.GetAllGroups() error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
