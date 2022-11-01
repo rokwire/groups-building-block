@@ -379,12 +379,13 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 // @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
-// @Param title query string false "Filtering by group's title (case-insensitive)"
-// @Param category query string false "category - filter by category"
-// @Param privacy query string false "privacy - filter by privacy"
-// @Param offset query string false "offset - skip number of records"
-// @Param limit query string false "limit - limit the result"
-// @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
+// @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
+// @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
+// @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
+// @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
@@ -512,6 +513,13 @@ type getUserGroupsResponse struct {
 // @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
+// @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
+// @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
+// @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
+// @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
+// @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} getUserGroupsResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth

@@ -17,12 +17,13 @@ import (
 // @Tags Admin-V2
 // @Accept  json
 // @Param APP header string true "APP"
-// @Param title query string false "Filtering by group's title (case-insensitive)"
-// @Param category query string false "category - filter by category"
-// @Param privacy query string false "privacy - filter by privacy"
-// @Param offset query string false "offset - skip number of records"
-// @Param limit query string false "limit - limit the result"
-// @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
+// @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
+// @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
+// @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
+// @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} model.Group
 // @Security AppUserAuth
 // @Router /api/admin/v2/groups [get]
@@ -73,6 +74,21 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		}
 	}
 
+	requestData, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("apis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &groupsFilter)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("apis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+		}
+	}
+
 	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupsV2() error getting groups - %s", err.Error())
@@ -102,12 +118,13 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 // @Tags Admin-V2
 // @Accept  json
 // @Param APP header string true "APP"
-// @Param category query string false "Category"
-// @Param title query string false "Filtering by group's title (case-insensitive)"
-// @Param category query string false "category - filter by category"
-// @Param privacy query string false "privacy - filter by privacy"
-// @Param offset query string false "offset - skip number of records"
-// @Param limit query string false "limit - limit the result"
+// @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
+// @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
+// @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
+// @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
+// @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} model.Group
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -151,9 +168,17 @@ func (h *AdminApisHandler) GetUserGroupsV2(clientID string, current *model.User,
 		groupsFilter.Order = &orders[0]
 	}
 
+	hiddens, ok := r.URL.Query()["include_hidden"]
+	if ok && len(hiddens[0]) > 0 {
+		if strings.ToLower(hiddens[0]) == "true" {
+			val := true
+			groupsFilter.IncludeHidden = &val
+		}
+	}
+
 	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("adminapis.GetUserGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		log.Printf("apis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -162,7 +187,7 @@ func (h *AdminApisHandler) GetUserGroupsV2(clientID string, current *model.User,
 		err = json.Unmarshal(requestData, &groupsFilter)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("adminapis.GetUserGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+			log.Printf("apis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
 	}
 
