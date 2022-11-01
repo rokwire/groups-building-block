@@ -103,6 +103,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/stats", we.internalKeyAuthFunc(we.internalApisHandler.GroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/int/group/{group-id}/events", we.internalKeyAuthFunc(we.internalApisHandler.CreateGroupEvent)).Methods("POST")
 	restSubrouter.HandleFunc("/int/group/{group-id}/events/{event-id}", we.internalKeyAuthFunc(we.internalApisHandler.DeleteGroupEvent)).Methods("DELETE")
+	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// V2 Client APIs
 	restSubrouter.HandleFunc("/v2/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET")
