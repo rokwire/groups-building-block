@@ -74,8 +74,8 @@ func (we *Adapter) Start() {
 	adminSubrouter := restSubrouter.PathPrefix("/admin").Subrouter()
 
 	// Admin V2 APIs
-	adminSubrouter.HandleFunc("/v2/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV2)).Methods("GET")
-	adminSubrouter.HandleFunc("/v2/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroupsV2)).Methods("GET")
+	adminSubrouter.HandleFunc("/v2/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV2)).Methods("GET", "POST")
+	adminSubrouter.HandleFunc("/v2/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 	adminSubrouter.HandleFunc("/v2/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupV2)).Methods("GET")
 
 	// Admin V1 APIs
@@ -106,9 +106,9 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// V2 Client APIs
-	restSubrouter.HandleFunc("/v2/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET")
+	restSubrouter.HandleFunc("/v2/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
 	restSubrouter.HandleFunc("/v2/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupV2)).Methods("GET")
-	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET")
+	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
