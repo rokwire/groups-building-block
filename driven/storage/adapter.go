@@ -769,20 +769,14 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		if *groupsFilter.ResearchGroup {
 			filter = append(filter, primitive.E{Key: "research_open", Value: true})
 		} else {
-			filter = append(filter, primitive.E{Key: "$or", Value: []bson.M{
-				{"research_open": false},
-				{"research_open": bson.M{"$exists": false}},
-			}})
+			filter = append(filter, primitive.E{Key: "research_open", Value: primitive.M{"$ne": true}})
 		}
 	}
 	if groupsFilter.ResearchGroup != nil {
 		if *groupsFilter.ResearchGroup {
 			filter = append(filter, primitive.E{Key: "research_group", Value: true})
 		} else {
-			filter = append(filter, primitive.E{Key: "$or", Value: []bson.M{
-				{"research_group": false},
-				{"research_group": bson.M{"$exists": false}},
-			}})
+			filter = append(filter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
 		}
 	}
 	if groupsFilter.ResearchAnswers != nil {
@@ -910,20 +904,14 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 		if *groupsFilter.ResearchGroup {
 			filter["research_open"] = true
 		} else {
-			filter["$or"] = []bson.M{
-				{"research_open": false},
-				{"research_open": bson.M{"$exists": false}},
-			}
+			filter["research_open"] = primitive.M{"$ne": true}
 		}
 	}
 	if groupsFilter.ResearchGroup != nil {
 		if *groupsFilter.ResearchGroup {
 			filter["research_group"] = true
 		} else {
-			filter["$or"] = []bson.M{
-				{"research_group": false},
-				{"research_group": bson.M{"$exists": false}},
-			}
+			filter["research_group"] = bson.M{"$ne": true}
 		}
 	}
 	if groupsFilter.ResearchAnswers != nil {
