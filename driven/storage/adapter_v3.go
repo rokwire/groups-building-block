@@ -91,9 +91,11 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		if filter.ResearchAnswers != nil {
 			for outerKey, outerValue := range filter.ResearchAnswers {
 				for innerKey, innerValue := range outerValue {
-					groupFilter = append(groupFilter, primitive.E{
-						Key:   fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey),
-						Value: bson.M{"$elemMatch": bson.M{"$in": innerValue}},
+					groupFilter = append(groupFilter, bson.E{
+						"$or", []bson.M{
+							{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
+							{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
+						},
 					})
 				}
 			}

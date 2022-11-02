@@ -567,7 +567,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 			primitive.E{Key: "research_group", Value: group.ResearchGroup},
 			primitive.E{Key: "research_open", Value: group.ResearchOpen},
 			primitive.E{Key: "research_description", Value: group.ResearchDescription},
-			primitive.E{Key: "matching_profile", Value: group.ResearchProfile},
+			primitive.E{Key: "research_profile", Value: group.ResearchProfile},
 		}},
 	}
 
@@ -788,9 +788,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
-				filter = append(filter, primitive.E{
-					Key:   fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey),
-					Value: bson.M{"$elemMatch": bson.M{"$in": innerValue}},
+				filter = append(filter, bson.E{
+					"$or", []bson.M{
+						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
+						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
+					},
 				})
 			}
 		}
@@ -927,7 +929,10 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
-				filter[fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey)] = bson.M{"$elemMatch": bson.M{"$in": innerValue}}
+				filter["$or"] = []bson.M{
+					{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
+					{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
+				}
 			}
 		}
 	}
