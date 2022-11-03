@@ -16,14 +16,19 @@ type MembershipFilter struct {
 
 // GroupsFilter Wraps all possible filters for getting a group
 type GroupsFilter struct {
-	GroupIDs         []string `json:"ids"`                // membership id
-	MemberID         *string  `json:"member_id"`          // member id
-	MemberUserID     *string  `json:"member_user_id"`     // member user id
-	MemberExternalID *string  `json:"member_external_id"` // member user external id
-	Category         *string  `json:"category"`           // group category
-	Privacy          *string  `json:"privacy"`            // group privacy
-	Title            *string  `json:"title"`              // group title
-	Order            *string  `json:"order"`              // order by category & name (asc desc)
-	Offset           *int64   `json:"offset"`             // result offset
-	Limit            *int64   `json:"limit"`              // result limit
+	GroupIDs         []string                       `json:"ids"`                // membership id
+	MemberID         *string                        `json:"member_id"`          // member id
+	MemberUserID     *string                        `json:"member_user_id"`     // member user id
+	MemberExternalID *string                        `json:"member_external_id"` // member user external id
+	Title            *string                        `json:"title"`              // group title
+	Category         *string                        `json:"category"`           // group category
+	Privacy          *string                        `json:"privacy"`            // group privacy
+	Tags             []string                       `json:"tags"`               // group tags
+	IncludeHidden    *bool                          `json:"include_hidden"`     // Include hidden groups
+	ResearchOpen     *bool                          `json:"research_open"`
+	ResearchGroup    *bool                          `json:"research_group"`
+	ResearchAnswers  map[string]map[string][]string `json:"research_answers"`
+	Order            *string                        `json:"order"`  // order by category & name (asc desc)
+	Offset           *int64                         `json:"offset"` // result offset
+	Limit            *int64                         `json:"limit"`  // result limit
 } // @name GroupsFilter

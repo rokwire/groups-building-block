@@ -36,8 +36,8 @@ type Services interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
-	GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
-	GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
+	GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
 
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
@@ -120,16 +120,16 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 	return s.app.deleteGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
-	return s.app.getGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.getGroups(clientID, current, filter)
 }
 
 func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
 	return s.app.getAllGroups(clientID)
 }
 
-func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
-	return s.app.getUserGroups(clientID, current, category, privacy, title, offset, limit, order)
+func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.getUserGroups(clientID, current, filter)
 }
 
 func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
@@ -288,15 +288,15 @@ func (s *servicesImpl) SendGroupNotification(clientID string, notification model
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
+	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 }
 
 type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) GetGroups(clientID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
-	return s.app.getGroupsUnprotected(clientID, category, privacy, title, offset, limit, order, includeHidden)
+func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.getGroupsUnprotected(clientID, filter)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
@@ -329,8 +329,8 @@ type Storage interface {
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error)
-	FindUserGroups(clientID string, userID string, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error)
+	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
+	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
