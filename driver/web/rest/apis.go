@@ -128,6 +128,12 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
+	if requestData.ResearchGroup && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to create research group '%s'. Only user with research_group_admin permission can create research group", current.Email, requestData.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
@@ -241,6 +247,11 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 	}
 	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
 		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+	if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
