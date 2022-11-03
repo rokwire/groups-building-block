@@ -372,6 +372,26 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["title_unique"] == nil {
+		name := "title_unique"
+		unique := true
+		err := groups.AddIndexWithOptions(
+			bson.D{
+				primitive.E{Key: "title", Value: 1},
+			},
+			&options.IndexOptions{
+				Name:   &name,
+				Unique: &unique,
+				Collation: &options.Collation{
+					Locale:   "en",
+					Strength: 2,
+				},
+			})
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("groups checks passed")
 	return nil
 }

@@ -435,40 +435,16 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 // CreateGroup creates a group. Returns the id of the created group
 func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
-
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
-
-	existingGroups, err := sa.FindGroups(clientID, userID, model.GroupsFilter{
-		Title: &group.Title,
-	})
-	if err == nil && len(existingGroups) > 0 {
-		for _, persistedGrop := range existingGroups {
-			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return nil, utils.NewGroupDuplicationError()
-			}
-		}
-	}
 	now := time.Now()
 
-	// transaction
-	err = sa.db.dbClient.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
+	err := sa.PerformTransaction(func(context TransactionContext) error {
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
 		group.DateCreated = now
 
-		_, err = sa.db.groups.InsertOneWithContext(sessionContext, &group)
+		_, err := sa.db.groups.InsertOneWithContext(context, &group)
 		if err != nil {
-			abortTransaction(sessionContext)
 			return err
 		}
 
@@ -497,22 +473,19 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		}
 
 		if len(castedMemberships) > 0 {
-			_, err = sa.db.groupMemberships.InsertManyWithContext(sessionContext, castedMemberships, nil)
+			_, err = sa.db.groupMemberships.InsertManyWithContext(context, castedMemberships, nil)
 			if err != nil {
-				abortTransaction(sessionContext)
 				return err
 			}
 		}
 
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
 		return nil
 	})
+
 	if err != nil {
+		if strings.Contains(err.Error(), "title_unique") {
+			return nil, utils.NewGroupDuplicationError()
+		}
 		return nil, utils.NewServerError()
 	}
 
@@ -606,6 +579,9 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		return nil
 	})
 	if err != nil {
+		if strings.Contains(err.Error(), "title_unique") {
+			return utils.NewGroupDuplicationError()
+		}
 		return utils.NewServerError()
 	}
 
