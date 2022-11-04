@@ -188,7 +188,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		if approve {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences && membership.NotificationsPreferences.InvitationsMuted),
+					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences &&
+						(membership.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -204,7 +205,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		} else {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences && membership.NotificationsPreferences.InvitationsMuted),
+					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences &&
+						(membership.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -296,7 +298,8 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	})
 	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 		return member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID),
-			member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.EventsMuted
+			member.NotificationsPreferences.OverridePreferences &&
+				(member.NotificationsPreferences.EventsMuted || member.NotificationsPreferences.AllMute)
 	})
 
 	if len(recipients) > 0 {
@@ -374,7 +377,8 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		})
 		recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 			return member.IsAdminOrMember() && (current.ID != member.UserID),
-				member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.PostsMuted
+				member.NotificationsPreferences.OverridePreferences &&
+					(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
 		})
 
 		if len(recipients) > 0 {
