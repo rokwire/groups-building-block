@@ -204,7 +204,6 @@ func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 // NotificationsPreferences overrides default notification preferences on group level
 type NotificationsPreferences struct {
 	OverridePreferences bool `json:"override_preferences" bson:"override_preferences"`
-	AllMute             bool `json:"all_mute" bson:"all_mute"`
 	InvitationsMuted    bool `json:"invitations_mute" bson:"invitations_mute"`
 	PostsMuted          bool `json:"posts_mute" bson:"posts_mute"`
 	EventsMuted         bool `json:"events_mute" bson:"events_mute"`
