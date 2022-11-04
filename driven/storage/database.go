@@ -328,31 +328,65 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["members.id_1"] == nil {
-		err := groups.AddIndex(
-			bson.D{
-				primitive.E{Key: "members.id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["members.user_id_1"] == nil {
-		err := groups.AddIndex(
-			bson.D{
-				primitive.E{Key: "members.user_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
 	if indexMapping["authman_enabled_1"] == nil {
 		err := groups.AddIndex(
 			bson.D{
 				primitive.E{Key: "authman_enabled", Value: 1},
 			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["members.id_1"] != nil {
+		err := groups.DropIndex("members.id_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["members.user_id_1"] != nil {
+		err := groups.DropIndex("members.user_id_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["research_group_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "research_group", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["research_open_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "research_open", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["title_unique"] == nil {
+		name := "title_unique"
+		unique := true
+		err := groups.AddIndexWithOptions(
+			bson.D{
+				primitive.E{Key: "title", Value: 1},
+			},
+			&options.IndexOptions{
+				Name:   &name,
+				Unique: &unique,
+				Collation: &options.Collation{
+					Locale:   "en",
+					Strength: 2,
+				},
+			})
 		if err != nil {
 			return err
 		}

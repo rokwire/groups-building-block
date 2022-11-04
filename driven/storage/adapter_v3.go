@@ -56,6 +56,9 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		if len(groupIDs) > 0 {
 			groupFilter = append(groupFilter, primitive.E{Key: "_id", Value: primitive.M{"$in": groupIDs}})
 		}
+		if len(filter.Tags) > 0 {
+			groupFilter = append(groupFilter, primitive.E{Key: "tags", Value: primitive.M{"$in": filter.Tags}})
+		}
 		if filter.Category != nil {
 			groupFilter = append(groupFilter, primitive.E{Key: "category", Value: *filter.Category})
 		}
@@ -64,6 +67,32 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 		}
 		if filter.Privacy != nil {
 			groupFilter = append(groupFilter, primitive.E{Key: "privacy", Value: *filter.Privacy})
+		}
+		if filter.ResearchOpen != nil {
+			if *filter.ResearchGroup {
+				groupFilter = append(groupFilter, primitive.E{Key: "research_open", Value: true})
+			} else {
+				groupFilter = append(groupFilter, primitive.E{Key: "research_open", Value: primitive.M{"$ne": true}})
+			}
+		}
+		if filter.ResearchGroup != nil {
+			if *filter.ResearchGroup {
+				groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: true})
+			} else {
+				groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
+			}
+		}
+		if filter.ResearchAnswers != nil {
+			for outerKey, outerValue := range filter.ResearchAnswers {
+				for innerKey, innerValue := range outerValue {
+					groupFilter = append(groupFilter, bson.E{
+						"$or", []bson.M{
+							{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
+							{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
+						},
+					})
+				}
+			}
 		}
 
 		if filter.Order == nil || "asc" == *filter.Order {

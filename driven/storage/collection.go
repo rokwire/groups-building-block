@@ -383,6 +383,18 @@ func (collWrapper *collectionWrapper) AddIndex(keys interface{}, unique bool) er
 	return err
 }
 
+func (collWrapper *collectionWrapper) AddIndexWithOptions(keys interface{}, opts *options.IndexOptions) error {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
+	defer cancel()
+
+	index := mongo.IndexModel{Keys: keys}
+	index.Options = opts
+
+	_, err := collWrapper.coll.Indexes().CreateOne(ctx, index, nil)
+
+	return err
+}
+
 func (collWrapper *collectionWrapper) DropIndex(name string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
 	defer cancel()

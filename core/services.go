@@ -122,9 +122,9 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 	return nil
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string, includeHidden *bool) ([]model.Group, error) {
+func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, &current.ID, category, privacy, title, offset, limit, order, includeHidden)
+	groups, err := app.storage.FindGroups(clientID, &current.ID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,7 @@ func (app *Application) getGroups(clientID string, current *model.User, category
 
 func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, nil, nil, nil, nil, nil, nil, nil)
+	groups, err := app.storage.FindGroups(clientID, nil, model.GroupsFilter{})
 	if err != nil {
 		return nil, err
 	}
@@ -142,9 +142,9 @@ func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	return groups, nil
 }
 
-func (app *Application) getUserGroups(clientID string, current *model.User, category *string, privacy *string, title *string, offset *int64, limit *int64, order *string) ([]model.Group, error) {
+func (app *Application) getUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the user groups
-	groups, err := app.storage.FindUserGroups(clientID, current.ID, category, privacy, title, offset, limit, order)
+	groups, err := app.storage.FindUserGroups(clientID, current.ID, filter)
 	if err != nil {
 		return nil, err
 	}

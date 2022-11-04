@@ -77,6 +77,20 @@ definitions:
       privacy:
         description: public or private
         type: string
+      research_description:
+        type: string
+      research_group:
+        type: boolean
+      research_open:
+        type: boolean
+      research_profile:
+        additionalProperties:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        type: object
       stats:
         $ref: '#/definitions/GroupStats'
       sync_end_time:
@@ -162,6 +176,61 @@ definitions:
       total_count:
         description: pending and rejected are excluded
         type: integer
+    type: object
+  GroupsFilter:
+    properties:
+      category:
+        description: group category
+        type: string
+      ids:
+        description: membership id
+        items:
+          type: string
+        type: array
+      include_hidden:
+        description: Include hidden groups
+        type: boolean
+      limit:
+        description: result limit
+        type: integer
+      member_external_id:
+        description: member user external id
+        type: string
+      member_id:
+        description: member id
+        type: string
+      member_user_id:
+        description: member user id
+        type: string
+      offset:
+        description: result offset
+        type: integer
+      order:
+        description: order by category & name (asc desc)
+        type: string
+      privacy:
+        description: group privacy
+        type: string
+      research_answers:
+        additionalProperties:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        type: object
+      research_group:
+        type: boolean
+      research_open:
+        type: boolean
+      tags:
+        description: group tags
+        items:
+          type: string
+        type: array
+      title:
+        description: group title
+        type: string
     type: object
   GroupsStats:
     properties:
@@ -273,15 +342,15 @@ definitions:
     type: object
   NotificationsPreferences:
     properties:
-      events_enabled:
+      events_mute:
         type: boolean
-      invitations_enabled:
+      invitations_mute:
         type: boolean
       override_preferences:
         type: boolean
-      polls_enabled:
+      polls_mute:
         type: boolean
-      posts_enabled:
+      posts_mute:
         type: boolean
     type: object
   Sender:
@@ -363,6 +432,20 @@ definitions:
         - public
         - private
         type: string
+      research_description:
+        type: string
+      research_group:
+        type: boolean
+      research_open:
+        type: boolean
+      research_profile:
+        additionalProperties:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        type: object
       tags:
         items:
           type: string
@@ -696,6 +779,20 @@ definitions:
         - public
         - private
         type: string
+      research_description:
+        type: string
+      research_group:
+        type: boolean
+      research_open:
+        type: boolean
+      research_profile:
+        additionalProperties:
+          additionalProperties:
+            items:
+              type: string
+            type: array
+          type: object
+        type: object
       tags:
         items:
           type: string
@@ -913,14 +1010,43 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
-      - description: Filtering by group's title - case insensitive
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
         in: query
         name: title
         type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
@@ -1142,31 +1268,43 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Filtering by group's title (case-insensitive)
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
         in: query
         name: title
         type: string
-      - description: category - filter by category
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
         in: query
         name: category
         type: string
-      - description: privacy - filter by privacy
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
         in: query
         name: privacy
         type: string
-      - description: offset - skip number of records
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
         in: query
         name: offset
         type: string
-      - description: limit - limit the result
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
         in: query
         name: limit
         type: string
-      - description: include_hidden - Includes hidden groups if a search by title
-          is performed. Possible value is true. Default false.
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
         in: query
         name: include_hidden
         type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
@@ -1217,30 +1355,43 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
-      - description: Filtering by group's title (case-insensitive)
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
         in: query
         name: title
         type: string
-      - description: category - filter by category
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
         in: query
         name: category
         type: string
-      - description: privacy - filter by privacy
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
         in: query
         name: privacy
         type: string
-      - description: offset - skip number of records
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
         in: query
         name: offset
         type: string
-      - description: limit - limit the result
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
         in: query
         name: limit
         type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
@@ -1782,31 +1933,43 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Filtering by group's title (case-insensitive)
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
         in: query
         name: title
         type: string
-      - description: category - filter by category
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
         in: query
         name: category
         type: string
-      - description: privacy - filter by privacy
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
         in: query
         name: privacy
         type: string
-      - description: offset - skip number of records
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
         in: query
         name: offset
         type: string
-      - description: limit - limit the result
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
         in: query
         name: limit
         type: string
-      - description: include_hidden - Includes hidden groups if a search by title
-          is performed. Possible value is true. Default false.
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
         in: query
         name: include_hidden
         type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
@@ -2215,6 +2378,43 @@ paths:
         name: APP
         required: true
         type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
@@ -2272,31 +2472,43 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Filtering by group's title (case-insensitive)
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
         in: query
         name: title
         type: string
-      - description: category - filter by category
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
         in: query
         name: category
         type: string
-      - description: privacy - filter by privacy
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
         in: query
         name: privacy
         type: string
-      - description: offset - skip number of records
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
         in: query
         name: offset
         type: string
-      - description: limit - limit the result
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
         in: query
         name: limit
         type: string
-      - description: include_hidden - Includes hidden groups if a search by title
-          is performed. Possible value is true. Default false.
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
         in: query
         name: include_hidden
         type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
@@ -2347,30 +2559,43 @@ paths:
         name: APP
         required: true
         type: string
-      - description: Category
-        in: query
-        name: category
-        type: string
-      - description: Filtering by group's title (case-insensitive)
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
         in: query
         name: title
         type: string
-      - description: category - filter by category
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
         in: query
         name: category
         type: string
-      - description: privacy - filter by privacy
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
         in: query
         name: privacy
         type: string
-      - description: offset - skip number of records
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
         in: query
         name: offset
         type: string
-      - description: limit - limit the result
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
         in: query
         name: limit
         type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
