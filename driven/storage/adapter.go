@@ -479,6 +479,11 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			}
 		}
 
+		err = sa.UpdateGroupStats(context, clientID, group.ID, false, true)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -503,22 +508,6 @@ func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.Use
 }
 
 func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
-
-	existingGroups, err := sa.FindGroups(clientID, userID, model.GroupsFilter{
-		Title: &group.Title,
-	})
-	if err == nil && len(existingGroups) > 0 {
-		for _, persistedGrop := range existingGroups {
-			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return utils.NewGroupDuplicationError()
-			}
-		}
-	}
-
 	updateOperation := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "category", Value: group.Category},
@@ -545,8 +534,8 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 	}
 
 	// transaction
-	err = sa.PerformTransaction(func(context TransactionContext) error {
-		_, err = sa.db.groups.UpdateOneWithContext(
+	err := sa.PerformTransaction(func(context TransactionContext) error {
+		_, err := sa.db.groups.UpdateOneWithContext(
 			context,
 			bson.D{primitive.E{Key: "_id", Value: group.ID},
 				primitive.E{Key: "client_id", Value: clientID},
@@ -576,6 +565,12 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 				}
 			}
 		}
+
+		err = sa.UpdateGroupStats(context, clientID, group.ID, false, true)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
