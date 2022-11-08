@@ -1062,6 +1062,11 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
 	}
 
+	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, true, true)
+	if err != nil {
+		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
+	}
+
 	return nil
 }
 
