@@ -45,9 +45,9 @@ func main() {
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 	port := getEnvKey("PORT", false)
-	//Default port of 80
+	//Default port of 5000
 	if port == "" {
-		port = "80"
+		port = "5000"
 	}
 
 	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)

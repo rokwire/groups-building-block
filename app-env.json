@@ -6,7 +6,7 @@
         "ROKWIRE_API_KEYS": ""
     },
     "app_config":{
-        "PORT": "5000",
+        "PORT": "",
         "GR_MONGO_DATABASE": "",
         "GR_MONGO_TIMEOUT": "",
         "NOTIFICATIONS_REPORT_ABUSE_EMAIL": "",
