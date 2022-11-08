@@ -2,11 +2,13 @@
     "app_secret": {
         "INTERNAL_API_KEY": "",
         "GR_MONGO_AUTH": "<mongo-url>",
+        "NOTIFICATIONS_INTERNAL_API_KEY": "",
         "AUTHMAN_PASSWORD": "",
         "ROKWIRE_API_KEYS": ""
     },
     "app_config":{
         "PORT": "",
+        "CORE_BB_HOST": "<core-bb-host>",
         "GR_MONGO_DATABASE": "",
         "GR_MONGO_TIMEOUT": "",
         "NOTIFICATIONS_REPORT_ABUSE_EMAIL": "",
