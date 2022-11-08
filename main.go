@@ -44,6 +44,11 @@ func main() {
 	}
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
+	port := getEnvKey("PORT", false)
+	//Default port of 80
+	if port == "" {
+		port = "80"
+	}
 
 	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 
@@ -120,7 +125,7 @@ func main() {
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
+	webAdapter := web.NewWebAdapter(application, host, port, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
 		intrernalAPIKey, authService, groupServiceURL)
 	webAdapter.Start()

@@ -1,0 +1,25 @@
+{
+    "app_secret": {
+        "INTERNAL_API_KEY": "",
+        "GR_MONGO_AUTH": "<mongo-url>",
+        "AUTHMAN_PASSWORD": "",
+        "ROKWIRE_API_KEYS": ""
+    },
+    "app_config":{
+        "PORT": "5000",
+        "GR_MONGO_DATABASE": "",
+        "GR_MONGO_TIMEOUT": "",
+        "NOTIFICATIONS_REPORT_ABUSE_EMAIL": "",
+        "NOTIFICATIONS_BASE_URL": "",
+        "AUTHMAN_BASE_URL": "",
+        "AUTHMAN_USERNAME": "",
+        "GROUP_SERVICE_URL": "<base-url>",
+        "GR_HOST": "<host>",
+        "GR_OIDC_PROVIDER": "",
+        "GR_OIDC_CLIENT_ID": "",
+        "GR_OIDC_EXTENDED_CLIENT_IDS": "",
+        "GR_OIDC_ADMIN_CLIENT_ID": "",
+        "GR_OIDC_ADMIN_WEB_CLIENT_ID": "",
+        "AUTHMAN_ADMIN_UIN_LIST": ""
+    }
+}
