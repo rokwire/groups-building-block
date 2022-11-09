@@ -342,6 +342,8 @@ definitions:
     type: object
   NotificationsPreferences:
     properties:
+      all_mute:
+        type: boolean
       events_mute:
         type: boolean
       invitations_mute:
