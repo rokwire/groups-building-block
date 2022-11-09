@@ -1508,13 +1508,10 @@ func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string,
 
 	if context != nil {
 		return updateStats(context)
-	} else {
-		return sa.PerformTransaction(func(context TransactionContext) error {
-			return updateStats(context)
-		})
 	}
-
-	return nil
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		return updateStats(context)
+	})
 }
 
 // FindAuthmanGroups finds all groups that are associated with Authman
