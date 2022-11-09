@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- Fix bad group stats bug [#279](https://github.com/rokwire/groups-building-block/issues/279)
 
 ## [1.6.2] - 2022-11-03
 ### Added
