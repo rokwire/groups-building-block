@@ -61,7 +61,8 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 	if err == nil && len(adminMemberships.Items) > 0 {
 		if len(adminMemberships.Items) > 0 {
 			recipients := adminMemberships.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-				return true, member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.InvitationsMuted
+				return true, member.NotificationsPreferences.OverridePreferences &&
+					(member.NotificationsPreferences.InvitationsMuted || member.NotificationsPreferences.AllMute)
 			})
 
 			if len(recipients) > 0 {
@@ -131,7 +132,8 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 	})
 	if err == nil && len(memberships.Items) > 0 {
 		recipients := memberships.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-			return member.UserID != current.ID, member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.InvitationsMuted
+			return member.UserID != current.ID, member.NotificationsPreferences.OverridePreferences &&
+				(member.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)
 		})
 
 		var message string
