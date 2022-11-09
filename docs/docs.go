@@ -3309,6 +3309,9 @@ const docTemplate = `{
         "NotificationsPreferences": {
             "type": "object",
             "properties": {
+                "all_mute": {
+                    "type": "boolean"
+                },
                 "events_mute": {
                     "type": "boolean"
                 },
