@@ -479,6 +479,11 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			}
 		}
 
+		err = sa.UpdateGroupStats(context, clientID, group.ID, false, true)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 
@@ -503,22 +508,6 @@ func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.Use
 }
 
 func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
-
-	existingGroups, err := sa.FindGroups(clientID, userID, model.GroupsFilter{
-		Title: &group.Title,
-	})
-	if err == nil && len(existingGroups) > 0 {
-		for _, persistedGrop := range existingGroups {
-			if persistedGrop.ID != group.ID && strings.ToLower(persistedGrop.Title) == strings.ToLower(group.Title) {
-				return utils.NewGroupDuplicationError()
-			}
-		}
-	}
-
 	updateOperation := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "category", Value: group.Category},
@@ -545,8 +534,8 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 	}
 
 	// transaction
-	err = sa.PerformTransaction(func(context TransactionContext) error {
-		_, err = sa.db.groups.UpdateOneWithContext(
+	err := sa.PerformTransaction(func(context TransactionContext) error {
+		_, err := sa.db.groups.UpdateOneWithContext(
 			context,
 			bson.D{primitive.E{Key: "_id", Value: group.ID},
 				primitive.E{Key: "client_id", Value: clientID},
@@ -576,6 +565,12 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 				}
 			}
 		}
+
+		err = sa.UpdateGroupStats(context, clientID, group.ID, false, true)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 	if err != nil {
@@ -1481,33 +1476,42 @@ func (sa *Adapter) deletePost(ctx context.Context, clientID string, userID strin
 // UpdateGroupStats set the updated date to the current date time (now)
 func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error {
 
-	innerUpdate := bson.D{}
+	updateStats := func(ctx TransactionContext) error {
+		innerUpdate := bson.D{}
 
-	if resetStats {
-		stats, err := sa.GetGroupMembershipStats(context, clientID, id)
-		if err != nil {
-			return err
+		if resetStats {
+			stats, err := sa.GetGroupMembershipStats(ctx, clientID, id)
+			if err != nil {
+				return err
+			}
+			if stats != nil {
+				innerUpdate = append(innerUpdate, primitive.E{Key: "stats", Value: stats})
+			}
 		}
-		if stats != nil {
-			innerUpdate = append(innerUpdate, primitive.E{Key: "stats", Value: stats})
+
+		if resetUpdateDate {
+			innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: time.Now()})
 		}
+
+		// update the group
+		filter := bson.D{
+			primitive.E{Key: "_id", Value: id},
+			primitive.E{Key: "client_id", Value: clientID},
+		}
+		update := bson.D{
+			primitive.E{Key: "$set", Value: innerUpdate},
+		}
+
+		_, err := sa.db.groups.UpdateOneWithContext(ctx, filter, update, nil)
+		return err
 	}
 
-	if resetUpdateDate {
-		innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: time.Now()})
+	if context != nil {
+		return updateStats(context)
 	}
-
-	// update the group
-	filter := bson.D{
-		primitive.E{Key: "_id", Value: id},
-		primitive.E{Key: "client_id", Value: clientID},
-	}
-	update := bson.D{
-		primitive.E{Key: "$set", Value: innerUpdate},
-	}
-
-	_, err := sa.db.groups.UpdateOneWithContext(context, filter, update, nil)
-	return err
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		return updateStats(context)
+	})
 }
 
 // FindAuthmanGroups finds all groups that are associated with Authman
