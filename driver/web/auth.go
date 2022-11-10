@@ -72,14 +72,14 @@ func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
 	return clientID, authenticated
 }
 
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
 	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, false, nil, r)
+	user := auth.idTokenAuth.check(clientID, idToken, allowAnonymousCoreToken, nil, r)
 	return clientID, user
 }
 

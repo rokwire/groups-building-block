@@ -26,7 +26,7 @@ type GroupsFilter struct {
 	Tags             []string                       `json:"tags"`               // group tags
 	IncludeHidden    *bool                          `json:"include_hidden"`     // Include hidden groups
 	ResearchOpen     *bool                          `json:"research_open"`
-	ResearchGroup    *bool                          `json:"research_group"`
+	ResearchGroup    bool                           `json:"research_group"`
 	ResearchAnswers  map[string]map[string][]string `json:"research_answers"`
 	Order            *string                        `json:"order"`  // order by category & name (asc desc)
 	Offset           *int64                         `json:"offset"` // result offset

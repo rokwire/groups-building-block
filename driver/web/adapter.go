@@ -106,8 +106,8 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// V2 Client APIs
-	restSubrouter.HandleFunc("/v2/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
-	restSubrouter.HandleFunc("/v2/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupV2)).Methods("GET")
+	restSubrouter.HandleFunc("/v2/groups", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
+	restSubrouter.HandleFunc("/v2/groups/{id}", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupV2)).Methods("GET")
 	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 
 	//V1 Client APIs
@@ -196,7 +196,22 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user := we.auth.idTokenCheck(w, req)
+		clientID, user := we.auth.idTokenCheck(w, req, false)
+		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		handler(clientID, user, w, req)
+	}
+}
+
+func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, user := we.auth.idTokenCheck(w, req, true)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)

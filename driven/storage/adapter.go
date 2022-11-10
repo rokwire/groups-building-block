@@ -737,18 +737,16 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		filter = append(filter, primitive.E{Key: "privacy", Value: groupsFilter.Privacy})
 	}
 	if groupsFilter.ResearchOpen != nil {
-		if *groupsFilter.ResearchGroup {
+		if *groupsFilter.ResearchOpen {
 			filter = append(filter, primitive.E{Key: "research_open", Value: true})
 		} else {
 			filter = append(filter, primitive.E{Key: "research_open", Value: primitive.M{"$ne": true}})
 		}
 	}
-	if groupsFilter.ResearchGroup != nil {
-		if *groupsFilter.ResearchGroup {
-			filter = append(filter, primitive.E{Key: "research_group", Value: true})
-		} else {
-			filter = append(filter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
-		}
+	if groupsFilter.ResearchGroup {
+		filter = append(filter, primitive.E{Key: "research_group", Value: true})
+	} else {
+		filter = append(filter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
 	}
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
@@ -872,18 +870,16 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 		filter["privacy"] = groupsFilter.Privacy
 	}
 	if groupsFilter.ResearchOpen != nil {
-		if *groupsFilter.ResearchGroup {
+		if *groupsFilter.ResearchOpen {
 			filter["research_open"] = true
 		} else {
 			filter["research_open"] = primitive.M{"$ne": true}
 		}
 	}
-	if groupsFilter.ResearchGroup != nil {
-		if *groupsFilter.ResearchGroup {
-			filter["research_group"] = true
-		} else {
-			filter["research_group"] = bson.M{"$ne": true}
-		}
+	if groupsFilter.ResearchGroup {
+		filter["research_group"] = true
+	} else {
+		filter["research_group"] = bson.M{"$ne": true}
 	}
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {

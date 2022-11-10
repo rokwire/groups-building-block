@@ -69,18 +69,16 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			groupFilter = append(groupFilter, primitive.E{Key: "privacy", Value: *filter.Privacy})
 		}
 		if filter.ResearchOpen != nil {
-			if *filter.ResearchGroup {
+			if *filter.ResearchOpen {
 				groupFilter = append(groupFilter, primitive.E{Key: "research_open", Value: true})
 			} else {
 				groupFilter = append(groupFilter, primitive.E{Key: "research_open", Value: primitive.M{"$ne": true}})
 			}
 		}
-		if filter.ResearchGroup != nil {
-			if *filter.ResearchGroup {
-				groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: true})
-			} else {
-				groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
-			}
+		if filter.ResearchGroup {
+			groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: true})
+		} else {
+			groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
 		}
 		if filter.ResearchAnswers != nil {
 			for outerKey, outerValue := range filter.ResearchAnswers {

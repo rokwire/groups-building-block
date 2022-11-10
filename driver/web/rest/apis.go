@@ -297,7 +297,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
-// @Router /api/admin/group/{group-id}/stats [get]
+// @Router /api/group/{group-id}/stats [get]
 func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

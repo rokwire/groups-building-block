@@ -908,7 +908,7 @@ paths:
       consumes:
       - application/json
       description: Retrieves stats for a group by id
-      operationId: GetGroupStats
+      operationId: AdminGetGroupStats
       parameters:
       - description: APP
         in: header
@@ -930,7 +930,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Admin-V1
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -1736,6 +1736,34 @@ paths:
           description: Locked
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
+  /api/group/{group-id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves stats for a group by id
+      operationId: GetGroupStats
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupStats'
+            type: array
       security:
       - AppUserAuth: []
       tags:

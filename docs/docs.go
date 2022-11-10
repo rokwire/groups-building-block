@@ -145,9 +145,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Admin-V1"
                 ],
-                "operationId": "GetGroupStats",
+                "operationId": "AdminGetGroupStats",
                 "parameters": [
                     {
                         "type": "string",
@@ -1403,6 +1403,50 @@ const docTemplate = `{
                         "description": "Successfuly deleted",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves stats for a group by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetGroupStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupStats"
+                            }
                         }
                     }
                 }
