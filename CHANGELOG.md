@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.6.4] - 2022-11-10
+### Fixed
+GET /v2/groups doesn't support anonymous users (tokens) [#282](https://github.com/rokwire/groups-building-block/issues/282)
+
 ## [1.6.3] - 2022-11-09
 ### Changed
 - Included additional setting to mute all notifications to the original feature [#270](https://github.com/rokwire/groups-building-block/issues/270)
