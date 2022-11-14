@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Wrong property name usage for membership notification preferences for create/update membership records [#285](https://github.com/rokwire/groups-building-block/issues/285)
+
 ## [1.6.4] - 2022-11-10
 ### Fixed
 GET /v2/groups doesn't support anonymous users (tokens) [#282](https://github.com/rokwire/groups-building-block/issues/282)

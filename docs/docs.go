@@ -3593,7 +3593,7 @@ const docTemplate = `{
                         }
                     }
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 }
             }
@@ -4062,7 +4062,7 @@ const docTemplate = `{
                 "date_attended": {
                     "type": "string"
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 },
                 "status": {
