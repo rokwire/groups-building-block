@@ -832,7 +832,7 @@ type createPendingMemberRequest struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
 	} `json:"member_answers"`
-	NotificationsPreferences *model.NotificationsPreferences `json:"notification_preferences"`
+	NotificationsPreferences *model.NotificationsPreferences `json:"notifications_preferences"`
 } // @name createPendingMemberRequest
 
 // CreatePendingMember creates a group pending member
@@ -1325,7 +1325,7 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 type updateMembershipRequest struct {
 	Status                   *string                         `json:"status" validate:"required,oneof=member admin"`
 	DateAttended             *time.Time                      `json:"date_attended"`
-	NotificationsPreferences *model.NotificationsPreferences `json:"notification_preferences"`
+	NotificationsPreferences *model.NotificationsPreferences `json:"notifications_preferences"`
 } // @name updateMembershipRequest
 
 // UpdateMembership updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.

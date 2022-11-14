@@ -3589,7 +3589,7 @@
                         }
                     }
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 }
             }
@@ -4058,7 +4058,7 @@
                 "date_attended": {
                     "type": "string"
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 },
                 "status": {

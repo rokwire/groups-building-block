@@ -501,7 +501,7 @@ definitions:
               type: string
           type: object
         type: array
-      notification_preferences:
+      notifications_preferences:
         $ref: '#/definitions/NotificationsPreferences'
     type: object
   createResponse:
@@ -812,7 +812,7 @@ definitions:
     properties:
       date_attended:
         type: string
-      notification_preferences:
+      notifications_preferences:
         $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
