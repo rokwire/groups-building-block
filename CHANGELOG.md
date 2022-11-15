@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Add research_confirmation field within the group [#288](https://github.com/rokwire/groups-building-block/issues/288)
+- Bad transaction handling on delete post and delete user data [#287](https://github.com/rokwire/groups-building-block/issues/287)
 
 ## [1.6.5] - 2022-11-14
 ### Fixed

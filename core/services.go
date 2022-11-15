@@ -557,7 +557,7 @@ Reported comment: %s
 }
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
+	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
