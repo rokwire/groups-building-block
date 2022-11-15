@@ -20,6 +20,7 @@ import (
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -48,23 +49,27 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 }
 
 type createGroupRequest struct {
-	Title                    string   `json:"title" validate:"required"`
-	Description              *string  `json:"description"`
-	Category                 string   `json:"category" validate:"required"`
-	Tags                     []string `json:"tags"`
-	Privacy                  string   `json:"privacy" validate:"required,oneof=public private"`
-	Hidden                   bool     `json:"hidden_for_search"`
-	CreatorName              string   `json:"creator_name"`
-	CreatorEmail             string   `json:"creator_email"`
-	CreatorPhotoURL          string   `json:"creator_photo_url"`
-	ImageURL                 *string  `json:"image_url"`
-	WebURL                   *string  `json:"web_url"`
-	MembershipQuestions      []string `json:"membership_questions"`
-	AuthmanEnabled           bool     `json:"authman_enabled"`
-	AuthmanGroup             *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls bool     `json:"only_admins_can_create_polls" `
-	CanJoinAutomatically     bool     `json:"can_join_automatically"`
-	AttendanceGroup          bool     `json:"attendance_group" `
+	Title                    string                         `json:"title" validate:"required"`
+	Description              *string                        `json:"description"`
+	Category                 string                         `json:"category" validate:"required"`
+	Tags                     []string                       `json:"tags"`
+	Privacy                  string                         `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool                           `json:"hidden_for_search"`
+	CreatorName              string                         `json:"creator_name"`
+	CreatorEmail             string                         `json:"creator_email"`
+	CreatorPhotoURL          string                         `json:"creator_photo_url"`
+	ImageURL                 *string                        `json:"image_url"`
+	WebURL                   *string                        `json:"web_url"`
+	MembershipQuestions      []string                       `json:"membership_questions"`
+	AuthmanEnabled           bool                           `json:"authman_enabled"`
+	AuthmanGroup             *string                        `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool                           `json:"only_admins_can_create_polls" `
+	CanJoinAutomatically     bool                           `json:"can_join_automatically"`
+	AttendanceGroup          bool                           `json:"attendance_group" `
+	ResearchOpen             bool                           `json:"research_open"`
+	ResearchGroup            bool                           `json:"research_group"`
+	ResearchDescription      string                         `json:"research_description"`
+	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 } //@name createGroupRequest
 
 type userGroupShortDetail struct {
@@ -123,6 +128,12 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
+	if requestData.ResearchGroup && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to create research group '%s'. Only user with research_group_admin permission can create research group", current.Email, requestData.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
@@ -137,6 +148,10 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
 		CanJoinAutomatically:     requestData.CanJoinAutomatically,
 		AttendanceGroup:          requestData.AttendanceGroup,
+		ResearchGroup:            requestData.ResearchGroup,
+		ResearchOpen:             requestData.ResearchOpen,
+		ResearchDescription:      requestData.ResearchDescription,
+		ResearchProfile:          requestData.ResearchProfile,
 	})
 	if groupErr != nil {
 		log.Println(groupErr.Error())
@@ -157,21 +172,25 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 }
 
 type updateGroupRequest struct {
-	Title                      string   `json:"title" validate:"required"`
-	Description                *string  `json:"description"`
-	Category                   string   `json:"category" validate:"required"`
-	Tags                       []string `json:"tags"`
-	Privacy                    string   `json:"privacy" validate:"required,oneof=public private"`
-	Hidden                     bool     `json:"hidden_for_search"`
-	ImageURL                   *string  `json:"image_url"`
-	WebURL                     *string  `json:"web_url"`
-	MembershipQuestions        []string `json:"membership_questions"`
-	AuthmanEnabled             bool     `json:"authman_enabled"`
-	AuthmanGroup               *string  `json:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool     `json:"only_admins_can_create_polls"`
-	CanJoinAutomatically       bool     `json:"can_join_automatically"`
-	BlockNewMembershipRequests bool     `json:"block_new_membership_requests"`
-	AttendanceGroup            bool     `json:"attendance_group" `
+	Title                      string                         `json:"title" validate:"required"`
+	Description                *string                        `json:"description"`
+	Category                   string                         `json:"category" validate:"required"`
+	Tags                       []string                       `json:"tags"`
+	Privacy                    string                         `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                     bool                           `json:"hidden_for_search"`
+	ImageURL                   *string                        `json:"image_url"`
+	WebURL                     *string                        `json:"web_url"`
+	MembershipQuestions        []string                       `json:"membership_questions"`
+	AuthmanEnabled             bool                           `json:"authman_enabled"`
+	AuthmanGroup               *string                        `json:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool                           `json:"only_admins_can_create_polls"`
+	CanJoinAutomatically       bool                           `json:"can_join_automatically"`
+	BlockNewMembershipRequests bool                           `json:"block_new_membership_requests"`
+	AttendanceGroup            bool                           `json:"attendance_group" `
+	ResearchOpen               bool                           `json:"research_open"`
+	ResearchGroup              bool                           `json:"research_group"`
+	ResearchDescription        string                         `json:"research_description"`
+	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
 } //@name updateGroupRequest
 
 // UpdateGroup updates a group
@@ -231,6 +250,11 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
 		return
 	}
+	if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
 		ID:                       id,
@@ -247,6 +271,11 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
 		CanJoinAutomatically:     requestData.CanJoinAutomatically,
 		AttendanceGroup:          requestData.AttendanceGroup,
+
+		ResearchGroup:       requestData.ResearchGroup,
+		ResearchOpen:        requestData.ResearchOpen,
+		ResearchDescription: requestData.ResearchDescription,
+		ResearchProfile:     requestData.ResearchProfile,
 	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
@@ -268,7 +297,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
-// @Router /api/admin/group/{group-id}/stats [get]
+// @Router /api/group/{group-id}/stats [get]
 func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -361,71 +390,67 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 // @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
-// @Param title query string false "Filtering by group's title (case-insensitive)"
-// @Param category query string false "category - filter by category"
-// @Param privacy query string false "privacy - filter by privacy"
-// @Param offset query string false "offset - skip number of records"
-// @Param limit query string false "limit - limit the result"
-// @Param include_hidden query string false "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
+// @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
+// @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
+// @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
+// @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} model.Group
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/groups [get]
 func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	var category *string
+	var groupsFilter model.GroupsFilter
+
 	catogies, ok := r.URL.Query()["category"]
 	if ok && len(catogies[0]) > 0 {
-		category = &catogies[0]
+		groupsFilter.Category = &catogies[0]
 	}
 
-	var privacy *string
 	privacyParam, ok := r.URL.Query()["privacy"]
 	if ok && len(privacyParam[0]) > 0 {
-		privacy = &privacyParam[0]
+		groupsFilter.Privacy = &privacyParam[0]
 	}
 
-	var title *string
 	titles, ok := r.URL.Query()["title"]
 	if ok && len(titles[0]) > 0 {
-		title = &titles[0]
+		groupsFilter.Title = &titles[0]
 	}
 
-	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			groupsFilter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			groupsFilter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		groupsFilter.Order = &orders[0]
 	}
 
-	var includeHidden *bool
 	hiddens, ok := r.URL.Query()["include_hidden"]
 	if ok && len(hiddens[0]) > 0 {
 		if strings.ToLower(hiddens[0]) == "true" {
 			val := true
-			includeHidden = &val
+			groupsFilter.IncludeHidden = &val
 		}
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, category, privacy, title, offset, limit, order, includeHidden)
+	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
-		log.Printf("error getting groups - %s", err.Error())
+		log.Printf("apis.GetGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -439,7 +464,7 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
-		log.Printf("Unable to retrieve memberships: %s", err)
+		log.Printf("apis.GetGroups() unable to retrieve memberships: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -451,7 +476,7 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 
 	data, err := json.Marshal(groups)
 	if err != nil {
-		log.Println("Error on marshal the groups items")
+		log.Println("apis.GetGroups() error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -499,57 +524,75 @@ type getUserGroupsResponse struct {
 // @Tags Client-V1
 // @Accept  json
 // @Param APP header string true "APP"
+// @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
+// @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
+// @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
+// @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
+// @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
+// @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} getUserGroupsResponse
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/user/groups [get]
 func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
-	var category *string
+	var groupsFilter model.GroupsFilter
+
 	catogies, ok := r.URL.Query()["category"]
 	if ok && len(catogies[0]) > 0 {
-		category = &catogies[0]
+		groupsFilter.Category = &catogies[0]
 	}
 
-	var privacy *string
 	privacyParam, ok := r.URL.Query()["privacy"]
 	if ok && len(privacyParam[0]) > 0 {
-		privacy = &privacyParam[0]
+		groupsFilter.Privacy = &privacyParam[0]
 	}
 
-	var title *string
 	titles, ok := r.URL.Query()["title"]
 	if ok && len(titles[0]) > 0 {
-		title = &titles[0]
+		groupsFilter.Title = &titles[0]
 	}
 
-	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			groupsFilter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			groupsFilter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		groupsFilter.Order = &orders[0]
 	}
 
-	groups, err := h.app.Services.GetUserGroups(clientID, current, category, privacy, title, offset, limit, order)
+	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("error getting user groups - %s", err.Error())
+		log.Printf("apis.GetUserGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &groupsFilter)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("apis.GetUserGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+		}
+	}
+
+	groups, err := h.app.Services.GetUserGroups(clientID, current, groupsFilter)
+	if err != nil {
+		log.Printf("apis.GetUserGroups() error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -563,7 +606,7 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
-		log.Printf("Unable to retrieve memberships: %s", err)
+		log.Printf("apis.GetUserGroups() unable to retrieve memberships: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -575,7 +618,7 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 
 	data, err := json.Marshal(groups)
 	if err != nil {
-		log.Println("Error on marshal the user groups items")
+		log.Println("apis.GetUserGroups() error on marshal the user groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -670,7 +713,7 @@ func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.Re
 // @Security AppUserAuth
 // @Router /api/user/group-memberships [get]
 func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	userGroups, err := h.app.Services.GetUserGroups(clientID, current, nil, nil, nil, nil, nil, nil)
+	userGroups, err := h.app.Services.GetUserGroups(clientID, current, model.GroupsFilter{})
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -789,7 +832,7 @@ type createPendingMemberRequest struct {
 		Question string `json:"question"`
 		Answer   string `json:"answer"`
 	} `json:"member_answers"`
-	NotificationsPreferences *model.NotificationsPreferences `json:"notification_preferences"`
+	NotificationsPreferences *model.NotificationsPreferences `json:"notifications_preferences"`
 } // @name createPendingMemberRequest
 
 // CreatePendingMember creates a group pending member
@@ -1282,7 +1325,7 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 type updateMembershipRequest struct {
 	Status                   *string                         `json:"status" validate:"required,oneof=member admin"`
 	DateAttended             *time.Time                      `json:"date_attended"`
-	NotificationsPreferences *model.NotificationsPreferences `json:"notification_preferences"`
+	NotificationsPreferences *model.NotificationsPreferences `json:"notifications_preferences"`
 } // @name updateMembershipRequest
 
 // UpdateMembership updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.

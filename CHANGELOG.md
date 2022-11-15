@@ -8,7 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Set appID and orgID for notifications [#268](https://github.com/rokwire/groups-building-block/issues/268) 
 
+## [1.6.5] - 2022-11-14
+### Fixed
+- Wrong property name usage for membership notification preferences for create/update membership records [#285](https://github.com/rokwire/groups-building-block/issues/285)
+
+## [1.6.4] - 2022-11-10
+### Fixed
+GET /v2/groups doesn't support anonymous users (tokens) [#282](https://github.com/rokwire/groups-building-block/issues/282)
+
+## [1.6.3] - 2022-11-09
+### Changed
+- Included additional setting to mute all notifications to the original feature [#270](https://github.com/rokwire/groups-building-block/issues/270)
+### Fixed
+- Fix bad group stats bug [#279](https://github.com/rokwire/groups-building-block/issues/279)
+
+## [1.6.2] - 2022-11-03
+### Added
 - Override update notifications preferences [#270](https://github.com/rokwire/groups-building-block/issues/270)
+- Group notification internal API [#241](https://github.com/rokwire/groups-building-block/issues/241)
+- Introduce research groups [#276](https://github.com/rokwire/groups-building-block/issues/276)
 
 ## [1.6.1] - 2022-10-12
 ### Changed

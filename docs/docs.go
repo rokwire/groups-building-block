@@ -145,9 +145,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Admin-V1"
                 ],
-                "operationId": "GetGroupStats",
+                "operationId": "AdminGetGroupStats",
                 "parameters": [
                     {
                         "type": "string",
@@ -317,15 +317,48 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title - case insensitive",
-                        "name": "title",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
+                        "name": "privacy",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
+                        "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -675,39 +708,48 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "category - filter by category",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "privacy - filter by privacy",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
                         "name": "privacy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "offset - skip number of records",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "limit - limit the result",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
                         "name": "include_hidden",
                         "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -792,39 +834,48 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "category - filter by category",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "privacy - filter by privacy",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
                         "name": "privacy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "offset - skip number of records",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "limit - limit the result",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
+                        "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -1357,6 +1408,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{group-id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves stats for a group by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetGroupStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupStats"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{groupID}/posts": {
             "get": {
                 "security": [
@@ -1687,39 +1782,48 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "category - filter by category",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "privacy - filter by privacy",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
                         "name": "privacy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "offset - skip number of records",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "limit - limit the result",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
                         "name": "include_hidden",
                         "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -2004,6 +2108,53 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Event ID",
                         "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/int/group/{group-id}/notification": {
+            "post": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Sends a notification to members of a group",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "SendGroupNotification",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/sendGroupNotificationRequestBody"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
                         "in": "path",
                         "required": true
                     }
@@ -2312,6 +2463,51 @@ const docTemplate = `{
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
+                        "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -2405,39 +2601,48 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "category - filter by category",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "privacy - filter by privacy",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
                         "name": "privacy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "offset - skip number of records",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "limit - limit the result",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
                         "name": "include_hidden",
                         "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -2522,39 +2727,48 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
-                        "description": "Category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Filtering by group's title (case-insensitive)",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
                         "name": "title",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "category - filter by category",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
                         "name": "category",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "privacy - filter by privacy",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
                         "name": "privacy",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "offset - skip number of records",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
                         "name": "offset",
                         "in": "query"
                     },
                     {
                         "type": "string",
-                        "description": "limit - limit the result",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
+                        "in": "query"
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -2751,6 +2965,27 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
+                "research_description": {
+                    "type": "string"
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
+                "research_profile": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
                 "stats": {
                     "$ref": "#/definitions/GroupStats"
                 },
@@ -2876,6 +3111,83 @@ const docTemplate = `{
                 "total_count": {
                     "description": "pending and rejected are excluded",
                     "type": "integer"
+                }
+            }
+        },
+        "GroupsFilter": {
+            "type": "object",
+            "properties": {
+                "category": {
+                    "description": "group category",
+                    "type": "string"
+                },
+                "ids": {
+                    "description": "membership id",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "include_hidden": {
+                    "description": "Include hidden groups",
+                    "type": "boolean"
+                },
+                "limit": {
+                    "description": "result limit",
+                    "type": "integer"
+                },
+                "member_external_id": {
+                    "description": "member user external id",
+                    "type": "string"
+                },
+                "member_id": {
+                    "description": "member id",
+                    "type": "string"
+                },
+                "member_user_id": {
+                    "description": "member user id",
+                    "type": "string"
+                },
+                "offset": {
+                    "description": "result offset",
+                    "type": "integer"
+                },
+                "order": {
+                    "description": "order by category \u0026 name (asc desc)",
+                    "type": "string"
+                },
+                "privacy": {
+                    "description": "group privacy",
+                    "type": "string"
+                },
+                "research_answers": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
+                "tags": {
+                    "description": "group tags",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "title": {
+                    "description": "group title",
+                    "type": "string"
                 }
             }
         },
@@ -3041,20 +3353,35 @@ const docTemplate = `{
         "NotificationsPreferences": {
             "type": "object",
             "properties": {
-                "events_enabled": {
+                "all_mute": {
                     "type": "boolean"
                 },
-                "invitations_enabled": {
+                "events_mute": {
+                    "type": "boolean"
+                },
+                "invitations_mute": {
                     "type": "boolean"
                 },
                 "override_preferences": {
                     "type": "boolean"
                 },
-                "polls_enabled": {
+                "polls_mute": {
                     "type": "boolean"
                 },
-                "posts_enabled": {
+                "posts_mute": {
                     "type": "boolean"
+                }
+            }
+        },
+        "Sender": {
+            "type": "object",
+            "properties": {
+                "type": {
+                    "description": "user or system",
+                    "type": "string"
+                },
+                "user": {
+                    "$ref": "#/definitions/UserRef"
                 }
             }
         },
@@ -3094,6 +3421,17 @@ const docTemplate = `{
                 "external_id": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "UserRef": {
+            "type": "object",
+            "properties": {
                 "name": {
                     "type": "string"
                 },
@@ -3158,6 +3496,27 @@ const docTemplate = `{
                         "public",
                         "private"
                     ]
+                },
+                "research_description": {
+                    "type": "string"
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
+                "research_profile": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
                 },
                 "tags": {
                     "type": "array",
@@ -3234,7 +3593,7 @@ const docTemplate = `{
                         }
                     }
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 }
             }
@@ -3568,6 +3927,46 @@ const docTemplate = `{
                 }
             }
         },
+        "sendGroupNotificationRequestBody": {
+            "type": "object",
+            "required": [
+                "body",
+                "subject"
+            ],
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "data": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "string"
+                    }
+                },
+                "member_statuses": {
+                    "description": "default: [\"admin\", \"member\"]",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/UserRef"
+                    }
+                },
+                "sender": {
+                    "$ref": "#/definitions/Sender"
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "topic": {
+                    "type": "string"
+                }
+            }
+        },
         "updateGroupRequest": {
             "type": "object",
             "required": [
@@ -3619,6 +4018,27 @@ const docTemplate = `{
                         "private"
                     ]
                 },
+                "research_description": {
+                    "type": "string"
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
+                "research_profile": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
                 "tags": {
                     "type": "array",
                     "items": {
@@ -3642,7 +4062,7 @@ const docTemplate = `{
                 "date_attended": {
                     "type": "string"
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 },
                 "status": {

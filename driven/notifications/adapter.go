@@ -34,6 +34,7 @@ type Adapter struct {
 type Recipient struct {
 	UserID string `json:"user_id"`
 	Name   string `json:"name"`
+	Mute   bool   `json:"mute"`
 }
 
 // NewNotificationsAdapter creates a new Notifications BB adapter instance

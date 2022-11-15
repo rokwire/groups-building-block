@@ -17,6 +17,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
@@ -24,8 +25,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 // InternalApisHandler handles the rest Internal APIs implementation
@@ -410,5 +409,80 @@ func (h *InternalApisHandler) DeleteGroupEvent(clientID string, w http.ResponseW
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
+// sendGroupNotificationRequestBody Request body wrapper for sending a notifications to members of a group
+type sendGroupNotificationRequestBody struct {
+	MemberStatuses []string          `json:"member_statuses"` // default: ["admin", "member"]
+	Members        model.UserRefs    `json:"members"`
+	Sender         *model.Sender     `json:"sender"`
+	Subject        string            `json:"subject" validate:"required"`
+	Topic          *string           `json:"topic"`
+	Body           string            `json:"body" validate:"required"`
+	Data           map[string]string `json:"data"`
+} // @name sendGroupNotificationRequestBody
+
+// SendGroupNotification Sends a notification to members of a group
+// @Description Sends a notification to members of a group
+// @ID SendGroupNotification
+// @Tags Internal
+// @Accept json
+// @Param APP header string true "APP"
+// @Param data body sendGroupNotificationRequestBody true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security IntAPIKeyAuth
+// @Router /api/int/group/{group-id}/notification [post]
+func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on read the sendGroupNotificationRequestBody - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData sendGroupNotificationRequestBody
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the sendGroupNotificationRequestBody - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating sendGroupNotificationRequestBody - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	notification := model.GroupNotification{
+		GroupID:        groupID,
+		Members:        requestData.Members,
+		Sender:         requestData.Sender,
+		MemberStatuses: requestData.MemberStatuses,
+		Subject:        requestData.Subject,
+		Body:           requestData.Body,
+		Topic:          requestData.Topic,
+		Data:           requestData.Data,
+	}
+	err = h.app.Services.SendGroupNotification(clientID, notification)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

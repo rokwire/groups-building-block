@@ -23,17 +23,16 @@ func (c *MembershipCollection) GetMembershipBy(checker func(membership GroupMemb
 	return nil
 }
 
-// GetMembersAsRecipients gets members as list of Recipient recipients. nil status means all users.
-func (c *MembershipCollection) GetMembersAsRecipients(status *string) []notifications.Recipient {
-	subStatusList := c.Items
-	if status != nil {
-		subStatusList = c.GetMembersByStatus(*status)
-	}
+// membershipCriteriaPredicate should return shouldSend and isMuted
+type membershipCriteriaPredicate = func(membership GroupMembership) (bool, bool)
 
+// GetMembersAsRecipients gets members as list of Recipient recipients. nil status means all users.
+func (c *MembershipCollection) GetMembersAsRecipients(predicate membershipCriteriaPredicate) []notifications.Recipient {
 	var recipients []notifications.Recipient
-	if len(subStatusList) > 0 {
-		for _, admin := range subStatusList {
-			recipients = append(recipients, admin.ToNotificationRecipient())
+	for _, membership := range c.Items {
+		if shouldSend, isMuted := predicate(membership); shouldSend {
+			recipient := membership.ToNotificationRecipient(isMuted)
+			recipients = append(recipients, recipient)
 		}
 	}
 
@@ -54,19 +53,22 @@ func (c *MembershipCollection) GetMembersByStatus(status string) []GroupMembersh
 	return members
 }
 
-type filterPredicate = func(member GroupMembership) bool
+// Evaluate membership mute policy. First result is canSend, second result is for muted
+type mutePreferencePredicate = func(member GroupMembership) (bool, bool)
 
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
-func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate filterPredicate) []notifications.Recipient {
+func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate mutePreferencePredicate) []notifications.Recipient {
 
 	recipients := []notifications.Recipient{}
 
 	if len(c.Items) > 0 {
 		for _, member := range c.Items {
-			if predicate(member) {
+			canSend, mute := predicate(member)
+			if canSend {
 				recipients = append(recipients, notifications.Recipient{
 					UserID: member.UserID,
 					Name:   member.Name,
+					Mute:   mute,
 				})
 			}
 		}
@@ -153,10 +155,11 @@ func (m *GroupMembership) ApplyFromUserIfEmpty(user *User) {
 }
 
 // ToNotificationRecipient construct notifications.Recipient based on the data
-func (m *GroupMembership) ToNotificationRecipient() notifications.Recipient {
+func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recipient {
 	return notifications.Recipient{
 		UserID: m.UserID,
 		Name:   m.Name,
+		Mute:   mute,
 	}
 }
 
@@ -201,28 +204,9 @@ func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 // NotificationsPreferences overrides default notification preferences on group level
 type NotificationsPreferences struct {
 	OverridePreferences bool `json:"override_preferences" bson:"override_preferences"`
-	InvitationsEnabled  bool `json:"invitations_enabled" bson:"invitations_enabled"`
-	PostsEnabled        bool `json:"posts_enabled" bson:"posts_enabled"`
-	EventsEnabled       bool `json:"events_enabled" bson:"events_enabled"`
-	PollsEnabled        bool `json:"polls_enabled" bson:"polls_enabled"`
+	AllMute             bool `json:"all_mute" bson:"all_mute"`
+	InvitationsMuted    bool `json:"invitations_mute" bson:"invitations_mute"`
+	PostsMuted          bool `json:"posts_mute" bson:"posts_mute"`
+	EventsMuted         bool `json:"events_mute" bson:"events_mute"`
+	PollsMuted          bool `json:"polls_mute" bson:"polls_mute"`
 } // @name NotificationsPreferences
-
-// CanSendInvitationsNotification Checks if can send invitation notifications to this member
-func (n *NotificationsPreferences) CanSendInvitationsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.InvitationsEnabled)
-}
-
-// CanSendPostsNotification Checks if can send post notifications to this member
-func (n *NotificationsPreferences) CanSendPostsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.PostsEnabled)
-}
-
-// CanSendEventsNotification Checks if can send events notifications to this member
-func (n *NotificationsPreferences) CanSendEventsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.EventsEnabled)
-}
-
-// CanSendPollsNotification Checks if can send polls notifications to this member
-func (n *NotificationsPreferences) CanSendPollsNotification() bool {
-	return !n.OverridePreferences || (n.OverridePreferences && n.PollsEnabled)
-}
