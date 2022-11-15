@@ -47,10 +47,11 @@ type Group struct {
 	BlockNewMembershipRequests bool    `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
 	AttendanceGroup            bool    `json:"attendance_group" bson:"attendance_group"`
 
-	ResearchOpen        bool                           `json:"research_open" bson:"research_open"`
-	ResearchGroup       bool                           `json:"research_group" bson:"research_group"`
-	ResearchDescription string                         `json:"research_description" bson:"research_description"`
-	ResearchProfile     map[string]map[string][]string `json:"research_profile" bson:"research_profile"`
+	ResearchOpen         bool                           `json:"research_open" bson:"research_open"`
+	ResearchGroup        bool                           `json:"research_group" bson:"research_group"`
+	ResearchConfirmation bool                           `json:"research_confirmation" bson:"research_confirmation"`
+	ResearchDescription  string                         `json:"research_description" bson:"research_description"`
+	ResearchProfile      map[string]map[string][]string `json:"research_profile" bson:"research_profile"`
 
 	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`

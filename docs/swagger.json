@@ -2961,6 +2961,9 @@
                     "description": "public or private",
                     "type": "string"
                 },
+                "research_confirmation": {
+                    "type": "boolean"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -3493,6 +3496,9 @@
                         "private"
                     ]
                 },
+                "research_confirmation": {
+                    "type": "boolean"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -4013,6 +4019,9 @@
                         "public",
                         "private"
                     ]
+                },
+                "research_confirmation": {
+                    "type": "boolean"
                 },
                 "research_description": {
                     "type": "string"

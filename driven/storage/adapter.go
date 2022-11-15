@@ -528,6 +528,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
 			primitive.E{Key: "research_group", Value: group.ResearchGroup},
 			primitive.E{Key: "research_open", Value: group.ResearchOpen},
+			primitive.E{Key: "research_confirmation", Value: group.ResearchConfirmation},
 			primitive.E{Key: "research_description", Value: group.ResearchDescription},
 			primitive.E{Key: "research_profile", Value: group.ResearchProfile},
 		}},
