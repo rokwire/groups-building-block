@@ -315,10 +315,12 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	var data *userData
 	var isCoreUser = false
 	var isAnonymous = false
+	var coreErr error
 	if auth.coreTokenAuth != nil {
-		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		if err == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
-			err = auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
+		var claims *tokenauth.Claims
+		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
+			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
 				return nil
 			}
@@ -340,6 +342,12 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	if data == nil {
+		//Return error from core validation if OIDC is not configured
+		if auth.idTokenVerifier == nil {
+			log.Printf("error validating token - %s\n", coreErr)
+			return nil
+		}
+
 		//1. Check if there is a token
 		if token == nil || len(*token) == 0 {
 			return nil
@@ -453,11 +461,14 @@ func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
 
 // newIDTokenAuth creates new id token auth
 func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
-	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
-	if err != nil {
-		log.Fatalln(err)
+	var idTokenVerifier *oidc.IDTokenVerifier
+	if len(oidcProvider) != 0 {
+		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		idTokenVerifier = provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
 	}
-	idTokenVerifier := provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
