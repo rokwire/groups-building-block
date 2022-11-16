@@ -2965,8 +2965,11 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
-                "research_confirmation": {
-                    "type": "boolean"
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
                 },
                 "research_description": {
                     "type": "string"
@@ -3500,8 +3503,11 @@ const docTemplate = `{
                         "private"
                     ]
                 },
-                "research_confirmation": {
-                    "type": "boolean"
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
                 },
                 "research_description": {
                     "type": "string"
@@ -4024,8 +4030,11 @@ const docTemplate = `{
                         "private"
                     ]
                 },
-                "research_confirmation": {
-                    "type": "boolean"
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
                 },
                 "research_description": {
                     "type": "string"
