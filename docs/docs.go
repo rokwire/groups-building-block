@@ -2965,6 +2965,9 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
+                "research_confirmation": {
+                    "type": "boolean"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -3497,6 +3500,9 @@ const docTemplate = `{
                         "private"
                     ]
                 },
+                "research_confirmation": {
+                    "type": "boolean"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -4017,6 +4023,9 @@ const docTemplate = `{
                         "public",
                         "private"
                     ]
+                },
+                "research_confirmation": {
+                    "type": "boolean"
                 },
                 "research_description": {
                     "type": "string"

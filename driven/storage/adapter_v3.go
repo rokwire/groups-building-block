@@ -224,6 +224,11 @@ func (sa *Adapter) FindGroupMembershipByID(clientID string, id string) (*model.G
 
 // FindUserGroupMemberships finds the group memberships for a given user
 func (sa *Adapter) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
+	return sa.FindUserGroupMembershipsWithContext(nil, clientID, userID)
+}
+
+// FindUserGroupMembershipsWithContext finds the group memberships for a given user with context
+func (sa *Adapter) FindUserGroupMembershipsWithContext(ctx TransactionContext, clientID string, userID string) (model.MembershipCollection, error) {
 	filter := bson.M{"client_id": clientID, "user_id": userID}
 
 	var result []model.GroupMembership
@@ -500,8 +505,13 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 
 // DeleteMembership deletes a member membership from a specific group
 func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID string) error {
+	return sa.DeleteMembershipWithContext(nil, clientID, groupID, userID)
+}
 
-	return sa.PerformTransaction(func(context TransactionContext) error {
+// DeleteMembershipWithContext deletes a member membership from a specific group with context
+func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID string, groupID string, userID string) error {
+
+	deleteWrapper := func(context TransactionContext) error {
 		currentMembership, _ := sa.FindGroupMembershipWithContext(context, clientID, groupID, userID)
 		if currentMembership != nil {
 
@@ -529,6 +539,13 @@ func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID stri
 			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
 		}
 		return nil
+	}
+
+	if ctx != nil {
+		return deleteWrapper(ctx)
+	}
+	return sa.PerformTransaction(func(transactionContext TransactionContext) error {
+		return deleteWrapper(transactionContext)
 	})
 }
 

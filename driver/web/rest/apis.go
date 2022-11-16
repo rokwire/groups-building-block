@@ -68,6 +68,7 @@ type createGroupRequest struct {
 	AttendanceGroup          bool                           `json:"attendance_group" `
 	ResearchOpen             bool                           `json:"research_open"`
 	ResearchGroup            bool                           `json:"research_group"`
+	ResearchConfirmation     bool                           `json:"research_confirmation"`
 	ResearchDescription      string                         `json:"research_description"`
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 } //@name createGroupRequest
@@ -150,6 +151,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		AttendanceGroup:          requestData.AttendanceGroup,
 		ResearchGroup:            requestData.ResearchGroup,
 		ResearchOpen:             requestData.ResearchOpen,
+		ResearchConfirmation:     requestData.ResearchConfirmation,
 		ResearchDescription:      requestData.ResearchDescription,
 		ResearchProfile:          requestData.ResearchProfile,
 	})
@@ -189,6 +191,7 @@ type updateGroupRequest struct {
 	AttendanceGroup            bool                           `json:"attendance_group" `
 	ResearchOpen               bool                           `json:"research_open"`
 	ResearchGroup              bool                           `json:"research_group"`
+	ResearchConfirmation       bool                           `json:"research_confirmation"`
 	ResearchDescription        string                         `json:"research_description"`
 	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
 } //@name updateGroupRequest
@@ -272,10 +275,11 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		CanJoinAutomatically:     requestData.CanJoinAutomatically,
 		AttendanceGroup:          requestData.AttendanceGroup,
 
-		ResearchGroup:       requestData.ResearchGroup,
-		ResearchOpen:        requestData.ResearchOpen,
-		ResearchDescription: requestData.ResearchDescription,
-		ResearchProfile:     requestData.ResearchProfile,
+		ResearchGroup:        requestData.ResearchGroup,
+		ResearchOpen:         requestData.ResearchOpen,
+		ResearchConfirmation: requestData.ResearchConfirmation,
+		ResearchDescription:  requestData.ResearchDescription,
+		ResearchProfile:      requestData.ResearchProfile,
 	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
