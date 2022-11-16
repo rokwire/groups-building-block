@@ -77,8 +77,10 @@ definitions:
       privacy:
         description: public or private
         type: string
-      research_confirmation:
-        type: boolean
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -436,8 +438,10 @@ definitions:
         - public
         - private
         type: string
-      research_confirmation:
-        type: boolean
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -785,8 +789,10 @@ definitions:
         - public
         - private
         type: string
-      research_confirmation:
-        type: boolean
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
