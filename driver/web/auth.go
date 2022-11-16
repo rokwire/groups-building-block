@@ -29,10 +29,10 @@ import (
 	"golang.org/x/sync/syncmap"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/authorization"
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/core-auth-library-go/authutils"
-	"github.com/rokwire/core-auth-library-go/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v2/authorization"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authutils"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
 // Auth handler
@@ -186,15 +186,15 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 // NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
-	if authService != nil {
+	if serviceRegManager != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
-		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", authService.GetServiceID())
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceRegManager.AuthService.ServiceID)
 
 		// Instantiate TokenAuth instance to perform token validation
 		var err error
-		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
+		tokenAuth, err = tokenauth.NewTokenAuth(true, serviceRegManager, permissionAuth, scopeAuth)
 		if err != nil {
 			log.Fatalf("error instancing token auth: %s", err)
 		}
