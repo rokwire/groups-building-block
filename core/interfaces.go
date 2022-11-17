@@ -86,6 +86,8 @@ type Services interface {
 
 	// Group Notifications
 	SendGroupNotification(clientID string, notification model.GroupNotification) error
+
+	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 }
 
 type servicesImpl struct {
@@ -286,6 +288,10 @@ func (s *servicesImpl) SendGroupNotification(clientID string, notification model
 	return s.app.sendGroupNotification(clientID, notification)
 }
 
+func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+	return s.app.getResearchProfileUserCount(clientID, current, researchProfile)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
@@ -416,6 +422,7 @@ type Authman interface {
 type Core interface {
 	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
+	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users
