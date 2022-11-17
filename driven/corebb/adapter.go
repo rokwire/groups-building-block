@@ -120,7 +120,7 @@ func (a *Adapter) RetrieveCoreServices(serviceIDs []string) ([]model.CoreService
 	return nil, nil
 }
 
-// RetrieveCoreServices retrieves Core service registrations
+// GetAccountsCount retrieves account count for provided params
 func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error) {
 	if a.serviceAccountManager == nil {
 		log.Println("GetAccountsCount: service account manager is nil")
