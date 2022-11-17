@@ -257,6 +257,8 @@ func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKe
 type userData struct {
 	UIuceduUIN  *string  `json:"uiucedu_uin"`
 	Sub         *string  `json:"sub"`
+	AppID       *string  `json:"app_id"`
+	OrgID       *string  `json:"org_id"`
 	Aud         *string  `json:"aud"`
 	Email       *string  `json:"email"`
 	Name        *string  `json:"name"`
@@ -332,7 +334,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
+			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID, NetID: netID}
 			isCoreUser = true
 			isAnonymous = claims.Anonymous
@@ -410,9 +412,15 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	//5. Get the user for the provided external id.
-	var name, externalID, email, netID string
+	var name, externalID, email, netID, appID, orgID string
 	if data.Name != nil {
 		name = *data.Name
+	}
+	if data.AppID != nil {
+		appID = *data.AppID
+	}
+	if data.OrgID != nil {
+		orgID = *data.OrgID
 	}
 	if data.UIuceduUIN != nil {
 		externalID = *data.UIuceduUIN
@@ -424,7 +432,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 		netID = *data.NetID
 	}
 	return &model.User{
-		ID: userID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		ID: userID, AppID: appID, OrgID: orgID, ClientID: clientID, ExternalID: externalID, NetID: netID,
 		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
 		Permissions: data.Permissions,
 	}
@@ -507,7 +515,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 			}
 
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
+			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID}
 			isCoreUser = true
 		}
@@ -561,9 +569,15 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		return nil, false
 	}
 
-	var name, externalID, email, userID string
+	var name, externalID, email, userID, appID, orgID string
 	if data.Sub != nil {
 		userID = *data.Sub
+	}
+	if data.AppID != nil {
+		appID = *data.AppID
+	}
+	if data.OrgID != nil {
+		orgID = *data.OrgID
 	}
 	if data.Name != nil {
 		name = *data.Name
@@ -579,6 +593,8 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	}
 	return &model.User{
 		ID:          userID,
+		AppID:       appID,
+		OrgID:       orgID,
 		ClientID:    clientID,
 		ExternalID:  externalID,
 		Email:       email,

@@ -27,7 +27,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang-jwt/jwt"
+
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/sigauth"
 )
 
 var (
@@ -70,9 +73,6 @@ func main() {
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
-	// Core adapter
-	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
-
 	// Auth Service
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
@@ -88,11 +88,35 @@ func main() {
 		log.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
 
-	// Instantiate a ServiceRegManager to manage service registration records
-	serviceRegManager, err := authservice.NewTestServiceRegManager(&authService, serviceRegLoader)
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
 	if err != nil {
 		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
+
+	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
+	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
+	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
+	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	if err != nil {
+		log.Fatalf("Error parsing priv key: %v", err)
+	}
+	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
+	if err != nil {
+		log.Fatalf("Error initializing signature auth: %v", err)
+	}
+
+	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+	if err != nil {
+		log.Fatalf("Error initializing remote service account loader: %v", err)
+	}
+
+	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service account manager: %v", err)
+	}
+
+	// Core adapter
+	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
 
 	// Rewards adapter
 	rewardsServiceReg, err := serviceRegManager.GetServiceReg("rewards")

@@ -1,1 +1,2 @@
 p, all_admin_groups, /gr/api/admin/*, (GET)|(POST)|(PUT)|(DELETE), All admin actions for Groups BB
+p, research_group_admin, /gr/api/research-profile/user-count, (POST), Manage research groups
