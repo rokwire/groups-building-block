@@ -27,8 +27,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
 )
 
 var (
@@ -76,23 +75,27 @@ func main() {
 
 	// Auth Service
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
-	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
-		AuthServicesHost: coreBBHost,
+
+	authService := authservice.AuthService{
+		ServiceID:   "groups",
+		ServiceHost: groupServiceURL,
+		FirstParty:  true,
+		AuthBaseURL: coreBBHost,
 	}
 
-	// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"rewards"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
+	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"rewards"})
 	if err != nil {
-		log.Fatalf("error instancing auth data loader: %s", err)
+		log.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
-	// Instantiate AuthService instance
-	authService, err := authservice.NewTestAuthService("groups", groupServiceURL, serviceLoader)
+
+	// Instantiate a ServiceRegManager to manage service registration records
+	serviceRegManager, err := authservice.NewTestServiceRegManager(&authService, serviceRegLoader)
 	if err != nil {
-		log.Fatalf("error instancing auth service: %s", err)
+		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
 
 	// Rewards adapter
-	rewardsServiceReg, err := authService.GetServiceReg("rewards")
+	rewardsServiceReg, err := serviceRegManager.GetServiceReg("rewards")
 	if err != nil {
 		log.Fatalf("error finding rewards service reg: %s", err)
 	}
@@ -122,7 +125,7 @@ func main() {
 
 	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, authService, groupServiceURL)
+		intrernalAPIKey, serviceRegManager, groupServiceURL)
 	webAdapter.Start()
 }
 
