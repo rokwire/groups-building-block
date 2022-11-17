@@ -27,8 +27,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/golang-jwt/jwt"
+
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/sigauth"
 )
 
 var (
@@ -73,28 +75,53 @@ func main() {
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
-	// Core adapter
-	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
-
 	// Auth Service
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
-	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
-		AuthServicesHost: coreBBHost,
+
+	authService := authservice.AuthService{
+		ServiceID:   "groups",
+		ServiceHost: groupServiceURL,
+		FirstParty:  true,
+		AuthBaseURL: coreBBHost,
 	}
 
-	// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"rewards"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
+	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"rewards"})
 	if err != nil {
-		log.Fatalf("error instancing auth data loader: %s", err)
+		log.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
-	// Instantiate AuthService instance
-	authService, err := authservice.NewTestAuthService("groups", groupServiceURL, serviceLoader)
+
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
 	if err != nil {
-		log.Fatalf("error instancing auth service: %s", err)
+		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
+
+	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
+	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
+	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
+	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	if err != nil {
+		log.Fatalf("Error parsing priv key: %v", err)
+	}
+	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
+	if err != nil {
+		log.Fatalf("Error initializing signature auth: %v", err)
+	}
+
+	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+	if err != nil {
+		log.Fatalf("Error initializing remote service account loader: %v", err)
+	}
+
+	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service account manager: %v", err)
+	}
+
+	// Core adapter
+	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
 
 	// Rewards adapter
-	rewardsServiceReg, err := authService.GetServiceReg("rewards")
+	rewardsServiceReg, err := serviceRegManager.GetServiceReg("rewards")
 	if err != nil {
 		log.Fatalf("error finding rewards service reg: %s", err)
 	}
@@ -124,7 +151,7 @@ func main() {
 
 	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, authService, groupServiceURL)
+		intrernalAPIKey, serviceRegManager, groupServiceURL)
 	webAdapter.Start()
 }
 

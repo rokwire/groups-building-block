@@ -24,7 +24,7 @@ import (
 	"net/http"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
 
 	"github.com/gorilla/mux"
 
@@ -43,7 +43,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.6.1
+// @version 1.7.0
 // @host localhost
 // @BasePath /gr
 // @schemes https
@@ -145,6 +145,8 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/reactions", we.idTokenAuthWrapFunc(we.apisHandler.ReactToGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPost)).Methods("DELETE")
+
+	restSubrouter.HandleFunc("/research-profile/user-count", we.adminIDTokenAuthWrapFunc(we.apisHandler.GetResearchProfileUserCount)).Methods("POST")
 
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
@@ -293,11 +295,11 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, authService *authservice.AuthService, groupServiceURL string) *Adapter {
+	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
-		oidcAdminWebClientID, authService, groupServiceURL, authorization)
+		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)

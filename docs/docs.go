@@ -2382,6 +2382,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/research-profile/user-count": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves the user count matching the provided research profile",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetResearchProfileUserCount",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Research profile",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                }
+            }
+        },
         "/api/user": {
             "delete": {
                 "security": [
@@ -2965,8 +3017,11 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
-                "research_confirmation": {
-                    "type": "boolean"
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
                 },
                 "research_description": {
                     "type": "string"
@@ -3500,8 +3555,11 @@ const docTemplate = `{
                         "private"
                     ]
                 },
-                "research_confirmation": {
-                    "type": "boolean"
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
                 },
                 "research_description": {
                     "type": "string"
@@ -4024,8 +4082,11 @@ const docTemplate = `{
                         "private"
                     ]
                 },
-                "research_confirmation": {
-                    "type": "boolean"
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
                 },
                 "research_description": {
                     "type": "string"
@@ -4105,7 +4166,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.6.1",
+	Version:          "1.7.0",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"https"},

@@ -77,8 +77,10 @@ definitions:
       privacy:
         description: public or private
         type: string
-      research_confirmation:
-        type: boolean
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -436,8 +438,10 @@ definitions:
         - public
         - private
         type: string
-      research_confirmation:
-        type: boolean
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -785,8 +789,10 @@ definitions:
         - public
         - private
         type: string
-      research_confirmation:
-        type: boolean
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -833,7 +839,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.6.1
+  version: 1.7.0
 paths:
   /admin/authman/synchronize:
     post:
@@ -2363,6 +2369,39 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
+  /api/research-profile/user-count:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves the user count matching the provided research profile
+      operationId: GetResearchProfileUserCount
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Research profile
+        in: body
+        name: data
+        required: true
+        schema:
+          additionalProperties:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
       security:
       - AppUserAuth: []
       tags:

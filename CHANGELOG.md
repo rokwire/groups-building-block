@@ -8,6 +8,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Set appID and orgID for notifications [#268](https://github.com/rokwire/groups-building-block/issues/268) 
 
+## [1.7.0] - 2022-11-16
+### Added
+- Add API to get count of users matching research profile [#291](https://github.com/rokwire/groups-building-block/issues/291)
+### Changed
+- Upgrade auth library [#290](https://github.com/rokwire/groups-building-block/issues/290)
+
+## [1.6.7] - 2022-11-16
+### Changed
+- Improvement of the original ticket: (research_confirmation is renamed to research_consent_statement and added new field with name research_consent_details)[#288](https://github.com/rokwire/groups-building-block/issues/288)
+
 ## [1.6.6] - 2022-11-15
 ### Added
 - Add research_confirmation field within the group [#288](https://github.com/rokwire/groups-building-block/issues/288)

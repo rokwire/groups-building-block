@@ -68,7 +68,8 @@ type createGroupRequest struct {
 	AttendanceGroup          bool                           `json:"attendance_group" `
 	ResearchOpen             bool                           `json:"research_open"`
 	ResearchGroup            bool                           `json:"research_group"`
-	ResearchConfirmation     bool                           `json:"research_confirmation"`
+	ResearchConsentStatement string                         `json:"research_consent_statement"`
+	ResearchConsentDetails   string                         `json:"research_consent_details"`
 	ResearchDescription      string                         `json:"research_description"`
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 } //@name createGroupRequest
@@ -151,7 +152,8 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		AttendanceGroup:          requestData.AttendanceGroup,
 		ResearchGroup:            requestData.ResearchGroup,
 		ResearchOpen:             requestData.ResearchOpen,
-		ResearchConfirmation:     requestData.ResearchConfirmation,
+		ResearchConsentStatement: requestData.ResearchConsentStatement,
+		ResearchConsentDetails:   requestData.ResearchConsentDetails,
 		ResearchDescription:      requestData.ResearchDescription,
 		ResearchProfile:          requestData.ResearchProfile,
 	})
@@ -191,7 +193,8 @@ type updateGroupRequest struct {
 	AttendanceGroup            bool                           `json:"attendance_group" `
 	ResearchOpen               bool                           `json:"research_open"`
 	ResearchGroup              bool                           `json:"research_group"`
-	ResearchConfirmation       bool                           `json:"research_confirmation"`
+	ResearchConsentStatement   string                         `json:"research_consent_statement"`
+	ResearchConsentDetails     string                         `json:"research_consent_details"`
 	ResearchDescription        string                         `json:"research_description"`
 	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
 } //@name updateGroupRequest
@@ -275,11 +278,12 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		CanJoinAutomatically:     requestData.CanJoinAutomatically,
 		AttendanceGroup:          requestData.AttendanceGroup,
 
-		ResearchGroup:        requestData.ResearchGroup,
-		ResearchOpen:         requestData.ResearchOpen,
-		ResearchConfirmation: requestData.ResearchConfirmation,
-		ResearchDescription:  requestData.ResearchDescription,
-		ResearchProfile:      requestData.ResearchProfile,
+		ResearchGroup:            requestData.ResearchGroup,
+		ResearchOpen:             requestData.ResearchOpen,
+		ResearchConsentStatement: requestData.ResearchConsentStatement,
+		ResearchConsentDetails:   requestData.ResearchConsentDetails,
+		ResearchDescription:      requestData.ResearchDescription,
+		ResearchProfile:          requestData.ResearchProfile,
 	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
@@ -2362,6 +2366,44 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
+}
+
+// GetResearchProfileUserCount Retrieves the user count matching the provided research profile
+// @Description Retrieves the user count matching the provided research profile
+// @ID GetResearchProfileUserCount
+// @Tags Client-V1
+// @Accept json
+// @Param APP header string true "APP"
+// @Param data body map[string]map[string][]string true "Research profile"
+// @Success 200 {integer} 0
+// @Security AppUserAuth
+// @Router /api/research-profile/user-count [post]
+func (h *ApisHandler) GetResearchProfileUserCount(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	var researchProfile map[string]map[string][]string
+	err := json.NewDecoder(r.Body).Decode(&researchProfile)
+	if err != nil {
+		log.Printf("error decoding body - %v\n", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	count, err := h.app.Services.GetResearchProfileUserCount(clientID, current, researchProfile)
+	if err != nil {
+		log.Printf("error getting user count - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(count)
+	if err != nil {
+		log.Println("Error on marshal response")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 // NewApisHandler creates new rest Handler instance

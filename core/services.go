@@ -1132,3 +1132,14 @@ func (app *Application) updateSyncConfig(config model.SyncConfig) error {
 func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
 	return app.storage.FindGroupMembership(clientID, groupID, userID)
 }
+
+func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+	searchParams := map[string]interface{}{}
+	for k1, v1 := range researchProfile {
+		for k2, v2 := range v1 {
+			searchParams["profile.unstructured_properties.research_questionnaire_answers."+k1+"."+k2] = map[string]interface{}{"operation": "any", "value": v2}
+		}
+	}
+
+	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
+}
