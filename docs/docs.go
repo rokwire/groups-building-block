@@ -3179,6 +3179,10 @@ const docTemplate = `{
                     "description": "group category",
                     "type": "string"
                 },
+                "exclude_my_groups": {
+                    "description": "Exclude My groups",
+                    "type": "boolean"
+                },
                 "ids": {
                     "description": "membership id",
                     "type": "array",
