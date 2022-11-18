@@ -51,15 +51,18 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 	if len(recipients) > 0 {
 		url := fmt.Sprintf("%s/api/int/v2/message", na.baseURL)
 
-		bodyData := map[string]interface{}{
+		async := true
+		message := map[string]interface{}{
 			"priority":   10,
 			"recipients": recipients,
-			"topic":      topic,
+			"topic":      nil,
 			"subject":    title,
 			"body":       text,
 			"data":       data,
-			"app_id":     na.appID,
-			"org_id":     na.orgID,
+		}
+		bodyData := map[string]interface{}{
+			"async":   async,
+			"message": message,
 		}
 		bodyBytes, err := json.Marshal(bodyData)
 		if err != nil {
