@@ -57,7 +57,7 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 			"app_id":     na.appID,
 			"priority":   10,
 			"recipients": recipients,
-			"topic":      nil,
+			"topic":      topic,
 			"subject":    title,
 			"body":       text,
 			"data":       data,
