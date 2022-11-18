@@ -13,7 +13,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.7.1] - 2022-11-18
 ### Added
 - Add ability to exclude user's groups from response [#295](https://github.com/rokwire/groups-building-block/issues/295)
-- Set appID and orgID for notifications [#268](https://github.com/rokwire/groups-building-block/issues/268)
 ### Fixed
 - Bad title index produce wrong client error for unique title violation [#296](https://github.com/rokwire/groups-building-block/issues/296)
 
