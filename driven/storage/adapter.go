@@ -688,9 +688,18 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
 	if userID != nil {
-		innerOrFilter := []bson.M{
-			{"_id": bson.M{"$in": groupIDs}},
-			{"privacy": bson.M{"$ne": "private"}},
+		innerOrFilter := []bson.M{}
+
+		if groupsFilter.ExcludeMyGroups != nil && *groupsFilter.ExcludeMyGroups {
+			filter = append(filter, bson.E{"_id", bson.M{"$nin": groupIDs}})
+			innerOrFilter = []bson.M{
+				{"privacy": bson.M{"$ne": "private"}},
+			}
+		} else {
+			innerOrFilter = []bson.M{
+				{"_id": bson.M{"$in": groupIDs}},
+				{"privacy": bson.M{"$ne": "private"}},
+			}
 		}
 
 		if groupsFilter.Title != nil {
