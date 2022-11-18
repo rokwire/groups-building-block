@@ -53,6 +53,8 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 
 		async := true
 		message := map[string]interface{}{
+			"org_id":     na.orgID,
+			"app_id":     na.appID,
 			"priority":   10,
 			"recipients": recipients,
 			"topic":      nil,
