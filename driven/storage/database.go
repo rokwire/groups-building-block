@@ -249,40 +249,11 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
-	if indexMapping["title_1"] == nil {
-		err := groups.AddIndex(
-			bson.D{
-				primitive.E{Key: "title", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
 	if indexMapping["client_id_1"] == nil {
 		err := groups.AddIndex(
 			bson.D{
 				primitive.E{Key: "client_id", Value: 1},
 			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["client_id_1_title_1_"] == nil {
-		err := groups.AddIndex(
-			bson.D{
-				primitive.E{Key: "client_id", Value: 1},
-				primitive.E{Key: "title", Value: 1},
-			}, true)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["title_1_client_id_1"] != nil {
-		// Drop the old one
-		err := groups.DropIndex("title_1_client_id_1")
 		if err != nil {
 			return err
 		}
@@ -372,11 +343,50 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["title_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "title", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1_title_1_"] != nil {
+		err := groups.DropIndex("client_id_1_title_1_")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1_title_1"] != nil {
+		err := groups.DropIndex("client_id_1_title_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["title_1_client_id_1"] != nil {
+		// Drop the old one
+		err := groups.DropIndex("title_1_client_id_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	name := "title_unique"
+	unique := true
+	if indexMapping["title_unique"] != nil {
+		err := groups.DropIndex("title_unique")
+		if err != nil {
+			return err
+		}
+	}
 	if indexMapping["title_unique"] == nil {
-		name := "title_unique"
-		unique := true
 		err := groups.AddIndexWithOptions(
 			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
 				primitive.E{Key: "title", Value: 1},
 			},
 			&options.IndexOptions{
@@ -391,7 +401,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 			return err
 		}
 	}
-
 	log.Println("groups checks passed")
 	return nil
 }
