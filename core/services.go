@@ -1140,6 +1140,11 @@ func (app *Application) getResearchProfileUserCount(clientID string, current *mo
 			searchParams["profile.unstructured_properties.research_questionnaire_answers."+k1+"."+k2] = map[string]interface{}{"operation": "any", "value": v2}
 		}
 	}
+	// If empty profile is provided, find all users that have filled out the profile
+	//TODO: Handle filled out profile search better
+	if len(searchParams) == 0 {
+		searchParams["profile.unstructured_properties.research_questionnaire_answers.demographics"] = "$exists"
+	}
 
 	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
 }

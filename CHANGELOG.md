@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Fixed
+- Count of users matching research profile wrong for empty profile [#299](https://github.com/rokwire/groups-building-block/issues/299)
 
 ## [1.7.2] - 2022-11-18
 ### Added
