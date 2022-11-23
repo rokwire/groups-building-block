@@ -1,7 +1,6 @@
 vendor/
 bin/
 build/
-go.sum
 .vscode/
 *.sh
 docker-compose.env
