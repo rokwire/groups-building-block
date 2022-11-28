@@ -2015,7 +2015,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroup(clientID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

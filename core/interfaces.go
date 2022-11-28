@@ -28,6 +28,7 @@ type Services interface {
 
 	LoginUser(clientID string, currentGetUserGroups *model.User) error
 
+	// TODO: Deprecate this method due to missed CurrentMember!
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
@@ -98,6 +99,7 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
+// TODO: Deprecate this method due to missed CurrentMember!
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
 	return s.app.getGroupEntity(clientID, id)
 }
