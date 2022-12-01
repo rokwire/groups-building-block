@@ -90,6 +90,23 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 		return nil, err
 	}
 
+	if group.ResearchGroup {
+		searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
+		//TODO: verify this verbage
+		app.notifications.SendNotification(nil, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
+			map[string]string{
+				"type":        "group",
+				"operation":   "research_group",
+				"entity_type": "group",
+				"entity_id":   group.ID,
+				"entity_name": group.Title,
+			},
+			searchParams,
+			current.AppID,
+			current.OrgID)
+
+	}
+
 	handleRewardsAsync := func(clientID, userID string) {
 		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
 		if grErr != nil {
@@ -201,6 +218,9 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 		} else {
 			app.notifications.SendNotification(
@@ -218,6 +238,9 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 		}
 
@@ -316,6 +339,9 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 				"entity_id":   group.ID,
 				"entity_name": group.Title,
 			},
+			nil,
+			current.AppID,
+			current.OrgID,
 		)
 	}
 
@@ -405,6 +431,9 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 					"post_subject": post.Subject,
 					"post_body":    post.Body,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 		}
 	}
@@ -550,7 +579,10 @@ Reported comment: %s
 			"post_id":      *post.ID,
 			"post_subject": post.Subject,
 			"post_body":    post.Body,
-		})
+		},
+			nil,
+			current.AppID,
+			current.OrgID)
 	}
 
 	return nil
@@ -1092,13 +1124,13 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 
 	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 		return true, true // Should it be a separate notification preference?
-	}), notification.Topic, notification.Subject, notification.Body, notification.Data)
+	}), notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
 
 	return nil
 }
 
-func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
-	app.notifications.SendNotification(recipients, topic, title, text, data)
+func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
+	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
 }
 
 func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
@@ -1134,6 +1166,11 @@ func (app *Application) findGroupMembership(clientID string, groupID string, use
 }
 
 func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+	searchParams := app.formatCoreAccountSearchParams(researchProfile)
+	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
+}
+
+func (app *Application) formatCoreAccountSearchParams(researchProfile map[string]map[string][]string) map[string]interface{} {
 	searchParams := map[string]interface{}{}
 	for k1, v1 := range researchProfile {
 		for k2, v2 := range v1 {
@@ -1146,5 +1183,5 @@ func (app *Application) getResearchProfileUserCount(clientID string, current *mo
 		searchParams["profile.unstructured_properties.research_questionnaire_answers.demographics"] = "$exists"
 	}
 
-	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
+	return searchParams
 }

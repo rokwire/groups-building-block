@@ -11,7 +11,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rokwire/core-auth-library-go/v2 v2.2.0
 	github.com/swaggo/http-swagger v1.3.3
-	github.com/swaggo/swag v1.8.7
+	github.com/swaggo/swag v1.8.8
 	go.mongodb.org/mongo-driver v1.11.0
 	golang.org/x/sync v0.1.0
 	gopkg.in/go-playground/validator.v9 v9.31.0
@@ -20,7 +20,7 @@ require (
 require (
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/casbin/casbin/v2 v2.57.0 // indirect
+	github.com/casbin/casbin/v2 v2.58.0 // indirect
 	github.com/go-openapi/jsonpointer v0.19.5 // indirect
 	github.com/go-openapi/jsonreference v0.20.0 // indirect
 	github.com/go-openapi/spec v0.20.7 // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/rokwire/logging-library-go/v2 v2.0.0 // indirect
+	github.com/rokwire/logging-library-go/v2 v2.1.0 // indirect
 	github.com/swaggo/files v0.0.0-20220728132757-551d4a08d97a // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect

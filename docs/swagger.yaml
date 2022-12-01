@@ -2728,7 +2728,7 @@ paths:
       tags:
       - Client-V1
 schemes:
-- https
+- http
 securityDefinitions:
   APIKeyAuth:
     in: header

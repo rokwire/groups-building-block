@@ -17,14 +17,15 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // InternalApisHandler handles the rest Internal APIs implementation

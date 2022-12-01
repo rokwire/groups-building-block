@@ -59,22 +59,6 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
-	// Notification adapter
-	appID := getEnvKey("GROUPS_APP_ID", true)
-	orgID := getEnvKey("GROUPS_ORG_ID", true)
-	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
-	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
-	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL, appID, orgID)
-
-	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
-	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
-	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
-	authmanAdminUINList := getAuthmanAdminUINList()
-
-	// Authman adapter
-	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
-
 	// Auth Service
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
@@ -117,6 +101,24 @@ func main() {
 		log.Fatalf("Error initializing service account manager: %v", err)
 	}
 
+	// Notification adapter
+	appID := getEnvKey("GROUPS_APP_ID", true)
+	orgID := getEnvKey("GROUPS_ORG_ID", true)
+	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
+	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
+	notificationsAdapter, err := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("Error initializing notification adapter: %v", err)
+	}
+
+	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
+	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
+	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
+	authmanAdminUINList := getAuthmanAdminUINList()
+
+	// Authman adapter
+	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
+
 	// Core adapter
 	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
 
@@ -133,6 +135,8 @@ func main() {
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
 		SupportedClientIDs:        supportedClientIDs,
+		AppID:                     appID,
+		OrgID:                     orgID,
 	}
 
 	//application

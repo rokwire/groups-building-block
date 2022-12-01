@@ -17,6 +17,7 @@ package web
 import (
 	"context"
 	"errors"
+	"fmt"
 	"groups/core"
 	"groups/core/model"
 	"log"
@@ -317,10 +318,12 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	var data *userData
 	var isCoreUser = false
 	var isAnonymous = false
+	var coreErr error
 	if auth.coreTokenAuth != nil {
-		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		if err == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
-			err = auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
+		var claims *tokenauth.Claims
+		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
+			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
 				return nil
 			}
@@ -342,6 +345,12 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	if data == nil {
+		//Return error from core validation if OIDC is not configured
+		if auth.idTokenVerifier == nil {
+			log.Printf("error validating token - %s\n", coreErr)
+			return nil
+		}
+
 		//1. Check if there is a token
 		if token == nil || len(*token) == 0 {
 			return nil
@@ -461,11 +470,14 @@ func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
 
 // newIDTokenAuth creates new id token auth
 func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
-	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
-	if err != nil {
-		log.Fatalln(err)
+	var idTokenVerifier *oidc.IDTokenVerifier
+	if len(oidcProvider) > 0 {
+		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		idTokenVerifier = provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
 	}
-	idTokenVerifier := provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
@@ -505,11 +517,12 @@ func (auth *AdminAuth) start() {
 func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, bool) {
 	var data *userData
 	var isCoreUser = false
-
+	var coreErr error
 	if auth.coreTokenAuth != nil {
-		claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		if err == nil && claims != nil && !claims.Anonymous {
-			err = auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
+		var claims *tokenauth.Claims
+		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		if coreErr == nil && claims != nil && !claims.Anonymous {
+			err := auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {
 				return nil, true
 			}
@@ -522,6 +535,11 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	}
 
 	if data == nil {
+		if auth.appVerifier == nil && auth.webAppVerifier == nil {
+			fmt.Printf("error validating token - %s\n", coreErr)
+			return nil, false
+		}
+
 		//1. Get the token from the request
 		rawIDToken, tokenType, err := auth.getIDToken(r)
 		if err != nil {
@@ -677,13 +695,16 @@ func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
 }
 
 func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string, coreTokenAuth *tokenauth.TokenAuth, authorization *casbin.Enforcer) *AdminAuth {
-	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
-	if err != nil {
-		log.Fatalln(err)
+	var appVerifier *oidc.IDTokenVerifier
+	var webAppVerifier *oidc.IDTokenVerifier
+	if len(oidcProvider) > 0 {
+		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		appVerifier = provider.Verifier(&oidc.Config{ClientID: appClientID})
+		webAppVerifier = provider.Verifier(&oidc.Config{ClientID: webAppClientID})
 	}
-
-	appVerifier := provider.Verifier(&oidc.Config{ClientID: appClientID})
-	webAppVerifier := provider.Verifier(&oidc.Config{ClientID: webAppClientID})
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
