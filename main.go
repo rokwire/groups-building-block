@@ -106,7 +106,10 @@ func main() {
 	orgID := getEnvKey("GROUPS_ORG_ID", true)
 	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
+	notificationsAdapter, err := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("Error initializing notification adapter: %v", err)
+	}
 
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)

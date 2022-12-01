@@ -320,9 +320,6 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	var isAnonymous = false
 	var coreErr error
 	if auth.coreTokenAuth != nil {
-		// claims, err := auth.coreTokenAuth.CheckRequestTokens(r)
-		// if err == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
-		// 	err = auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 		var claims *tokenauth.Claims
 		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
 		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {

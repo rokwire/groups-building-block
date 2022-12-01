@@ -39,8 +39,13 @@ type Recipient struct {
 }
 
 // NewNotificationsAdapter creates a new Notifications BB adapter instance
-func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
-	return &Adapter{baseURL: baseURL, serviceAccountManager: serviceAccountManager}
+func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.ServiceAccountManager) (*Adapter, error) {
+	if serviceAccountManager == nil {
+		log.Println("service account manager is nil")
+		return nil, errors.New("service account manager is nil")
+	}
+
+	return &Adapter{baseURL: baseURL, serviceAccountManager: serviceAccountManager}, nil
 }
 
 // SendNotification sends notification to a user
@@ -49,11 +54,6 @@ func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title
 }
 
 func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string) error {
-	if na.serviceAccountManager == nil {
-		log.Println("RetrieveCoreUserAccountByCriteria: service account manager is nil")
-		errors.New("service account manager is nil")
-	}
-
 	if len(recipients) > 0 || len(accountCriteria) > 0 {
 		url := fmt.Sprintf("%s/api/bbs/message", na.baseURL)
 
@@ -85,7 +85,6 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 			return err
 		}
 
-		//TODO: Stephen should I be using all/all for the app/org id or the ones instatiated with the adapter
 		resp, err := na.serviceAccountManager.MakeRequest(req, appID, orgID)
 		if err != nil {
 			log.Printf("SendNotification: error sending request - %s", err)
@@ -108,11 +107,6 @@ func (na *Adapter) SendMail(toEmail string, subject string, body string) {
 }
 
 func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
-	if na.serviceAccountManager == nil {
-		log.Println("RetrieveCoreUserAccountByCriteria: service account manager is nil")
-		errors.New("service account manager is nil")
-	}
-
 	if len(toEmail) > 0 && len(subject) > 0 && len(body) > 0 {
 		url := fmt.Sprintf("%s/api/int/mail", na.baseURL)
 
@@ -133,7 +127,6 @@ func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
 			return err
 		}
 
-		//TODO: Stephen should I be using all/all for the app/org id or the ones instatiated with the adapter
 		resp, err := na.serviceAccountManager.MakeRequest(req, "all", "all")
 		if err != nil {
 			log.Printf("sendMail: error sending request - %s", err)

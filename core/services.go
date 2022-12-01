@@ -1130,7 +1130,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
-	app.notifications.SendNotification(recipients, topic, title, text, data, nil, app.config.AppID, app.config.OrgID)
+	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
 }
 
 func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {

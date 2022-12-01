@@ -402,14 +402,6 @@ type Notifications interface {
 	SendMail(toEmail string, subject string, body string)
 }
 
-type notificationsImpl struct {
-	app *Application
-}
-
-func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
-	n.app.sendNotification(recipients, topic, title, text, data, appID, orgID)
-}
-
 // Authman exposes Authman APIs for the driver adapters
 type Authman interface {
 	RetrieveAuthmanGroupMembers(groupName string) ([]string, error)
