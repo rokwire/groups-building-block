@@ -4173,7 +4173,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.7.5",
 	Host:             "localhost",
 	BasePath:         "/gr",
-	Schemes:          []string{"https"},
+	Schemes:          []string{"http"},
 	Title:            "Rokwire Groups Building Block API",
 	Description:      "Rokwire Groups Building Block API Documentation.",
 	InfoInstanceName: "swagger",

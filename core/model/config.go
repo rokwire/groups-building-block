@@ -21,6 +21,8 @@ type ApplicationConfig struct {
 	AuthmanAdminUINList       []string
 	ReportAbuseRecipientEmail string
 	SupportedClientIDs        []string
+	AppID                     string
+	OrgID                     string
 }
 
 // SyncConfig defines system configs for managed group sync

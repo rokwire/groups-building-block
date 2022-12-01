@@ -87,7 +87,6 @@ type Services interface {
 
 	// Group Notifications
 	SendGroupNotification(clientID string, notification model.GroupNotification) error
-
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 }
 
@@ -399,7 +398,7 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string)
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string)
 	SendMail(toEmail string, subject string, body string)
 }
 
@@ -407,8 +406,8 @@ type notificationsImpl struct {
 	app *Application
 }
 
-func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
-	n.app.sendNotification(recipients, topic, title, text, data)
+func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
+	n.app.sendNotification(recipients, topic, title, text, data, appID, orgID)
 }
 
 // Authman exposes Authman APIs for the driver adapters

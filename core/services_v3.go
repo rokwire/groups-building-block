@@ -85,6 +85,9 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 						"entity_id":   group.ID,
 						"entity_name": group.Title,
 					},
+					nil,
+					current.AppID,
+					current.OrgID,
 				)
 			}
 		}
@@ -157,6 +160,9 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 
 		}
