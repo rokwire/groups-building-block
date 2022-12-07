@@ -302,7 +302,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 // @ID AdminGetGroupPosts
 // @Tags Admin-V1
 // @Param APP header string true "APP"
-// @Success 200 {array} postResponse
+// @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Router /api/admin/group/{groupID}/posts [get]
 func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {

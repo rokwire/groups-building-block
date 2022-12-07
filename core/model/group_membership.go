@@ -10,6 +10,13 @@ type MembershipCollection struct {
 	Items []GroupMembership
 }
 
+// ApplyGroupSettings Applies group settings
+func (c *MembershipCollection) ApplyGroupSettings(settings GroupSettings) {
+	for index := range c.Items {
+		c.Items[index].ApplyGroupSettings(settings)
+	}
+}
+
 // GetMembershipBy Finds a membership by
 func (c *MembershipCollection) GetMembershipBy(checker func(membership GroupMembership) bool) *GroupMembership {
 	if len(c.Items) > 0 {
@@ -103,29 +110,6 @@ type GroupMembership struct {
 	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
 } //@name GroupMembership
 
-// ToMember converts the GroupMembership model to the Member model
-func (m *GroupMembership) ToMember() Member {
-	status := m.Status
-	if m.Admin {
-		status = "admin"
-	}
-	return Member{
-		ID:            m.ID,
-		UserID:        m.UserID,
-		ExternalID:    m.ExternalID,
-		Name:          m.Name,
-		NetID:         m.NetID,
-		Email:         m.Email,
-		PhotoURL:      m.PhotoURL,
-		Status:        status,
-		RejectReason:  m.RejectReason,
-		MemberAnswers: m.MemberAnswers,
-		DateCreated:   m.DateCreated,
-		DateUpdated:   m.DateUpdated,
-		DateAttended:  m.DateAttended,
-	}
-}
-
 // GetDisplayName Constructs a display name based on the current data state
 func (m *GroupMembership) GetDisplayName() string {
 	if len(m.Name) > 0 {
@@ -154,15 +138,6 @@ func (m *GroupMembership) ApplyFromUserIfEmpty(user *User) {
 	}
 }
 
-// ToNotificationRecipient construct notifications.Recipient based on the data
-func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recipient {
-	return notifications.Recipient{
-		UserID: m.UserID,
-		Name:   m.Name,
-		Mute:   mute,
-	}
-}
-
 // IsAdmin says if the user is admin of the group
 func (m *GroupMembership) IsAdmin() bool {
 	return m.Status == "admin"
@@ -188,6 +163,22 @@ func (m *GroupMembership) IsRejected() bool {
 	return m.Status == "rejected"
 }
 
+// ApplyGroupSettings Applies group settings and removes forbidden fields
+func (m *GroupMembership) ApplyGroupSettings(settings GroupSettings) {
+	if !settings.MemberInfoPreferences.CanViewMemberName {
+		m.Name = ""
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberNetID {
+		m.NetID = ""
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberEmail {
+		m.Email = ""
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberPhone {
+		// Just a placeholder.
+	}
+}
+
 // ToShortMemberRecord converts to ShortMemberRecord
 func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 	return ShortMemberRecord{
@@ -198,6 +189,38 @@ func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 		NetID:      m.NetID,
 		Name:       m.Name,
 		Status:     m.Status,
+	}
+}
+
+// ToNotificationRecipient construct notifications.Recipient based on the data
+func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recipient {
+	return notifications.Recipient{
+		UserID: m.UserID,
+		Name:   m.Name,
+		Mute:   mute,
+	}
+}
+
+// ToMember converts the GroupMembership model to the Member model
+func (m *GroupMembership) ToMember() Member {
+	status := m.Status
+	if m.Admin {
+		status = "admin"
+	}
+	return Member{
+		ID:            m.ID,
+		UserID:        m.UserID,
+		ExternalID:    m.ExternalID,
+		Name:          m.Name,
+		NetID:         m.NetID,
+		Email:         m.Email,
+		PhotoURL:      m.PhotoURL,
+		Status:        status,
+		RejectReason:  m.RejectReason,
+		MemberAnswers: m.MemberAnswers,
+		DateCreated:   m.DateCreated,
+		DateUpdated:   m.DateUpdated,
+		DateAttended:  m.DateAttended,
 	}
 }
 

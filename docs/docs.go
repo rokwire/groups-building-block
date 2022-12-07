@@ -204,7 +204,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/rest.postResponse"
+                                "$ref": "#/definitions/model.Post"
                             }
                         }
                     }
@@ -1482,7 +1482,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/rest.postResponse"
+                                "$ref": "#/definitions/model.Post"
                             }
                         }
                     }
@@ -1523,7 +1523,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/model.Post"
                         }
                     }
                 }
@@ -1560,7 +1560,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/model.Post"
                         }
                     }
                 }
@@ -1595,7 +1595,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/model.Post"
                         }
                     }
                 }
@@ -3044,6 +3044,9 @@ const docTemplate = `{
                         }
                     }
                 },
+                "settings": {
+                    "$ref": "#/definitions/GroupSettings"
+                },
                 "stats": {
                     "$ref": "#/definitions/GroupStats"
                 },
@@ -3128,6 +3131,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "GroupSettings": {
+            "type": "object",
+            "properties": {
+                "member_info_preferences": {
+                    "$ref": "#/definitions/MemberInfoPreferences"
+                },
+                "post_preferences": {
+                    "$ref": "#/definitions/PostPreferences"
                 }
             }
         },
@@ -3358,6 +3372,26 @@ const docTemplate = `{
                 }
             }
         },
+        "MemberInfoPreferences": {
+            "type": "object",
+            "properties": {
+                "allow_member_info": {
+                    "type": "boolean"
+                },
+                "can_view_member_email": {
+                    "type": "boolean"
+                },
+                "can_view_member_name": {
+                    "type": "boolean"
+                },
+                "can_view_member_net_id": {
+                    "type": "boolean"
+                },
+                "can_view_member_phone": {
+                    "type": "boolean"
+                }
+            }
+        },
         "MembershipFilter": {
             "type": "object",
             "properties": {
@@ -3431,6 +3465,29 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "posts_mute": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "PostPreferences": {
+            "type": "object",
+            "properties": {
+                "allow_send_post": {
+                    "type": "boolean"
+                },
+                "can_send_post_reactions": {
+                    "type": "boolean"
+                },
+                "can_send_post_replies": {
+                    "type": "boolean"
+                },
+                "can_send_post_to_admins": {
+                    "type": "boolean"
+                },
+                "can_send_post_to_all": {
+                    "type": "boolean"
+                },
+                "can_send_post_to_specific_members": {
                     "type": "boolean"
                 }
             }
@@ -3585,6 +3642,9 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "settings": {
+                    "$ref": "#/definitions/GroupSettings"
                 },
                 "tags": {
                     "type": "array",
@@ -3915,6 +3975,76 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Post": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_abuse": {
+                    "type": "boolean"
+                },
+                "member": {
+                    "$ref": "#/definitions/Creator"
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "private": {
+                    "type": "boolean"
+                },
+                "reactions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "replies": {
+                    "description": "This is constructed by the code (ParentID)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Post"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                },
+                "top_parent_id": {
+                    "type": "string"
+                },
+                "use_as_notification": {
+                    "type": "boolean"
+                }
+            }
+        },
         "model.SyncConfig": {
             "type": "object",
             "properties": {
@@ -3952,29 +4082,6 @@ const docTemplate = `{
                 },
                 "send_to_group_admins": {
                     "type": "boolean"
-                }
-            }
-        },
-        "rest.postResponse": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "group_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "private": {
-                    "type": "boolean"
-                },
-                "subject": {
-                    "type": "string"
                 }
             }
         },
@@ -4112,6 +4219,9 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "settings": {
+                    "$ref": "#/definitions/GroupSettings"
                 },
                 "tags": {
                     "type": "array",

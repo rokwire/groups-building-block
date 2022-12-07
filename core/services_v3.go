@@ -30,7 +30,29 @@ func (app *Application) findGroupsV3(clientID string, filter *model.GroupsFilter
 }
 
 func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return app.storage.FindGroupMemberships(clientID, filter)
+	collection, err := app.storage.FindGroupMemberships(clientID, filter)
+
+	if len(filter.GroupIDs) > 0 {
+		groups, err := app.findGroupsV3(clientID, &model.GroupsFilter{
+			GroupIDs: filter.GroupIDs,
+		})
+		if err != nil {
+			return model.MembershipCollection{}, fmt.Errorf("app.findGroupMemberships() error: %s", err)
+		}
+
+		groupIDMapping := map[string]model.Group{}
+		for _, group := range groups {
+			groupIDMapping[group.ID] = group
+		}
+
+		for index, member := range collection.Items {
+			if group, ok := groupIDMapping[member.GroupID]; ok {
+				collection.Items[index].ApplyGroupSettings(group.Settings)
+			}
+		}
+	}
+
+	return collection, err
 }
 
 func (app *Application) findGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {

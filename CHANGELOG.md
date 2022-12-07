@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.9.0] - 2022-12-07
+### Added
+- Add group settings and preferences [#309](https://github.com/rokwire/groups-building-block/issues/309)
+
 ## [1.8.0] - 2022-12-01
 ### Added
 - Send notification to potential research group candidates [#298](https://github.com/rokwire/groups-building-block/issues/298)

@@ -137,6 +137,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	// apply default group settings
+	err = m.ApplyDefaultGroupSettings(client, groups)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -881,6 +887,71 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 	}
 
 	log.Println("memberships transition passed")
+	return nil
+}
+
+func (m *database) ApplyDefaultGroupSettings(client *mongo.Client, groups *collectionWrapper) error {
+	log.Println("apply group settings migration.....")
+
+	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+		var migrationGroup []model.Group
+
+		filter := bson.D{
+			{"settings", bson.M{"$exists": false}},
+		}
+
+		err = groups.FindWithContext(sessionContext, filter, &migrationGroup, nil)
+		if err != nil {
+			return err
+		}
+
+		if len(migrationGroup) > 0 {
+			_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
+				{"$set", bson.D{
+					{"settings", model.GroupSettings{
+						MemberInfoPreferences: model.MemberInfoPreferences{
+							AllowMemberInfo:    true,
+							CanViewMemberNetID: true,
+							CanViewMemberName:  true,
+							CanViewMemberEmail: true,
+							CanViewMemberPhone: true,
+						},
+						PostPreferences: model.PostPreferences{
+							AllowSendPost:                true,
+							CanSendPostToSpecificMembers: true,
+							CanSendPostToAdmins:          true,
+							CanSendPostToAll:             true,
+							CanSendPostReplies:           true,
+							CanSendPostReactions:         true,
+						},
+					}},
+				}},
+			}, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("group settings migration passed")
 	return nil
 }
 
