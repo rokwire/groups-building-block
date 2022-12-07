@@ -373,6 +373,30 @@ func (app *Application) getUserPostCount(clientID string, userID string) (*int64
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+
+	if !group.Settings.PostPreferences.CanSendPostToAdmins {
+		userIDs := post.GetMembersAsUserIDs(&current.ID)
+		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{post.GroupID},
+			UserIDs:  userIDs,
+			Statuses: []string{"admin"},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(memberships.Items) > 0 {
+			var toMembers []model.ToMember
+			for _, membership := range memberships.Items {
+				toMembers = append(toMembers, model.ToMember{
+					UserID: membership.UserID,
+					Name:   membership.Name,
+				})
+			}
+			post.ToMembersList = toMembers
+		}
+	}
+
 	post, err := app.storage.CreatePost(clientID, current, post)
 	if err != nil {
 		return nil, err
@@ -471,7 +495,30 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 	return nil, nil
 }
 
-func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+	if !group.Settings.PostPreferences.CanSendPostToAdmins {
+		userIDs := post.GetMembersAsUserIDs(&current.ID)
+		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{post.GroupID},
+			UserIDs:  userIDs,
+			Statuses: []string{"admin"},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(memberships.Items) > 0 {
+			var toMembers []model.ToMember
+			for _, membership := range memberships.Items {
+				toMembers = append(toMembers, model.ToMember{
+					UserID: membership.UserID,
+					Name:   membership.Name,
+				})
+			}
+			post.ToMembersList = toMembers
+		}
+	}
+
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 

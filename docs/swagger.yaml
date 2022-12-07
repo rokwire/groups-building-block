@@ -95,6 +95,8 @@ definitions:
             type: array
           type: object
         type: object
+      settings:
+        $ref: '#/definitions/GroupSettings'
       stats:
         $ref: '#/definitions/GroupStats'
       sync_end_time:
@@ -153,6 +155,13 @@ definitions:
         type: string
       user_id:
         type: string
+    type: object
+  GroupSettings:
+    properties:
+      member_info_preferences:
+        $ref: '#/definitions/MemberInfoPreferences'
+      post_preferences:
+        $ref: '#/definitions/PostPreferences'
     type: object
   GroupStat:
     properties:
@@ -308,6 +317,19 @@ definitions:
       question:
         type: string
     type: object
+  MemberInfoPreferences:
+    properties:
+      allow_member_info:
+        type: boolean
+      can_view_member_email:
+        type: boolean
+      can_view_member_name:
+        type: boolean
+      can_view_member_net_id:
+        type: boolean
+      can_view_member_phone:
+        type: boolean
+    type: object
   MembershipFilter:
     properties:
       external_id:
@@ -360,6 +382,21 @@ definitions:
       polls_mute:
         type: boolean
       posts_mute:
+        type: boolean
+    type: object
+  PostPreferences:
+    properties:
+      allow_send_post:
+        type: boolean
+      can_send_post_reactions:
+        type: boolean
+      can_send_post_replies:
+        type: boolean
+      can_send_post_to_admins:
+        type: boolean
+      can_send_post_to_all:
+        type: boolean
+      can_send_post_to_specific_members:
         type: boolean
     type: object
   Sender:
@@ -459,6 +496,8 @@ definitions:
             type: array
           type: object
         type: object
+      settings:
+        $ref: '#/definitions/GroupSettings'
       tags:
         items:
           type: string
@@ -680,6 +719,54 @@ definitions:
     required:
     - approve
     type: object
+  model.Post:
+    properties:
+      body:
+        type: string
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      is_abuse:
+        type: boolean
+      member:
+        $ref: '#/definitions/Creator'
+      parent_id:
+        type: string
+      private:
+        type: boolean
+      reactions:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      replies:
+        description: This is constructed by the code (ParentID)
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+      subject:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+      top_parent_id:
+        type: string
+      use_as_notification:
+        type: boolean
+    type: object
   model.SyncConfig:
     properties:
       client_id:
@@ -707,21 +794,6 @@ definitions:
         type: boolean
       send_to_group_admins:
         type: boolean
-    type: object
-  rest.postResponse:
-    properties:
-      body:
-        type: string
-      group_id:
-        type: string
-      id:
-        type: string
-      parent_id:
-        type: string
-      private:
-        type: boolean
-      subject:
-        type: string
     type: object
   rest.userGroupShortDetail:
     properties:
@@ -810,6 +882,8 @@ definitions:
             type: array
           type: object
         type: object
+      settings:
+        $ref: '#/definitions/GroupSettings'
       tags:
         items:
           type: string
@@ -961,7 +1035,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/rest.postResponse'
+              $ref: '#/definitions/model.Post'
             type: array
       security:
       - AppUserAuth: []
@@ -1798,7 +1872,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/rest.postResponse'
+              $ref: '#/definitions/model.Post'
             type: array
       security:
       - AppUserAuth: []
@@ -1823,7 +1897,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1864,7 +1938,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1885,7 +1959,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []

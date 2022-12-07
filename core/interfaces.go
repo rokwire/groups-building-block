@@ -56,7 +56,7 @@ type Services interface {
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
-	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
 	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
@@ -191,8 +191,8 @@ func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *mo
 	return s.app.createPost(clientID, current, post, group)
 }
 
-func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	return s.app.updatePost(clientID, current, post)
+func (s *servicesImpl) UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+	return s.app.updatePost(clientID, current, group, post)
 }
 
 func (s *servicesImpl) ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
@@ -250,19 +250,19 @@ func (s *servicesImpl) FindGroupsV3(clientID string, filter *model.GroupsFilter)
 }
 
 func (s *servicesImpl) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return s.app.storage.FindGroupMemberships(clientID, filter)
+	return s.app.findGroupMemberships(clientID, filter)
 }
 
 func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return s.app.storage.FindGroupMembership(clientID, groupID, userID)
+	return s.app.findGroupMembership(clientID, groupID, userID)
 }
 
 func (s *servicesImpl) FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
-	return s.app.storage.FindGroupMembershipByID(clientID, id)
+	return s.app.findGroupMembershipByID(clientID, id)
 }
 
 func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
-	return s.app.storage.FindUserGroupMemberships(clientID, userID)
+	return s.app.findUserGroupMemberships(clientID, userID)
 }
 
 func (s *servicesImpl) CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
