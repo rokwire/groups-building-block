@@ -93,15 +93,13 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]
 			}
 		}
 
-		if filter.Order == nil || "asc" == *filter.Order {
+		if filter.Order != nil && "desc" == *filter.Order {
 			findOptions.SetSort(bson.D{
-				{"category", 1},
-				{"title", 1},
-			})
-		} else if filter.Order != nil && "desc" == *filter.Order {
-			findOptions.SetSort(bson.D{
-				{"category", -1},
 				{"title", -1},
+			})
+		} else {
+			findOptions.SetSort(bson.D{
+				{"title", 1},
 			})
 		}
 		if filter.Limit != nil {
