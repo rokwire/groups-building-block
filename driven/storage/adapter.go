@@ -785,15 +785,13 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	}
 
 	findOptions := options.Find()
-	if groupsFilter.Order == nil || "asc" == *groupsFilter.Order {
+	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
-			{"category", 1},
-			{"title", 1},
-		})
-	} else if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
-		findOptions.SetSort(bson.D{
-			{"category", -1},
 			{"title", -1},
+		})
+	} else {
+		findOptions.SetSort(bson.D{
+			{"title", 1},
 		})
 	}
 	if groupsFilter.Limit != nil {
@@ -916,15 +914,13 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	}
 
 	findOptions := options.Find()
-	if groupsFilter.Order == nil || "asc" == *groupsFilter.Order {
+	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
-			{"category", 1},
-			{"title", 1},
-		})
-	} else if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
-		findOptions.SetSort(bson.D{
-			{"category", -1},
 			{"title", -1},
+		})
+	} else {
+		findOptions.SetSort(bson.D{
+			{"title", 1},
 		})
 	}
 	if groupsFilter.Limit != nil {
