@@ -72,7 +72,7 @@ type createGroupRequest struct {
 	ResearchConsentDetails   string                         `json:"research_consent_details"`
 	ResearchDescription      string                         `json:"research_description"`
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
-	Settings                 model.GroupSettings            `json:"settings"`
+	Settings                 *model.GroupSettings           `json:"settings"`
 } //@name createGroupRequest
 
 type userGroupShortDetail struct {
@@ -199,7 +199,7 @@ type updateGroupRequest struct {
 	ResearchConsentDetails     string                         `json:"research_consent_details"`
 	ResearchDescription        string                         `json:"research_description"`
 	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
-	Settings                   model.GroupSettings            `json:"settings"`
+	Settings                   *model.GroupSettings           `json:"settings"`
 } //@name updateGroupRequest
 
 // UpdateGroup updates a group
@@ -1967,13 +1967,13 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	if !group.Settings.PostPreferences.AllowSendPost {
+	if group.Settings != nil && !group.Settings.PostPreferences.AllowSendPost {
 		log.Printf("posts are not allowed for group '%s'", group.Title)
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	if post.ParentID != nil && !group.Settings.PostPreferences.CanSendPostReplies {
+	if post.ParentID != nil && group.Settings != nil && !group.Settings.PostPreferences.CanSendPostReplies {
 		log.Printf("replies are not allowed for group '%s'", group.Title)
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return

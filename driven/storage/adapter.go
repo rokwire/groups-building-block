@@ -437,6 +437,10 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		group.ID = insertedID
 		group.ClientID = clientID
 		group.DateCreated = now
+		if group.Settings == nil {
+			settings := model.DefaultGroupSettings()
+			group.Settings = &settings
+		}
 
 		_, err := sa.db.groups.InsertOneWithContext(context, &group)
 		if err != nil {
@@ -511,32 +515,36 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		group.CanJoinAutomatically = false
 	}
 
+	setOperation := bson.D{
+		primitive.E{Key: "category", Value: group.Category},
+		primitive.E{Key: "title", Value: group.Title},
+		primitive.E{Key: "privacy", Value: group.Privacy},
+		primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+		primitive.E{Key: "description", Value: group.Description},
+		primitive.E{Key: "image_url", Value: group.ImageURL},
+		primitive.E{Key: "web_url", Value: group.WebURL},
+		primitive.E{Key: "tags", Value: group.Tags},
+		primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+		primitive.E{Key: "date_updated", Value: time.Now()},
+		primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+		primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+		primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+		primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+		primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+		primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+		primitive.E{Key: "research_group", Value: group.ResearchGroup},
+		primitive.E{Key: "research_open", Value: group.ResearchOpen},
+		primitive.E{Key: "research_consent_statement", Value: group.ResearchConsentStatement},
+		primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
+		primitive.E{Key: "research_description", Value: group.ResearchDescription},
+		primitive.E{Key: "research_profile", Value: group.ResearchProfile},
+	}
+	if group.Settings != nil {
+		setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
+	}
+
 	updateOperation := bson.D{
-		primitive.E{Key: "$set", Value: bson.D{
-			primitive.E{Key: "category", Value: group.Category},
-			primitive.E{Key: "title", Value: group.Title},
-			primitive.E{Key: "privacy", Value: group.Privacy},
-			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
-			primitive.E{Key: "description", Value: group.Description},
-			primitive.E{Key: "image_url", Value: group.ImageURL},
-			primitive.E{Key: "web_url", Value: group.WebURL},
-			primitive.E{Key: "tags", Value: group.Tags},
-			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
-			primitive.E{Key: "date_updated", Value: time.Now()},
-			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
-			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
-			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
-			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
-			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
-			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-			primitive.E{Key: "research_group", Value: group.ResearchGroup},
-			primitive.E{Key: "research_open", Value: group.ResearchOpen},
-			primitive.E{Key: "research_consent_statement", Value: group.ResearchConsentStatement},
-			primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
-			primitive.E{Key: "research_description", Value: group.ResearchDescription},
-			primitive.E{Key: "research_profile", Value: group.ResearchProfile},
-			primitive.E{Key: "settings", Value: group.Settings},
-		}},
+		primitive.E{Key: "$set", Value: setOperation},
 	}
 
 	// transaction

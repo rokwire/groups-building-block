@@ -11,7 +11,7 @@ type MembershipCollection struct {
 }
 
 // ApplyGroupSettings Applies group settings
-func (c *MembershipCollection) ApplyGroupSettings(settings GroupSettings) {
+func (c *MembershipCollection) ApplyGroupSettings(settings *GroupSettings) {
 	for index := range c.Items {
 		c.Items[index].ApplyGroupSettings(settings)
 	}
@@ -164,7 +164,11 @@ func (m *GroupMembership) IsRejected() bool {
 }
 
 // ApplyGroupSettings Applies group settings and removes forbidden fields
-func (m *GroupMembership) ApplyGroupSettings(settings GroupSettings) {
+func (m *GroupMembership) ApplyGroupSettings(settings *GroupSettings) {
+	if settings == nil {
+		val := DefaultGroupSettings()
+		settings = &val
+	}
 	if !settings.MemberInfoPreferences.CanViewMemberName {
 		m.Name = ""
 	}
@@ -177,6 +181,8 @@ func (m *GroupMembership) ApplyGroupSettings(settings GroupSettings) {
 	if !settings.MemberInfoPreferences.CanViewMemberPhone {
 		// Just a placeholder.
 	}
+	m.ExternalID = ""
+
 }
 
 // ToShortMemberRecord converts to ShortMemberRecord
