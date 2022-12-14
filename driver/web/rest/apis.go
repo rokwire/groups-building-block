@@ -1967,13 +1967,13 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	if group.Settings != nil && !group.Settings.PostPreferences.AllowSendPost {
+	if group.CurrentMember.IsMember() && group.Settings != nil && !group.Settings.PostPreferences.AllowSendPost {
 		log.Printf("posts are not allowed for group '%s'", group.Title)
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	if post.ParentID != nil && group.Settings != nil && !group.Settings.PostPreferences.CanSendPostReplies {
+	if group.CurrentMember.IsMember() && post.ParentID != nil && group.Settings != nil && !group.Settings.PostPreferences.CanSendPostReplies {
 		log.Printf("replies are not allowed for group '%s'", group.Title)
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
@@ -2217,7 +2217,7 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 		w.Write([]byte("Forbidden"))
 		return
 	}
-	if !group.Settings.PostPreferences.CanSendPostReactions {
+	if group.CurrentMember.IsMember() && !group.Settings.PostPreferences.CanSendPostReactions {
 		log.Printf("reactions are not allowed for group '%s'", group.Title)
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
