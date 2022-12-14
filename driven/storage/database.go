@@ -913,23 +913,7 @@ func (m *database) ApplyDefaultGroupSettings(client *mongo.Client, groups *colle
 		if len(migrationGroup) > 0 {
 			_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
 				{"$set", bson.D{
-					{"settings", model.GroupSettings{
-						MemberInfoPreferences: model.MemberInfoPreferences{
-							AllowMemberInfo:    true,
-							CanViewMemberNetID: true,
-							CanViewMemberName:  true,
-							CanViewMemberEmail: true,
-							CanViewMemberPhone: true,
-						},
-						PostPreferences: model.PostPreferences{
-							AllowSendPost:                true,
-							CanSendPostToSpecificMembers: true,
-							CanSendPostToAdmins:          true,
-							CanSendPostToAll:             true,
-							CanSendPostReplies:           true,
-							CanSendPostReactions:         true,
-						},
-					}},
+					{"settings", model.DefaultGroupSettings()},
 				}},
 			}, nil)
 			if err != nil {

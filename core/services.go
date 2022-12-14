@@ -374,7 +374,7 @@ func (app *Application) getUserPostCount(clientID string, userID string) (*int64
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
 
-	if !group.Settings.PostPreferences.CanSendPostToAdmins {
+	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
 		userIDs := post.GetMembersAsUserIDs(&current.ID)
 		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 			GroupIDs: []string{post.GroupID},
@@ -496,7 +496,7 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	if !group.Settings.PostPreferences.CanSendPostToAdmins {
+	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
 		userIDs := post.GetMembersAsUserIDs(&current.ID)
 		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
 			GroupIDs: []string{post.GroupID},

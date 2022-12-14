@@ -6,6 +6,27 @@ type GroupSettings struct {
 	PostPreferences       PostPreferences       `json:"post_preferences" bson:"post_preferences"`
 } // @name GroupSettings
 
+// DefaultGroupSettings Returns default settings
+func DefaultGroupSettings() GroupSettings {
+	return GroupSettings{
+		MemberInfoPreferences: MemberInfoPreferences{
+			AllowMemberInfo:    true,
+			CanViewMemberNetID: true,
+			CanViewMemberName:  true,
+			CanViewMemberEmail: true,
+			CanViewMemberPhone: true,
+		},
+		PostPreferences: PostPreferences{
+			AllowSendPost:                true,
+			CanSendPostToSpecificMembers: true,
+			CanSendPostToAdmins:          true,
+			CanSendPostToAll:             true,
+			CanSendPostReplies:           true,
+			CanSendPostReactions:         true,
+		},
+	}
+}
+
 // MemberInfoPreferences wrap settings for the visible member information
 type MemberInfoPreferences struct {
 	AllowMemberInfo    bool `json:"allow_member_info" bson:"allow_member_info"`
