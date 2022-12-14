@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.9.2] - 2022-12-14
+### Fixed
+- Admin must make posts and reactions no matter of group settings [#315](https://github.com/rokwire/groups-building-block/issues/315)
+
 ## [1.9.1] - 2022-12-14
 ### Changed 
 - Change the group sorting only to title [#313](https://github.com/rokwire/groups-building-block/issues/313)
