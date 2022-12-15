@@ -170,7 +170,7 @@ func (m *GroupMembership) ApplyGroupSettings(settings *GroupSettings) {
 		settings = &val
 	}
 	if !settings.MemberInfoPreferences.CanViewMemberName {
-		m.Name = ""
+		//	m.Name = "" // Requested to disable this limitation
 	}
 	if !settings.MemberInfoPreferences.CanViewMemberNetID {
 		m.NetID = ""
