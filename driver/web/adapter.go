@@ -43,10 +43,10 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.8.0
+// @version 1.7.5
 // @host localhost
 // @BasePath /gr
-// @schemes http
+// @schemes https
 
 // @securityDefinitions.apikey APIKeyAuth
 // @in header

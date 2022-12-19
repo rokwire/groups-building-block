@@ -85,15 +85,16 @@ func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate mute
 
 // GroupMembership represents the membership of a user to a given group
 type GroupMembership struct {
-	ID         string `json:"id" bson:"_id"`
-	ClientID   string `json:"client_id" bson:"client_id"`
-	GroupID    string `json:"group_id" bson:"group_id"`
-	UserID     string `json:"user_id" bson:"user_id"`
-	ExternalID string `json:"external_id" bson:"external_id"`
-	Name       string `json:"name" bson:"name"`
-	NetID      string `json:"net_id" bson:"net_id"`
-	Email      string `json:"email" bson:"email"`
-	PhotoURL   string `json:"photo_url" bson:"photo_url"`
+	ID          string            `json:"id" bson:"_id"`
+	ClientID    string            `json:"client_id" bson:"client_id"`
+	GroupID     string            `json:"group_id" bson:"group_id"`
+	UserID      string            `json:"user_id" bson:"user_id"`
+	ExternalID  string            `json:"external_id" bson:"external_id"`
+	Name        string            `json:"name" bson:"name"`
+	NetID       string            `json:"net_id" bson:"net_id"`
+	Email       string            `json:"email" bson:"email"`
+	PhotoURL    string            `json:"photo_url" bson:"photo_url"`
+	ExternalIDs map[string]string `json:"external_ids" bson:"external_ids"`
 
 	// TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.
 	Status string `json:"status" bson:"status"` //pending, member, rejected
@@ -221,6 +222,7 @@ func (m *GroupMembership) ToMember() Member {
 		DateCreated:   m.DateCreated,
 		DateUpdated:   m.DateUpdated,
 		DateAttended:  m.DateAttended,
+		ExternalIDs:   m.ExternalIDs,
 	}
 }
 

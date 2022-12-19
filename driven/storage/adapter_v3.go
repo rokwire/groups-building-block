@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
 	"groups/core/model"
 	"log"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -168,6 +169,10 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 	}
 	if filter.Name != nil {
 		matchFilter = append(matchFilter, bson.E{"name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
+	}
+
+	if filter.ExternalIDs != nil {
+		matchFilter = append(matchFilter, bson.E{"external_ids", filter.ExternalIDs})
 	}
 
 	findOptions := options.FindOptions{

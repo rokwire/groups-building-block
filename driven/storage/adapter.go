@@ -300,6 +300,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 					primitive.E{Key: "external_id", Value: current.ExternalID},
 					primitive.E{Key: "net_id", Value: current.NetID},
 					primitive.E{Key: "date_updated", Value: now},
+					primitive.E{Key: "external_ids", Value: current.ExternalIDs},
 				}},
 			}
 			_, err = sa.db.groupMemberships.UpdateManyWithContext(context, filter, update, nil)
@@ -452,6 +453,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 				castedMemberships = append(castedMemberships, membership)
 			}
 		} else if current != nil {
+			externalIDs := map[string]string{"netID": current.NetID, "externalID": current.ExternalID}
 			castedMemberships = append(castedMemberships, model.GroupMembership{
 				ID:          uuid.NewString(),
 				GroupID:     insertedID,
@@ -464,6 +466,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 				Status:      "admin", // TODO needs more consideration (status vs flag)
 				Admin:       true,
 				DateCreated: now,
+				ExternalIDs: externalIDs,
 			})
 		}
 

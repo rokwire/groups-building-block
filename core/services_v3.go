@@ -144,6 +144,13 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 		} else {
 			log.Printf("error app.createMembership() - unable to find user: %s", err)
 		}
+	} else if membership.NetID != "" {
+		user, err := app.storage.FindUser(clientID, membership.NetID, true)
+		if err == nil && user != nil {
+			membership.ApplyFromUserIfEmpty(user)
+		} else {
+			log.Printf("error app.createMembership() - unable to find user: %s", err)
+		}
 	}
 
 	err := app.storage.CreateMembership(clientID, current, group, membership)
