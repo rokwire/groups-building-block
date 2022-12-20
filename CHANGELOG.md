@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.9.3] - 2022-12-20
+### Fixed
+- Delete group post request fails [#321](https://github.com/rokwire/groups-building-block/issues/321)
+
 ## [1.9.2] - 2022-12-14
 ### Fixed
 - Admin must make posts and reactions no matter of group settings [#315](https://github.com/rokwire/groups-building-block/issues/315)

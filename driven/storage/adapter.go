@@ -1450,7 +1450,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 	deleteWrapper := func(transactionContext TransactionContext) error {
 		membership, _ := sa.FindGroupMembershipWithContext(transactionContext, clientID, groupID, userID)
 		filterToMembers := true
-		if membership == nil && membership.IsAdmin() {
+		if membership != nil && membership.IsAdmin() {
 			filterToMembers = false
 		}
 
