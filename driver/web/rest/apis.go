@@ -2043,7 +2043,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 		return
 	}
 
-	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, false)
+	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, true)
 	if err != nil {
 		log.Printf("error getting post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
