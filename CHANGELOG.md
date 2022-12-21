@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [1.9.3] - 2022-12-21
+## [1.9.4] - 2022-12-21
 ### Changed
 - Group admins must not see direct messages if they are not listed explicitly within. the ACL list[#326](https://github.com/rokwire/groups-building-block/issues/326)
 
