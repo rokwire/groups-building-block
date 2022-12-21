@@ -1060,12 +1060,17 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	}
 
 	if filterByToMembers {
-		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+		innerFilter := []primitive.M{
 			primitive.M{"to_members": primitive.Null{}},
 			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": current.ID},
-			primitive.M{"member.user_id": current.ID},
-		}})
+		}
+		if current != nil {
+			innerFilter = append(innerFilter, []primitive.M{
+				primitive.M{"to_members.user_id": current.ID},
+				primitive.M{"member.user_id": current.ID},
+			}...)
+		}
+		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
 	}
 
 	if filterPrivatePostsValue != nil {
@@ -1165,11 +1170,17 @@ func (sa *Adapter) findPostWithContext(context TransactionContext, clientID stri
 	}
 
 	if filterByToMembers {
-		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": *userID},
-		}})
+		innerFilter := []primitive.M{
+			{"to_members": primitive.Null{}},
+			{"to_members": primitive.M{"$exists": true, "$size": 0}},
+		}
+		if userID != nil {
+			innerFilter = append(innerFilter, []primitive.M{
+				{"to_members.user_id": *userID},
+				{"member.user_id": *userID},
+			}...)
+		}
+		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
 	}
 
 	if !skipMembershipCheck && userID != nil {

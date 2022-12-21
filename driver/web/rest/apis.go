@@ -1888,10 +1888,6 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	filterByToMembers := true
-	if membership != nil && membership.IsAdmin() {
-		filterByToMembers = false
-	}
-
 	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
@@ -2047,7 +2043,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 		return
 	}
 
-	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, false)
+	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, true)
 	if err != nil {
 		log.Printf("error getting post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
