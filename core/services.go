@@ -578,7 +578,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	if sendToDean && !sendToGroupAdmins {
 		subject = "Report violation of Student Code to Dean of Students"
 	} else if !sendToDean && sendToGroupAdmins {
-		subject = "Report obscene, threatening, or harassing content to Group Administrators"
+		subject = "Report of Obscene, Harassing, or Threatening Content to Group Administrators"
 	} else {
 		subject = "Report violation of Student Code to Dean of Students and obscene, threatening, or harassing content to Group Administrators"
 	}

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Report of offensive speech automatic title [#328](https://github.com/rokwire/groups-building-block/issues/328)
+
 ## [1.9.4] - 2022-12-21
 ### Changed
 - Group admins must not see direct messages if they are not listed explicitly within. the ACL list[#326](https://github.com/rokwire/groups-building-block/issues/326)
