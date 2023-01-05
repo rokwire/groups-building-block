@@ -44,6 +44,7 @@ type database struct {
 	events              *collectionWrapper
 	posts               *collectionWrapper
 	managedGroupConfigs *collectionWrapper
+	reactions           *collectionWrapper
 
 	listeners []Listener
 }
@@ -125,6 +126,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	reactions := &collectionWrapper{database: m, coll: db.Collection("reactions")}
+	err = m.applyManagedGroupConfigsChecks(reactions)
+	if err != nil {
+		return err
+	}
+
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
@@ -156,6 +163,7 @@ func (m *database) start() error {
 	m.events = events
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
+	m.reactions = reactions
 
 	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
@@ -966,4 +974,11 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 			go listener.OnManagedGroupConfigsChanged()
 		}
 	}
+}
+
+func (m *database) applyreactionsChecks(reactions *collectionWrapper) error {
+	log.Println("apply reactions checks.....")
+
+	log.Println("reactions checks passed")
+	return nil
 }

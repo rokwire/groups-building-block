@@ -2235,6 +2235,91 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 	w.Write([]byte("Success"))
 }
 
+// FindReactionStats returns reaction stats to a post within the desired group
+// @Description Returns reaction stats to a post within the desired group.
+// @ID FindReactionStats
+// @Tags Client-V1
+// @Accept  json
+// @Param APP header string true "APP"
+// @Success 200 {object} model.
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{groupId}/posts/{postId}/reactions [get]
+func (h *ApisHandler) FindReactionStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["groupID"]
+	if len(groupID) <= 0 {
+		log.Println("groupID is required")
+		http.Error(w, "group id is required", http.StatusBadRequest)
+		return
+	}
+
+	postID := params["postID"]
+	if len(postID) <= 0 {
+		log.Println("postID is required")
+		http.Error(w, "post id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on read reactToGroupPostRequestBody - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var body reactToGroupPostRequestBody
+	err = json.Unmarshal(data, &body)
+	if err != nil {
+		log.Printf("error on unmarshal reactToGroupPostRequestBody (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
+		log.Printf("%s is not a member of %s", current.Email, group.Title)
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+	if group.CurrentMember.IsMember() && !group.Settings.PostPreferences.CanSendPostReactions {
+		log.Printf("reactions are not allowed for group '%s'", group.Title)
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	res, err := h.app.Services.FindReactionStats(postID)
+	if err != nil {
+		log.Printf("error reacting to post (%s) - %s", postID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(res)
+	if err != nil {
+		log.Println("Error on marshal response")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // reportAbuseGroupPostRequestBody request body for report abuse API call
 type reportAbuseGroupPostRequestBody struct {
 	Comment           string `json:"comment"`

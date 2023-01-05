@@ -1987,6 +1987,28 @@ paths:
       - APIKeyAuth: []
       tags:
       - Client-V1
+  /api/group/{groupId}/posts/{postId}/reactions:
+  get:
+    consumes:
+    - application/json
+    description: Gets the reaction stats to a post within the desired group.
+    operationId: FindReactionStats
+    parameters:
+    - description: APP
+      in: header
+      name: APP
+      required: true
+      type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: object
+    security:
+    - AppUserAuth: []
+    - APIKeyAuth: []
+    tags:
+    - Client-V1
   /api/group/{groupId}/posts/{postId}/report/abuse:
     put:
       consumes:

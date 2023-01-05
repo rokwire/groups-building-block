@@ -405,6 +405,13 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 			}
 		}
 
+		//delete any reactions on posts
+		err = sa.DeleteUserPostReactions(sessionContext, clientID, userID)
+		if err != nil {
+			log.Printf("error deleting user reactions - %s", err.Error())
+			return err
+		}
+
 		// delete the user
 		filter := bson.D{
 			primitive.E{Key: "_id", Value: userID},
@@ -418,6 +425,26 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 		return nil
 	})
+}
+
+// DeleteUserPostReactions updates and removes all user post reactions across all existing groups
+func (sa *Adapter) DeleteUserPostReactions(context TransactionContext, clientID string, userID string) error {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+
+	update := bson.D{
+		primitive.E{Key: "$pull", Value: bson.D{
+			primitive.E{Key: "reactions.thumbs-up", Value: userID},
+		}},
+	}
+
+	_, err := sa.db.posts.UpdateManyWithContext(context, filter, update, nil)
+	if err != nil {
+		return nil
+	}
+
+	return nil
 }
 
 // CreateGroup creates a group. Returns the id of the created group
@@ -1421,19 +1448,20 @@ func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *mode
 
 // ReactToPost React to a post
 func (sa *Adapter) ReactToPost(context TransactionContext, userID string, postID string, reaction string, on bool) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
+	filter := bson.D{primitive.E{Key: "post_id", Value: postID}}
 
 	updateOperation := "$pull"
 	if on {
 		updateOperation = "$push"
 	}
+
 	update := bson.D{
 		primitive.E{Key: updateOperation, Value: bson.D{
 			primitive.E{Key: "reactions." + reaction, Value: userID},
 		}},
 	}
 
-	res, err := sa.db.posts.UpdateOneWithContext(context, filter, update, nil)
+	res, err := sa.db.reactions.UpdateOneWithContext(context, filter, update, nil)
 	if err != nil {
 		return fmt.Errorf("error updating post %s with reaction %s for %s: %v", postID, reaction, userID, err)
 	}
@@ -1441,7 +1469,62 @@ func (sa *Adapter) ReactToPost(context TransactionContext, userID string, postID
 		return fmt.Errorf("updated %d posts with reaction %s for %s, but expected 1", res.ModifiedCount, reaction, userID)
 	}
 
+	err = sa.UpdateReactionStats(postID, on, reaction)
+	if err != nil {
+		return fmt.Errorf("error updating reaction stats for post %s with reaction %s for %s: %v", postID, reaction, userID, err)
+	}
 	return nil
+}
+
+// UpdateReactionStats increments or decrements reaction counts
+func (sa *Adapter) UpdateReactionStats(postID string, on bool, reaction string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
+
+	incrementValue := -1
+	if on {
+		incrementValue = 1
+	}
+
+	update := bson.D{
+		primitive.E{Key: "$inc", Value: bson.D{
+			primitive.E{Key: "reaction_stats." + reaction, Value: incrementValue},
+		}},
+	}
+
+	upsert := true
+	opts := options.UpdateOptions{Upsert: &upsert}
+
+	_, err := sa.db.reactions.UpdateOne(filter, update, &opts)
+	if err != nil {
+		return fmt.Errorf("error updating reaction stats for post %s with reaction %s: %v", postID, reaction, err)
+
+	}
+	return nil
+}
+
+// FindsReactionStats finds reaction stats map based on post id
+func (sa *Adapter) FindReactionStats(postID string) (map[string]int, error) {
+	filter := bson.M{"post_id": postID}
+	var results map[string]int
+	err := sa.db.posts.Find(filter, &results, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error storage.Adapter.FindReactionStats - %s", err)
+	}
+	return results, nil
+}
+
+// GetReactions gets reactions based on postID
+func (sa *Adapter) FindReactions(postID string) (model.PostReactions, error) {
+	filter := bson.D{primitive.E{Key: "post_id", Value: postID}}
+
+	findOptions := options.Find()
+	var res model.PostReactions
+	err := sa.db.reactions.Find(filter, &res, findOptions)
+	if err != nil {
+		return res, fmt.Errorf("error finding post reactions %s: %v", postID, err)
+	}
+
+	return res, err
 }
 
 // DeletePost Deletes a post
