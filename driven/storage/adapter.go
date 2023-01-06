@@ -429,19 +429,48 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 // DeleteUserPostReactions updates and removes all user post reactions across all existing groups
 func (sa *Adapter) DeleteUserPostReactions(context TransactionContext, clientID string, userID string) error {
-	filter := bson.D{
-		primitive.E{Key: "client_id", Value: clientID},
-	}
-
-	update := bson.D{
-		primitive.E{Key: "$pull", Value: bson.D{
-			primitive.E{Key: "reactions.thumbs-up", Value: userID},
+	pipeline := []bson.M{
+		bson.M{"$project": bson.M{
+			"post_id": 1,
+			"reactionsArray": bson.M{
+				"$objectToArray": "$reactions",
+			},
+		}},
+		bson.M{"$unwind": "$reactionsArray"},
+		bson.M{"$match": bson.M{
+			"$expr": bson.M{
+				"$eq": []interface{}{
+					bson.M{
+						"$getField": bson.M{
+							"field": "k",
+							"input": "$reactionsArray",
+						},
+					},
+					userID,
+				},
+			},
 		}},
 	}
 
-	_, err := sa.db.posts.UpdateManyWithContext(context, filter, update, nil)
+	var result []model.AggregateReactions
+	err := sa.db.reactions.Aggregate(pipeline, &result, &options.AggregateOptions{})
 	if err != nil {
-		return nil
+		log.Printf("error aggregating user post reactions - %s", err.Error())
+		return err
+	}
+
+	for i := 0; i < len(result); i++ {
+		err = sa.ReactToPost(context, userID, result[i].PostID, *result[i].Reactions.Value, false)
+		if err != nil {
+			log.Printf("error updating reactions to post - %s", err.Error())
+			return err
+		}
+
+		err = sa.UpdateReactionStats(result[i].PostID, false, *result[i].Reactions.Value)
+		if err != nil {
+			log.Printf("error updating reaction stats to a post  - %s", err.Error())
+			return err
+		}
 	}
 
 	return nil

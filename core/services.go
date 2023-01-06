@@ -551,8 +551,10 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 		if err != nil {
 			return fmt.Errorf("error adding reaction: %v", err)
 		}
+
 		return nil
 	}
+
 	return app.storage.PerformTransaction(transaction)
 }
 
