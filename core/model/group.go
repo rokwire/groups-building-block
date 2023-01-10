@@ -38,8 +38,10 @@ type Group struct {
 	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`
 	Stats         GroupStats       `json:"stats" bson:"stats"`
 
-	DateCreated time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
+	DateCreated                  time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated                  *time.Time `json:"date_updated" bson:"date_updated"`
+	DateMembershipUpdated        *time.Time `json:"date_membership_updated" bson:"date_membership_updated"`
+	DateManagedMembershipUpdated *time.Time `json:"date_managed_membership_updated" bson:"date_managed_membership_updated"`
 
 	AuthmanEnabled             bool    `json:"authman_enabled" bson:"authman_enabled"`
 	AuthmanGroup               *string `json:"authman_group" bson:"authman_group"`

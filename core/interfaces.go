@@ -331,7 +331,7 @@ type Storage interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
-	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error
+	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
 	DeleteGroup(clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
