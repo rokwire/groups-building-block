@@ -272,7 +272,7 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 				return err
 			}
 
-			return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
 		})
 		if err != nil {
 			return err
@@ -339,7 +339,7 @@ func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, group
 			}
 
 			if updateGroupStats {
-				return sa.UpdateGroupStats(context, clientID, groupID, true, true)
+				return sa.UpdateGroupStats(context, clientID, groupID, false, false, true, true)
 			}
 
 			return nil
@@ -391,7 +391,7 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 		}
 
 		if updateGroupStats {
-			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, groupID, false, false, true, true)
 		}
 		return nil
 	})
@@ -441,7 +441,7 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 				return err
 			}
 
-			return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
 		})
 	}
 
@@ -471,7 +471,7 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
+		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
 	})
 }
 
@@ -496,7 +496,7 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
+		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
 	})
 
 }
@@ -534,7 +534,7 @@ func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID 
 				log.Printf("error deleting membership - %s", err)
 				return err
 			}
-			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
 		}
 		return nil
 	}
@@ -561,7 +561,7 @@ func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, me
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, true, true)
+		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
 	})
 }
 
@@ -585,7 +585,7 @@ func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID strin
 
 		deletedCount = result.DeletedCount
 		if deletedCount > 0 {
-			return sa.UpdateGroupStats(context, clientID, groupID, true, true)
+			return sa.UpdateGroupStats(context, clientID, groupID, false, false, true, true)
 		}
 
 		return nil

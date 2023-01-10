@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.10.1] - 2023-01-10
+### Changed
+- Split date modified field and introduce member & managed member modified date fields [#330](https://github.com/rokwire/groups-building-block/issues/330)
+
 ## [1.9.5] - 2023-01-04
 ### Changed
 - Report of offensive speech automatic title [#328](https://github.com/rokwire/groups-building-block/issues/328)

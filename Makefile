@@ -1,5 +1,5 @@
 DATE    ?= $(shell date +%FT%T%z)
-BIN      = $(CURDIR)/build
+BIN      = $(CURDIR)/bin
 BASE     = $(CURDIR)
 MODULE = $(shell cd $(BASE) && $(GO) list -m)
 PKGS     = $(or $(PKG),$(shell cd $(BASE) && $(GO) list ./...))
