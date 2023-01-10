@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [1.10.0] - 2023-01-10
+## [1.10.1] - 2023-01-10
 ### Changed
 - Split date modified field to independent fields group by operation type [#330](https://github.com/rokwire/groups-building-block/issues/330)
 
