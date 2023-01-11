@@ -69,45 +69,45 @@ func (sa *Adapter) Start() error {
 	}
 
 	//TODO delete after deployement
-	// filter := bson.D{}
-	// var list []*model.Post
-	// err = sa.db.posts.Find(filter, &list, nil)
-	// if err != nil {
-	// 	return err
-	// }
+	filter := bson.D{}
+	var list []*model.Post
+	err = sa.db.posts.Find(filter, &list, nil)
+	if err != nil {
+		return err
+	}
 
-	// for i := 0; i < len(list); i++ {
-	// 	//iterate through post reactions and create new Reaction Document
-	// 	postID := list[i].ID
-	// 	for _, userID := range list[i].Reactions["thumbs-up"] {
-	// 		reactionArray := []string{"thumbs-up"}
-	// 		reactions := model.PostReactions{
-	// 			ID:        *postID,
-	// 			UserID:    userID,
-	// 			Reactions: reactionArray,
-	// 		}
+	for i := 0; i < len(list); i++ {
+		//iterate through post reactions and create new Reaction Document
+		postID := list[i].ID
+		for _, userID := range list[i].Reactions["thumbs-up"] {
+			reactionArray := []string{"thumbs-up"}
+			reactions := model.PostReactions{
+				ID:        *postID,
+				UserID:    userID,
+				Reactions: reactionArray,
+			}
 
-	// 		_, err := sa.db.reactions.InsertOne(reactions)
-	// 		if err != nil {
-	// 			fmt.Printf("error migrating reactions %s", err)
-	// 			return fmt.Errorf("error migrating reactions %s", err)
-	// 		}
-	// 	}
+			_, err := sa.db.reactions.InsertOne(reactions)
+			if err != nil {
+				fmt.Printf("error migrating reactions %s", err)
+				return fmt.Errorf("error migrating reactions %s", err)
+			}
+		}
 
-	// 	//take the count of the total thumbs up reactions
-	// 	filter := bson.M{"_id": postID}
-	// 	update := bson.D{
-	// 		{"$set", bson.D{{"reaction_stats.thumbs-up", len(list[i].Reactions["thumbs-up"])}}},
-	// 		{"$unset", bson.D{{"reactions", ""}}},
-	// 	}
+		//take the count of the total thumbs up reactions
+		filter := bson.M{"_id": postID}
+		update := bson.D{
+			{"$set", bson.D{{"reaction_stats.thumbs-up", len(list[i].Reactions["thumbs-up"])}}},
+			{"$unset", bson.D{{"reactions", ""}}},
+		}
 
-	// 	_, err := sa.db.posts.UpdateOne(filter, update, nil)
-	// 	if err != nil {
-	// 		fmt.Printf("error migrating reactions %s", err)
-	// 		return fmt.Errorf("error migrating reactions %s", err)
-	// 	}
+		_, err := sa.db.posts.UpdateOne(filter, update, nil)
+		if err != nil {
+			fmt.Printf("error migrating reactions %s", err)
+			return fmt.Errorf("error migrating reactions %s", err)
+		}
 
-	// }
+	}
 	//TODO end of deletion
 
 	return err
@@ -419,51 +419,51 @@ func (sa *Adapter) GetUserPostCount(clientID string, userID string) (*int64, err
 func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 	return sa.PerformTransaction(func(sessionContext TransactionContext) error {
-		// posts, err := sa.FindAllUserPosts(sessionContext, clientID, userID)
-		// if err != nil {
-		// 	log.Printf("error on find all posts for user (%s) - %s", userID, err.Error())
-		// 	return err
-		// }
-		// if len(posts) > 0 {
-		// 	for _, post := range posts {
-		// 		err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
-		// 		if err != nil {
-		// 			log.Printf("error on delete all posts for user (%s) - %s", userID, err.Error())
-		// 			return err
-		// 		}
-		// 	}
-		// }
+		posts, err := sa.FindAllUserPosts(sessionContext, clientID, userID)
+		if err != nil {
+			log.Printf("error on find all posts for user (%s) - %s", userID, err.Error())
+			return err
+		}
+		if len(posts) > 0 {
+			for _, post := range posts {
+				err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
+				if err != nil {
+					log.Printf("error on delete all posts for user (%s) - %s", userID, err.Error())
+					return err
+				}
+			}
+		}
 
-		// memberships, err := sa.FindUserGroupMembershipsWithContext(sessionContext, clientID, userID)
-		// if err != nil {
-		// 	log.Printf("error getting user memberships - %s", err.Error())
-		// 	return err
-		// }
-		// for _, membership := range memberships.Items {
-		// 	err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
-		// 	if err != nil {
-		// 		log.Printf("error deleting user membership - %s", err.Error())
-		// 		return err
-		// 	}
-		// }
+		memberships, err := sa.FindUserGroupMembershipsWithContext(sessionContext, clientID, userID)
+		if err != nil {
+			log.Printf("error getting user memberships - %s", err.Error())
+			return err
+		}
+		for _, membership := range memberships.Items {
+			err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
+			if err != nil {
+				log.Printf("error deleting user membership - %s", err.Error())
+				return err
+			}
+		}
 
 		//delete any reactions on posts
-		err := sa.DeleteUserPostReactions(sessionContext, clientID, userID)
+		err = sa.DeleteUserPostReactions(sessionContext, clientID, userID)
 		if err != nil {
 			log.Printf("error deleting user reactions - %s", err.Error())
 			return err
 		}
 
-		// delete the user
-		// filter := bson.D{
-		// 	primitive.E{Key: "_id", Value: userID},
-		// 	primitive.E{Key: "client_id", Value: clientID},
-		// }
-		// _, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
-		// if err != nil {
-		// 	log.Printf("error deleting user - %s", err.Error())
-		// 	return err
-		// }
+		//delete the user
+		filter := bson.D{
+			primitive.E{Key: "_id", Value: userID},
+			primitive.E{Key: "client_id", Value: clientID},
+		}
+		_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
+		if err != nil {
+			log.Printf("error deleting user - %s", err.Error())
+			return err
+		}
 
 		return nil
 	})
