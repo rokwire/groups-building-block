@@ -68,6 +68,48 @@ func (sa *Adapter) Start() error {
 		return errors.New("error caching managed group configs")
 	}
 
+	//TODO delete after deployement
+	// filter := bson.D{}
+	// var list []*model.Post
+	// err = sa.db.posts.Find(filter, &list, nil)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// for i := 0; i < len(list); i++ {
+	// 	//iterate through post reactions and create new Reaction Document
+	// 	postID := list[i].ID
+	// 	for _, userID := range list[i].Reactions["thumbs-up"] {
+	// 		reactionArray := []string{"thumbs-up"}
+	// 		reactions := model.PostReactions{
+	// 			ID:        *postID,
+	// 			UserID:    userID,
+	// 			Reactions: reactionArray,
+	// 		}
+
+	// 		_, err := sa.db.reactions.InsertOne(reactions)
+	// 		if err != nil {
+	// 			fmt.Printf("error migrating reactions %s", err)
+	// 			return fmt.Errorf("error migrating reactions %s", err)
+	// 		}
+	// 	}
+
+	// 	//take the count of the total thumbs up reactions
+	// 	filter := bson.M{"_id": postID}
+	// 	update := bson.D{
+	// 		{"$set", bson.D{{"reaction_stats.thumbs-up", len(list[i].Reactions["thumbs-up"])}}},
+	// 		{"$unset", bson.D{{"reactions", ""}}},
+	// 	}
+
+	// 	_, err := sa.db.posts.UpdateOne(filter, update, nil)
+	// 	if err != nil {
+	// 		fmt.Printf("error migrating reactions %s", err)
+	// 		return fmt.Errorf("error migrating reactions %s", err)
+	// 	}
+
+	// }
+	//TODO end of deletion
+
 	return err
 }
 
@@ -377,51 +419,51 @@ func (sa *Adapter) GetUserPostCount(clientID string, userID string) (*int64, err
 func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 	return sa.PerformTransaction(func(sessionContext TransactionContext) error {
-		posts, err := sa.FindAllUserPosts(sessionContext, clientID, userID)
-		if err != nil {
-			log.Printf("error on find all posts for user (%s) - %s", userID, err.Error())
-			return err
-		}
-		if len(posts) > 0 {
-			for _, post := range posts {
-				err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
-				if err != nil {
-					log.Printf("error on delete all posts for user (%s) - %s", userID, err.Error())
-					return err
-				}
-			}
-		}
+		// posts, err := sa.FindAllUserPosts(sessionContext, clientID, userID)
+		// if err != nil {
+		// 	log.Printf("error on find all posts for user (%s) - %s", userID, err.Error())
+		// 	return err
+		// }
+		// if len(posts) > 0 {
+		// 	for _, post := range posts {
+		// 		err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
+		// 		if err != nil {
+		// 			log.Printf("error on delete all posts for user (%s) - %s", userID, err.Error())
+		// 			return err
+		// 		}
+		// 	}
+		// }
 
-		memberships, err := sa.FindUserGroupMembershipsWithContext(sessionContext, clientID, userID)
-		if err != nil {
-			log.Printf("error getting user memberships - %s", err.Error())
-			return err
-		}
-		for _, membership := range memberships.Items {
-			err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
-			if err != nil {
-				log.Printf("error deleting user membership - %s", err.Error())
-				return err
-			}
-		}
+		// memberships, err := sa.FindUserGroupMembershipsWithContext(sessionContext, clientID, userID)
+		// if err != nil {
+		// 	log.Printf("error getting user memberships - %s", err.Error())
+		// 	return err
+		// }
+		// for _, membership := range memberships.Items {
+		// 	err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
+		// 	if err != nil {
+		// 		log.Printf("error deleting user membership - %s", err.Error())
+		// 		return err
+		// 	}
+		// }
 
 		//delete any reactions on posts
-		err = sa.DeleteUserPostReactions(sessionContext, clientID, userID)
+		err := sa.DeleteUserPostReactions(sessionContext, clientID, userID)
 		if err != nil {
 			log.Printf("error deleting user reactions - %s", err.Error())
 			return err
 		}
 
 		// delete the user
-		filter := bson.D{
-			primitive.E{Key: "_id", Value: userID},
-			primitive.E{Key: "client_id", Value: clientID},
-		}
-		_, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
-		if err != nil {
-			log.Printf("error deleting user - %s", err.Error())
-			return err
-		}
+		// filter := bson.D{
+		// 	primitive.E{Key: "_id", Value: userID},
+		// 	primitive.E{Key: "client_id", Value: clientID},
+		// }
+		// _, err = sa.db.users.DeleteOneWithContext(sessionContext, filter, nil)
+		// if err != nil {
+		// 	log.Printf("error deleting user - %s", err.Error())
+		// 	return err
+		// }
 
 		return nil
 	})
@@ -429,47 +471,28 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 // DeleteUserPostReactions updates and removes all user post reactions across all existing groups
 func (sa *Adapter) DeleteUserPostReactions(context TransactionContext, clientID string, userID string) error {
-	pipeline := []bson.M{
-		bson.M{"$project": bson.M{
-			"post_id": 1,
-			"reactionsArray": bson.M{
-				"$objectToArray": "$reactions",
-			},
-		}},
-		bson.M{"$unwind": "$reactionsArray"},
-		bson.M{"$match": bson.M{
-			"$expr": bson.M{
-				"$eq": []interface{}{
-					bson.M{
-						"$getField": bson.M{
-							"field": "k",
-							"input": "$reactionsArray",
-						},
-					},
-					userID,
-				},
-			},
-		}},
-	}
 
-	var result []model.AggregateReactions
-	err := sa.db.reactions.Aggregate(pipeline, &result, &options.AggregateOptions{})
+	filter := bson.M{"user_id": userID}
+
+	var res []model.PostReactions
+	err := sa.db.reactions.Find(filter, &res, nil)
 	if err != nil {
-		log.Printf("error aggregating user post reactions - %s", err.Error())
+		log.Printf("error deleting reactions for user %s - %s", userID, err.Error())
 		return err
 	}
 
-	for i := 0; i < len(result); i++ {
-		err = sa.ReactToPost(context, userID, result[i].PostID, *result[i].Reactions.Value, false)
-		if err != nil {
-			log.Printf("error updating reactions to post - %s", err.Error())
-			return err
-		}
+	_, err = sa.db.reactions.DeleteMany(filter, nil)
+	if err != nil {
+		log.Printf("error deleting user reactions to post - %s", err.Error())
+		return err
+	}
 
-		err = sa.UpdateReactionStats(result[i].PostID, false, *result[i].Reactions.Value)
-		if err != nil {
-			log.Printf("error updating reaction stats to a post  - %s", err.Error())
-			return err
+	for i := 0; i < len(res); i++ {
+		for j := 0; j < len(res[i].Reactions); j++ {
+			err = sa.UpdateReactionStats(res[i].PostID, false, res[i].Reactions[j])
+			if err != nil {
+				return fmt.Errorf("error decrementing reaction stats for post %s with reaction %s for %s: %v", res[i].PostID, res[i].Reactions[j], userID, err)
+			}
 		}
 	}
 
@@ -1484,18 +1507,20 @@ func (sa *Adapter) ReactToPost(context TransactionContext, userID string, postID
 		updateOperation = "$push"
 	}
 
-	update := bson.D{
-		primitive.E{Key: updateOperation, Value: bson.D{
-			primitive.E{Key: "reactions." + reaction, Value: userID},
-		}},
+	update := bson.M{
+		"$set": bson.M{
+			"post_id": postID,
+			"user_id": userID,
+		},
+		updateOperation: bson.M{
+			"reactions": reaction,
+		},
 	}
+	opts := options.Update().SetUpsert(true)
+	_, err := sa.db.reactions.UpdateOne(filter, update, opts)
 
-	res, err := sa.db.reactions.UpdateOneWithContext(context, filter, update, nil)
 	if err != nil {
 		return fmt.Errorf("error updating post %s with reaction %s for %s: %v", postID, reaction, userID, err)
-	}
-	if res.ModifiedCount != 1 {
-		return fmt.Errorf("updated %d posts with reaction %s for %s, but expected 1", res.ModifiedCount, reaction, userID)
 	}
 
 	err = sa.UpdateReactionStats(postID, on, reaction)
@@ -1523,7 +1548,7 @@ func (sa *Adapter) UpdateReactionStats(postID string, on bool, reaction string) 
 	upsert := true
 	opts := options.UpdateOptions{Upsert: &upsert}
 
-	_, err := sa.db.reactions.UpdateOne(filter, update, &opts)
+	_, err := sa.db.posts.UpdateOne(filter, update, &opts)
 	if err != nil {
 		return fmt.Errorf("error updating reaction stats for post %s with reaction %s: %v", postID, reaction, err)
 
@@ -1531,24 +1556,22 @@ func (sa *Adapter) UpdateReactionStats(postID string, on bool, reaction string) 
 	return nil
 }
 
-// FindsReactionStats finds reaction stats map based on post id
-func (sa *Adapter) FindReactionStats(postID string) (map[string]int, error) {
+// FindsReactionsByPost finds reactions based on post id
+func (sa *Adapter) FindReactionsByPost(postID string) ([]model.PostReactions, error) {
 	filter := bson.M{"post_id": postID}
-	var results map[string]int
-	err := sa.db.posts.Find(filter, &results, nil)
+	var results []model.PostReactions
+	err := sa.db.reactions.Find(filter, &results, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error storage.Adapter.FindReactionStats - %s", err)
 	}
 	return results, nil
 }
 
-// GetReactions gets reactions based on postID
-func (sa *Adapter) FindReactions(postID string) (model.PostReactions, error) {
-	filter := bson.D{primitive.E{Key: "post_id", Value: postID}}
-
-	findOptions := options.Find()
+// FindReactions gets reactions based on postID
+func (sa *Adapter) FindReactions(postID string, userID string) (model.PostReactions, error) {
+	filter := bson.M{"post_id": postID, "user_id": userID}
 	var res model.PostReactions
-	err := sa.db.reactions.Find(filter, &res, findOptions)
+	err := sa.db.reactions.FindOne(filter, &res, nil)
 	if err != nil {
 		return res, fmt.Errorf("error finding post reactions %s: %v", postID, err)
 	}

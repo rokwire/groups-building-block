@@ -2235,17 +2235,17 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 	w.Write([]byte("Success"))
 }
 
-// FindReactionStats returns reaction stats to a post within the desired group
-// @Description Returns reaction stats to a post within the desired group.
-// @ID FindReactionStats
-// @Tags Client-V1
-// @Accept  json
-// @Param APP header string true "APP"
-// @Success 200 {object} model.
-// @Security AppUserAuth
-// @Security APIKeyAuth
-// @Router /api/group/{groupId}/posts/{postId}/reactions [get]
-func (h *ApisHandler) FindReactionStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+// // FindReactionsByPost returns all reactions to a post within the desired group
+// // @Description Returns reactions to a post within the desired group.
+// // @ID FindReactionsByPost
+// // @Tags Client-V1
+// // @Accept  json
+// // @Param APP header string true "APP"
+// // @Success 200 {object} model.
+// // @Security AppUserAuth
+// // @Security APIKeyAuth
+// // @Router /api/group/{groupId}/posts/{postId}/reactions [get]
+func (h *ApisHandler) FindReactionsByPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -2265,14 +2265,6 @@ func (h *ApisHandler) FindReactionStats(clientID string, current *model.User, w 
 	if err != nil {
 		log.Printf("Error on read reactToGroupPostRequestBody - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var body reactToGroupPostRequestBody
-	err = json.Unmarshal(data, &body)
-	if err != nil {
-		log.Printf("error on unmarshal reactToGroupPostRequestBody (%s) - %s", postID, err.Error())
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -2301,7 +2293,7 @@ func (h *ApisHandler) FindReactionStats(clientID string, current *model.User, w 
 		return
 	}
 
-	res, err := h.app.Services.FindReactionStats(postID)
+	res, err := h.app.Services.FindReactionsByPost(postID)
 	if err != nil {
 		log.Printf("error reacting to post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

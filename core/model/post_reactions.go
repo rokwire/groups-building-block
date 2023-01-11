@@ -16,10 +16,10 @@ package model
 
 // PostReactions are the reations to a specific post
 type PostReactions struct {
-	ID        string            `json:"id" bson:"_id"`
-	PostID    string            `json:"post_id" bson:"post_id"`
-	ClientID  string            `json:"client_id" bson:"client_id"`
-	Reactions map[string]string `json:"reactions" bson:"reactions"`
+	ID        string   `json:"id" bson:"_id"`
+	PostID    string   `json:"post_id" bson:"post_id"`
+	UserID    string   `json:"user_id" bson:"user_id"`
+	Reactions []string `json:"reactions" bson:"reactions"`
 }
 
 type AggregateReactions struct {

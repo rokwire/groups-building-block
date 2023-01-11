@@ -533,17 +533,21 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 		}
 
 		//get reactions bases on post
-		res, err := app.storage.FindReactions(postID)
-		if err != nil {
-			//Check for exsiting reaction based on current ID
-			val, ok := res.Reactions[current.ClientID]
-			if ok && val == reaction {
-				err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
-				if err != nil {
-					return fmt.Errorf("error removing reaction: %v", err)
+		val, ok := post.ReactionStats[reaction]
+		if ok && val != 0 {
+			res, err := app.storage.FindReactions(postID, current.ID)
+			if err == nil {
+				for i := range res.Reactions {
+					if res.Reactions[i] == reaction {
+						err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
+						if err != nil {
+							return fmt.Errorf("error removing reaction: %v", err)
+						}
+					}
 				}
+
+				return nil
 			}
-			return nil
 		}
 
 		//New reaction for current user
@@ -558,8 +562,8 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 	return app.storage.PerformTransaction(transaction)
 }
 
-func (app *Application) findReactionStats(postID string) (map[string]int, error) {
-	res, err := app.storage.FindReactionStats(postID)
+func (app *Application) findReactionsByPost(postID string) ([]model.PostReactions, error) {
+	res, err := app.storage.FindReactionsByPost(postID)
 	if err != nil {
 		return nil, fmt.Errorf("error finding reaction stats: %v", err)
 	}

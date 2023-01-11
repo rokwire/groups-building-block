@@ -58,7 +58,7 @@ type Services interface {
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
 	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
-	FindReactionStats(postID string) (map[string]int, error)
+	FindReactionsByPost(postID string) ([]model.PostReactions, error)
 
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
@@ -201,8 +201,8 @@ func (s *servicesImpl) ReactToPost(clientID string, current *model.User, groupID
 	return s.app.reactToPost(clientID, current, groupID, postID, reaction)
 }
 
-func (s *servicesImpl) FindReactionStats(postID string) (map[string]int, error) {
-	return s.app.findReactionStats(postID)
+func (s *servicesImpl) FindReactionsByPost(postID string) ([]model.PostReactions, error) {
+	return s.app.findReactionsByPost(postID)
 }
 
 func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
@@ -359,8 +359,8 @@ type Storage interface {
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
-	FindReactions(postID string) (model.PostReactions, error)
-	FindReactionStats(postID string) (map[string]int, error)
+	FindReactions(postID string, userID string) (model.PostReactions, error)
+	FindReactionsByPost(postID string) ([]model.PostReactions, error)
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)

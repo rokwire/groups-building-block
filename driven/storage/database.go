@@ -35,6 +35,7 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
+	reactions           *collectionWrapper
 	configs             *collectionWrapper
 	syncTimes           *collectionWrapper
 	users               *collectionWrapper
@@ -44,7 +45,6 @@ type database struct {
 	events              *collectionWrapper
 	posts               *collectionWrapper
 	managedGroupConfigs *collectionWrapper
-	reactions           *collectionWrapper
 
 	listeners []Listener
 }
@@ -127,7 +127,7 @@ func (m *database) start() error {
 	}
 
 	reactions := &collectionWrapper{database: m, coll: db.Collection("reactions")}
-	err = m.applyManagedGroupConfigsChecks(reactions)
+	err = m.applyReactionsChecks(reactions)
 	if err != nil {
 		return err
 	}
@@ -149,6 +149,8 @@ func (m *database) start() error {
 	if err != nil {
 		return err
 	}
+
+	//Change
 
 	//asign the db, db client and the collections
 	m.db = db
@@ -687,6 +689,13 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 	return nil
 }
 
+func (m *database) applyReactionsChecks(reactions *collectionWrapper) error {
+	log.Println("apply reactions checks.....")
+
+	log.Println("reactions checks passed")
+	return nil
+}
+
 func (m *database) applyManagedGroupConfigsChecks(managedGroupConfigs *collectionWrapper) error {
 	log.Println("apply managed group configs checks.....")
 
@@ -974,11 +983,4 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 			go listener.OnManagedGroupConfigsChanged()
 		}
 	}
-}
-
-func (m *database) applyreactionsChecks(reactions *collectionWrapper) error {
-	log.Println("apply reactions checks.....")
-
-	log.Println("reactions checks passed")
-	return nil
 }
