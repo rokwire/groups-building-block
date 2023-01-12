@@ -43,6 +43,9 @@ type Auth struct {
 	internalAuth *InternalAuth
 	adminAuth    *AdminAuth
 
+	bbs tokenauth.Handlers
+	tps tokenauth.Handlers
+
 	supportedClients []string
 }
 

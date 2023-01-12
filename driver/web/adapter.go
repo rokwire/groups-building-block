@@ -25,6 +25,9 @@ import (
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/gorilla/mux"
 
@@ -39,7 +42,11 @@ type Adapter struct {
 	apisHandler         *rest.ApisHandler
 	adminApisHandler    *rest.AdminApisHandler
 	internalApisHandler *rest.InternalApisHandler
+	bbsAPIsHandler      *rest.BBsAPIsHandler
+	logger              *logs.Logger
 }
+
+type handlerFunc = func(string, *logs.Log, *http.Request, *tokenauth.Claims) logs.HTTPResponse
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
@@ -67,7 +74,7 @@ func (we *Adapter) Start() {
 	subrouter := router.PathPrefix("/gr").Subrouter()
 	subrouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	subrouter.HandleFunc("/doc", we.serveDoc)
-	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
@@ -104,6 +111,17 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/{group-id}/events", we.internalKeyAuthFunc(we.internalApisHandler.CreateGroupEvent)).Methods("POST")
 	restSubrouter.HandleFunc("/int/group/{group-id}/events/{event-id}", we.internalKeyAuthFunc(we.internalApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
+
+	// BB APIs
+	bbsRouter := router.PathPrefix("/bbs").Subrouter()
+	bbsRouter.HandleFunc("/user/{identifier}/groups", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetUserGroupMemberships, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroup, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/group/title/{title}/members", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroupMembersByGroupTitle, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/authman/synchronize", we.wrapFuncBBs(we.bbsAPIsHandler.SynchronizeAuthman, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{group-id}/events", we.wrapFuncBBs(we.bbsAPIsHandler.CreateGroupEvent, we.auth.bbs.Permissions)).Methods("POST")
+	bbsRouter.HandleFunc("/group/{group-id}/events/{event-id}", we.wrapFuncBBs(we.bbsAPIsHandler.DeleteGroupEvent, we.auth.bbs.Permissions)).Methods("DELETE")
+	bbsRouter.HandleFunc("/group/{group-id}/notification", we.wrapFuncBBs(we.bbsAPIsHandler.SendGroupNotification, we.auth.bbs.Permissions)).Methods("POST")
 
 	// V2 Client APIs
 	restSubrouter.HandleFunc("/v2/groups", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
@@ -167,11 +185,44 @@ func (we Adapter) serveDocUI() http.Handler {
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
-func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
+func (we *Adapter) wrapFunc(handler http.HandlerFunc, authorization tokenauth.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
 		handler(w, req)
+	}
+}
+
+func (we *Adapter) wrapFuncBBs(handler handlerFunc, authorization tokenauth.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+
+		logObj := we.logger.NewRequestLog(req)
+
+		logObj.RequestReceived()
+
+		clientID, authenticated := we.auth.internalAuthCheck(w, req)
+		if !authenticated {
+			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		var response logs.HTTPResponse
+		if authorization != nil {
+			responseStatus, claims, err := authorization.Check(req)
+			if err != nil {
+				logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, responseStatus, true))
+				return
+			}
+
+			logObj.SetContext("account_id", claims.Subject)
+			response = handler(clientID, logObj, req, claims)
+		} else {
+			response = handler(clientID, logObj, req, nil)
+		}
+
+		logObj.SendHTTPResponse(w, response)
+		logObj.RequestComplete()
 	}
 }
 
@@ -303,6 +354,8 @@ func NewWebAdapter(app *core.Application, host string, supportedClientIDs []stri
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
+	bbsAPIsHandler := rest.NewBBsAPIsHandler(app)
 
-	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
+	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler,
+		bbsAPIsHandler: &bbsAPIsHandler}
 }

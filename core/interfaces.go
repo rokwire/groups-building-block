@@ -90,6 +90,14 @@ type Services interface {
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 }
 
+// BBs exposes Building Block APIs for the driver adapters
+type BBs interface {
+}
+
+// TPS exposes third-party service APIs for the driver adapters
+type TPS interface {
+}
+
 type servicesImpl struct {
 	app *Application
 }
