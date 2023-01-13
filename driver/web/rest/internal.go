@@ -298,6 +298,38 @@ type intCreateGroupEventRequestBody struct {
 	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name intCreateGroupEventRequestBody
 
+// UpdateGroupDateUpdated Updated the date updated field of the desired group
+// @Description Updated the date updated field of the desired group
+// @ID IntUpdateGroupDateUpdated
+// @Tags Internal
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security IntAPIKeyAuth
+// @Router /api/int/group/{group-id}/date_updated [post]
+func (h *InternalApisHandler) UpdateGroupDateUpdated(clientID string, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Services.UpdateGroupDateUpdated(clientID, groupID)
+	if err != nil {
+		log.Printf("Error on updating date updated of group %s - %s\n", groupID, err)
+		http.Error(w, fmt.Sprintf("Error on updating date updated of group %s - %s\n", groupID, err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
 // CreateGroupEvent creates a group event
 // @Description Creates a group event
 // @ID IntCreateGroupEvent

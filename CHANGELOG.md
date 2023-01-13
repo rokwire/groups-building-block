@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.11.0] - 2023-01-13
+### Added
+- Create internal API for updating group's date updated [#335](https://github.com/rokwire/groups-building-block/issues/335)
+
 ## [1.10.1] - 2023-01-10
 ### Changed
 - Split date modified field and introduce member & managed member modified date fields [#330](https://github.com/rokwire/groups-building-block/issues/330)
