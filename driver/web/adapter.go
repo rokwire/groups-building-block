@@ -120,6 +120,7 @@ func (we *Adapter) Start() {
 	bbsRouter.HandleFunc("/group/title/{title}/members", we.wrapFuncBBs(we.bbsAPIsHandler.GetGroupMembersByGroupTitle, we.auth.bbs.Permissions)).Methods("GET")
 	bbsRouter.HandleFunc("/authman/synchronize", we.wrapFuncBBs(we.bbsAPIsHandler.SynchronizeAuthman, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.User)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{group-id}/date_updated", we.wrapFuncBBs(we.bbsAPIsHandler.UpdateGroupDateUpdated, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/group/{group-id}/events", we.wrapFuncBBs(we.bbsAPIsHandler.CreateGroupEvent, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/group/{group-id}/events/{event-id}", we.wrapFuncBBs(we.bbsAPIsHandler.DeleteGroupEvent, we.auth.bbs.Permissions)).Methods("DELETE")
 	bbsRouter.HandleFunc("/group/{group-id}/notification", we.wrapFuncBBs(we.bbsAPIsHandler.SendGroupNotification, we.auth.bbs.Permissions)).Methods("POST")

@@ -48,7 +48,7 @@ func NewBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupShortDetail
 // @Security Bearer
-// @Router /bbs/api/user/{identifier}/groups [get]
+// @Router /api/bbs/user/{identifier}/groups [get]
 func (h *BBsAPIsHandler) GetUserGroupMemberships(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
@@ -100,7 +100,7 @@ func (h *BBsAPIsHandler) GetUserGroupMemberships(clientID string, l *logs.Log, r
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} model.Group
 // @Security Bearer
-// @Router /bbs/api/group/{identifier} [get]
+// @Router /api/bbs/group/{identifier} [get]
 func (h *BBsAPIsHandler) GetGroup(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
@@ -147,7 +147,7 @@ func (h *BBsAPIsHandler) GetGroup(clientID string, l *logs.Log, r *http.Request,
 // @Param limit query string false "Limiting the result"
 // @Success 200 {array} model.ShortMemberRecord
 // @Security Bearer
-// @Router /bbs/api/group/title/{title}/members [get]
+// @Router /api/bbs/group/title/{title}/members [get]
 func (h *BBsAPIsHandler) GetGroupMembersByGroupTitle(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	title := params["title"]
@@ -209,7 +209,7 @@ func (h *BBsAPIsHandler) GetGroupMembersByGroupTitle(clientID string, l *logs.Lo
 // @Accept json
 // @Success 200
 // @Security Bearer
-// @Router /bbs/api/authman/synchronize [post]
+// @Router /api/bbs/authman/synchronize [post]
 func (h *BBsAPIsHandler) SynchronizeAuthman(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	err := h.app.Services.SynchronizeAuthman(clientID)
 	if err != nil {
@@ -227,7 +227,7 @@ func (h *BBsAPIsHandler) SynchronizeAuthman(clientID string, l *logs.Log, r *htt
 // @Accept json
 // @Success 200 {object} GroupsStats
 // @Security Bearer
-// @Router /bbs/api/stats [get]
+// @Router /api/bbs/stats [get]
 func (h *BBsAPIsHandler) GroupStats(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 
 	groups, err := h.app.Services.GetAllGroups(clientID)
@@ -275,7 +275,7 @@ func (h *BBsAPIsHandler) GroupStats(clientID string, l *logs.Log, r *http.Reques
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security Bearer
-// @Router /bbs/api/group/{group-id}/events [post]
+// @Router /api/bbs/group/{group-id}/events [post]
 func (h *BBsAPIsHandler) CreateGroupEvent(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
 	params := mux.Vars(r)
@@ -349,20 +349,20 @@ func (h *BBsAPIsHandler) CreateGroupEvent(clientID string, l *logs.Log, r *http.
 // @Param event-id path string true "Event ID"
 // @Success 200
 // @Security Bearer
-// @Router /api/int/group/{group-id}/events/{event-id} [delete]
+// @Router /api/bbs/group/{group-id}/events/{event-id} [delete]
 func (h *BBsAPIsHandler) DeleteGroupEvent(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
 		log.Println("Group id is required")
-		return l.HTTPResponseErrorAction(logutils.ActionCreate, "group-id is required", nil, nil, http.StatusInternalServerError, false)
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "group-id is required", nil, nil, http.StatusBadRequest, false)
 
 	}
 	eventID := params["event-id"]
 	if len(eventID) <= 0 {
 		log.Println("Event id is required")
-		return l.HTTPResponseErrorAction(logutils.ActionCreate, "event-id is required", nil, nil, http.StatusInternalServerError, false)
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "event-id is required", nil, nil, http.StatusBadRequest, false)
 
 	}
 
@@ -386,14 +386,14 @@ func (h *BBsAPIsHandler) DeleteGroupEvent(clientID string, l *logs.Log, r *http.
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security Bearer
-// @Router /bbs/api/int/group/{group-id}/notification [post]
+// @Router /api/bbs/int/group/{group-id}/notification [post]
 func (h *BBsAPIsHandler) SendGroupNotification(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
 		log.Println("group-id is required")
-		return l.HTTPResponseErrorAction(logutils.ActionCreate, "group-id is required", nil, nil, http.StatusInternalServerError, false)
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "group-id is required", nil, nil, http.StatusBadRequest, false)
 
 	}
 
@@ -436,5 +436,36 @@ func (h *BBsAPIsHandler) SendGroupNotification(clientID string, l *logs.Log, r *
 		return l.HTTPResponseErrorAction(logutils.ActionCreate, "Error", nil, err, http.StatusBadRequest, false)
 
 	}
+	return l.HTTPResponseSuccess()
+}
+
+// UpdateGroupDateUpdated Updates the date updated field of the desired group
+// @Description Updates the date updated field of the desired group
+// @ID IntUpdateGroupDateUpdated
+// @Tags BBs
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security IntAPIKeyAuth
+// @Router /api/bbs/group/{group-id}/date_updated [post]
+func (h *BBsAPIsHandler) UpdateGroupDateUpdated(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "group-id is required", nil, nil, http.StatusBadRequest, false)
+
+	}
+
+	err := h.app.Services.UpdateGroupDateUpdated(clientID, groupID)
+	if err != nil {
+		log.Printf("Error on updating date updated of group %s - %s\n", groupID, err)
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, "Error on updating date updated of group", nil, err, http.StatusInternalServerError, false)
+
+	}
+
 	return l.HTTPResponseSuccess()
 }
