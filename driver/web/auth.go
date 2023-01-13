@@ -16,7 +16,6 @@ package web
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"groups/core"
 	"groups/core/model"
@@ -34,6 +33,8 @@ import (
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 	"github.com/rokwire/core-auth-library-go/v2/authutils"
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
 // Auth handler
@@ -44,7 +45,6 @@ type Auth struct {
 	adminAuth    *AdminAuth
 
 	bbs tokenauth.Handlers
-	tps tokenauth.Handlers
 
 	supportedClients []string
 }
@@ -109,6 +109,16 @@ func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (str
 	authenticated := auth.internalAuth.check(internalAuthKey, w)
 
 	return clientID, authenticated
+}
+
+func (auth *Auth) bbsAuthCheck(w http.ResponseWriter, r *http.Request) string {
+	clientIDOK, clientID := auth.clientIDCheck(r)
+	if !clientIDOK {
+		log.Printf("%s %s error - missing or bad APP header", r.Method, r.URL.Path)
+		return ""
+	}
+
+	return clientID
 }
 
 func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
@@ -209,8 +219,37 @@ func NewAuth(app *core.Application, host string, supportedClientIDs []string, ap
 	internalAuth := newInternalAuth(internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClientIDs}
+	bbs, err := newBBsAuth(serviceRegManager)
+	if err != nil {
+		log.Fatalf("error getting bbsAuth: %s", err)
+	}
+	bbsHandlers := tokenauth.NewHandlers(bbs)
+
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClientIDs, bbs: bbsHandlers}
 	return &auth
+}
+
+func newBBsAuth(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
+	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/bbs_permission_policy.csv")
+	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionStart, "bbs token auth", nil, err)
+	}
+
+	check := func(claims *tokenauth.Claims, req *http.Request) (int, error) {
+		if !claims.Service {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+		}
+
+		if !claims.FirstParty {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+		}
+
+		return http.StatusOK, nil
+	}
+
+	auth := tokenauth.NewStandardHandler(*bbsTokenAuth, check)
+	return &auth, nil
 }
 
 /////////////////////////////////////

@@ -31,6 +31,7 @@ import (
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 	"github.com/rokwire/core-auth-library-go/v2/sigauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -48,6 +49,10 @@ func main() {
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 
 	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
+
+	serviceID := "groups"
+	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties(serviceID + "/version")}
+	logger := logs.NewLogger(serviceID, &loggerOpts)
 
 	//mongoDB adapter
 	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
@@ -155,7 +160,7 @@ func main() {
 
 	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, serviceRegManager, groupServiceURL)
+		intrernalAPIKey, serviceRegManager, groupServiceURL, logger)
 	webAdapter.Start()
 }
 

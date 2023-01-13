@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ## [1.10.1] - 2023-01-10
+### Added
+- Support Core BB service tokens [#231](https://github.com/rokwire/groups-building-block/issues/231)
 ### Changed
 - Split date modified field and introduce member & managed member modified date fields [#330](https://github.com/rokwire/groups-building-block/issues/330)
 

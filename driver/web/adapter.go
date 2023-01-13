@@ -79,6 +79,7 @@ func (we *Adapter) Start() {
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
 	adminSubrouter := restSubrouter.PathPrefix("/admin").Subrouter()
+	bbsRouter := restSubrouter.PathPrefix("/bbs").Subrouter()
 
 	// Admin V2 APIs
 	adminSubrouter.HandleFunc("/v2/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV2)).Methods("GET", "POST")
@@ -113,12 +114,11 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// BB APIs
-	bbsRouter := router.PathPrefix("/bbs").Subrouter()
 	bbsRouter.HandleFunc("/user/{identifier}/groups", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetUserGroupMemberships, we.auth.bbs.Permissions)).Methods("GET")
-	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroup, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroup, we.auth.bbs.User)).Methods("GET")
 	bbsRouter.HandleFunc("/group/title/{title}/members", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroupMembersByGroupTitle, we.auth.bbs.Permissions)).Methods("GET")
 	bbsRouter.HandleFunc("/authman/synchronize", we.wrapFuncBBs(we.bbsAPIsHandler.SynchronizeAuthman, we.auth.bbs.Permissions)).Methods("POST")
-	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.User)).Methods("GET")
 	bbsRouter.HandleFunc("/group/{group-id}/events", we.wrapFuncBBs(we.bbsAPIsHandler.CreateGroupEvent, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/group/{group-id}/events/{event-id}", we.wrapFuncBBs(we.bbsAPIsHandler.DeleteGroupEvent, we.auth.bbs.Permissions)).Methods("DELETE")
 	bbsRouter.HandleFunc("/group/{group-id}/notification", we.wrapFuncBBs(we.bbsAPIsHandler.SendGroupNotification, we.auth.bbs.Permissions)).Methods("POST")
@@ -193,19 +193,14 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc, authorization tokenauth.Ha
 	}
 }
 
-func (we *Adapter) wrapFuncBBs(handler handlerFunc, authorization tokenauth.Handler) http.HandlerFunc {
+func (we Adapter) wrapFuncBBs(handler handlerFunc, authorization tokenauth.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 
 		logObj := we.logger.NewRequestLog(req)
 
 		logObj.RequestReceived()
 
-		clientID, authenticated := we.auth.internalAuthCheck(w, req)
-		if !authenticated {
-			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+		clientID := we.auth.bbsAuthCheck(w, req)
 
 		var response logs.HTTPResponse
 		if authorization != nil {
@@ -346,7 +341,7 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
+	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
@@ -357,5 +352,5 @@ func NewWebAdapter(app *core.Application, host string, supportedClientIDs []stri
 	bbsAPIsHandler := rest.NewBBsAPIsHandler(app)
 
 	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler,
-		bbsAPIsHandler: &bbsAPIsHandler}
+		bbsAPIsHandler: &bbsAPIsHandler, logger: logger}
 }
