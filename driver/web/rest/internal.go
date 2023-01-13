@@ -298,8 +298,8 @@ type intCreateGroupEventRequestBody struct {
 	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name intCreateGroupEventRequestBody
 
-// UpdateGroupDateUpdated Updated the date updated field of the desired group
-// @Description Updated the date updated field of the desired group
+// UpdateGroupDateUpdated Updates the date updated field of the desired group
+// @Description Updates the date updated field of the desired group
 // @ID IntUpdateGroupDateUpdated
 // @Tags Internal
 // @Accept json

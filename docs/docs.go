@@ -2027,6 +2027,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/{group-id}/date_updated": {
+            "post": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Updates the date updated field of the desired group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "IntUpdateGroupDateUpdated",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/int/group/{group-id}/events": {
             "post": {
                 "security": [
@@ -2981,6 +3022,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/GroupMembership"
                 },
                 "date_created": {
+                    "type": "string"
+                },
+                "date_managed_membership_updated": {
+                    "type": "string"
+                },
+                "date_membership_updated": {
                     "type": "string"
                 },
                 "date_updated": {
