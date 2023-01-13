@@ -40,7 +40,6 @@ type Application struct {
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
 	BBs            BBs            // expose to the drivers adapters
-	TPS            TPS            // expose to the drivers adapters
 
 	storage       Storage
 	notifications Notifications

@@ -94,10 +94,6 @@ type Services interface {
 type BBs interface {
 }
 
-// TPS exposes third-party service APIs for the driver adapters
-type TPS interface {
-}
-
 type servicesImpl struct {
 	app *Application
 }
