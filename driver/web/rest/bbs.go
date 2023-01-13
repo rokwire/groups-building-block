@@ -49,7 +49,7 @@ func NewBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 // @Success 200 {object} userGroupShortDetail
 // @Security Bearer
 // @Router /bbs/api/user/{identifier}/groups [get]
-func (h *BBsAPIsHandler) IntGetUserGroupMemberships(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+func (h *BBsAPIsHandler) GetUserGroupMemberships(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -101,7 +101,7 @@ func (h *BBsAPIsHandler) IntGetUserGroupMemberships(clientID string, l *logs.Log
 // @Success 200 {object} model.Group
 // @Security Bearer
 // @Router /bbs/api/group/{identifier} [get]
-func (h *BBsAPIsHandler) IntGetGroup(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+func (h *BBsAPIsHandler) GetGroup(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -148,7 +148,7 @@ func (h *BBsAPIsHandler) IntGetGroup(clientID string, l *logs.Log, r *http.Reque
 // @Success 200 {array} model.ShortMemberRecord
 // @Security Bearer
 // @Router /bbs/api/group/title/{title}/members [get]
-func (h *BBsAPIsHandler) IntGetGroupMembersByGroupTitle(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+func (h *BBsAPIsHandler) GetGroupMembersByGroupTitle(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
 	title := params["title"]
 

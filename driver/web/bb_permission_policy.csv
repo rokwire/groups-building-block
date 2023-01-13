@@ -1,4 +1,7 @@
-p, all_bbs_groups, /api/bbs/*, (GET)|(POST)|(PUT)|(DELETE), All Group BB actions
-p, get_bbs_groups, /api/bbs/*, (GET), Get Group BB configs
-p, update_bbs_groups, /api/bbs/*, (GET)|(PUT), Update Group BB configs
-p, delete_bbs_groups, /api/bbs/*, (GET)|(DELETE), Delete Group BB configs
+p, get_user_groups, /api/bbs/user/*, (GET), Get User Group BB action
+p, get_groups, /api/bbs/group/*, (GET), Get User Group BB action
+p, sync_managed_groups, /api/bbs/authman/synchronize, (Post), Synchronizes Authman groups membership
+p, all_group_events , /api/bbs/group/*/events/*, (POST)|(DELETE), Access all group event actions
+p, update_group_events , /api/bbs/group/*/events/*, (POST), Update group event actions
+p, delete_group_events , /api/bbs/group/*/events/*, (DELETE), Delete group event actions
+

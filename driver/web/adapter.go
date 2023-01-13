@@ -114,9 +114,9 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// BB APIs
-	bbsRouter.HandleFunc("/user/{identifier}/groups", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetUserGroupMemberships, we.auth.bbs.Permissions)).Methods("GET")
-	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroup, we.auth.bbs.User)).Methods("GET")
-	bbsRouter.HandleFunc("/group/title/{title}/members", we.wrapFuncBBs(we.bbsAPIsHandler.IntGetGroupMembersByGroupTitle, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/user/{identifier}/groups", we.wrapFuncBBs(we.bbsAPIsHandler.GetUserGroupMemberships, we.auth.bbs.Permissions)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.GetGroup, we.auth.bbs.User)).Methods("GET")
+	bbsRouter.HandleFunc("/group/title/{title}/members", we.wrapFuncBBs(we.bbsAPIsHandler.GetGroupMembersByGroupTitle, we.auth.bbs.Permissions)).Methods("GET")
 	bbsRouter.HandleFunc("/authman/synchronize", we.wrapFuncBBs(we.bbsAPIsHandler.SynchronizeAuthman, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.User)).Methods("GET")
 	bbsRouter.HandleFunc("/group/{group-id}/events", we.wrapFuncBBs(we.bbsAPIsHandler.CreateGroupEvent, we.auth.bbs.Permissions)).Methods("POST")
