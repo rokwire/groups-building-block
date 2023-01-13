@@ -1548,6 +1548,22 @@ func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string,
 	})
 }
 
+// UpdateGroupDateUpdated Updates group's date updated
+func (sa *Adapter) UpdateGroupDateUpdated(clientID string, groupID string) error {
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		}},
+	}
+
+	_, err := sa.db.groups.UpdateOne(filter, update, nil)
+	return err
+}
+
 // FindAuthmanGroups finds all groups that are associated with Authman
 func (sa *Adapter) FindAuthmanGroups(clientID string) ([]model.Group, error) {
 	filter := bson.D{

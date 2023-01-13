@@ -131,6 +131,14 @@ func (app *Application) updateGroup(clientID string, current *model.User, group 
 	return nil
 }
 
+func (app *Application) updateGroupDateUpdated(clientID string, groupID string) error {
+	err := app.storage.UpdateGroupDateUpdated(clientID, groupID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
 	err := app.storage.DeleteGroup(clientID, id)
 	if err != nil {
