@@ -563,7 +563,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			}
 		}
 
-		err = sa.UpdateGroupStats(context, clientID, group.ID, false, true)
+		err = sa.UpdateGroupStats(context, clientID, group.ID, false, false, false, true)
 		if err != nil {
 			return err
 		}
@@ -665,7 +665,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 			}
 		}
 
-		err = sa.UpdateGroupStats(context, clientID, group.ID, true, true)
+		err = sa.UpdateGroupStats(context, clientID, group.ID, true, len(memberships) > 0, false, true)
 		if err != nil {
 			return err
 		}
@@ -1070,7 +1070,7 @@ func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string, 
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(context, clientID, groupID, true, false, false, false)
 	})
 
 	return &event, err
@@ -1095,7 +1095,7 @@ func (sa *Adapter) UpdateEvent(clientID string, eventID string, groupID string, 
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(context, clientID, groupID, true, false, false, false)
 	})
 }
 
@@ -1117,7 +1117,7 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 			return errors.New("error occured while deleting an event with event id " + eventID)
 		}
 
-		return sa.UpdateGroupStats(context, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(context, clientID, groupID, true, false, false, false)
 	})
 }
 
@@ -1145,12 +1145,17 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	}
 
 	if filterByToMembers {
-		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
+		innerFilter := []primitive.M{
 			primitive.M{"to_members": primitive.Null{}},
 			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": current.ID},
-			primitive.M{"member.user_id": current.ID},
-		}})
+		}
+		if current != nil {
+			innerFilter = append(innerFilter, []primitive.M{
+				primitive.M{"to_members.user_id": current.ID},
+				primitive.M{"member.user_id": current.ID},
+			}...)
+		}
+		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
 	}
 
 	if filterPrivatePostsValue != nil {
@@ -1250,11 +1255,17 @@ func (sa *Adapter) findPostWithContext(context TransactionContext, clientID stri
 	}
 
 	if filterByToMembers {
-		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": *userID},
-		}})
+		innerFilter := []primitive.M{
+			{"to_members": primitive.Null{}},
+			{"to_members": primitive.M{"$exists": true, "$size": 0}},
+		}
+		if userID != nil {
+			innerFilter = append(innerFilter, []primitive.M{
+				{"to_members.user_id": *userID},
+				{"member.user_id": *userID},
+			}...)
+		}
+		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
 	}
 
 	if !skipMembershipCheck && userID != nil {
@@ -1414,7 +1425,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 				return err
 			}
 
-			err = sa.UpdateGroupStats(context, clientID, post.GroupID, true, false)
+			err = sa.UpdateGroupStats(context, clientID, post.GroupID, true, false, false, false)
 			if err != nil {
 				return err
 			}
@@ -1474,7 +1485,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 				return err
 			}
 
-			return sa.UpdateGroupStats(context, clientID, post.GroupID, true, false)
+			return sa.UpdateGroupStats(context, clientID, post.GroupID, true, false, false, false)
 		})
 		if err != nil {
 			return nil, err
@@ -1591,7 +1602,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 	deleteWrapper := func(transactionContext TransactionContext) error {
 		membership, _ := sa.FindGroupMembershipWithContext(transactionContext, clientID, groupID, userID)
 		filterToMembers := true
-		if membership == nil && membership.IsAdmin() {
+		if membership != nil && membership.IsAdmin() {
 			filterToMembers = false
 		}
 
@@ -1620,7 +1631,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 			return err
 		}
 
-		return sa.UpdateGroupStats(transactionContext, clientID, groupID, true, false)
+		return sa.UpdateGroupStats(transactionContext, clientID, groupID, true, false, false, false)
 	}
 
 	if ctx != nil {
@@ -1632,7 +1643,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 }
 
 // UpdateGroupStats set the updated date to the current date time (now)
-func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error {
+func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate, resetMembershipUpdateDate, resetManagedMembershipUpdateDate, resetStats bool) error {
 
 	updateStats := func(ctx TransactionContext) error {
 		innerUpdate := bson.D{}
@@ -1649,6 +1660,12 @@ func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string,
 
 		if resetUpdateDate {
 			innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: time.Now()})
+		}
+		if resetMembershipUpdateDate {
+			innerUpdate = append(innerUpdate, primitive.E{Key: "date_membership_updated", Value: time.Now()})
+		}
+		if resetManagedMembershipUpdateDate {
+			innerUpdate = append(innerUpdate, primitive.E{Key: "date_managed_membership_updated", Value: time.Now()})
 		}
 
 		// update the group
@@ -1670,6 +1687,22 @@ func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string,
 	return sa.PerformTransaction(func(context TransactionContext) error {
 		return updateStats(context)
 	})
+}
+
+// UpdateGroupDateUpdated Updates group's date updated
+func (sa *Adapter) UpdateGroupDateUpdated(clientID string, groupID string) error {
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: groupID},
+		primitive.E{Key: "client_id", Value: clientID},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		}},
+	}
+
+	_, err := sa.db.groups.UpdateOne(filter, update, nil)
+	return err
 }
 
 // FindAuthmanGroups finds all groups that are associated with Authman

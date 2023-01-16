@@ -54,6 +54,10 @@ definitions:
         description: this is indicative and it's not required for update APIs
       date_created:
         type: string
+      date_managed_membership_updated:
+        type: string
+      date_membership_updated:
+        type: string
       date_updated:
         type: string
       description:
@@ -2213,6 +2217,32 @@ paths:
       - AppUserAuth: []
       tags:
       - Client-V1
+  /api/int/group/{group-id}/date_updated:
+    post:
+      consumes:
+      - application/json
+      description: Updates the date updated field of the desired group
+      operationId: IntUpdateGroupDateUpdated
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /api/int/group/{group-id}/events:
     post:
       consumes:

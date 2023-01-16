@@ -35,6 +35,7 @@ type Services interface {
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
@@ -119,6 +120,10 @@ func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 	return s.app.updateGroup(clientID, current, group)
+}
+
+func (s *servicesImpl) UpdateGroupDateUpdated(clientID string, groupID string) error {
+	return s.app.updateGroupDateUpdated(clientID, groupID)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -337,7 +342,8 @@ type Storage interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
-	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error
+	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
+	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)

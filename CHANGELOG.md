@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Refactor post reactions [#325](https://github.com/rokwire/groups-building-block/issues/325)
 
+## [1.11.0] - 2023-01-13
+### Added
+- Create internal API for updating group's date updated [#335](https://github.com/rokwire/groups-building-block/issues/335)
+
+## [1.10.1] - 2023-01-10
+### Changed
+- Split date modified field and introduce member & managed member modified date fields [#330](https://github.com/rokwire/groups-building-block/issues/330)
+
+## [1.9.5] - 2023-01-04
+### Changed
+- Report of offensive speech automatic title [#328](https://github.com/rokwire/groups-building-block/issues/328)
+
+## [1.9.4] - 2022-12-21
+### Changed
+- Group admins must not see direct messages if they are not listed explicitly within. the ACL list[#326](https://github.com/rokwire/groups-building-block/issues/326)
+
+## [1.9.3] - 2022-12-20
+### Fixed
+- Delete group post request fails [#321](https://github.com/rokwire/groups-building-block/issues/321)
+
 ## [1.9.2] - 2022-12-14
 ### Fixed
 - Admin must make posts and reactions no matter of group settings [#315](https://github.com/rokwire/groups-building-block/issues/315)

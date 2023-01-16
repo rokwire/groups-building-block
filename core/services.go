@@ -131,6 +131,14 @@ func (app *Application) updateGroup(clientID string, current *model.User, group 
 	return nil
 }
 
+func (app *Application) updateGroupDateUpdated(clientID string, groupID string) error {
+	err := app.storage.UpdateGroupDateUpdated(clientID, groupID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
 	err := app.storage.DeleteGroup(clientID, id)
 	if err != nil {
@@ -594,7 +602,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	if sendToDean && !sendToGroupAdmins {
 		subject = "Report violation of Student Code to Dean of Students"
 	} else if !sendToDean && sendToGroupAdmins {
-		subject = "Report obscene, threatening, or harassing content to Group Administrators"
+		subject = "Report of Obscene, Harassing, or Threatening Content to Group Administrators"
 	} else {
 		subject = "Report violation of Student Code to Dean of Students and obscene, threatening, or harassing content to Group Administrators"
 	}
@@ -1161,7 +1169,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
 	}
 
-	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, true, true)
+	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, false, false, true, true)
 	if err != nil {
 		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
 	}
