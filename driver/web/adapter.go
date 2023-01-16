@@ -79,7 +79,6 @@ func (we *Adapter) Start() {
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
 	adminSubrouter := restSubrouter.PathPrefix("/admin").Subrouter()
-	bbsRouter := restSubrouter.PathPrefix("/bbs").Subrouter()
 
 	// Admin V2 APIs
 	adminSubrouter.HandleFunc("/v2/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV2)).Methods("GET", "POST")
@@ -115,11 +114,12 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// BB APIs
+	bbsRouter := restSubrouter.PathPrefix("/bbs").Subrouter()
 	bbsRouter.HandleFunc("/user/{identifier}/groups", we.wrapFuncBBs(we.bbsAPIsHandler.GetUserGroupMemberships, we.auth.bbs.Permissions)).Methods("GET")
-	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.GetGroup, we.auth.bbs.User)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{identifier}", we.wrapFuncBBs(we.bbsAPIsHandler.GetGroup, we.auth.bbs.Permissions)).Methods("GET")
 	bbsRouter.HandleFunc("/group/title/{title}/members", we.wrapFuncBBs(we.bbsAPIsHandler.GetGroupMembersByGroupTitle, we.auth.bbs.Permissions)).Methods("GET")
 	bbsRouter.HandleFunc("/authman/synchronize", we.wrapFuncBBs(we.bbsAPIsHandler.SynchronizeAuthman, we.auth.bbs.Permissions)).Methods("POST")
-	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.User)).Methods("GET")
+	bbsRouter.HandleFunc("/stats", we.wrapFuncBBs(we.bbsAPIsHandler.GroupStats, we.auth.bbs.Permissions)).Methods("GET")
 	bbsRouter.HandleFunc("/group/{group-id}/date_updated", we.wrapFuncBBs(we.bbsAPIsHandler.UpdateGroupDateUpdated, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/group/{group-id}/events", we.wrapFuncBBs(we.bbsAPIsHandler.CreateGroupEvent, we.auth.bbs.Permissions)).Methods("POST")
 	bbsRouter.HandleFunc("/group/{group-id}/events/{event-id}", we.wrapFuncBBs(we.bbsAPIsHandler.DeleteGroupEvent, we.auth.bbs.Permissions)).Methods("DELETE")

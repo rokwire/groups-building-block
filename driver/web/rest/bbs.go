@@ -47,7 +47,7 @@ func NewBBsAPIsHandler(app *core.Application) BBsAPIsHandler {
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupShortDetail
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/user/{identifier}/groups [get]
 func (h *BBsAPIsHandler) GetUserGroupMemberships(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
@@ -99,7 +99,7 @@ func (h *BBsAPIsHandler) GetUserGroupMemberships(clientID string, l *logs.Log, r
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} model.Group
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/group/{identifier} [get]
 func (h *BBsAPIsHandler) GetGroup(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
@@ -146,7 +146,7 @@ func (h *BBsAPIsHandler) GetGroup(clientID string, l *logs.Log, r *http.Request,
 // @Param offset query string false "Offsetting result"
 // @Param limit query string false "Limiting the result"
 // @Success 200 {array} model.ShortMemberRecord
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/group/title/{title}/members [get]
 func (h *BBsAPIsHandler) GetGroupMembersByGroupTitle(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	params := mux.Vars(r)
@@ -208,7 +208,7 @@ func (h *BBsAPIsHandler) GetGroupMembersByGroupTitle(clientID string, l *logs.Lo
 // @Tags BBs
 // @Accept json
 // @Success 200
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/authman/synchronize [post]
 func (h *BBsAPIsHandler) SynchronizeAuthman(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	err := h.app.Services.SynchronizeAuthman(clientID)
@@ -226,7 +226,7 @@ func (h *BBsAPIsHandler) SynchronizeAuthman(clientID string, l *logs.Log, r *htt
 // @Tags BBs
 // @Accept json
 // @Success 200 {object} GroupsStats
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/stats [get]
 func (h *BBsAPIsHandler) GroupStats(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 
@@ -274,7 +274,7 @@ func (h *BBsAPIsHandler) GroupStats(clientID string, l *logs.Log, r *http.Reques
 // @Param data body CreateGroupEventRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/group/{group-id}/events [post]
 func (h *BBsAPIsHandler) CreateGroupEvent(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
@@ -342,13 +342,13 @@ func (h *BBsAPIsHandler) CreateGroupEvent(clientID string, l *logs.Log, r *http.
 
 // DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
-// @ID IntDeleteGroupEvent
+// @ID DeleteGroupEvent
 // @Tags BBs
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Param event-id path string true "Event ID"
 // @Success 200
-// @Security Bearer
+// @Security BBsAuth
 // @Router /api/bbs/group/{group-id}/events/{event-id} [delete]
 func (h *BBsAPIsHandler) DeleteGroupEvent(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
@@ -385,8 +385,8 @@ func (h *BBsAPIsHandler) DeleteGroupEvent(clientID string, l *logs.Log, r *http.
 // @Param data body sendGroupNotificationRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200
-// @Security Bearer
-// @Router /api/bbs/int/group/{group-id}/notification [post]
+// @Security BBsAuth
+// @Router /api/bbs/group/{group-id}/notification [post]
 func (h *BBsAPIsHandler) SendGroupNotification(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
 	params := mux.Vars(r)
@@ -441,14 +441,14 @@ func (h *BBsAPIsHandler) SendGroupNotification(clientID string, l *logs.Log, r *
 
 // UpdateGroupDateUpdated Updates the date updated field of the desired group
 // @Description Updates the date updated field of the desired group
-// @ID IntUpdateGroupDateUpdated
+// @ID UpdateGroupDateUpdated
 // @Tags BBs
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200
-// @Security IntAPIKeyAuth
+// @Security BBsAuth
 // @Router /api/bbs/group/{group-id}/date_updated [post]
 func (h *BBsAPIsHandler) UpdateGroupDateUpdated(clientID string, l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
 	//validate input
