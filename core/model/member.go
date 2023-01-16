@@ -15,23 +15,25 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"groups/driven/notifications"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Member represents group member entity
 type Member struct {
-	ID            string         `json:"id" bson:"id"`
-	UserID        string         `json:"user_id" bson:"user_id"`
-	ExternalID    string         `json:"external_id" bson:"external_id"`
-	Name          string         `json:"name" bson:"name"`
-	NetID         string         `json:"net_id" bson:"net_id"`
-	Email         string         `json:"email" bson:"email"`
-	PhotoURL      string         `json:"photo_url" bson:"photo_url"`
-	Status        string         `json:"status" bson:"status"` //pending, member, admin, rejected
-	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
-	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
+	ID            string            `json:"id" bson:"id"`
+	UserID        string            `json:"user_id" bson:"user_id"`
+	ExternalID    string            `json:"external_id" bson:"external_id"`
+	Name          string            `json:"name" bson:"name"`
+	NetID         string            `json:"net_id" bson:"net_id"`
+	Email         string            `json:"email" bson:"email"`
+	PhotoURL      string            `json:"photo_url" bson:"photo_url"`
+	Status        string            `json:"status" bson:"status"` //pending, member, admin, rejected
+	RejectReason  string            `json:"reject_reason" bson:"reject_reason"`
+	MemberAnswers []MemberAnswer    `json:"member_answers" bson:"member_answers"`
+	ExternalIDs   map[string]string `json:"external_ids" bson:"external_ids"`
 
 	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
@@ -166,11 +168,12 @@ func (m *Member) ToShortMemberRecord() ShortMemberRecord {
 
 // ShortMemberRecord represents group short member entity only with important identifiers
 type ShortMemberRecord struct {
-	ID         string `json:"id" bson:"id"`
-	UserID     string `json:"user_id" bson:"user_id"`
-	ExternalID string `json:"external_id" bson:"external_id"`
-	Name       string `json:"name" bson:"name"`
-	NetID      string `json:"net_id" bson:"net_id"`
-	Email      string `json:"email" bson:"email"`
-	Status     string `json:"status" bson:"status"` //pending, member, admin, rejected
+	ID          string `json:"id" bson:"id"`
+	UserID      string `json:"user_id" bson:"user_id"`
+	ExternalID  string `json:"external_id" bson:"external_id"`
+	Name        string `json:"name" bson:"name"`
+	NetID       string `json:"net_id" bson:"net_id"`
+	Email       string `json:"email" bson:"email"`
+	Status      string `json:"status" bson:"status"` //pending, member, admin, rejected
+	ExternalIDs string ``
 } //@name ShortMemberRecord

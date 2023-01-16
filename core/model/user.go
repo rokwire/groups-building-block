@@ -32,6 +32,7 @@ type User struct {
 	ClientID      string     `bson:"client_id"`
 	Permissions   []string   `bson:"permissions"`
 	OriginalToken string
+	ExternalIDs   map[string]string
 } // @name User
 
 // ToCreator coverts to Creator

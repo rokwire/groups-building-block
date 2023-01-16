@@ -921,6 +921,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		NetID:         current.NetID,
 		Email:         current.Email,
 		MemberAnswers: mAnswers,
+		ExternalIDs:   current.ExternalIDs,
 	}
 
 	if requestData.NotificationsPreferences != nil {
@@ -1122,6 +1123,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		return
 	}
 
+	externalIDs := map[string]string{"netID": current.NetID, "externalID": current.ExternalID}
 	member := model.GroupMembership{
 		GroupID:      groupID,
 		UserID:       requestData.UserID,
@@ -1132,6 +1134,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		PhotoURL:     requestData.PhotoURL,
 		Status:       requestData.Status,
 		DateAttended: requestData.DateAttended,
+		ExternalIDs:  externalIDs,
 	}
 
 	err = h.app.Services.CreateMembership(clientID, current, group, &member)
