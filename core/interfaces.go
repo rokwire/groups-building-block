@@ -359,7 +359,7 @@ type Storage interface {
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
-	FindReactions(postID string, userID string) (model.PostReactions, error)
+	FindReactions(context storage.TransactionContext, postID string, userID string) (model.PostReactions, error)
 	FindReactionsByPost(postID string) ([]model.PostReactions, error)
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)

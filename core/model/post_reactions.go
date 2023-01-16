@@ -21,14 +21,3 @@ type PostReactions struct {
 	UserID    string   `json:"user_id" bson:"user_id"`
 	Reactions []string `json:"reactions" bson:"reactions"`
 }
-
-type AggregateReactions struct {
-	ID        string   `json:"id" bson:"_id"`
-	PostID    string   `json:"post_id" bson:"post_id"`
-	Reactions Reaction `json:"reactions" bson:"reactions"`
-}
-
-type Reaction struct {
-	Key   *string `json:"k" bson:"k"`
-	Value *string `json:"v" bson:"v"`
-}

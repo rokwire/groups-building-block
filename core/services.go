@@ -535,7 +535,7 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 		//get reactions bases on post
 		val, ok := post.ReactionStats[reaction]
 		if ok && val != 0 {
-			res, err := app.storage.FindReactions(postID, current.ID)
+			res, err := app.storage.FindReactions(context, postID, current.ID)
 			if err == nil {
 				for i := range res.Reactions {
 					if res.Reactions[i] == reaction {
