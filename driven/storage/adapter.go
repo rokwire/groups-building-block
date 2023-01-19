@@ -256,7 +256,7 @@ func (sa *Adapter) FindUsers(clientID string, id []string, external bool) ([]mod
 }
 
 // LoginUser Login a user's and refactor legacy record if need
-func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
+func (sa *Adapter) LoginUser(clientID string, current *model.User) utils.Error {
 
 	now := time.Now()
 
@@ -333,7 +333,7 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 		return nil
 	})
 	if err != nil {
-		return utils.NewServerError()
+		return utils.NewServerError(err.Error())
 	}
 	return nil
 }
@@ -421,7 +421,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 }
 
 // CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, *utils.GroupError) {
+func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, utils.Error) {
 	insertedID := uuid.NewString()
 	now := time.Now()
 
@@ -490,23 +490,23 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		if strings.Contains(err.Error(), "title_unique") {
 			return nil, utils.NewGroupDuplicationError()
 		}
-		return nil, utils.NewServerError()
+		return nil, utils.NewDefaultServerError()
 	}
 
 	return &insertedID, nil
 }
 
 // UpdateGroup updates a group except the members attribute
-func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) utils.Error {
 	return sa.updateGroup(clientID, current, group, nil)
 }
 
 // UpdateGroupWithMembership updates a group along with the memberships
-func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
+func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) utils.Error {
 	return sa.updateGroup(clientID, current, group, memberships)
 }
 
-func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
+func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) utils.Error {
 
 	//
 	// [#301] Research Groups don't support automatic join feature!!!
@@ -591,7 +591,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		if strings.Contains(err.Error(), "title_unique") {
 			return utils.NewGroupDuplicationError()
 		}
-		return utils.NewServerError()
+		return utils.NewServerError(err.Error())
 	}
 
 	return nil

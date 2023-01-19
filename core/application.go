@@ -19,6 +19,7 @@ import (
 	"groups/core/model"
 	"groups/driven/corebb"
 	"groups/driven/rewards"
+	"groups/utils"
 	"log"
 	"time"
 
@@ -80,7 +81,7 @@ func (app *Application) FindUser(clientID string, id *string, external bool) (*m
 }
 
 // LoginUser refactors the user using the new id
-func (app *Application) LoginUser(clientID string, current *model.User, newID string) error {
+func (app *Application) LoginUser(clientID string, current *model.User, newID string) utils.Error {
 	return app.storage.LoginUser(clientID, current)
 }
 

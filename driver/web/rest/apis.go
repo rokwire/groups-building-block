@@ -160,7 +160,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		Settings:                 requestData.Settings,
 	})
 	if groupErr != nil {
-		log.Println(groupErr.Error())
+		log.Println(groupErr.GetMessage())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
 		return
 	}
@@ -370,7 +370,7 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 	group, err := h.app.Services.GetGroup(clientID, current, id)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
+		http.Error(w, utils.NewServerError(err.Error()).JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
 	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
@@ -652,7 +652,7 @@ func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.Res
 	err := h.app.Services.LoginUser(clientID, current)
 	if err != nil {
 		log.Printf("error login user - %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

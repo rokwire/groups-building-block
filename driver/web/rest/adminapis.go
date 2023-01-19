@@ -425,7 +425,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
-		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
+		http.Error(w, utils.NewServerError(err.Error()).JSONErrorString(), http.StatusInternalServerError)
 		return
 	}
 	if group.AuthmanEnabled && !current.HasPermission("managed_group_admin") {

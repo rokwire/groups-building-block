@@ -84,7 +84,7 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
+func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, utils.Error) {
 	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	return insertedID, nil
 }
 
-func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) utils.Error {
 
 	err := app.storage.UpdateGroup(clientID, current, group)
 	if err != nil {
@@ -177,7 +177,7 @@ func (app *Application) getUserGroups(clientID string, current *model.User, filt
 	return groups, nil
 }
 
-func (app *Application) loginUser(clientID string, current *model.User) error {
+func (app *Application) loginUser(clientID string, current *model.User) utils.Error {
 	return app.storage.LoginUser(clientID, current)
 }
 

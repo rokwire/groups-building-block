@@ -17,62 +17,104 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // GroupError group error
-type GroupError struct {
-	Code    int
-	Message string
+type groupError struct {
+	ErrorCode int
+	HttpCode  int
+	Message   string
+	SubError  Error
+}
+
+type Error interface {
+	GetErrorCode() int
+	GetHttpCode() int
+	GetMessage() string
+	GetSubError() Error
+	JSONErrorString() string
+}
+
+func (err *groupError) GetErrorCode() int {
+	return err.ErrorCode
+}
+
+func (err *groupError) GetHttpCode() int {
+	return err.HttpCode
+}
+
+func (err *groupError) GetMessage() string {
+	return err.Message
+}
+
+func (err *groupError) GetSubError() Error {
+	return err.SubError
 }
 
 // Error returns the error message
-func (err *GroupError) Error() string {
+func (err *groupError) Error() string {
 	return err.Message
 }
 
 // JSONErrorString constructs json representation of the error
-func (err *GroupError) JSONErrorString() string {
+func (err *groupError) JSONErrorString() string {
+	errorMap := map[string]interface{}{
+		"code":      err.ErrorCode,
+		"http_code": err.HttpCode,
+		"text":      err.Message,
+	}
+	if err.SubError != nil {
+
+	}
+
 	errorData := map[string]interface{}{
-		"error": map[string]interface{}{
-			"code": err.Code,
-			"text": err.Message,
-		},
+		"error": errorMap,
 	}
 	jsonString, _ := json.Marshal(errorData)
 	return string(jsonString)
 }
 
 // NewForbiddenError new forbidden error
-func NewForbiddenError() *GroupError {
-	return &GroupError{Code: 1, Message: "forbidden operation"}
+func NewForbiddenError() Error {
+	err := &groupError{ErrorCode: 1, HttpCode: http.StatusForbidden, Message: "forbidden operation"}
+	return err
 }
 
 // NewBadJSONError new bad json error
-func NewBadJSONError() *GroupError {
-	return &GroupError{Code: 2, Message: "bad json"}
+func NewBadJSONError() Error {
+	return &groupError{ErrorCode: 2, HttpCode: http.StatusInternalServerError, Message: "bad json"}
 }
 
 // NewValidationError new validation error
-func NewValidationError(err error) *GroupError {
-	return &GroupError{Code: 3, Message: fmt.Sprintf("validation error: %s", err)}
+func NewValidationError(err error) Error {
+	return &groupError{ErrorCode: 3, HttpCode: http.StatusInternalServerError, Message: fmt.Sprintf("validation error: %s", err)}
+}
+
+// NewDefaultServerError returns default server error
+func NewDefaultServerError() Error {
+	return NewServerError("server error")
 }
 
 // NewServerError new generic abstract error
-func NewServerError() *GroupError {
-	return &GroupError{Code: 4, Message: "server error"}
+func NewServerError(message string) Error {
+	if message == "" {
+		message = "server error"
+	}
+	return &groupError{ErrorCode: 4, HttpCode: http.StatusInternalServerError, Message: message}
 }
 
 // NewGroupDuplicationError duplicate group name error
-func NewGroupDuplicationError() *GroupError {
-	return &GroupError{Code: 5, Message: "group name already in use"}
+func NewGroupDuplicationError() Error {
+	return &groupError{ErrorCode: 5, HttpCode: http.StatusInternalServerError, Message: "group name already in use"}
 }
 
 // NewMissingParamError missing param error
-func NewMissingParamError(message string) *GroupError {
-	return &GroupError{Code: 6, Message: message}
+func NewMissingParamError(message string) Error {
+	return &groupError{ErrorCode: 6, HttpCode: http.StatusInternalServerError, Message: message}
 }
 
 // NewNotFoundError not found error
-func NewNotFoundError() *GroupError {
-	return &GroupError{Code: 7, Message: "group not found"}
+func NewNotFoundError() Error {
+	return &groupError{ErrorCode: 7, HttpCode: http.StatusNotFound, Message: "group not found"}
 }

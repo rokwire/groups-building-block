@@ -26,15 +26,15 @@ import (
 type Services interface {
 	GetVersion() string
 
-	LoginUser(clientID string, currentGetUserGroups *model.User) error
+	LoginUser(clientID string, currentGetUserGroups *model.User) utils.Error
 
 	// TODO: Deprecate this method due to missed CurrentMember!
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
 
-	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, utils.Error)
+	UpdateGroup(clientID string, current *model.User, group *model.Group) utils.Error
 	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
@@ -112,11 +112,11 @@ func (s *servicesImpl) IsGroupAdmin(clientID string, groupID string, userID stri
 	return s.app.isGroupAdmin(clientID, groupID, userID)
 }
 
-func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
+func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *model.Group) (*string, utils.Error) {
 	return s.app.createGroup(clientID, current, group)
 }
 
-func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) utils.Error {
 	return s.app.updateGroup(clientID, current, group)
 }
 
@@ -140,7 +140,7 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filte
 	return s.app.getUserGroups(clientID, current, filter)
 }
 
-func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
+func (s *servicesImpl) LoginUser(clientID string, current *model.User) utils.Error {
 	return s.app.loginUser(clientID, current)
 }
 
@@ -328,13 +328,13 @@ type Storage interface {
 	FindUser(clientID string, id string, external bool) (*model.User, error)
 	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
-	LoginUser(clientID string, current *model.User) error
+	LoginUser(clientID string, current *model.User) utils.Error
 	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
 
-	CreateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
+	CreateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, utils.Error)
+	UpdateGroup(clientID string, current *model.User, group *model.Group) utils.Error
+	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) utils.Error
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
 	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
 	UpdateGroupDateUpdated(clientID string, groupID string) error
