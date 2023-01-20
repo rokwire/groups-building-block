@@ -101,6 +101,8 @@ definitions:
         type: object
       settings:
         $ref: '#/definitions/GroupSettings'
+        description: 'TODO: Remove the pointer once the backward support is not needed
+          any more!'
       stats:
         $ref: '#/definitions/GroupStats'
       sync_end_time:
@@ -996,6 +998,40 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin-V1
+  /api/admin/group/{group-id}/members:
+    get:
+      consumes:
+      - text/plain
+      description: Gets the list of group members.
+      operationId: AdminGetGroupMembers
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMembership'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
   /api/admin/group/{group-id}/stats:
     get:
       consumes:
@@ -1254,6 +1290,63 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/memberships/{membership-id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a membership
+      operationId: AdminDeleteMembership
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
+    put:
+      consumes:
+      - application/json
+      description: Updates a membership. Only the status can be changed.
+      operationId: AdminUpdateMembership
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateMembershipRequest'
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
   /api/admin/sync-configs:
     get:
       consumes:
@@ -1734,7 +1827,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/Member'
+              $ref: '#/definitions/GroupMembership'
             type: array
       security:
       - AppUserAuth: []
