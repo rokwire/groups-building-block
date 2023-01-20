@@ -1827,7 +1827,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/Member'
+              $ref: '#/definitions/GroupMembership'
             type: array
       security:
       - AppUserAuth: []

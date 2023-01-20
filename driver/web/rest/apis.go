@@ -978,7 +978,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
-// @Success 200 {array} model.Member
+// @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/members [get]
 func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {

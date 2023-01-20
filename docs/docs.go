@@ -1361,7 +1361,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/Member"
+                                "$ref": "#/definitions/GroupMembership"
                             }
                         }
                     }
