@@ -77,7 +77,7 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	if err != nil {
 		return false, err
 	}
-	if membership == nil || !membership.Admin {
+	if membership == nil || membership.Status != "admin" {
 		return false, nil
 	}
 
@@ -271,7 +271,6 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	if membership != nil {
 		if status != nil && membership.Status != *status {
 			membership.Status = *status
-			membership.Admin = membership.IsAdmin()
 		}
 		if dateAttended != nil && membership.DateAttended == nil {
 			membership.DateAttended = dateAttended
@@ -785,7 +784,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 										if member.Status != "admin" {
 											now := time.Now()
 											member.Status = "admin"
-											member.Admin = true
 											member.DateUpdated = &now
 											membershipsForUpdate = append(membershipsForUpdate, member)
 											groupUpdated = true
@@ -978,19 +976,25 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
+	//TODO: These operations should ideally use a transaction, but the transaction may get too large
+
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
+
+	// Load existing admins
+	adminExternalIDsMap := map[string]bool{}
 	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
 		Statuses: []string{"admin"},
 	})
 	if err != nil {
-		log.Printf("Error finding admin memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
-	} else {
-		for _, adminMember := range adminMembers.Items {
-			if len(adminMember.ExternalID) > 0 {
-				allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
-			}
+		return fmt.Errorf("error finding admin memberships in authman %s: %s", *authmanGroup.AuthmanGroup, err)
+	}
+
+	for _, adminMember := range adminMembers.Items {
+		if len(adminMember.ExternalID) > 0 {
+			allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
+			adminExternalIDsMap[adminMember.ExternalID] = true
 		}
 	}
 
@@ -1010,6 +1014,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
 		status := "member"
+		if _, ok := adminExternalIDsMap[externalID]; ok {
+			status = "admin"
+		}
 		var userID *string
 		var name *string
 		var email *string

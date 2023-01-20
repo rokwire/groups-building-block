@@ -465,8 +465,7 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 				Email:       current.Email,
 				NetID:       current.NetID,
 				Name:        current.Name,
-				Status:      "admin", // TODO needs more consideration (status vs flag)
-				Admin:       true,
+				Status:      "admin",
 				DateCreated: now,
 			})
 		}

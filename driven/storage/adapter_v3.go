@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo"
 	"groups/core/model"
 	"log"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -482,7 +483,6 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
 				primitive.E{Key: "status", Value: membership.Status},
-				primitive.E{Key: "admin", Value: membership.Admin},
 				primitive.E{Key: "reject_reason", Value: membership.RejectReason},
 				primitive.E{Key: "date_attended", Value: membership.DateAttended},
 				primitive.E{Key: "notifications_preferences", Value: membership.NotificationsPreferences},
