@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.12.0] - 2023-01-20
+### Added
+- Add membership retrieve, update & delete admin APIs [#339](https://github.com/rokwire/groups-building-block/issues/339)
+
 ## [1.11.0] - 2023-01-13
 ### Added
 - Create internal API for updating group's date updated [#335](https://github.com/rokwire/groups-building-block/issues/335)
