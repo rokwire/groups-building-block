@@ -1086,7 +1086,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 		if updatedInfo {
-			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, nil, email, name, nil, nil, true)
+			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, email, name, nil, nil, true)
 			if err != nil {
 				log.Printf("Error saving admin membership with missing info for external ID %s in Authman %s: %s\n", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
 			} else {

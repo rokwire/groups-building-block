@@ -347,7 +347,7 @@ func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, group
 }
 
 // SaveGroupMembershipByExternalID creates or updates a group membership for a given external ID
-func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
+func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
 	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error) {
 
 	now := time.Now()

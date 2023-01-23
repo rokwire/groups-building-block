@@ -379,7 +379,7 @@ type Storage interface {
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
 	BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
-	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
+	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error)
 
 	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error

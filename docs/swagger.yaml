@@ -120,8 +120,6 @@ definitions:
     type: object
   GroupMembership:
     properties:
-      admin:
-        type: boolean
       client_id:
         type: string
       date_attended:
@@ -153,8 +151,7 @@ definitions:
       reject_reason:
         type: string
       status:
-        description: 'TODO: This is dangerous code-breaking change. There are existing
-          clients that may use it in the old way.'
+        description: admin, pending, member, rejected
         type: string
       sync_id:
         description: ID of sync that last updated this membership
