@@ -43,7 +43,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.12.2
+// @version 1.12.3
 // @host localhost
 // @BasePath /gr
 // @schemes http
