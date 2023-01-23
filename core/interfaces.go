@@ -388,7 +388,7 @@ type Storage interface {
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
-	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error)
+	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 }

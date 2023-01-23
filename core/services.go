@@ -1156,8 +1156,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Delete removed non-admin members
 	log.Printf("Deleting removed members for Authman %s...\n", *authmanGroup.AuthmanGroup)
-	admin := false
-	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID, &admin)
+	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID)
 	if err != nil {
 		log.Printf("Error deleting removed memberships in Authman %s\n", *authmanGroup.AuthmanGroup)
 	} else {

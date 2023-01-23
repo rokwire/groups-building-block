@@ -290,7 +290,6 @@ type SingleMembershipOperation struct {
 	ExternalID string
 	UserID     *string
 	Status     *string
-	Admin      *bool
 	Email      *string
 	Name       *string
 	Answers    []model.MemberAnswer
@@ -317,9 +316,6 @@ func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, group
 		}
 		if operation.Status != nil {
 			update["status"] = *operation.Status
-		}
-		if operation.Admin != nil {
-			update["admin"] = *operation.Admin
 		}
 		if operation.SyncID != nil {
 			update["sync_id"] = *operation.SyncID
@@ -370,9 +366,6 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 	}
 	if status != nil {
 		update["status"] = *status
-	}
-	if admin != nil {
-		update["admin"] = *admin
 	}
 	if syncID != nil {
 		update["sync_id"] = *syncID
@@ -566,16 +559,14 @@ func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, me
 }
 
 // DeleteUnsyncedGroupMemberships deletes group memberships that do not exist in the latest sync
-func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error) {
+func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error) {
 	var deletedCount int64 = 0
 	err := sa.PerformTransaction(func(context TransactionContext) error {
-		filter := bson.M{"client_id": clientID, "group_id": groupID, "sync_id": bson.M{"$ne": syncID}}
-		if admin != nil {
-			if *admin {
-				filter["admin"] = true
-			} else {
-				filter["admin"] = bson.M{"$ne": true}
-			}
+		filter := bson.M{
+			"client_id": clientID,
+			"group_id":  groupID,
+			"sync_id":   bson.M{"$ne": syncID},
+			"status":    bson.M{"$ne": "admin"},
 		}
 
 		result, err := sa.db.groupMemberships.DeleteMany(filter, nil)
