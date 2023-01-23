@@ -95,9 +95,7 @@ type GroupMembership struct {
 	Email      string `json:"email" bson:"email"`
 	PhotoURL   string `json:"photo_url" bson:"photo_url"`
 
-	// TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.
-	Status string `json:"status" bson:"status"` //pending, member, rejected
-	Admin  bool   `json:"admin" bson:"admin"`
+	Status string `json:"status" bson:"status"` //admin, pending, member, rejected
 
 	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
 	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
@@ -209,10 +207,6 @@ func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recip
 
 // ToMember converts the GroupMembership model to the Member model
 func (m *GroupMembership) ToMember() Member {
-	status := m.Status
-	if m.Admin {
-		status = "admin"
-	}
 	return Member{
 		ID:            m.ID,
 		UserID:        m.UserID,
@@ -221,7 +215,7 @@ func (m *GroupMembership) ToMember() Member {
 		NetID:         m.NetID,
 		Email:         m.Email,
 		PhotoURL:      m.PhotoURL,
-		Status:        status,
+		Status:        m.Status,
 		RejectReason:  m.RejectReason,
 		MemberAnswers: m.MemberAnswers,
 		DateCreated:   m.DateCreated,

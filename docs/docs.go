@@ -3263,9 +3263,6 @@ const docTemplate = `{
         "GroupMembership": {
             "type": "object",
             "properties": {
-                "admin": {
-                    "type": "boolean"
-                },
                 "client_id": {
                     "type": "string"
                 },
@@ -3312,7 +3309,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.",
+                    "description": "admin, pending, member, rejected",
                     "type": "string"
                 },
                 "sync_id": {
