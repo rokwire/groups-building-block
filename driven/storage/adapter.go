@@ -746,6 +746,14 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		filter = append(filter, orFilter)
 	}
 
+	if groupsFilter.Hidden != nil {
+		if *groupsFilter.Hidden {
+			filter = append(filter, primitive.E{Key: "hidden_for_search", Value: groupsFilter.Hidden})
+		} else {
+			filter = append(filter, primitive.E{Key: "hidden_for_search", Value: primitive.M{"$ne": true}})
+		}
+	}
+
 	if groupsFilter.Category != nil {
 		filter = append(filter, primitive.E{Key: "category", Value: groupsFilter.Category})
 	}

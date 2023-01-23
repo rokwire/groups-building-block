@@ -25,6 +25,7 @@ type GroupsFilter struct {
 	Privacy          *string                        `json:"privacy"`            // group privacy
 	Tags             []string                       `json:"tags"`               // group tags
 	IncludeHidden    *bool                          `json:"include_hidden"`     // Include hidden groups
+	Hidden           *bool                          `json:"hidden"`             // Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.
 	ExcludeMyGroups  *bool                          `json:"exclude_my_groups"`  // Exclude My groups
 	ResearchOpen     *bool                          `json:"research_open"`
 	ResearchGroup    bool                           `json:"research_group"`

@@ -148,8 +148,12 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 }
 
 func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, &current.ID, filter)
+	groups, err := app.storage.FindGroups(clientID, userID, filter)
 	if err != nil {
 		return nil, err
 	}
