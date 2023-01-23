@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Security
+- Use admin token check for delete group membership admin API
+
 ## [1.12.2] - 2023-01-23
 ### Fixed
 - Incorrect membership "status" for admins in managed group sync [#341](https://github.com/rokwire/groups-building-block/issues/341)
