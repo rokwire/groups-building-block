@@ -3383,6 +3383,10 @@
                     "description": "Exclude My groups",
                     "type": "boolean"
                 },
+                "hidden": {
+                    "description": "Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.",
+                    "type": "boolean"
+                },
                 "ids": {
                     "description": "membership id",
                     "type": "array",
