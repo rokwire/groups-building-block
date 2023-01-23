@@ -201,7 +201,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 
 	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("apis.GetAllGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		log.Printf("adminapis.GetAllGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -210,13 +210,13 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		err = json.Unmarshal(requestData, &groupsFilter)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("apis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+			log.Printf("adminapis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
 	}
 
 	groups, err := h.app.Administration.GetGroups(clientID, groupsFilter)
 	if err != nil {
-		log.Printf("apis.GetAllGroups() error getting groups - %s", err.Error())
+		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -230,7 +230,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
-		log.Printf("apis.GetAllGroups() unable to retrieve memberships: %s", err)
+		log.Printf("adminapis.GetAllGroups() unable to retrieve memberships: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -242,7 +242,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 
 	data, err := json.Marshal(groups)
 	if err != nil {
-		log.Println("apis.GetAllGroups() error on marshal the groups items")
+		log.Println("adminapis.GetAllGroups() error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

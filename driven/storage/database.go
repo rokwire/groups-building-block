@@ -459,6 +459,14 @@ func (m *database) applyGroupMembershipsChecks(groupMemberships *collectionWrapp
 		return err
 	}
 
+	err = groupMemberships.AddIndex(bson.D{
+		primitive.E{Key: "status", Value: 1},
+		primitive.E{Key: "name", Value: 1},
+	}, false)
+	if err != nil {
+		return err
+	}
+
 	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "date_created", Value: 1}}, false)
 	if err != nil {
 		return err
