@@ -537,6 +537,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
 		primitive.E{Key: "research_description", Value: group.ResearchDescription},
 		primitive.E{Key: "research_profile", Value: group.ResearchProfile},
+		primitive.E{Key: "filters", Value: group.Filters},
 	}
 	if group.Settings != nil {
 		setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
