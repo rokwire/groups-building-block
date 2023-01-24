@@ -792,6 +792,16 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 	}
 
+	if groupsFilter.Filters != nil {
+		filters := []bson.M{}
+		for key, value := range groupsFilter.Filters {
+			filters = append(filters, bson.M{key: value})
+		}
+		filter = append(filter, bson.E{
+			Key: "$or", Value: filters,
+		})
+	}
+
 	findOptions := options.Find()
 	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
