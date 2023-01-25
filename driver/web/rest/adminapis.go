@@ -214,7 +214,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		}
 	}
 
-	groups, err := h.app.Administration.GetGroups(clientID, groupsFilter)
+	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -21,6 +21,7 @@ import (
 	"groups/core/model"
 	"groups/utils"
 	"log"
+	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -795,7 +796,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	if groupsFilter.Filters != nil {
 		filters := []bson.M{}
 		for key, value := range groupsFilter.Filters {
-			filters = append(filters, bson.M{key: value})
+			if reflect.TypeOf(value).Kind() != reflect.Slice {
+				filters = append(filters, bson.M{fmt.Sprintf("filters.%s", key): value})
+			} else {
+				filters = append(filters, bson.M{fmt.Sprintf("filters.%s", key): bson.M{"$all": value}})
+			}
 		}
 		filter = append(filter, bson.E{
 			Key: "$or", Value: filters,
@@ -894,41 +899,49 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 		groupIDs = append(groupIDs, membership.GroupID)
 	}
 
-	filter := bson.M{
+	mongoFilter := bson.M{
 		"_id":       bson.M{"$in": groupIDs},
 		"client_id": clientID,
 	}
 
 	if groupsFilter.Category != nil {
-		filter["category"] = *groupsFilter.Category
+		mongoFilter["category"] = *groupsFilter.Category
 	}
 	if groupsFilter.Title != nil {
-		filter["title"] = primitive.Regex{Pattern: *groupsFilter.Title, Options: "i"}
+		mongoFilter["title"] = primitive.Regex{Pattern: *groupsFilter.Title, Options: "i"}
 	}
 	if groupsFilter.Privacy != nil {
-		filter["privacy"] = groupsFilter.Privacy
+		mongoFilter["privacy"] = groupsFilter.Privacy
 	}
 	if groupsFilter.ResearchOpen != nil {
 		if *groupsFilter.ResearchOpen {
-			filter["research_open"] = true
+			mongoFilter["research_open"] = true
 		} else {
-			filter["research_open"] = primitive.M{"$ne": true}
+			mongoFilter["research_open"] = primitive.M{"$ne": true}
 		}
 	}
 	if groupsFilter.ResearchGroup {
-		filter["research_group"] = true
+		mongoFilter["research_group"] = true
 	} else {
-		filter["research_group"] = bson.M{"$ne": true}
+		mongoFilter["research_group"] = bson.M{"$ne": true}
 	}
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
-				filter["$or"] = []bson.M{
+				mongoFilter["$or"] = []bson.M{
 					{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
 					{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
 				}
 			}
 		}
+	}
+
+	if groupsFilter.Filters != nil {
+		filters := []bson.M{}
+		for key, value := range groupsFilter.Filters {
+			filters = append(filters, bson.M{fmt.Sprintf("filters.%s", key): value})
+		}
+		mongoFilter["$or"] = filters
 	}
 
 	findOptions := options.Find()
@@ -949,7 +962,7 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	}
 
 	var list []model.Group
-	err = sa.db.groups.Find(filter, &list, findOptions)
+	err = sa.db.groups.Find(mongoFilter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
