@@ -697,7 +697,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 // FindGroups finds groups
 func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
-	
+
 	var err error
 	groupIDs := []string{}
 	var memberships model.MembershipCollection

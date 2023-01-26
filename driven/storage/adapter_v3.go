@@ -20,7 +20,7 @@ import (
 // FindGroupsV3 finds groups with filter
 func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
-	
+
 	var groupIDs []string
 	var err error
 	var memberships model.MembershipCollection
