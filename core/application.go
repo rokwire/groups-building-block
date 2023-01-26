@@ -35,8 +35,6 @@ type Application struct {
 	version string
 	build   string
 
-	config *model.ApplicationConfig
-
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
 
@@ -146,12 +144,12 @@ func (app *Application) setupSyncManagedGroupTimer() {
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
 	managedGroupTasks := map[string]scheduledTask{}
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
+		authman: authman, corebb: core, rewards: rewards, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

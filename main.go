@@ -16,7 +16,6 @@ package main
 
 import (
 	core "groups/core"
-	"groups/core/model"
 	"groups/driven/authman"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
@@ -131,17 +130,17 @@ func main() {
 
 	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	config := &model.ApplicationConfig{
-		AuthmanAdminUINList:       authmanAdminUINList,
-		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SupportedClientIDs:        supportedClientIDs,
-		AppID:                     appID,
-		OrgID:                     orgID,
-	}
+	// config := &model.ApplicationConfig{
+	// 	AuthmanAdminUINList:       authmanAdminUINList,
+	// 	ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
+	// 	SupportedClientIDs:        supportedClientIDs,
+	// 	AppID:                     appID,
+	// 	OrgID:                     orgID,
+	// }
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, config)
+		coreAdapter, rewardsAdapter)
 	application.Start()
 
 	//web adapter

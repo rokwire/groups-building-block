@@ -181,13 +181,13 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 
 type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
-func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
+func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated := we.auth.apiKeyCheck(req)
+		clientID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
-			log.Printf("Unauthorized")
+			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -240,21 +240,6 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 		}
 
 		handler(clientID, user, w, req)
-	}
-}
-
-func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		clientID, authenticated := we.auth.internalAuthCheck(w, req)
-		if !authenticated {
-			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(clientID, w, req)
 	}
 }
 

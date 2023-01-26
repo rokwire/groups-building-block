@@ -61,18 +61,6 @@ func (auth *Auth) clientIDCheck(r *http.Request) (bool, string) {
 	return false, ""
 }
 
-func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		return "", false
-	}
-
-	apiKey := auth.getAPIKey(r)
-	authenticated := auth.apiKeysAuth.check(apiKey, r)
-
-	return clientID, authenticated
-}
-
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
 	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
