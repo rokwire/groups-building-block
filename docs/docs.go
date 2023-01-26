@@ -3178,6 +3178,10 @@ const docTemplate = `{
                 "description": {
                     "type": "string"
                 },
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "hidden_for_search": {
                     "type": "boolean"
                 },
@@ -3383,6 +3387,10 @@ const docTemplate = `{
                 "exclude_my_groups": {
                     "description": "Exclude My groups",
                     "type": "boolean"
+                },
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "hidden": {
                     "description": "Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.",
@@ -3784,6 +3792,10 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
+                },
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "hidden_for_search": {
                     "type": "boolean"
@@ -4361,6 +4373,10 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
+                },
+                "filters": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "hidden_for_search": {
                     "type": "boolean"

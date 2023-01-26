@@ -62,6 +62,9 @@ definitions:
         type: string
       description:
         type: string
+      filters:
+        additionalProperties: true
+        type: object
       hidden_for_search:
         type: boolean
       id:
@@ -201,6 +204,9 @@ definitions:
       exclude_my_groups:
         description: Exclude My groups
         type: boolean
+      filters:
+        additionalProperties: true
+        type: object
       hidden:
         description: 'Filter by hidden flag. Values: true (show only hidden), false
           (show only not hidden), missing - don''t do any filtering on this field.'
@@ -470,6 +476,9 @@ definitions:
         type: string
       description:
         type: string
+      filters:
+        additionalProperties: true
+        type: object
       hidden_for_search:
         type: boolean
       image_url:
@@ -856,6 +865,9 @@ definitions:
         type: string
       description:
         type: string
+      filters:
+        additionalProperties: true
+        type: object
       hidden_for_search:
         type: boolean
       image_url:

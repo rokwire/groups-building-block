@@ -52,7 +52,7 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 	}
 	externalID := identifier
 
-	groups, err := h.app.Services.FindGroupsV3(clientID, &model.GroupsFilter{
+	groups, err := h.app.Services.FindGroupsV3(clientID, model.GroupsFilter{
 		MemberExternalID: &externalID,
 	})
 	if err != nil {

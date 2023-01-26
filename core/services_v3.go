@@ -25,7 +25,7 @@ func (app *Application) checkUserGroupMembershipPermission(clientID string, curr
 	return nil, false
 }
 
-func (app *Application) findGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
+func (app *Application) findGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	return app.storage.FindGroupsV3(clientID, filter)
 }
 
@@ -33,7 +33,7 @@ func (app *Application) findGroupMemberships(clientID string, filter model.Membe
 	collection, err := app.storage.FindGroupMemberships(clientID, filter)
 
 	if len(filter.GroupIDs) > 0 {
-		groups, err := app.findGroupsV3(clientID, &model.GroupsFilter{
+		groups, err := app.findGroupsV3(clientID, model.GroupsFilter{
 			GroupIDs: filter.GroupIDs,
 		})
 		if err != nil {

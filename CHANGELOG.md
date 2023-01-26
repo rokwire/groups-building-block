@@ -5,6 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [1.13.0] - 2023-01-26
+### Added
+- Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)
+
 ## [1.12.3] - 2023-01-23
 ### Security
 - Use admin token check for delete group membership admin API
