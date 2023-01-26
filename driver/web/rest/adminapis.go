@@ -16,8 +16,6 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
@@ -27,6 +25,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // AdminApisHandler handles the rest Admin APIs implementation
@@ -707,7 +708,7 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [get]
 func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Services.GetManagedGroupConfigs(clientID)
+	configs, err := h.app.Administration.GetManagedGroupConfigs(clientID)
 	if err != nil {
 		log.Printf("error getting managed group configs events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -753,7 +754,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 	}
 
 	config.ClientID = clientID
-	newConfig, err := h.app.Services.CreateManagedGroupConfig(config)
+	newConfig, err := h.app.Administration.CreateManagedGroupConfig(config)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -800,7 +801,7 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 	}
 
 	config.ClientID = clientID
-	err = h.app.Services.UpdateManagedGroupConfig(config)
+	err = h.app.Administration.UpdateManagedGroupConfig(config)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -830,7 +831,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	err := h.app.Services.DeleteManagedGroupConfig(id, clientID)
+	err := h.app.Administration.DeleteManagedGroupConfig(id, clientID)
 	if err != nil {
 		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -851,7 +852,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [get]
 func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Services.GetSyncConfig(clientID)
+	configs, err := h.app.Administration.GetConfig(clientID)
 	if err != nil {
 		log.Printf("error getting sync config - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -881,23 +882,16 @@ func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
 func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body on create sync config - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var config model.SyncConfig
-	err = json.Unmarshal(data, &config)
+	var syncConfig model.SyncConfigData
+	err := json.NewDecoder(r.Body).Decode(&syncConfig)
 	if err != nil {
 		log.Printf("Error on unmarshal the sync config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config.ClientID = clientID
-	err = h.app.Services.UpdateSyncConfig(config)
+	config := model.Config{Type: model.ConfigIDSync, AppID: current.AppID, OrgID: current.OrgID, Data: syncConfig}
+	err = h.app.Administration.UpdateConfig(config)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

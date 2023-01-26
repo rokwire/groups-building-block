@@ -14,7 +14,12 @@
 
 package core
 
-import "groups/core/model"
+import (
+	"groups/core/model"
+	"time"
+
+	"github.com/google/uuid"
+)
 
 func (app *Application) getTODO() error {
 	return nil
@@ -27,4 +32,28 @@ func (app *Application) getGroupsUnprotected(clientID string, filter model.Group
 	}
 
 	return groups, nil
+}
+
+func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	return app.storage.FindManagedGroupConfigs(clientID)
+}
+
+func (app *Application) createManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
+	config.ID = uuid.NewString()
+	config.DateCreated = time.Now()
+	config.DateUpdated = nil
+	err := app.storage.InsertManagedGroupConfig(config)
+	return &config, err
+}
+
+func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig) error {
+	return app.storage.UpdateManagedGroupConfig(config)
+}
+
+func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
+	return app.storage.DeleteManagedGroupConfig(id, clientID)
+}
+
+func (app *Application) getConfig(configType string, appID string, orgID string) (*model.Config, error) {
+	return app.storage.FindConfig(configType, appID, orgID)
 }

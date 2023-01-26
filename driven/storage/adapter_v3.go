@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"groups/core/model"
 	"log"
@@ -12,6 +11,8 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -573,12 +574,15 @@ func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID 
 func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, membershipID string) error {
 	return sa.PerformTransaction(func(context TransactionContext) error {
 		membership, err := sa.FindGroupMembershipByID(clientID, membershipID)
-		if err != nil || membership == nil {
-			return fmt.Errorf("membership %s not found", membershipID)
+		if err != nil {
+			return errors.WrapErrorAction(logutils.ActionFind, "group membership", &logutils.FieldArgs{"id": membershipID}, err)
+		}
+		if membership == nil {
+			return errors.ErrorData(logutils.StatusMissing, "group membership", &logutils.FieldArgs{"id": membershipID})
 		}
 
-		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-		_, err = sa.db.groupMemberships.DeleteManyWithContext(context, filter, nil)
+		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}}
+		_, err = sa.db.groupMemberships.DeleteOneWithContext(context, filter, nil)
 		if err != nil {
 			return err
 		}

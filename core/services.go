@@ -1198,34 +1198,6 @@ func (app *Application) sendNotification(recipients []notifications.Recipient, t
 	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
 }
 
-func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-	return app.storage.FindManagedGroupConfigs(clientID)
-}
-
-func (app *Application) createManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
-	config.ID = uuid.NewString()
-	config.DateCreated = time.Now()
-	config.DateUpdated = nil
-	err := app.storage.InsertManagedGroupConfig(config)
-	return &config, err
-}
-
-func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig) error {
-	return app.storage.UpdateManagedGroupConfig(config)
-}
-
-func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
-	return app.storage.DeleteManagedGroupConfig(id, clientID)
-}
-
-func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return app.storage.FindSyncConfig(clientID)
-}
-
-func (app *Application) updateSyncConfig(config model.SyncConfig) error {
-	return app.storage.SaveSyncConfig(nil, config)
-}
-
 func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
 	return app.storage.FindGroupMembership(clientID, groupID, userID)
 }

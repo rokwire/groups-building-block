@@ -65,14 +65,6 @@ type Services interface {
 	SynchronizeAuthman(clientID string) error
 	SynchronizeAuthmanGroup(clientID string, groupID string) error
 
-	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
-	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
-	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	DeleteManagedGroupConfig(id string, clientID string) error
-
-	GetSyncConfig(clientID string) (*model.SyncConfig, error)
-	UpdateSyncConfig(config model.SyncConfig) error
-
 	// V3
 	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
 	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
@@ -220,30 +212,6 @@ func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, groupID string) 
 	return s.app.synchronizeAuthmanGroup(clientID, groupID)
 }
 
-func (s *servicesImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-	return s.app.getManagedGroupConfigs(clientID)
-}
-
-func (s *servicesImpl) CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
-	return s.app.createManagedGroupConfig(config)
-}
-
-func (s *servicesImpl) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
-	return s.app.updateManagedGroupConfig(config)
-}
-
-func (s *servicesImpl) DeleteManagedGroupConfig(id string, clientID string) error {
-	return s.app.deleteManagedGroupConfig(id, clientID)
-}
-
-func (s *servicesImpl) GetSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return s.app.getSyncConfig(clientID)
-}
-
-func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
-	return s.app.updateSyncConfig(config)
-}
-
 // V3
 
 func (s *servicesImpl) CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
@@ -301,6 +269,16 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
+
+	GetConfig(configType string, appID string, orgID string) (*model.Config, error)
+	CreateConfig(config model.Config) error
+	UpdateConfig(config model.Config) error
+	DeleteConfig(configType string, appID string, orgID string) error
+
+	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
+	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
+	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
+	DeleteManagedGroupConfig(id string, clientID string) error
 }
 
 type administrationImpl struct {
@@ -311,16 +289,35 @@ func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilte
 	return s.app.getGroupsUnprotected(clientID, filter)
 }
 
+func (s *administrationImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+	return s.app.getManagedGroupConfigs(clientID)
+}
+
+func (s *administrationImpl) CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
+	return s.app.createManagedGroupConfig(config)
+}
+
+func (s *administrationImpl) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
+	return s.app.updateManagedGroupConfig(config)
+}
+
+func (s *administrationImpl) DeleteManagedGroupConfig(id string, clientID string) error {
+	return s.app.deleteManagedGroupConfig(id, clientID)
+}
+
+func (s *administrationImpl) GetConfig(configType string, appID string, orgID string) (*model.Config, error) {
+	return s.app.getConfig(configType, appID, orgID)
+}
+
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
 type Storage interface {
 	RegisterStorageListener(listener storage.Listener)
 
 	PerformTransaction(transaction func(context storage.TransactionContext) error) error
 
+	FindConfig(configType string, appID string, orgID string) (*model.Config, error)
 	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
 	FindSyncConfigs() ([]model.SyncConfig, error)
-	FindSyncConfig(clientID string) (*model.SyncConfig, error)
-	SaveSyncConfig(context storage.TransactionContext, config model.SyncConfig) error
 
 	FindSyncTimes(context storage.TransactionContext, clientID string) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error

@@ -606,9 +606,6 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	if data.Email != nil {
 		email = *data.Email
 	}
-	if data.Email != nil {
-		email = *data.Email
-	}
 	return &model.User{
 		ID:          userID,
 		AppID:       appID,

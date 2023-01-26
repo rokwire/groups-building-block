@@ -35,15 +35,14 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
-	configs             *collectionWrapper
-	syncTimes           *collectionWrapper
-	users               *collectionWrapper
-	enums               *collectionWrapper
-	groups              *collectionWrapper
-	groupMemberships    *collectionWrapper
-	events              *collectionWrapper
-	posts               *collectionWrapper
-	managedGroupConfigs *collectionWrapper
+	configs          *collectionWrapper
+	syncTimes        *collectionWrapper
+	users            *collectionWrapper
+	enums            *collectionWrapper
+	groups           *collectionWrapper
+	groupMemberships *collectionWrapper
+	events           *collectionWrapper
+	posts            *collectionWrapper
 
 	listeners []Listener
 }
@@ -119,12 +118,6 @@ func (m *database) start() error {
 		return err
 	}
 
-	managedGroupConfigs := &collectionWrapper{database: m, coll: db.Collection("managed_group_configs")}
-	err = m.applyManagedGroupConfigsChecks(managedGroupConfigs)
-	if err != nil {
-		return err
-	}
-
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
@@ -155,10 +148,8 @@ func (m *database) start() error {
 	m.groupMemberships = groupMemberships
 	m.events = events
 	m.posts = posts
-	m.managedGroupConfigs = managedGroupConfigs
 
 	go m.configs.Watch(nil)
-	go m.managedGroupConfigs.Watch(nil)
 
 	m.listeners = []Listener{}
 
@@ -168,7 +159,12 @@ func (m *database) start() error {
 func (m *database) applyConfigsChecks(configs *collectionWrapper) error {
 	log.Println("apply configs checks.....")
 
-	err := configs.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}, primitive.E{Key: "type", Value: 1}}, true)
+	err := configs.DropIndex("client_id_1_type_1")
+	if err != nil {
+		return err
+	}
+
+	err = configs.AddIndex(bson.D{primitive.E{Key: "type", Value: 1}, primitive.E{Key: "app_id", Value: 1}, primitive.E{Key: "org_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}
@@ -180,7 +176,12 @@ func (m *database) applyConfigsChecks(configs *collectionWrapper) error {
 func (m *database) applySyncTimesChecks(syncTimes *collectionWrapper) error {
 	log.Println("apply sync times checks.....")
 
-	err := syncTimes.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, true)
+	err := syncTimes.DropIndex("client_id_1")
+	if err != nil {
+		return err
+	}
+
+	err = syncTimes.AddIndex(bson.D{primitive.E{Key: "app_id", Value: 1}, primitive.E{Key: "org_id", Value: 1}}, true)
 	if err != nil {
 		return err
 	}
@@ -687,15 +688,6 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 	return nil
 }
 
-func (m *database) applyManagedGroupConfigsChecks(managedGroupConfigs *collectionWrapper) error {
-	log.Println("apply managed group configs checks.....")
-
-	//TODO: Set up indexes
-
-	log.Println("managed group configs checks passed")
-	return nil
-}
-
 func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectionWrapper, groups *collectionWrapper, events *collectionWrapper) error {
 	log.Println("apply multi-tenant checks.....")
 
@@ -966,12 +958,6 @@ func (m *database) onDataChanged(changeDoc map[string]interface{}) {
 		for _, listener := range m.listeners {
 			//Don't use goroutine to ensure cache is updated first
 			listener.OnConfigsChanged()
-		}
-	case "managed_group_configs":
-		log.Println("managed_group_configs collection changed")
-
-		for _, listener := range m.listeners {
-			go listener.OnManagedGroupConfigsChanged()
 		}
 	}
 }

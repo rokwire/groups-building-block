@@ -14,21 +14,97 @@
 
 package model
 
-import "time"
+import (
+	"time"
 
-// ApplicationConfig wrapper for in memory storage of configuration
-type ApplicationConfig struct {
-	AuthmanAdminUINList       []string
-	ReportAbuseRecipientEmail string
-	SupportedClientIDs        []string
-	AppID                     string
-	OrgID                     string
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
+)
+
+const (
+	// TypeConfig configs type
+	TypeConfig logutils.MessageDataType = "config"
+	// TypeEnvConfigData env configs type
+	TypeEnvConfigData logutils.MessageDataType = "env config data"
+	// TypeApplicationConfigData application configs type
+	TypeApplicationConfigData logutils.MessageDataType = "application config data"
+	// TypeSyncConfigData sync configs type
+	TypeSyncConfigData logutils.MessageDataType = "sync config data"
+	// TypeManagedGroupConfigData managed group configs type
+	TypeManagedGroupConfigData logutils.MessageDataType = "managed group config data"
+
+	// ConfigIDEnv is the Config ID for EnvConfigData
+	ConfigIDEnv string = "env"
+	// ConfigIDApplication is the Config ID for ApplicationConfigData
+	ConfigIDApplication string = "application"
+	// ConfigIDSync is the Config ID for SyncConfigData
+	ConfigIDSync string = "sync"
+	// ConfigIDManagedGroup is the Config ID for ManagedGroupConfigData
+	ConfigIDManagedGroup string = "managed_group"
+)
+
+// Config contain generic configs
+type Config struct {
+	ID          string      `json:"id" bson:"_id"`
+	Type        string      `json:"type" bson:"type"`
+	AppID       string      `json:"app_id" bson:"app_id"`
+	OrgID       string      `json:"org_id" bson:"org_id"`
+	System      bool        `json:"system" bson:"system"`
+	Data        interface{} `json:"data" bson:"data"`
+	DateCreated time.Time   `json:"date_created" bson:"date_created"`
+	DateUpdated *time.Time  `json:"date_updated" bson:"date_updated"`
 }
 
-// SyncConfig defines system configs for managed group sync
-type SyncConfig struct {
-	Type          string `json:"type" bson:"type"`
-	ClientID      string `json:"client_id" bson:"client_id"`
+// DataAsEnvConfig returns the config Data as an EnvConfigData if the cast succeeds
+func (c Config) DataAsEnvConfig() (*EnvConfigData, error) {
+	data, ok := c.Data.(EnvConfigData)
+	if !ok {
+		return nil, errors.ErrorData(logutils.StatusInvalid, TypeEnvConfigData, nil)
+	}
+	return &data, nil
+}
+
+// DataAsApplicationConfig returns the config Data as an ApplicationConfigData if the cast succeeds
+func (c Config) DataAsApplicationConfig() (*ApplicationConfigData, error) {
+	data, ok := c.Data.(ApplicationConfigData)
+	if !ok {
+		return nil, errors.ErrorData(logutils.StatusInvalid, TypeEnvConfigData, nil)
+	}
+	return &data, nil
+}
+
+// DataAsSyncConfig returns the config Data as a SyncConfigData if the cast succeeds
+func (c Config) DataAsSyncConfig() (*SyncConfigData, error) {
+	data, ok := c.Data.(SyncConfigData)
+	if !ok {
+		return nil, errors.ErrorData(logutils.StatusInvalid, TypeSyncConfigData, nil)
+	}
+	return &data, nil
+}
+
+// DataAsManagedGroupConfig returns the config Data as a ManagedGroupConfigData if the cast succeeds
+func (c Config) DataAsManagedGroupConfig() (*ManagedGroupConfigData, error) {
+	data, ok := c.Data.(ManagedGroupConfigData)
+	if !ok {
+		return nil, errors.ErrorData(logutils.StatusInvalid, TypeManagedGroupConfigData, nil)
+	}
+	return &data, nil
+}
+
+// EnvConfigData contains environment configs for this service
+type EnvConfigData struct {
+	ExampleEnv string `json:"example_env" bson:"example_env"`
+}
+
+// ApplicationConfigData defines configs for managing authman sync and sending report emails
+type ApplicationConfigData struct {
+	//TODO: must not be empty
+	AuthmanAdminUINList       []string `json:"authman_admin_uin_list" bson:"authman_admin_uin_list"`
+	ReportAbuseRecipientEmail string   `json:"report_abuse_recipient_email" bson:"report_abuse_recipient_email"`
+}
+
+// SyncConfigData defines system configs for managed group sync
+type SyncConfigData struct {
 	CRON          string `json:"cron" bson:"cron"`
 	TimeThreshold int    `json:"time_threshold" bson:"time_threshold"` // Threshold from start_time to be considered same run in minutes
 	Timeout       int    `json:"timeout" bson:"timeout"`               // Time from start_time to be considered a failed run in minutes
@@ -37,18 +113,17 @@ type SyncConfig struct {
 
 // SyncTimes defines the times used to prevent concurrent syncs
 type SyncTimes struct {
-	ClientID  string     `json:"client_id" bson:"client_id"`
+	AppID     string     `json:"app_id" bson:"app_id"`
+	OrgID     string     `json:"org_id" bson:"org_id"`
 	StartTime *time.Time `json:"start_time" bson:"start_time"`
 	EndTime   *time.Time `json:"end_time" bson:"end_time"`
 }
 
-// ManagedGroupConfig defines a config for a set of managed groups
-type ManagedGroupConfig struct {
-	ID           string     `json:"id" bson:"_id"`
-	ClientID     string     `json:"client_id" bson:"client_id"`
+// ManagedGroupConfigData defines a config for a set of managed groups
+type ManagedGroupConfigData struct {
 	AuthmanStems []string   `json:"authman_stems" bson:"authman_stems"`
 	AdminUINs    []string   `json:"admin_uins" bson:"admin_uins"`
 	Type         string     `json:"type" bson:"type"`
 	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
-} //@name ManagedGroupConfig
+} //@name ManagedGroupConfigData

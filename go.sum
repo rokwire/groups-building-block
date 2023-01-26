@@ -246,8 +246,8 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/rokwire/core-auth-library-go/v2 v2.2.0 h1:AMnYyGBIQMVY2w/+gYeVl05BqpBcjttRKj3urXO2OVo=
 github.com/rokwire/core-auth-library-go/v2 v2.2.0/go.mod h1:0MO0lt55BvVjLmegbbDeTyNQR+UL0wKzOvZvnMtRw0w=
-github.com/rokwire/logging-library-go/v2 v2.1.0 h1:8FUjNv2EKLrHe7ZzWad2g0mD3W0kpRoE4hk3KoPUC3c=
-github.com/rokwire/logging-library-go/v2 v2.1.0/go.mod h1:6QSqTlk5nNQcZweqg0sLCCoIwpRpTu3AmOi7EJy38Tg=
+github.com/rokwire/logging-library-go/v2 v2.2.0 h1:SKFq+rrl+li1RhEhB7CV+pVcptu/nurX9/DWj/oRaw4=
+github.com/rokwire/logging-library-go/v2 v2.2.0/go.mod h1:6QSqTlk5nNQcZweqg0sLCCoIwpRpTu3AmOi7EJy38Tg=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.5.0 h1:1zr/of2m5FGMsad5YfcqgdqdWrIhu+EBEJRhR1U7z/c=

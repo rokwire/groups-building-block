@@ -16,7 +16,6 @@ package main
 
 import (
 	core "groups/core"
-	"groups/core/model"
 	"groups/driven/authman"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
@@ -102,9 +101,8 @@ func main() {
 	}
 
 	// Notification adapter
-	appID := getEnvKey("GROUPS_APP_ID", true)
-	orgID := getEnvKey("GROUPS_ORG_ID", true)
-	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
+	// appID := getEnvKey("GROUPS_APP_ID", true)
+	// orgID := getEnvKey("GROUPS_ORG_ID", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter, err := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
 	if err != nil {
@@ -114,7 +112,6 @@ func main() {
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
-	authmanAdminUINList := getAuthmanAdminUINList()
 
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
@@ -131,17 +128,9 @@ func main() {
 
 	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
-	config := &model.ApplicationConfig{
-		AuthmanAdminUINList:       authmanAdminUINList,
-		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SupportedClientIDs:        supportedClientIDs,
-		AppID:                     appID,
-		OrgID:                     orgID,
-	}
-
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, config)
+		coreAdapter, rewardsAdapter)
 	application.Start()
 
 	//web adapter
@@ -184,22 +173,6 @@ func getEnvKey(key string, required bool) string {
 	}
 	printEnvVar(key, value)
 	return value
-}
-
-func getAuthmanAdminUINList() []string {
-	//get from the environment
-	authmanAdminUINs := getEnvKey("AUTHMAN_ADMIN_UIN_LIST", true)
-	if len(authmanAdminUINs) == 0 {
-		return nil
-	}
-
-	//it is comma separated format
-	authmanAdminUINList := strings.Split(authmanAdminUINs, ",")
-	if len(authmanAdminUINList) <= 0 {
-		log.Fatal("AUTHMAN_ADMIN_UIN_LIST list is empty")
-	}
-
-	return authmanAdminUINList
 }
 
 func printEnvVar(name string, value string) {
