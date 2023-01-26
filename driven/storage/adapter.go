@@ -794,17 +794,19 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	}
 
 	if groupsFilter.Filters != nil {
-		filters := []bson.M{}
+		groupFilters := []bson.M{}
 		for key, value := range groupsFilter.Filters {
 			if reflect.TypeOf(value).Kind() != reflect.Slice {
-				filters = append(filters, bson.M{fmt.Sprintf("filters.%s", key): value})
+				groupFilters = append(groupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
 			} else {
-				filters = append(filters, bson.M{fmt.Sprintf("filters.%s", key): bson.M{"$all": value}})
+				groupFilters = append(groupFilters, bson.M{fmt.Sprintf("filters.%s", key): bson.M{"$all": value}})
 			}
 		}
-		filter = append(filter, bson.E{
-			Key: "$or", Value: filters,
-		})
+		if len(groupFilters) > 0 {
+			filter = append(filter, bson.E{
+				Key: "$or", Value: groupFilters,
+			})
+		}
 	}
 
 	findOptions := options.Find()
