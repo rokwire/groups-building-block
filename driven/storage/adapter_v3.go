@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"groups/core/model"
 	"log"
+	"reflect"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
@@ -18,6 +19,8 @@ import (
 
 // FindGroupsV3 finds groups with filter
 func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
+	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
+	
 	var groupIDs []string
 	var err error
 	var memberships model.MembershipCollection
@@ -97,6 +100,27 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 			groupFilter = append(groupFilter, primitive.E{Key: "hidden_for_search", Value: *filter.Hidden})
 		} else {
 			groupFilter = append(groupFilter, primitive.E{Key: "hidden_for_search", Value: primitive.M{"$ne": true}})
+		}
+	}
+
+	if filter.Filters != nil {
+		innerGroupFilters := []bson.M{}
+		for key, value := range filter.Filters {
+			if reflect.TypeOf(value).Kind() != reflect.Slice {
+				innerGroupFilters = append(innerGroupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
+			} else {
+				orSubCriterias := []bson.M{}
+				var entryList []interface{} = value.([]interface{})
+				for _, entry := range entryList {
+					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("filters.%s", key): entry})
+				}
+				innerGroupFilters = append(innerGroupFilters, bson.M{"$or": orSubCriterias})
+			}
+		}
+		if len(innerGroupFilters) > 0 {
+			groupFilter = append(groupFilter, bson.E{
+				Key: "$and", Value: innerGroupFilters,
+			})
 		}
 	}
 
