@@ -87,7 +87,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 		for outerKey, outerValue := range filter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
 				groupFilter = append(groupFilter, bson.E{
-					"$or", []bson.M{
+					Key: "$or", Value: []bson.M{
 						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
 						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
 					},
@@ -126,11 +126,11 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 
 	if filter.Order != nil && "desc" == *filter.Order {
 		findOptions.SetSort(bson.D{
-			{"title", -1},
+			{Key: "title", Value: -1},
 		})
 	} else {
 		findOptions.SetSort(bson.D{
-			{"title", 1},
+			{Key: "title", Value: 1},
 		})
 	}
 	if filter.Limit != nil {
@@ -172,36 +172,36 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 	}
 
 	matchFilter := bson.D{
-		bson.E{"client_id", clientID},
+		bson.E{Key: "client_id", Value: clientID},
 	}
 	if len(filter.GroupIDs) > 0 {
-		matchFilter = append(matchFilter, bson.E{"group_id", bson.M{"$in": filter.GroupIDs}})
+		matchFilter = append(matchFilter, bson.E{Key: "group_id", Value: bson.M{"$in": filter.GroupIDs}})
 	}
 	if filter.ID != nil {
-		matchFilter = append(matchFilter, bson.E{"_id", *filter.ID})
+		matchFilter = append(matchFilter, bson.E{Key: "_id", Value: *filter.ID})
 	}
 	if filter.UserID != nil {
-		matchFilter = append(matchFilter, bson.E{"user_id", *filter.UserID})
+		matchFilter = append(matchFilter, bson.E{Key: "user_id", Value: *filter.UserID})
 	} else if len(filter.UserIDs) > 0 {
-		matchFilter = append(matchFilter, bson.E{"user_id", bson.D{{"$in", filter.UserIDs}}})
+		matchFilter = append(matchFilter, bson.E{Key: "user_id", Value: bson.D{{Key: "$in", Value: filter.UserIDs}}})
 	}
 	if filter.NetID != nil {
-		matchFilter = append(matchFilter, bson.E{"net_id", *filter.NetID})
+		matchFilter = append(matchFilter, bson.E{Key: "net_id", Value: *filter.NetID})
 	}
 	if filter.ExternalID != nil {
-		matchFilter = append(matchFilter, bson.E{"external_id", *filter.ExternalID})
+		matchFilter = append(matchFilter, bson.E{Key: "external_id", Value: *filter.ExternalID})
 	}
 	if filter.Statuses != nil {
-		matchFilter = append(matchFilter, bson.E{"status", bson.D{{"$in", filter.Statuses}}})
+		matchFilter = append(matchFilter, bson.E{Key: "status", Value: bson.D{{Key: "$in", Value: filter.Statuses}}})
 	}
 	if filter.Name != nil {
-		matchFilter = append(matchFilter, bson.E{"name", primitive.Regex{fmt.Sprintf(`%s`, *filter.Name), "i"}})
+		matchFilter = append(matchFilter, bson.E{Key: "name", Value: primitive.Regex{Pattern: fmt.Sprintf(`%s`, *filter.Name), Options: "i"}})
 	}
 
 	findOptions := options.FindOptions{
 		Sort: bson.D{
-			{"members.status", 1},
-			{"members.name", 1},
+			{Key: "members.status", Value: 1},
+			{Key: "members.name", Value: 1},
 		},
 	}
 	if filter.Offset != nil {
@@ -638,133 +638,133 @@ func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, clientID str
 // GetGroupMembershipStats Retrieves group membership stats
 func (sa Adapter) GetGroupMembershipStats(context TransactionContext, clientID string, groupID string) (*model.GroupStats, error) {
 	pipeline := bson.A{
-		bson.D{{"$match", bson.D{
-			{"group_id", groupID},
-			{"client_id", clientID},
+		bson.D{{Key: "$match", Value: bson.D{
+			{Key: "group_id", Value: groupID},
+			{Key: "client_id", Value: clientID},
 		}}},
 		bson.D{
-			{"$facet",
-				bson.D{
-					{"total_count",
-						bson.A{
-							bson.D{{"$match", bson.D{
-								{"status", bson.D{{"$in", []string{"member", "admin"}}}},
+			{Key: "$facet",
+				Value: bson.D{
+					{Key: "total_count",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{
+								{Key: "status", Value: bson.D{{Key: "$in", Value: []string{"member", "admin"}}}},
 							}}},
-							bson.D{{"$count", "total_count"}},
+							bson.D{{Key: "$count", Value: "total_count"}},
 						},
 					},
-					{"admins_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"status", "admin"}}}},
-							bson.D{{"$count", "admins_count"}},
+					{Key: "admins_count",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{{Key: "status", Value: "admin"}}}},
+							bson.D{{Key: "$count", Value: "admins_count"}},
 						},
 					},
-					{"member_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"status", "member"}}}},
-							bson.D{{"$count", "member_count"}},
+					{Key: "member_count",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{{Key: "status", Value: "member"}}}},
+							bson.D{{Key: "$count", Value: "member_count"}},
 						},
 					},
-					{"members_added_last_24hours",
-						bson.A{
-							bson.D{{"$match", bson.D{
-								{"status", "member"},
-								{"date_created", bson.M{"$gt": time.Now().Add(-24 * time.Hour)}},
+					{Key: "members_added_last_24hours",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{
+								{Key: "status", Value: "member"},
+								{Key: "date_created", Value: bson.M{"$gt": time.Now().Add(-24 * time.Hour)}},
 							}}},
-							bson.D{{"$count", "members_added_last_24hours"}},
+							bson.D{{Key: "$count", Value: "members_added_last_24hours"}},
 						},
 					},
-					{"pending_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"status", "pending"}}}},
-							bson.D{{"$count", "pending_count"}},
+					{Key: "pending_count",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{{Key: "status", Value: "pending"}}}},
+							bson.D{{Key: "$count", Value: "pending_count"}},
 						},
 					},
-					{"rejected_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"status", "rejected"}}}},
-							bson.D{{"$count", "rejected_count"}},
+					{Key: "rejected_count",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{{Key: "status", Value: "rejected"}}}},
+							bson.D{{Key: "$count", Value: "rejected_count"}},
 						},
 					},
-					{"attendance_count",
-						bson.A{
-							bson.D{{"$match", bson.D{{"date_attended", bson.D{
-								{"$exists", true},
-								{"$ne", nil},
+					{Key: "attendance_count",
+						Value: bson.A{
+							bson.D{{Key: "$match", Value: bson.D{{Key: "date_attended", Value: bson.D{
+								{Key: "$exists", Value: true},
+								{Key: "$ne", Value: nil},
 							}}}}},
-							bson.D{{"$count", "attendance_count"}},
+							bson.D{{Key: "$count", Value: "attendance_count"}},
 						},
 					},
 				},
 			},
 		},
 		bson.D{
-			{"$project",
-				bson.D{
-					{"total_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+			{Key: "$project",
+				Value: bson.D{
+					{Key: "total_count",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$total_count.total_count",
 									0,
 								},
 							},
 						},
 					},
-					{"admins_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+					{Key: "admins_count",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$admins_count.admins_count",
 									0,
 								},
 							},
 						},
 					},
-					{"member_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+					{Key: "member_count",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$member_count.member_count",
 									0,
 								},
 							},
 						},
 					},
-					{"members_added_last_24hours",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+					{Key: "members_added_last_24hours",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$members_added_last_24hours.members_added_last_24hours",
 									0,
 								},
 							},
 						},
 					},
-					{"pending_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+					{Key: "pending_count",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$pending_count.pending_count",
 									0,
 								},
 							},
 						},
 					},
-					{"rejected_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+					{Key: "rejected_count",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$rejected_count.rejected_count",
 									0,
 								},
 							},
 						},
 					},
-					{"attendance_count",
-						bson.D{
-							{"$arrayElemAt",
-								bson.A{
+					{Key: "attendance_count",
+						Value: bson.D{
+							{Key: "$arrayElemAt",
+								Value: bson.A{
 									"$attendance_count.attendance_count",
 									0,
 								},
