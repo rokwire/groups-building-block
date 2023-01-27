@@ -718,7 +718,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		innerOrFilter := []bson.M{}
 
 		if groupsFilter.ExcludeMyGroups != nil && *groupsFilter.ExcludeMyGroups {
-			filter = append(filter, bson.E{"_id", bson.M{"$nin": groupIDs}})
+			filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$nin": groupIDs}})
 			innerOrFilter = []bson.M{
 				{"privacy": bson.M{"$ne": "private"}},
 			}
@@ -732,14 +732,14 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		if groupsFilter.Title != nil {
 			if groupsFilter.IncludeHidden != nil && *groupsFilter.IncludeHidden {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					primitive.M{"title": *groupsFilter.Title},
+					{"title": *groupsFilter.Title},
 				}})
 			} else {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					primitive.M{"title": *groupsFilter.Title},
-					primitive.M{"$or": []primitive.M{
-						primitive.M{"hidden_for_search": false},
-						primitive.M{"hidden_for_search": primitive.M{"$exists": false}},
+					{"title": *groupsFilter.Title},
+					{"$or": []primitive.M{
+						{"hidden_for_search": false},
+						{"hidden_for_search": primitive.M{"$exists": false}},
 					}},
 				}})
 			}
@@ -786,7 +786,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
 				filter = append(filter, bson.E{
-					"$or", []bson.M{
+					Key: "$or", Value: []bson.M{
 						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
 						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
 					},
@@ -819,11 +819,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	findOptions := options.Find()
 	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
-			{"title", -1},
+			{Key: "title", Value: -1},
 		})
 	} else {
 		findOptions.SetSort(bson.D{
-			{"title", 1},
+			{Key: "title", Value: 1},
 		})
 	}
 	if groupsFilter.Limit != nil {
@@ -878,11 +878,11 @@ type findUserGroupsCountResult struct {
 // FindUserGroupsCount retrieves the count of current groups that the user is member
 func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, error) {
 	pipeline := []primitive.M{
-		primitive.M{"$match": primitive.M{
+		{"$match": primitive.M{
 			"client_id":       clientID,
 			"members.user_id": userID,
 		}},
-		primitive.M{"$count": "count"},
+		{"$count": "count"},
 	}
 	var result []findUserGroupsCountResult
 	err := sa.db.groups.Aggregate(pipeline, &result, &options.AggregateOptions{})
@@ -968,11 +968,11 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	findOptions := options.Find()
 	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
-			{"title", -1},
+			{Key: "title", Value: -1},
 		})
 	} else {
 		findOptions.SetSort(bson.D{
-			{"title", 1},
+			{Key: "title", Value: 1},
 		})
 	}
 	if groupsFilter.Limit != nil {
@@ -1008,10 +1008,10 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 	}
 	if filterByToMembers && current != nil {
 		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": current.ID},
-			primitive.M{"member.user_id": current.ID},
+			{"to_members": primitive.Null{}},
+			{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			{"to_members.user_id": current.ID},
+			{"member.user_id": current.ID},
 		}})
 	}
 
@@ -1113,13 +1113,13 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	if filterByToMembers {
 		innerFilter := []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			{"to_members": primitive.Null{}},
+			{"to_members": primitive.M{"$exists": true, "$size": 0}},
 		}
 		if current != nil {
 			innerFilter = append(innerFilter, []primitive.M{
-				primitive.M{"to_members.user_id": current.ID},
-				primitive.M{"member.user_id": current.ID},
+				{"to_members.user_id": current.ID},
+				{"member.user_id": current.ID},
 			}...)
 		}
 		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
@@ -1132,9 +1132,9 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	paging := false
 	findOptions := options.Find()
 	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 	if limit != nil {
 		findOptions.SetLimit(*limit)
@@ -1293,9 +1293,9 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 
 	findOptions := options.Find()
 	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 
 	var posts []*model.Post
@@ -1334,9 +1334,9 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 
 	findOptions := options.Find()
 	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 
 	var posts []*model.Post

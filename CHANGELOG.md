@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Integrate govulncheck within the build process [#319](https://github.com/rokwire/groups-building-block/issues/319)
+
 ## [1.13.0] - 2023-01-26
 ### Added
 - Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)
