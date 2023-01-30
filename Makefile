@@ -96,6 +96,10 @@ clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
 	@rm -f c.out
 	@rm -f test.html
 
+.PHONY: swagger
+swagger: ;
+	swag init -g driver/web/adapter.go
+
 .PHONY: help
 help:
 	@grep -E '^[ a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
