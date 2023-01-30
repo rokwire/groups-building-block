@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Integrate govulncheck within the build process [#319](https://github.com/rokwire/groups-building-block/issues/319)
+### Changed
+- Rename group filters to attributes [#348](https://github.com/rokwire/groups-building-block/issues/348)
 
 ## [1.13.0] - 2023-01-26
 ### Added

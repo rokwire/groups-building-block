@@ -73,7 +73,7 @@ type createGroupRequest struct {
 	ResearchDescription      string                         `json:"research_description"`
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 	Settings                 *model.GroupSettings           `json:"settings"`
-	Filters                  map[string]interface{}         `json:"filters"`
+	Attributes               map[string]interface{}         `json:"attributes"`
 } //@name createGroupRequest
 
 type userGroupShortDetail struct {
@@ -159,7 +159,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		ResearchDescription:      requestData.ResearchDescription,
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
-		Filters:                  requestData.Filters,
+		Attributes:               requestData.Attributes,
 	})
 	if groupErr != nil {
 		log.Println(groupErr.Error())
@@ -202,7 +202,7 @@ type updateGroupRequest struct {
 	ResearchDescription        string                         `json:"research_description"`
 	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
 	Settings                   *model.GroupSettings           `json:"settings"`
-	Filters                    map[string]interface{}         `json:"filters"`
+	Attributes                 map[string]interface{}         `json:"attributes"`
 } //@name updateGroupRequest
 
 // UpdateGroup updates a group
@@ -291,7 +291,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		ResearchDescription:      requestData.ResearchDescription,
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
-		Filters:                  requestData.Filters,
+		Attributes:               requestData.Attributes,
 	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
