@@ -33,8 +33,8 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Settings *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
-	Filters  map[string]interface{} `json:"filters" bson:"filters"`
+	Settings   *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
+	Attributes map[string]interface{} `json:"attributes" bson:"attributes"`
 
 	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
 	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`

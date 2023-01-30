@@ -538,7 +538,7 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
 		primitive.E{Key: "research_description", Value: group.ResearchDescription},
 		primitive.E{Key: "research_profile", Value: group.ResearchProfile},
-		primitive.E{Key: "filters", Value: group.Filters},
+		primitive.E{Key: "attributes", Value: group.Attributes},
 	}
 	if group.Settings != nil {
 		setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
@@ -795,23 +795,23 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 	}
 
-	if groupsFilter.Filters != nil {
-		groupFilters := []bson.M{}
-		for key, value := range groupsFilter.Filters {
+	if groupsFilter.Attributes != nil {
+		attributeFilters := []bson.M{}
+		for key, value := range groupsFilter.Attributes {
 			if reflect.TypeOf(value).Kind() != reflect.Slice {
-				groupFilters = append(groupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
+				attributeFilters = append(attributeFilters, bson.M{fmt.Sprintf("attributes.%s", key): value})
 			} else {
 				orSubCriterias := []bson.M{}
 				var entryList []interface{} = value.([]interface{})
 				for _, entry := range entryList {
-					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("filters.%s", key): entry})
+					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("attributes.%s", key): entry})
 				}
-				groupFilters = append(groupFilters, bson.M{"$or": orSubCriterias})
+				attributeFilters = append(attributeFilters, bson.M{"$or": orSubCriterias})
 			}
 		}
-		if len(groupFilters) > 0 {
+		if len(attributeFilters) > 0 {
 			filter = append(filter, bson.E{
-				Key: "$and", Value: groupFilters,
+				Key: "$and", Value: attributeFilters,
 			})
 		}
 	}
@@ -946,22 +946,22 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 		}
 	}
 
-	if groupsFilter.Filters != nil {
-		groupFilters := []bson.M{}
-		for key, value := range groupsFilter.Filters {
+	if groupsFilter.Attributes != nil {
+		attributeFilters := []bson.M{}
+		for key, value := range groupsFilter.Attributes {
 			if reflect.TypeOf(value).Kind() != reflect.Slice {
-				groupFilters = append(groupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
+				attributeFilters = append(attributeFilters, bson.M{fmt.Sprintf("attributes.%s", key): value})
 			} else {
 				orSubCriterias := []bson.M{}
 				var entryList []interface{} = value.([]interface{})
 				for _, entry := range entryList {
-					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("filters.%s", key): entry})
+					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("attributes.%s", key): entry})
 				}
-				groupFilters = append(groupFilters, bson.M{"$or": orSubCriterias})
+				attributeFilters = append(attributeFilters, bson.M{"$or": orSubCriterias})
 			}
 		}
-		if len(groupFilters) > 0 {
-			mongoFilter["$and"] = groupFilters
+		if len(attributeFilters) > 0 {
+			mongoFilter["$and"] = attributeFilters
 		}
 	}
 

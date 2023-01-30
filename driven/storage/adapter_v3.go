@@ -103,16 +103,16 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 		}
 	}
 
-	if filter.Filters != nil {
+	if filter.Attributes != nil {
 		innerGroupFilters := []bson.M{}
-		for key, value := range filter.Filters {
+		for key, value := range filter.Attributes {
 			if reflect.TypeOf(value).Kind() != reflect.Slice {
-				innerGroupFilters = append(innerGroupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
+				innerGroupFilters = append(innerGroupFilters, bson.M{fmt.Sprintf("attributes.%s", key): value})
 			} else {
 				orSubCriterias := []bson.M{}
 				var entryList []interface{} = value.([]interface{})
 				for _, entry := range entryList {
-					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("filters.%s", key): entry})
+					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("attributes.%s", key): entry})
 				}
 				innerGroupFilters = append(innerGroupFilters, bson.M{"$or": orSubCriterias})
 			}

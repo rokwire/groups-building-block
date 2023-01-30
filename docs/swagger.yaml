@@ -36,6 +36,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -62,9 +65,6 @@ definitions:
         type: string
       description:
         type: string
-      filters:
-        additionalProperties: true
-        type: object
       hidden_for_search:
         type: boolean
       id:
@@ -198,15 +198,15 @@ definitions:
     type: object
   GroupsFilter:
     properties:
+      attributes:
+        additionalProperties: true
+        type: object
       category:
         description: group category
         type: string
       exclude_my_groups:
         description: Exclude My groups
         type: boolean
-      filters:
-        additionalProperties: true
-        type: object
       hidden:
         description: 'Filter by hidden flag. Values: true (show only hidden), false
           (show only not hidden), missing - don''t do any filtering on this field.'
@@ -460,6 +460,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -476,9 +479,6 @@ definitions:
         type: string
       description:
         type: string
-      filters:
-        additionalProperties: true
-        type: object
       hidden_for_search:
         type: boolean
       image_url:
@@ -853,6 +853,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -865,9 +868,6 @@ definitions:
         type: string
       description:
         type: string
-      filters:
-        additionalProperties: true
-        type: object
       hidden_for_search:
         type: boolean
       image_url:
