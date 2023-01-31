@@ -133,6 +133,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/group/{group-id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets the list of group members.",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin-V1"
+                ],
+                "operationId": "AdminGetGroupMembers",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MembershipFilter"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupMembership"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/group/{group-id}/stats": {
             "get": {
                 "security": [
@@ -521,6 +574,95 @@ const docTemplate = `{
                         "type": "string",
                         "description": "ID",
                         "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/admin/memberships/{membership-id}": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a membership. Only the status can be changed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V1"
+                ],
+                "operationId": "AdminUpdateMembership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/updateMembershipRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Membership ID",
+                        "name": "membership-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a membership",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V1"
+                ],
+                "operationId": "AdminDeleteMembership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Membership ID",
+                        "name": "membership-id",
                         "in": "path",
                         "required": true
                     }
@@ -1219,7 +1361,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/Member"
+                                "$ref": "#/definitions/GroupMembership"
                             }
                         }
                     }
@@ -2998,6 +3140,10 @@ const docTemplate = `{
                 "attendance_group": {
                     "type": "boolean"
                 },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "authman_enabled": {
                     "type": "boolean"
                 },
@@ -3092,6 +3238,7 @@ const docTemplate = `{
                     }
                 },
                 "settings": {
+                    "description": "TODO: Remove the pointer once the backward support is not needed any more!",
                     "$ref": "#/definitions/GroupSettings"
                 },
                 "stats": {
@@ -3120,9 +3267,6 @@ const docTemplate = `{
         "GroupMembership": {
             "type": "object",
             "properties": {
-                "admin": {
-                    "type": "boolean"
-                },
                 "client_id": {
                     "type": "string"
                 },
@@ -3169,7 +3313,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.",
+                    "description": "admin, pending, member, rejected",
                     "type": "string"
                 },
                 "sync_id": {
@@ -3236,12 +3380,20 @@ const docTemplate = `{
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "category": {
                     "description": "group category",
                     "type": "string"
                 },
                 "exclude_my_groups": {
                     "description": "Exclude My groups",
+                    "type": "boolean"
+                },
+                "hidden": {
+                    "description": "Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.",
                     "type": "boolean"
                 },
                 "ids": {
@@ -3616,6 +3768,10 @@ const docTemplate = `{
             "properties": {
                 "attendance_group": {
                     "type": "boolean"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "authman_enabled": {
                     "type": "boolean"
@@ -4200,6 +4356,10 @@ const docTemplate = `{
                 "attendance_group": {
                     "type": "boolean"
                 },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "authman_enabled": {
                     "type": "boolean"
                 },
@@ -4327,7 +4487,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.8.0",
+	Version:          "1.12.3",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"http"},

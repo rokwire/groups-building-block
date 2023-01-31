@@ -16,6 +16,8 @@ package rest
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
@@ -25,8 +27,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/gorilla/mux"
 )
 
 // AdminApisHandler handles the rest Admin APIs implementation
@@ -201,7 +201,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 
 	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("apis.GetAllGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		log.Printf("adminapis.GetAllGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -210,13 +210,13 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		err = json.Unmarshal(requestData, &groupsFilter)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("apis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+			log.Printf("adminapis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
 	}
 
-	groups, err := h.app.Administration.GetGroups(clientID, groupsFilter)
+	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
 	if err != nil {
-		log.Printf("apis.GetAllGroups() error getting groups - %s", err.Error())
+		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -230,7 +230,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
-		log.Printf("apis.GetAllGroups() unable to retrieve memberships: %s", err)
+		log.Printf("adminapis.GetAllGroups() unable to retrieve memberships: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -242,7 +242,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 
 	data, err := json.Marshal(groups)
 	if err != nil {
-		log.Println("apis.GetAllGroups() error on marshal the groups items")
+		log.Println("adminapis.GetAllGroups() error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -295,6 +295,180 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+// GetGroupMembers Gets the list of group members.
+// @Description Gets the list of group members.
+// @ID AdminGetGroupMembers
+// @Tags Admin-V1
+// @Accept plain
+// @Param data body model.MembershipFilter true "body data"
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.GroupMembership
+// @Security AppUserAuth
+// @Router /api/admin/group/{group-id}/members [get]
+func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("adminapis.GetGroupMembers() Error: group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	requestData, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.GetGroupMembers() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var request model.MembershipFilter
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &request)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("adminapis.GetGroupMembers() Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
+		}
+	}
+
+	request.GroupIDs = append(request.GroupIDs, groupID)
+
+	//check if allowed to update
+	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	if err != nil {
+		log.Printf("adminapis.GetGroupMembers()  error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if members.Items == nil {
+		members.Items = []model.GroupMembership{}
+	}
+
+	data, err := json.Marshal(members.Items)
+	if err != nil {
+		log.Printf("adminapis.GetGroupMembers() error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type adminUpdateMembershipRequest struct {
+	Status *string `json:"status" validate:"required,oneof=pending member admin rejected"`
+} // @name updateMembershipRequest
+
+// UpdateMembership updates a membership. Only the status can be changed.
+// @Description Updates a membership. Only the status can be changed.
+// @ID AdminUpdateMembership
+// @Tags Admin-V1
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body updateMembershipRequest true "body data"
+// @Param membership-id path string true "Membership ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/memberships/{membership-id} [put]
+func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	membershipID := params["membership-id"]
+	if len(membershipID) <= 0 {
+		log.Println("adminapis.UpdateMembership() Error on Membership id is required")
+		http.Error(w, "Membership id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.UpdateMembership() Error on marshal the membership update item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData adminUpdateMembershipRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("adminapis.UpdateMembership() Error on unmarshal the membership request update data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("adminapis.UpdateMembership() Error on validating membership update data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	if err != nil || membership == nil {
+		log.Printf("adminapis.UpdateMembership() Error: Membership %s not found - %s\n", membershipID, err.Error())
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	var status *string
+	status = requestData.Status
+
+	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, nil, nil)
+	if err != nil {
+		log.Printf("adminapis.UpdateMembership() Error on updating membership - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
+// DeleteMembership deletes membership
+// @Description Deletes a membership
+// @ID AdminDeleteMembership
+// @Tags Admin-V1
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param membership-id path string true "Membership ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/memberships/{membership-id} [delete]
+func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	membershipID := params["membership-id"]
+	if len(membershipID) <= 0 {
+		log.Println("adminapis.DeleteMembership() Error on Membership id is required")
+		http.Error(w, "Membership id is required", http.StatusBadRequest)
+		return
+	}
+
+	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	if err != nil {
+		log.Printf("adminapis.DeleteMembership() Error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	} else if membership == nil {
+		log.Printf("adminapis.DeleteMembership() Error on Membership %s not found", membershipID)
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+	}
+
+	err = h.app.Services.DeleteMembershipByID(clientID, current, membershipID)
+	if err != nil {
+		log.Printf("adminapis.DeleteMembership() Error: %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 }
 
 // GetGroupPosts gets all posts for the desired group.

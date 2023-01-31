@@ -21,18 +21,20 @@ import (
 
 // Group represents group entity
 type Group struct {
-	ID                  string         `json:"id" bson:"_id"`
-	ClientID            string         `json:"client_id" bson:"client_id"`
-	Category            string         `json:"category" bson:"category"` //one of the enums categories list
-	Title               string         `json:"title" bson:"title"`
-	Privacy             string         `json:"privacy" bson:"privacy"` //public or private
-	HiddenForSearch     bool           `json:"hidden_for_search" bson:"hidden_for_search"`
-	Description         *string        `json:"description" bson:"description"`
-	ImageURL            *string        `json:"image_url" bson:"image_url"`
-	WebURL              *string        `json:"web_url" bson:"web_url"`
-	Tags                []string       `json:"tags" bson:"tags"`
-	MembershipQuestions []string       `json:"membership_questions" bson:"membership_questions"`
-	Settings            *GroupSettings `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
+	ID                  string   `json:"id" bson:"_id"`
+	ClientID            string   `json:"client_id" bson:"client_id"`
+	Category            string   `json:"category" bson:"category"` //one of the enums categories list
+	Title               string   `json:"title" bson:"title"`
+	Privacy             string   `json:"privacy" bson:"privacy"` //public or private
+	HiddenForSearch     bool     `json:"hidden_for_search" bson:"hidden_for_search"`
+	Description         *string  `json:"description" bson:"description"`
+	ImageURL            *string  `json:"image_url" bson:"image_url"`
+	WebURL              *string  `json:"web_url" bson:"web_url"`
+	Tags                []string `json:"tags" bson:"tags"`
+	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
+
+	Settings   *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
+	Attributes map[string]interface{} `json:"attributes" bson:"attributes"`
 
 	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
 	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`

@@ -36,6 +36,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -101,6 +104,8 @@ definitions:
         type: object
       settings:
         $ref: '#/definitions/GroupSettings'
+        description: 'TODO: Remove the pointer once the backward support is not needed
+          any more!'
       stats:
         $ref: '#/definitions/GroupStats'
       sync_end_time:
@@ -118,8 +123,6 @@ definitions:
     type: object
   GroupMembership:
     properties:
-      admin:
-        type: boolean
       client_id:
         type: string
       date_attended:
@@ -151,8 +154,7 @@ definitions:
       reject_reason:
         type: string
       status:
-        description: 'TODO: This is dangerous code-breaking change. There are existing
-          clients that may use it in the old way.'
+        description: admin, pending, member, rejected
         type: string
       sync_id:
         description: ID of sync that last updated this membership
@@ -196,11 +198,18 @@ definitions:
     type: object
   GroupsFilter:
     properties:
+      attributes:
+        additionalProperties: true
+        type: object
       category:
         description: group category
         type: string
       exclude_my_groups:
         description: Exclude My groups
+        type: boolean
+      hidden:
+        description: 'Filter by hidden flag. Values: true (show only hidden), false
+          (show only not hidden), missing - don''t do any filtering on this field.'
         type: boolean
       ids:
         description: membership id
@@ -451,6 +460,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -841,6 +853,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -920,7 +935,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.8.0
+  version: 1.12.3
 paths:
   /admin/authman/synchronize:
     post:
@@ -991,6 +1006,40 @@ paths:
           schema:
             items:
               type: string
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
+  /api/admin/group/{group-id}/members:
+    get:
+      consumes:
+      - text/plain
+      description: Gets the list of group members.
+      operationId: AdminGetGroupMembers
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMembership'
             type: array
       security:
       - AppUserAuth: []
@@ -1254,6 +1303,63 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/memberships/{membership-id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a membership
+      operationId: AdminDeleteMembership
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
+    put:
+      consumes:
+      - application/json
+      description: Updates a membership. Only the status can be changed.
+      operationId: AdminUpdateMembership
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateMembershipRequest'
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
   /api/admin/sync-configs:
     get:
       consumes:
@@ -1734,7 +1840,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/Member'
+              $ref: '#/definitions/GroupMembership'
             type: array
       security:
       - AppUserAuth: []

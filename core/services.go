@@ -77,7 +77,7 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	if err != nil {
 		return false, err
 	}
-	if membership == nil || !membership.Admin {
+	if membership == nil || membership.Status != "admin" {
 		return false, nil
 	}
 
@@ -148,8 +148,12 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 }
 
 func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, &current.ID, filter)
+	groups, err := app.storage.FindGroups(clientID, userID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -271,7 +275,6 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	if membership != nil {
 		if status != nil && membership.Status != *status {
 			membership.Status = *status
-			membership.Admin = membership.IsAdmin()
 		}
 		if dateAttended != nil && membership.DateAttended == nil {
 			membership.DateAttended = dateAttended
@@ -785,7 +788,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 										if member.Status != "admin" {
 											now := time.Now()
 											member.Status = "admin"
-											member.Admin = true
 											member.DateUpdated = &now
 											membershipsForUpdate = append(membershipsForUpdate, member)
 											groupUpdated = true
@@ -823,7 +825,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						if groupUpdated {
 							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
-								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
+								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
 						}
 					}
@@ -841,7 +843,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		for _, authmanGroup := range authmanGroups {
 			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
 			if err != nil {
-				fmt.Errorf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
+				log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 			}
 		}
 	}
@@ -978,19 +980,25 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
+	//TODO: These operations should ideally use a transaction, but the transaction may get too large
+
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
+
+	// Load existing admins
+	adminExternalIDsMap := map[string]bool{}
 	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
 		Statuses: []string{"admin"},
 	})
 	if err != nil {
-		log.Printf("Error finding admin memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
-	} else {
-		for _, adminMember := range adminMembers.Items {
-			if len(adminMember.ExternalID) > 0 {
-				allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
-			}
+		return fmt.Errorf("error finding admin memberships in authman %s: %s", *authmanGroup.AuthmanGroup, err)
+	}
+
+	for _, adminMember := range adminMembers.Items {
+		if len(adminMember.ExternalID) > 0 {
+			allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
+			adminExternalIDsMap[adminMember.ExternalID] = true
 		}
 	}
 
@@ -1010,6 +1018,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
 		status := "member"
+		if _, ok := adminExternalIDsMap[externalID]; ok {
+			status = "admin"
+		}
 		var userID *string
 		var name *string
 		var email *string
@@ -1075,7 +1086,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 		if updatedInfo {
-			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, nil, email, name, nil, nil, true)
+			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, email, name, nil, nil, true)
 			if err != nil {
 				log.Printf("Error saving admin membership with missing info for external ID %s in Authman %s: %s\n", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
 			} else {
@@ -1145,8 +1156,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Delete removed non-admin members
 	log.Printf("Deleting removed members for Authman %s...\n", *authmanGroup.AuthmanGroup)
-	admin := false
-	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID, &admin)
+	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID)
 	if err != nil {
 		log.Printf("Error deleting removed memberships in Authman %s\n", *authmanGroup.AuthmanGroup)
 	} else {

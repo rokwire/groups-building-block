@@ -459,6 +459,14 @@ func (m *database) applyGroupMembershipsChecks(groupMemberships *collectionWrapp
 		return err
 	}
 
+	err = groupMemberships.AddIndex(bson.D{
+		primitive.E{Key: "status", Value: 1},
+		primitive.E{Key: "name", Value: 1},
+	}, false)
+	if err != nil {
+		return err
+	}
+
 	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "date_created", Value: 1}}, false)
 	if err != nil {
 		return err
@@ -801,7 +809,7 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 
 	var migrationGroup []model.Group
 	err := groups.Find(bson.D{
-		{"members.id", bson.M{"$exists": true}},
+		{Key: "members.id", Value: bson.M{"$exists": true}},
 	}, &migrationGroup, nil)
 	if err != nil {
 		return err
@@ -816,8 +824,8 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 			}
 
 			_, err = groups.UpdateManyWithContext(sessionContext, bson.D{}, bson.D{
-				{"$set", bson.D{
-					{"stats", model.GroupStats{}},
+				{Key: "$set", Value: bson.D{
+					{Key: "stats", Value: model.GroupStats{}},
 				}},
 			}, nil)
 			if err != nil {
@@ -856,12 +864,12 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 				}
 
 				_, err = groups.UpdateOneWithContext(sessionContext, bson.D{
-					{"client_id", group.ClientID},
-					{"_id", group.ID},
+					{Key: "client_id", Value: group.ClientID},
+					{Key: "_id", Value: group.ID},
 				}, bson.D{
-					{"$set", bson.D{
-						{"members", nil},
-						{"stats", stats},
+					{Key: "$set", Value: bson.D{
+						{Key: "members", Value: nil},
+						{Key: "stats", Value: stats},
 					}},
 				}, nil)
 				if err != nil {
@@ -902,7 +910,7 @@ func (m *database) ApplyDefaultGroupSettings(client *mongo.Client, groups *colle
 		var migrationGroup []model.Group
 
 		filter := bson.D{
-			{"settings", bson.M{"$exists": false}},
+			{Key: "settings", Value: bson.M{"$exists": false}},
 		}
 
 		err = groups.FindWithContext(sessionContext, filter, &migrationGroup, nil)
@@ -912,8 +920,8 @@ func (m *database) ApplyDefaultGroupSettings(client *mongo.Client, groups *colle
 
 		if len(migrationGroup) > 0 {
 			_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
-				{"$set", bson.D{
-					{"settings", model.DefaultGroupSettings()},
+				{Key: "$set", Value: bson.D{
+					{Key: "settings", Value: model.DefaultGroupSettings()},
 				}},
 			}, nil)
 			if err != nil {

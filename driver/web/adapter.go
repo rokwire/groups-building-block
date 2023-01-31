@@ -43,7 +43,7 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.8.0
+// @version 1.12.3
 // @host localhost
 // @BasePath /gr
 // @schemes http
@@ -83,11 +83,14 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembers)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/events", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts/{postID}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMembership)).Methods("PUT")
+	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMembership)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetManagedGroupConfigs)).Methods("GET")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateManagedGroupConfig)).Methods("POST")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateManagedGroupConfig)).Methods("PUT")

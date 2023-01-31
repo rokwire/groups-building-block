@@ -73,6 +73,7 @@ type createGroupRequest struct {
 	ResearchDescription      string                         `json:"research_description"`
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 	Settings                 *model.GroupSettings           `json:"settings"`
+	Attributes               map[string]interface{}         `json:"attributes"`
 } //@name createGroupRequest
 
 type userGroupShortDetail struct {
@@ -158,6 +159,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		ResearchDescription:      requestData.ResearchDescription,
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
+		Attributes:               requestData.Attributes,
 	})
 	if groupErr != nil {
 		log.Println(groupErr.GetMessage())
@@ -200,6 +202,7 @@ type updateGroupRequest struct {
 	ResearchDescription        string                         `json:"research_description"`
 	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
 	Settings                   *model.GroupSettings           `json:"settings"`
+	Attributes                 map[string]interface{}         `json:"attributes"`
 } //@name updateGroupRequest
 
 // UpdateGroup updates a group
@@ -288,6 +291,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		ResearchDescription:      requestData.ResearchDescription,
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
+		Attributes:               requestData.Attributes,
 	})
 	if groupErr != nil {
 		log.Printf("Error on updating group - %s\n", err)
@@ -978,7 +982,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
-// @Success 200 {array} model.Member
+// @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/members [get]
 func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {

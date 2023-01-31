@@ -6,6 +6,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.14.0] - 2023-01-30
+### Added
+- Integrate govulncheck within the build process [#319](https://github.com/rokwire/groups-building-block/issues/319)
+### Changed
+- Rename group filters to attributes [#348](https://github.com/rokwire/groups-building-block/issues/348)
+
+## [1.13.0] - 2023-01-26
+### Added
+- Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)
+
+## [1.12.3] - 2023-01-23
+### Security
+- Use admin token check for delete group membership admin API
+
+## [1.12.2] - 2023-01-23
+### Fixed
+- Incorrect membership "status" for admins in managed group sync [#341](https://github.com/rokwire/groups-building-block/issues/341)
+
+## [1.12.1] - 2023-01-23
+### Fixed
+- Additional fixes that improves the admin client APIs [#339](https://github.com/rokwire/groups-building-block/issues/339)
+
+## [1.12.0] - 2023-01-20
+### Added
+- Add membership retrieve, update & delete admin APIs [#339](https://github.com/rokwire/groups-building-block/issues/339)
+
 ## [1.11.0] - 2023-01-13
 ### Added
 - Create internal API for updating group's date updated [#335](https://github.com/rokwire/groups-building-block/issues/335)
