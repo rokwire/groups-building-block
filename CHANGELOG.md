@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.15.0] - 2023-02-01
+### Added
+- Add indexes for the nested attributes [#351](https://github.com/rokwire/groups-building-block/issues/351)
 ### Changed
 - Remove category validation on create & update group operations [#352](https://github.com/rokwire/groups-building-block/issues/352)
 
