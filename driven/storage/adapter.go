@@ -483,6 +483,8 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			return err
 		}
 
+		sa.UpdateGroupAttributeIndexes(group)
+
 		return nil
 	})
 
@@ -585,6 +587,8 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		if err != nil {
 			return err
 		}
+
+		sa.UpdateGroupAttributeIndexes(group)
 
 		return nil
 	})
@@ -1598,6 +1602,47 @@ func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string,
 	return sa.PerformTransaction(func(context TransactionContext) error {
 		return updateStats(context)
 	})
+}
+
+// UpdateGroupAttributeIndexes Analyses and updates the indexes if need. This method is async  without transaction.
+func (sa *Adapter) UpdateGroupAttributeIndexes(group *model.Group) {
+	if group != nil {
+		updateIndexes := func() {
+
+			indexes, err := sa.db.groups.ListIndexesWithContext(context.Background())
+			if err != nil {
+				log.Printf("sa.UpdateGroupAttributeIndexes error on retrieving indexes: %s", err)
+				return
+			}
+			for key := range group.Attributes {
+				fieldName := fmt.Sprintf("attributes.%s", key)
+
+				found := false
+				for _, index := range indexes {
+					indexName := index["name"].(string)
+
+					if strings.Contains(indexName, fieldName) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					err := sa.db.groups.AddIndexWithContext(
+						context.Background(),
+						bson.D{
+							primitive.E{Key: fieldName, Value: 1},
+						}, false)
+					if err != nil {
+						log.Printf("sa.UpdateGroupAttributeIndexes error on retrieving indexes: %s", err)
+						return
+					}
+				}
+			}
+		}
+
+		go updateIndexes()
+	}
 }
 
 // UpdateGroupDateUpdated Updates group's date updated

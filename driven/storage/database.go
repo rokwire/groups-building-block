@@ -194,11 +194,9 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 
 	indexes, _ := users.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
 
 	if indexMapping["external_id_1"] == nil {
@@ -248,11 +246,10 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 
 	indexes, _ := groups.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
 
 	if indexMapping["client_id_1"] == nil {
@@ -481,11 +478,9 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 
 	indexes, _ := events.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
 
 	if indexMapping["event_id_1_group_id_1_client_id_1"] == nil {
@@ -588,13 +583,12 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 
 	indexes, _ := posts.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
 
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
+
 	if indexMapping["client_id_1"] == nil {
 		err := posts.AddIndex(
 			bson.D{
