@@ -523,7 +523,6 @@ definitions:
       web_url:
         type: string
     required:
-    - category
     - privacy
     - title
     type: object
@@ -912,7 +911,6 @@ definitions:
       web_url:
         type: string
     required:
-    - category
     - privacy
     - title
     type: object

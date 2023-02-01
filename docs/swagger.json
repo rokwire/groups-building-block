@@ -3757,7 +3757,6 @@
         "createGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
@@ -4344,7 +4343,6 @@
         "updateGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
