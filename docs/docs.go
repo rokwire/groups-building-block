@@ -3761,7 +3761,6 @@ const docTemplate = `{
         "createGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
@@ -4348,7 +4347,6 @@ const docTemplate = `{
         "updateGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],

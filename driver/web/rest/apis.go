@@ -51,7 +51,7 @@ func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
 type createGroupRequest struct {
 	Title                    string                         `json:"title" validate:"required"`
 	Description              *string                        `json:"description"`
-	Category                 string                         `json:"category" validate:"required"`
+	Category                 string                         `json:"category"`
 	Tags                     []string                       `json:"tags"`
 	Privacy                  string                         `json:"privacy" validate:"required,oneof=public private"`
 	Hidden                   bool                           `json:"hidden_for_search"`
@@ -182,7 +182,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 type updateGroupRequest struct {
 	Title                      string                         `json:"title" validate:"required"`
 	Description                *string                        `json:"description"`
-	Category                   string                         `json:"category" validate:"required"`
+	Category                   string                         `json:"category"`
 	Tags                       []string                       `json:"tags"`
 	Privacy                    string                         `json:"privacy" validate:"required,oneof=public private"`
 	Hidden                     bool                           `json:"hidden_for_search"`
