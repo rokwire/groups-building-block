@@ -69,6 +69,54 @@ func (sa *Adapter) Start() error {
 		return errors.New("error caching managed group configs")
 	}
 
+	//TODO delete after deployement
+	err = sa.PerformTransaction(func(context TransactionContext) error {
+
+		filter := bson.D{}
+		var list []*model.Post
+		err = sa.db.posts.Find(filter, &list, nil)
+		if err != nil {
+			return err
+		}
+
+		for i := 0; i < len(list); i++ {
+			//iterate through post reactions and create new Reaction Document
+			postID := list[i].ID
+			for _, userID := range list[i].Reactions["thumbs-up"] {
+				reactionArray := []string{"thumbs-up"}
+				reactions := model.PostReactions{
+					PostID:    *postID,
+					UserID:    userID,
+					Reactions: reactionArray,
+				}
+
+				_, err := sa.db.reactions.InsertOne(reactions)
+				if err != nil {
+					fmt.Printf("error migrating reactions %s", err)
+					return fmt.Errorf("error migrating reactions %s", err)
+				}
+			}
+
+			//take the count of the total thumbs up reactions
+			filter := bson.M{"_id": postID}
+			update := bson.D{
+				{"$set", bson.D{{"reaction_stats.thumbs-up", len(list[i].Reactions["thumbs-up"])}}},
+				{"$unset", bson.D{{"reactions", ""}}},
+			}
+
+			_, err := sa.db.posts.UpdateOne(filter, update, nil)
+			if err != nil {
+				fmt.Printf("error migrating reactions %s", err)
+				return fmt.Errorf("error migrating reactions %s", err)
+			}
+
+		}
+
+		return nil
+
+	})
+	//TODO end of deletion
+
 	return err
 }
 
@@ -406,7 +454,14 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 			}
 		}
 
-		// delete the user
+		//delete any reactions on posts
+		err = sa.DeleteUserPostReactions(sessionContext, clientID, userID)
+		if err != nil {
+			log.Printf("error deleting user reactions - %s", err.Error())
+			return err
+		}
+
+		//delete the user
 		filter := bson.D{
 			primitive.E{Key: "_id", Value: userID},
 			primitive.E{Key: "client_id", Value: clientID},
@@ -419,6 +474,36 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 
 		return nil
 	})
+}
+
+// DeleteUserPostReactions updates and removes all user post reactions across all existing groups
+func (sa *Adapter) DeleteUserPostReactions(context TransactionContext, clientID string, userID string) error {
+
+	filter := bson.M{"user_id": userID}
+
+	var res []model.PostReactions
+	err := sa.db.reactions.Find(filter, &res, nil)
+	if err != nil {
+		log.Printf("error deleting reactions for user %s - %s", userID, err.Error())
+		return err
+	}
+
+	_, err = sa.db.reactions.DeleteMany(filter, nil)
+	if err != nil {
+		log.Printf("error deleting user reactions to post - %s", err.Error())
+		return err
+	}
+
+	for i := 0; i < len(res); i++ {
+		for j := 0; j < len(res[i].Reactions); j++ {
+			err = sa.UpdateReactionStats(context, res[i].PostID, false, res[i].Reactions[j])
+			if err != nil {
+				return fmt.Errorf("error decrementing reaction stats for post %s with reaction %s for %s: %v", res[i].PostID, res[i].Reactions[j], userID, err)
+			}
+		}
+	}
+
+	return nil
 }
 
 // CreateGroup creates a group. Returns the id of the created group
@@ -1488,27 +1573,83 @@ func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *mode
 
 // ReactToPost React to a post
 func (sa *Adapter) ReactToPost(context TransactionContext, userID string, postID string, reaction string, on bool) error {
-	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
+	filter := bson.D{primitive.E{Key: "post_id", Value: postID}}
 
 	updateOperation := "$pull"
 	if on {
 		updateOperation = "$push"
 	}
-	update := bson.D{
-		primitive.E{Key: updateOperation, Value: bson.D{
-			primitive.E{Key: "reactions." + reaction, Value: userID},
-		}},
-	}
 
-	res, err := sa.db.posts.UpdateOneWithContext(context, filter, update, nil)
+	update := bson.M{
+		"$set": bson.M{
+			"post_id": postID,
+			"user_id": userID,
+		},
+		updateOperation: bson.M{
+			"reactions": reaction,
+		},
+	}
+	opts := options.Update().SetUpsert(true)
+	_, err := sa.db.reactions.UpdateOne(filter, update, opts)
+
 	if err != nil {
 		return fmt.Errorf("error updating post %s with reaction %s for %s: %v", postID, reaction, userID, err)
 	}
-	if res.ModifiedCount != 1 {
-		return fmt.Errorf("updated %d posts with reaction %s for %s, but expected 1", res.ModifiedCount, reaction, userID)
+
+	err = sa.UpdateReactionStats(context, postID, on, reaction)
+	if err != nil {
+		return fmt.Errorf("error updating reaction stats for post %s with reaction %s for %s: %v", postID, reaction, userID, err)
+	}
+	return nil
+}
+
+// UpdateReactionStats increments or decrements reaction counts
+func (sa *Adapter) UpdateReactionStats(context TransactionContext, postID string, on bool, reaction string) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: postID}}
+
+	incrementValue := -1
+	if on {
+		incrementValue = 1
 	}
 
+	update := bson.D{
+		primitive.E{Key: "$inc", Value: bson.D{
+			primitive.E{Key: "reaction_stats." + reaction, Value: incrementValue},
+		}},
+	}
+
+	upsert := true
+	opts := options.UpdateOptions{Upsert: &upsert}
+
+	_, err := sa.db.posts.UpdateOneWithContext(context, filter, update, &opts)
+	if err != nil {
+		return fmt.Errorf("error updating reaction stats for post %s with reaction %s: %v", postID, reaction, err)
+
+	}
 	return nil
+}
+
+// FindsReactionsByPost finds reactions based on post id
+func (sa *Adapter) FindReactionsByPost(postID string) ([]model.PostReactions, error) {
+	filter := bson.M{"post_id": postID}
+	var results []model.PostReactions
+	err := sa.db.reactions.Find(filter, &results, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error storage.Adapter.FindReactionStats - %s", err)
+	}
+	return results, nil
+}
+
+// FindReactions gets reactions based on postID
+func (sa *Adapter) FindReactions(context TransactionContext, postID string, userID string) (model.PostReactions, error) {
+	filter := bson.M{"post_id": postID, "user_id": userID}
+	var res model.PostReactions
+	err := sa.db.reactions.FindOneWithContext(context, filter, &res, nil)
+	if err != nil {
+		return res, fmt.Errorf("error finding post reactions %s: %v", postID, err)
+	}
+
+	return res, err
 }
 
 // DeletePost Deletes a post

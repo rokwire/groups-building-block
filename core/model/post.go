@@ -32,8 +32,9 @@ type Post struct {
 	Private           bool                `json:"private" bson:"private"`
 	UseAsNotification bool                `json:"use_as_notification" bson:"use_as_notification"`
 	IsAbuse           bool                `json:"is_abuse" bson:"is_abuse"`
-	Replies           []*Post             `json:"replies,omitempty"` // This is constructed by the code (ParentID)
-	Reactions         map[string][]string `json:"reactions,omitempty" bson:"reactions,omitempty"`
+	Replies           []*Post             `json:"replies,omitempty"`                              // This is constructed by the code (ParentID)
+	Reactions         map[string][]string `json:"reactions,omitempty" bson:"reactions,omitempty"` //TODO deprecated delete when deployed to prod
+	ReactionStats     map[string]int      `json:"reaction_stats" bson:"reaction_stats"`
 	ImageURL          *string             `json:"image_url" bson:"image_url"`
 
 	ToMembersList []ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins

@@ -35,6 +35,7 @@ type database struct {
 	db       *mongo.Database
 	dbClient *mongo.Client
 
+	reactions           *collectionWrapper
 	configs             *collectionWrapper
 	syncTimes           *collectionWrapper
 	users               *collectionWrapper
@@ -125,6 +126,12 @@ func (m *database) start() error {
 		return err
 	}
 
+	reactions := &collectionWrapper{database: m, coll: db.Collection("reactions")}
+	err = m.applyReactionsChecks(reactions)
+	if err != nil {
+		return err
+	}
+
 	//apply multi-tenant
 	err = m.applyMultiTenantChecks(client, users, groups, events)
 	if err != nil {
@@ -143,6 +150,8 @@ func (m *database) start() error {
 		return err
 	}
 
+	//Change
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -156,6 +165,7 @@ func (m *database) start() error {
 	m.events = events
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
+	m.reactions = reactions
 
 	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
@@ -678,6 +688,13 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 	}
 
 	log.Println("posts checks passed")
+	return nil
+}
+
+func (m *database) applyReactionsChecks(reactions *collectionWrapper) error {
+	log.Println("apply reactions checks.....")
+
+	log.Println("reactions checks passed")
 	return nil
 }
 

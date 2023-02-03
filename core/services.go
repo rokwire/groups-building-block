@@ -543,17 +543,25 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 			return fmt.Errorf("missing post for id %s", postID)
 		}
 
-		for _, userID := range post.Reactions[reaction] {
-			if current.ID == userID {
-				err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
-				if err != nil {
-					return fmt.Errorf("error removing reaction: %v", err)
+		//get reactions bases on post
+		val, ok := post.ReactionStats[reaction]
+		if ok && val != 0 {
+			res, err := app.storage.FindReactions(context, postID, current.ID)
+			if err == nil {
+				for i := range res.Reactions {
+					if res.Reactions[i] == reaction {
+						err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
+						if err != nil {
+							return fmt.Errorf("error removing reaction: %v", err)
+						}
+					}
 				}
 
 				return nil
 			}
 		}
 
+		//New reaction for current user
 		err = app.storage.ReactToPost(context, current.ID, postID, reaction, true)
 		if err != nil {
 			return fmt.Errorf("error adding reaction: %v", err)
@@ -563,6 +571,14 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 	}
 
 	return app.storage.PerformTransaction(transaction)
+}
+
+func (app *Application) findReactionsByPost(postID string) ([]model.PostReactions, error) {
+	res, err := app.storage.FindReactionsByPost(postID)
+	if err != nil {
+		return nil, fmt.Errorf("error finding reaction stats: %v", err)
+	}
+	return res, err
 }
 
 func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
