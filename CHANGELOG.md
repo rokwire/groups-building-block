@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Introduce category and tags backward compatibility [#355](https://github.com/rokwire/groups-building-block/issues/355)
+
 ## [1.15.0] - 2023-02-01
 ### Added
 - Add indexes for the nested attributes [#351](https://github.com/rokwire/groups-building-block/issues/351)

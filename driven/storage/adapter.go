@@ -434,6 +434,17 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	}
 
 	err := sa.PerformTransaction(func(context TransactionContext) error {
+
+		//
+		// Handle category and tags backward compatibility and legacy clients [#355]
+		//
+		if group.Category != "" && group.GetNewCategory() == nil {
+			group.SetNewCategory(group.Category)
+		}
+		if len(group.Tags) > 0 && group.GetNewTags() == nil {
+			group.SetNewTags(group.Tags)
+		}
+
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
@@ -513,45 +524,84 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 	//
 	// [#301] Research Groups don't support automatic join feature!!!
 	//
-	if group.ResearchGroup && group.CanJoinAutomatically {
-		group.CanJoinAutomatically = false
-	}
-
-	setOperation := bson.D{
-		primitive.E{Key: "category", Value: group.Category},
-		primitive.E{Key: "title", Value: group.Title},
-		primitive.E{Key: "privacy", Value: group.Privacy},
-		primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
-		primitive.E{Key: "description", Value: group.Description},
-		primitive.E{Key: "image_url", Value: group.ImageURL},
-		primitive.E{Key: "web_url", Value: group.WebURL},
-		primitive.E{Key: "tags", Value: group.Tags},
-		primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
-		primitive.E{Key: "date_updated", Value: time.Now()},
-		primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
-		primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
-		primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
-		primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
-		primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
-		primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-		primitive.E{Key: "research_group", Value: group.ResearchGroup},
-		primitive.E{Key: "research_open", Value: group.ResearchOpen},
-		primitive.E{Key: "research_consent_statement", Value: group.ResearchConsentStatement},
-		primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
-		primitive.E{Key: "research_description", Value: group.ResearchDescription},
-		primitive.E{Key: "research_profile", Value: group.ResearchProfile},
-		primitive.E{Key: "attributes", Value: group.Attributes},
-	}
-	if group.Settings != nil {
-		setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
-	}
-
-	updateOperation := bson.D{
-		primitive.E{Key: "$set", Value: setOperation},
-	}
 
 	// transaction
 	err := sa.PerformTransaction(func(context TransactionContext) error {
+		if group.ResearchGroup && group.CanJoinAutomatically {
+			group.CanJoinAutomatically = false
+		}
+
+		setOperation := bson.D{
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+			primitive.E{Key: "research_group", Value: group.ResearchGroup},
+			primitive.E{Key: "research_open", Value: group.ResearchOpen},
+			primitive.E{Key: "research_consent_statement", Value: group.ResearchConsentStatement},
+			primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
+			primitive.E{Key: "research_description", Value: group.ResearchDescription},
+			primitive.E{Key: "research_profile", Value: group.ResearchProfile},
+		}
+		if group.Settings != nil {
+			setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
+		}
+
+		//
+		// Handle category and tags backward compatibility and legacy clients 355355
+		//
+		if group.Attributes != nil {
+			setOperation = append(setOperation, primitive.E{Key: "attributes", Value: group.Attributes})
+
+			category := group.GetNewCategory()
+			if category != nil {
+				setOperation = append(setOperation, primitive.E{Key: "category", Value: *category})
+			}
+
+			tags := group.GetNewTags()
+			if tags != nil {
+				setOperation = append(setOperation, primitive.E{Key: "tags", Value: tags})
+			}
+		} else if group.Category != "" || len(group.Tags) > 0 {
+
+			var userID *string
+			if current != nil {
+				userID = &current.ID
+			}
+			persistedGroup, err := sa.FindGroup(context, clientID, group.ID, userID)
+			if err != nil {
+				return err
+			}
+
+			if group.Attributes == nil && persistedGroup.Attributes != nil {
+				group.Attributes = persistedGroup.Attributes
+			}
+
+			if group.Category != "" {
+				group.SetNewCategory(group.Category)
+				setOperation = append(setOperation, primitive.E{Key: "category", Value: group.Category})
+			}
+			if len(group.Tags) > 0 {
+				group.SetNewTags(group.Tags)
+				setOperation = append(setOperation, primitive.E{Key: "tags", Value: group.Tags})
+			}
+			setOperation = append(setOperation, primitive.E{Key: "attributes", Value: group.Attributes})
+		}
+
+		updateOperation := bson.D{
+			primitive.E{Key: "$set", Value: setOperation},
+		}
+
 		_, err := sa.db.groups.UpdateOneWithContext(
 			context,
 			bson.D{primitive.E{Key: "_id", Value: group.ID},
