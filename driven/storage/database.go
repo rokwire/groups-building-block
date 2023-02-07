@@ -143,6 +143,11 @@ func (m *database) start() error {
 		return err
 	}
 
+	err = m.ApplyGroupsAttributesTransition(client, groups)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -938,6 +943,47 @@ func (m *database) ApplyDefaultGroupSettings(client *mongo.Client, groups *colle
 	}
 
 	log.Println("group settings migration passed")
+	return nil
+}
+
+func (m *database) ApplyGroupsAttributesTransition(client *mongo.Client, groups *collectionWrapper) error {
+	log.Println("apply group attributes migration.....")
+
+	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		filter := bson.D{
+			{Key: "attributes", Value: bson.M{"$exists": false}},
+		}
+		_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
+			{Key: "$set", Value: bson.D{
+				{Key: "attributes.category", Value: "$category"},
+				{Key: "attributes.tags", Value: "$tags"},
+			}},
+		}, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("group attributes migration passed")
 	return nil
 }
 
