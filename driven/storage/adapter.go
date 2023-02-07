@@ -444,6 +444,9 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		if len(group.Tags) > 0 && group.GetNewTags() == nil {
 			group.SetNewTags(group.Tags)
 		}
+		if group.Attributes == nil {
+			group.Attributes = map[string]interface{}{}
+		}
 
 		// insert the group and the admin member
 		group.ID = insertedID
@@ -594,6 +597,9 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 			if len(group.Tags) > 0 {
 				group.SetNewTags(group.Tags)
 				setOperation = append(setOperation, primitive.E{Key: "tags", Value: group.Tags})
+			}
+			if group.Attributes == nil {
+				group.Attributes = map[string]interface{}{}
 			}
 			setOperation = append(setOperation, primitive.E{Key: "attributes", Value: group.Attributes})
 		}
