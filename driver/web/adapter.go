@@ -98,6 +98,12 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetSyncConfig)).Methods("GET")
 	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
 
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.getConfig)).Methods("GET")
+	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.getConfigs)).Methods("GET")
+	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.createConfig)).Methods("POST")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.updateConfig)).Methods("PUT")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.deleteConfig)).Methods("DELETE")
+
 	// Internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
 	restSubrouter.HandleFunc("/int/group/{identifier}", we.internalKeyAuthFunc(we.internalApisHandler.IntGetGroup)).Methods("GET")

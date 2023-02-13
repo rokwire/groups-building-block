@@ -651,43 +651,51 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool) error {
+func (app *Application) synchronizeAuthman(appID string, orgID string, checkThreshold bool) error {
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		times, err := app.storage.FindSyncTimes(context, clientID)
+		times, err := app.storage.FindSyncTimes(context, appID, orgID)
 		if err != nil {
 			return err
 		}
 		if times != nil && times.StartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindConfig(model.ConfigTypeSync, appID, orgID)
 			if err != nil {
-				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+				log.Printf("error finding sync config for appID %s, orgID %s: %v", appID, orgID, err)
 			}
+
 			timeout := defaultConfigSyncTimeout
-			if config != nil && config.Timeout > 0 {
-				timeout = config.Timeout
+			var syncConfig *model.SyncConfigData
+			if config != nil {
+				syncConfig, err = config.DataAsSyncConfig()
+				if err != nil {
+					log.Printf("error asserting as sync config for appID %s, orgID %s: %v", appID, orgID, err)
+				}
+				if syncConfig != nil && syncConfig.Timeout > 0 {
+					timeout = syncConfig.Timeout
+				}
 			}
 
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
-					log.Println("Another Authman sync process is running for clientID " + clientID)
-					return fmt.Errorf("another Authman sync process is running" + clientID)
+					log.Printf("Another Authman sync process is running for appID %s, orgID %s", appID, orgID)
+					return fmt.Errorf("another Authman sync process is running for appID %s, orgID %s", appID, orgID)
 				}
-				log.Printf("Authman sync past timeout threshold %d mins for client ID %s\n", timeout, clientID)
+				log.Printf("Authman sync past timeout threshold %d mins for appID %s, orgID %s\n", timeout, appID, orgID)
 			}
 			if checkThreshold {
-				if config == nil {
-					log.Printf("missing sync configs for clientID %s", clientID)
-					return fmt.Errorf("missing sync configs for clientID %s: %v", clientID, err)
+				if syncConfig == nil {
+					log.Printf("missing sync configs for appID %s, orgID %s", appID, orgID)
+					return fmt.Errorf("missing sync configs for appID %s, orgID %s: %v", appID, orgID, err)
 				}
-				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(config.TimeThreshold))) {
-					log.Println("Authman has already been synced for clientID " + clientID)
-					return fmt.Errorf("Authman has already been synced for clientID %s", clientID)
+				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(syncConfig.TimeThreshold))) {
+					log.Printf("Authman has already been synced for appID %s, orgID %s", appID, orgID)
+					return fmt.Errorf("Authman has already been synced for appID %s, orgID %s", appID, orgID)
 				}
 			}
 		}
 
-		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID})
+		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, AppID: appID, OrgID: orgID})
 	}
 
 	err := app.storage.PerformTransaction(transaction)

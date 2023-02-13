@@ -111,7 +111,7 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 func (app *Application) setupSyncManagedGroupTimer() {
 	log.Println("setupSyncManagedGroupTimer")
 
-	configs, err := app.storage.FindSyncConfigs()
+	configs, err := app.storage.FindConfigs()
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}

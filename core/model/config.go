@@ -33,14 +33,14 @@ const (
 	// TypeManagedGroupConfigData managed group configs type
 	TypeManagedGroupConfigData logutils.MessageDataType = "managed group config data"
 
-	// ConfigIDEnv is the Config ID for EnvConfigData
-	ConfigIDEnv string = "env"
-	// ConfigIDApplication is the Config ID for ApplicationConfigData
-	ConfigIDApplication string = "application"
-	// ConfigIDSync is the Config ID for SyncConfigData
-	ConfigIDSync string = "sync"
-	// ConfigIDManagedGroup is the Config ID for ManagedGroupConfigData
-	ConfigIDManagedGroup string = "managed_group"
+	// ConfigTypeEnv is the Config ID for EnvConfigData
+	ConfigTypeEnv string = "env"
+	// ConfigTypeApplication is the Config ID for ApplicationConfigData
+	ConfigTypeApplication string = "application"
+	// ConfigTypeSync is the Config ID for SyncConfigData
+	ConfigTypeSync string = "sync"
+	// ConfigTypeManagedGroup is the Config ID for ManagedGroupConfigData
+	ConfigTypeManagedGroup string = "managed_group"
 )
 
 // Config contain generic configs

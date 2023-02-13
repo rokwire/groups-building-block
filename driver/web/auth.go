@@ -266,6 +266,7 @@ type userData struct {
 	Uin         *string  `json:"uin"`
 	NetID       *string  `json:"net_id"`
 	Permissions []string `json:"uiucedu_is_member_of"`
+	System      bool     `json:"system"`
 }
 
 ////////////////////////////////////
@@ -529,7 +530,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
-				Permissions: permissions, UIuceduUIN: &claims.UID}
+				Permissions: permissions, UIuceduUIN: &claims.UID, System: claims.System}
 			isCoreUser = true
 		}
 	}
@@ -616,6 +617,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		Name:        name,
 		IsCoreUser:  isCoreUser,
 		Permissions: data.Permissions,
+		System:      data.System,
 	}, false
 }
 

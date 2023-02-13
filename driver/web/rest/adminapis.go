@@ -704,11 +704,12 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 // @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
-// @Success 200 {array}  model.ManagedGroupConfig
+// @Success 200 {array}  model.Config
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [get]
 func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Administration.GetManagedGroupConfigs(clientID)
+	configType := model.ConfigTypeManagedGroup
+	configs, err := h.app.Administration.GetConfigs(&configType, current.AppID, current.OrgID, current.System)
 	if err != nil {
 		log.Printf("error getting managed group configs events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -738,30 +739,23 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
 func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var config model.ManagedGroupConfig
-	err = json.Unmarshal(data, &config)
+	var managedGroupConfig model.ManagedGroupConfigData
+	err := json.NewDecoder(r.Body).Decode(&managedGroupConfig)
 	if err != nil {
 		log.Printf("Error on unmarshal the managed group config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config.ClientID = clientID
-	newConfig, err := h.app.Administration.CreateManagedGroupConfig(config)
+	config := model.Config{Type: model.ConfigTypeManagedGroup, AppID: current.AppID, OrgID: current.OrgID, Data: managedGroupConfig}
+	newConfig, err := h.app.Administration.CreateConfig(config, current.AppID, current.OrgID, current.System)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response, err := json.Marshal(newConfig)
+	response, err := json.Marshal(newConfig.Data)
 	if err != nil {
 		log.Println("Error on marshal created managed group config")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -785,23 +779,16 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [put]
 func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var config model.ManagedGroupConfig
-	err = json.Unmarshal(data, &config)
+	var managedGroupConfig model.ManagedGroupConfigData
+	err := json.NewDecoder(r.Body).Decode(&managedGroupConfig)
 	if err != nil {
 		log.Printf("Error on unmarshal the managed group config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config.ClientID = clientID
-	err = h.app.Administration.UpdateManagedGroupConfig(config)
+	config := model.Config{Type: model.ConfigTypeManagedGroup, AppID: current.AppID, OrgID: current.OrgID, Data: managedGroupConfig}
+	err = h.app.Administration.UpdateConfig(config, current.AppID, current.OrgID, current.System)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -831,7 +818,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	err := h.app.Administration.DeleteManagedGroupConfig(id, clientID)
+	err := h.app.Administration.DeleteConfig(id, current.AppID, current.OrgID, current.System)
 	if err != nil {
 		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -848,11 +835,12 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 // @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
-// @Success 200 {array}  model.SyncConfig
+// @Success 200 {array}  model.Config
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [get]
 func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Administration.GetConfig(clientID)
+	configType := model.ConfigTypeManagedGroup
+	configs, err := h.app.Administration.GetConfigs(&configType, current.AppID, current.OrgID, current.System)
 	if err != nil {
 		log.Printf("error getting sync config - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -890,8 +878,8 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 		return
 	}
 
-	config := model.Config{Type: model.ConfigIDSync, AppID: current.AppID, OrgID: current.OrgID, Data: syncConfig}
-	err = h.app.Administration.UpdateConfig(config)
+	config := model.Config{Type: model.ConfigTypeSync, AppID: current.AppID, OrgID: current.OrgID, Data: syncConfig}
+	err = h.app.Administration.UpdateConfig(config, current.AppID, current.OrgID, current.System)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

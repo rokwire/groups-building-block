@@ -270,15 +270,16 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 type Administration interface {
 	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 
-	GetConfig(configType string, appID string, orgID string) (*model.Config, error)
-	CreateConfig(config model.Config) error
-	UpdateConfig(config model.Config) error
-	DeleteConfig(configType string, appID string, orgID string) error
+	GetConfig(id string, appID string, orgID string, system bool) (*model.Config, error)
+	GetConfigs(configType *string, appID string, orgID string, system bool) ([]model.Config, error)
+	CreateConfig(config model.Config, appID string, orgID string, system bool) (*model.Config, error)
+	UpdateConfig(config model.Config, appID string, orgID string, system bool) error
+	DeleteConfig(id string, appID string, orgID string, system bool) error
 
-	GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
-	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
-	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	DeleteManagedGroupConfig(id string, clientID string) error
+	// GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
+	// CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
+	// UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
+	// DeleteManagedGroupConfig(id string, clientID string) error
 }
 
 type administrationImpl struct {
@@ -289,21 +290,21 @@ func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilte
 	return s.app.getGroupsUnprotected(clientID, filter)
 }
 
-func (s *administrationImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-	return s.app.getManagedGroupConfigs(clientID)
-}
+// func (s *administrationImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
+// 	return s.app.getManagedGroupConfigs(clientID)
+// }
 
-func (s *administrationImpl) CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
-	return s.app.createManagedGroupConfig(config)
-}
+// func (s *administrationImpl) CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
+// 	return s.app.createManagedGroupConfig(config)
+// }
 
-func (s *administrationImpl) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
-	return s.app.updateManagedGroupConfig(config)
-}
+// func (s *administrationImpl) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
+// 	return s.app.updateManagedGroupConfig(config)
+// }
 
-func (s *administrationImpl) DeleteManagedGroupConfig(id string, clientID string) error {
-	return s.app.deleteManagedGroupConfig(id, clientID)
-}
+// func (s *administrationImpl) DeleteManagedGroupConfig(id string, clientID string) error {
+// 	return s.app.deleteManagedGroupConfig(id, clientID)
+// }
 
 func (s *administrationImpl) GetConfig(configType string, appID string, orgID string) (*model.Config, error) {
 	return s.app.getConfig(configType, appID, orgID)
@@ -316,10 +317,15 @@ type Storage interface {
 	PerformTransaction(transaction func(context storage.TransactionContext) error) error
 
 	FindConfig(configType string, appID string, orgID string) (*model.Config, error)
-	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
-	FindSyncConfigs() ([]model.SyncConfig, error)
+	FindConfigByID(id string) (*model.Config, error)
+	FindConfigs(configType *string) ([]model.Config, error)
+	InsertConfig(config model.Config) error
+	UpdateConfig(config model.Config) error
+	DeleteConfig(id string) error
+	// LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
+	// FindSyncConfigs() ([]model.SyncConfig, error)
 
-	FindSyncTimes(context storage.TransactionContext, clientID string) (*model.SyncTimes, error)
+	FindSyncTimes(context storage.TransactionContext, appID string, orgID string) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
 	FindUser(clientID string, id string, external bool) (*model.User, error)
@@ -360,12 +366,12 @@ type Storage interface {
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
 
-	LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error)
-	FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error)
-	FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
-	InsertManagedGroupConfig(config model.ManagedGroupConfig) error
-	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	DeleteManagedGroupConfig(id string, clientID string) error
+	// LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error)
+	// FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error)
+	// FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
+	// InsertManagedGroupConfig(config model.ManagedGroupConfig) error
+	// UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
+	// DeleteManagedGroupConfig(id string, clientID string) error
 
 	// V3
 	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
