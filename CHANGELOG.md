@@ -6,6 +6,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.0] - 2023-02-07
+### Added
+- Introduce category and tags backward compatibility [#355](https://github.com/rokwire/groups-building-block/issues/355)
+
+## [1.15.0] - 2023-02-01
+### Added
+- Add indexes for the nested attributes [#351](https://github.com/rokwire/groups-building-block/issues/351)
+### Changed
+- Remove category validation on create & update group operations [#352](https://github.com/rokwire/groups-building-block/issues/352)
+
+## [1.14.0] - 2023-01-30
+### Added
+- Integrate govulncheck within the build process [#319](https://github.com/rokwire/groups-building-block/issues/319)
+### Changed
+- Rename group filters to attributes [#348](https://github.com/rokwire/groups-building-block/issues/348)
+
 ## [1.13.0] - 2023-01-26
 ### Added
 - Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)

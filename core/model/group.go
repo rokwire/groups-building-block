@@ -33,8 +33,8 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
-	Settings *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
-	Filters  map[string]interface{} `json:"filters" bson:"filters"`
+	Settings   *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
+	Attributes map[string]interface{} `json:"attributes" bson:"attributes"`
 
 	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
 	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`
@@ -86,7 +86,7 @@ func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection
 }
 
 // CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
-func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
+func (gr *Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 
 	var answers []MemberAnswer
 	if len(gr.MembershipQuestions) > 0 {
@@ -102,6 +102,49 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 }
 
 // IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
-func (gr Group) IsAuthmanSyncEligible() bool {
+func (gr *Group) IsAuthmanSyncEligible() bool {
 	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
+}
+
+// GetNewCategory gets new category attribute
+func (gr *Group) GetNewCategory() *string {
+	if gr.Attributes != nil {
+		if val, ok := gr.Attributes["category"]; ok {
+			category := val.(string)
+			return &category
+		}
+	}
+	return nil
+}
+
+// SetNewCategory Sets new category attribute
+func (gr *Group) SetNewCategory(category string) {
+	if gr.Attributes == nil {
+		gr.Attributes = map[string]interface{}{}
+	}
+	gr.Attributes["category"] = category
+}
+
+// GetNewTags Gets new tags attribute
+func (gr *Group) GetNewTags() []string {
+	if gr.Attributes != nil {
+		if val, ok := gr.Attributes["tags"]; ok {
+
+			interfaceList := val.([]interface{})
+			stringList := make([]string, len(interfaceList))
+			for i, v := range interfaceList {
+				stringList[i] = v.(string)
+			}
+			return stringList
+		}
+	}
+	return nil
+}
+
+// SetNewTags Sets new tags attribute
+func (gr *Group) SetNewTags(tags []string) {
+	if gr.Attributes == nil {
+		gr.Attributes = map[string]interface{}{}
+	}
+	gr.Attributes["tags"] = tags
 }

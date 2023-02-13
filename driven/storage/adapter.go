@@ -483,6 +483,20 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	}
 
 	err := sa.PerformTransaction(func(context TransactionContext) error {
+
+		//
+		// Handle category and tags backward compatibility and legacy clients [#355]
+		//
+		if group.Category != "" && group.GetNewCategory() == nil {
+			group.SetNewCategory(group.Category)
+		}
+		if len(group.Tags) > 0 && group.GetNewTags() == nil {
+			group.SetNewTags(group.Tags)
+		}
+		if group.Attributes == nil {
+			group.Attributes = map[string]interface{}{}
+		}
+
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
@@ -532,6 +546,8 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 			return err
 		}
 
+		sa.UpdateGroupAttributeIndexes(group)
+
 		return nil
 	})
 
@@ -560,45 +576,87 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 	//
 	// [#301] Research Groups don't support automatic join feature!!!
 	//
-	if group.ResearchGroup && group.CanJoinAutomatically {
-		group.CanJoinAutomatically = false
-	}
-
-	setOperation := bson.D{
-		primitive.E{Key: "category", Value: group.Category},
-		primitive.E{Key: "title", Value: group.Title},
-		primitive.E{Key: "privacy", Value: group.Privacy},
-		primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
-		primitive.E{Key: "description", Value: group.Description},
-		primitive.E{Key: "image_url", Value: group.ImageURL},
-		primitive.E{Key: "web_url", Value: group.WebURL},
-		primitive.E{Key: "tags", Value: group.Tags},
-		primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
-		primitive.E{Key: "date_updated", Value: time.Now()},
-		primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
-		primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
-		primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
-		primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
-		primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
-		primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
-		primitive.E{Key: "research_group", Value: group.ResearchGroup},
-		primitive.E{Key: "research_open", Value: group.ResearchOpen},
-		primitive.E{Key: "research_consent_statement", Value: group.ResearchConsentStatement},
-		primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
-		primitive.E{Key: "research_description", Value: group.ResearchDescription},
-		primitive.E{Key: "research_profile", Value: group.ResearchProfile},
-		primitive.E{Key: "filters", Value: group.Filters},
-	}
-	if group.Settings != nil {
-		setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
-	}
-
-	updateOperation := bson.D{
-		primitive.E{Key: "$set", Value: setOperation},
-	}
 
 	// transaction
 	err := sa.PerformTransaction(func(context TransactionContext) error {
+		if group.ResearchGroup && group.CanJoinAutomatically {
+			group.CanJoinAutomatically = false
+		}
+
+		setOperation := bson.D{
+			primitive.E{Key: "title", Value: group.Title},
+			primitive.E{Key: "privacy", Value: group.Privacy},
+			primitive.E{Key: "hidden_for_search", Value: group.HiddenForSearch},
+			primitive.E{Key: "description", Value: group.Description},
+			primitive.E{Key: "image_url", Value: group.ImageURL},
+			primitive.E{Key: "web_url", Value: group.WebURL},
+			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
+			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
+			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
+			primitive.E{Key: "can_join_automatically", Value: group.CanJoinAutomatically},
+			primitive.E{Key: "block_new_membership_requests", Value: group.BlockNewMembershipRequests},
+			primitive.E{Key: "attendance_group", Value: group.AttendanceGroup},
+			primitive.E{Key: "research_group", Value: group.ResearchGroup},
+			primitive.E{Key: "research_open", Value: group.ResearchOpen},
+			primitive.E{Key: "research_consent_statement", Value: group.ResearchConsentStatement},
+			primitive.E{Key: "research_consent_details", Value: group.ResearchConsentDetails},
+			primitive.E{Key: "research_description", Value: group.ResearchDescription},
+			primitive.E{Key: "research_profile", Value: group.ResearchProfile},
+		}
+		if group.Settings != nil {
+			setOperation = append(setOperation, primitive.E{Key: "settings", Value: group.Settings})
+		}
+
+		//
+		// Handle category and tags backward compatibility and legacy clients 355355
+		//
+		if group.Attributes != nil {
+			setOperation = append(setOperation, primitive.E{Key: "attributes", Value: group.Attributes})
+
+			category := group.GetNewCategory()
+			if category != nil {
+				setOperation = append(setOperation, primitive.E{Key: "category", Value: *category})
+			}
+
+			tags := group.GetNewTags()
+			if tags != nil {
+				setOperation = append(setOperation, primitive.E{Key: "tags", Value: tags})
+			}
+		} else if group.Category != "" || len(group.Tags) > 0 {
+
+			var userID *string
+			if current != nil {
+				userID = &current.ID
+			}
+			persistedGroup, err := sa.FindGroup(context, clientID, group.ID, userID)
+			if err != nil {
+				return err
+			}
+
+			if group.Attributes == nil && persistedGroup.Attributes != nil {
+				group.Attributes = persistedGroup.Attributes
+			}
+
+			if group.Category != "" {
+				group.SetNewCategory(group.Category)
+				setOperation = append(setOperation, primitive.E{Key: "category", Value: group.Category})
+			}
+			if len(group.Tags) > 0 {
+				group.SetNewTags(group.Tags)
+				setOperation = append(setOperation, primitive.E{Key: "tags", Value: group.Tags})
+			}
+			if group.Attributes == nil {
+				group.Attributes = map[string]interface{}{}
+			}
+			setOperation = append(setOperation, primitive.E{Key: "attributes", Value: group.Attributes})
+		}
+
+		updateOperation := bson.D{
+			primitive.E{Key: "$set", Value: setOperation},
+		}
+
 		_, err := sa.db.groups.UpdateOneWithContext(
 			context,
 			bson.D{primitive.E{Key: "_id", Value: group.ID},
@@ -634,6 +692,8 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		if err != nil {
 			return err
 		}
+
+		sa.UpdateGroupAttributeIndexes(group)
 
 		return nil
 	})
@@ -767,7 +827,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		innerOrFilter := []bson.M{}
 
 		if groupsFilter.ExcludeMyGroups != nil && *groupsFilter.ExcludeMyGroups {
-			filter = append(filter, bson.E{"_id", bson.M{"$nin": groupIDs}})
+			filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$nin": groupIDs}})
 			innerOrFilter = []bson.M{
 				{"privacy": bson.M{"$ne": "private"}},
 			}
@@ -781,14 +841,14 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		if groupsFilter.Title != nil {
 			if groupsFilter.IncludeHidden != nil && *groupsFilter.IncludeHidden {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					primitive.M{"title": *groupsFilter.Title},
+					{"title": *groupsFilter.Title},
 				}})
 			} else {
 				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					primitive.M{"title": *groupsFilter.Title},
-					primitive.M{"$or": []primitive.M{
-						primitive.M{"hidden_for_search": false},
-						primitive.M{"hidden_for_search": primitive.M{"$exists": false}},
+					{"title": *groupsFilter.Title},
+					{"$or": []primitive.M{
+						{"hidden_for_search": false},
+						{"hidden_for_search": primitive.M{"$exists": false}},
 					}},
 				}})
 			}
@@ -835,7 +895,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
 				filter = append(filter, bson.E{
-					"$or", []bson.M{
+					Key: "$or", Value: []bson.M{
 						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$elemMatch": bson.M{"$in": innerValue}}},
 						{fmt.Sprintf("research_profile.%s.%s", outerKey, innerKey): bson.M{"$exists": false}},
 					},
@@ -844,23 +904,23 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 	}
 
-	if groupsFilter.Filters != nil {
-		groupFilters := []bson.M{}
-		for key, value := range groupsFilter.Filters {
+	if groupsFilter.Attributes != nil {
+		attributeFilters := []bson.M{}
+		for key, value := range groupsFilter.Attributes {
 			if reflect.TypeOf(value).Kind() != reflect.Slice {
-				groupFilters = append(groupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
+				attributeFilters = append(attributeFilters, bson.M{fmt.Sprintf("attributes.%s", key): value})
 			} else {
 				orSubCriterias := []bson.M{}
 				var entryList []interface{} = value.([]interface{})
 				for _, entry := range entryList {
-					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("filters.%s", key): entry})
+					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("attributes.%s", key): entry})
 				}
-				groupFilters = append(groupFilters, bson.M{"$or": orSubCriterias})
+				attributeFilters = append(attributeFilters, bson.M{"$or": orSubCriterias})
 			}
 		}
-		if len(groupFilters) > 0 {
+		if len(attributeFilters) > 0 {
 			filter = append(filter, bson.E{
-				Key: "$and", Value: groupFilters,
+				Key: "$and", Value: attributeFilters,
 			})
 		}
 	}
@@ -868,11 +928,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	findOptions := options.Find()
 	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
-			{"title", -1},
+			{Key: "title", Value: -1},
 		})
 	} else {
 		findOptions.SetSort(bson.D{
-			{"title", 1},
+			{Key: "title", Value: 1},
 		})
 	}
 	if groupsFilter.Limit != nil {
@@ -927,11 +987,11 @@ type findUserGroupsCountResult struct {
 // FindUserGroupsCount retrieves the count of current groups that the user is member
 func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, error) {
 	pipeline := []primitive.M{
-		primitive.M{"$match": primitive.M{
+		{"$match": primitive.M{
 			"client_id":       clientID,
 			"members.user_id": userID,
 		}},
-		primitive.M{"$count": "count"},
+		{"$count": "count"},
 	}
 	var result []findUserGroupsCountResult
 	err := sa.db.groups.Aggregate(pipeline, &result, &options.AggregateOptions{})
@@ -995,33 +1055,33 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 		}
 	}
 
-	if groupsFilter.Filters != nil {
-		groupFilters := []bson.M{}
-		for key, value := range groupsFilter.Filters {
+	if groupsFilter.Attributes != nil {
+		attributeFilters := []bson.M{}
+		for key, value := range groupsFilter.Attributes {
 			if reflect.TypeOf(value).Kind() != reflect.Slice {
-				groupFilters = append(groupFilters, bson.M{fmt.Sprintf("filters.%s", key): value})
+				attributeFilters = append(attributeFilters, bson.M{fmt.Sprintf("attributes.%s", key): value})
 			} else {
 				orSubCriterias := []bson.M{}
 				var entryList []interface{} = value.([]interface{})
 				for _, entry := range entryList {
-					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("filters.%s", key): entry})
+					orSubCriterias = append(orSubCriterias, bson.M{fmt.Sprintf("attributes.%s", key): entry})
 				}
-				groupFilters = append(groupFilters, bson.M{"$or": orSubCriterias})
+				attributeFilters = append(attributeFilters, bson.M{"$or": orSubCriterias})
 			}
 		}
-		if len(groupFilters) > 0 {
-			mongoFilter["$and"] = groupFilters
+		if len(attributeFilters) > 0 {
+			mongoFilter["$and"] = attributeFilters
 		}
 	}
 
 	findOptions := options.Find()
 	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
 		findOptions.SetSort(bson.D{
-			{"title", -1},
+			{Key: "title", Value: -1},
 		})
 	} else {
 		findOptions.SetSort(bson.D{
-			{"title", 1},
+			{Key: "title", Value: 1},
 		})
 	}
 	if groupsFilter.Limit != nil {
@@ -1057,10 +1117,10 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 	}
 	if filterByToMembers && current != nil {
 		filter = append(filter, primitive.E{Key: "$or", Value: []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
-			primitive.M{"to_members.user_id": current.ID},
-			primitive.M{"member.user_id": current.ID},
+			{"to_members": primitive.Null{}},
+			{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			{"to_members.user_id": current.ID},
+			{"member.user_id": current.ID},
 		}})
 	}
 
@@ -1162,13 +1222,13 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	if filterByToMembers {
 		innerFilter := []primitive.M{
-			primitive.M{"to_members": primitive.Null{}},
-			primitive.M{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			{"to_members": primitive.Null{}},
+			{"to_members": primitive.M{"$exists": true, "$size": 0}},
 		}
 		if current != nil {
 			innerFilter = append(innerFilter, []primitive.M{
-				primitive.M{"to_members.user_id": current.ID},
-				primitive.M{"member.user_id": current.ID},
+				{"to_members.user_id": current.ID},
+				{"member.user_id": current.ID},
 			}...)
 		}
 		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
@@ -1181,9 +1241,9 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	paging := false
 	findOptions := options.Find()
 	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 	if limit != nil {
 		findOptions.SetLimit(*limit)
@@ -1342,9 +1402,9 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 
 	findOptions := options.Find()
 	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 
 	var posts []*model.Post
@@ -1383,9 +1443,9 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 
 	findOptions := options.Find()
 	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{"date_created", -1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
-		findOptions.SetSort(bson.D{{"date_created", 1}})
+		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 
 	var posts []*model.Post
@@ -1647,6 +1707,47 @@ func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string,
 	return sa.PerformTransaction(func(context TransactionContext) error {
 		return updateStats(context)
 	})
+}
+
+// UpdateGroupAttributeIndexes Analyses and updates the indexes if need. This method is async  without transaction.
+func (sa *Adapter) UpdateGroupAttributeIndexes(group *model.Group) {
+	if group != nil {
+		updateIndexes := func() {
+
+			indexes, err := sa.db.groups.ListIndexesWithContext(context.Background())
+			if err != nil {
+				log.Printf("sa.UpdateGroupAttributeIndexes error on retrieving indexes: %s", err)
+				return
+			}
+			for key := range group.Attributes {
+				fieldName := fmt.Sprintf("attributes.%s", key)
+
+				found := false
+				for _, index := range indexes {
+					indexName := index["name"].(string)
+
+					if strings.Contains(indexName, fieldName) {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					err := sa.db.groups.AddIndexWithContext(
+						context.Background(),
+						bson.D{
+							primitive.E{Key: fieldName, Value: 1},
+						}, false)
+					if err != nil {
+						log.Printf("sa.UpdateGroupAttributeIndexes error on retrieving indexes: %s", err)
+						return
+					}
+				}
+			}
+		}
+
+		go updateIndexes()
+	}
 }
 
 // UpdateGroupDateUpdated Updates group's date updated

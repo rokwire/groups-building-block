@@ -825,7 +825,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						if groupUpdated {
 							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
-								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
+								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
 						}
 					}
@@ -843,7 +843,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		for _, authmanGroup := range authmanGroups {
 			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
 			if err != nil {
-				fmt.Errorf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
+				log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 			}
 		}
 	}

@@ -3140,6 +3140,10 @@ const docTemplate = `{
                 "attendance_group": {
                     "type": "boolean"
                 },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "authman_enabled": {
                     "type": "boolean"
                 },
@@ -3177,10 +3181,6 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
-                },
-                "filters": {
-                    "type": "object",
-                    "additionalProperties": true
                 },
                 "hidden_for_search": {
                     "type": "boolean"
@@ -3380,6 +3380,10 @@ const docTemplate = `{
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "category": {
                     "description": "group category",
                     "type": "string"
@@ -3387,10 +3391,6 @@ const docTemplate = `{
                 "exclude_my_groups": {
                     "description": "Exclude My groups",
                     "type": "boolean"
-                },
-                "filters": {
-                    "type": "object",
-                    "additionalProperties": true
                 },
                 "hidden": {
                     "description": "Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.",
@@ -3761,13 +3761,16 @@ const docTemplate = `{
         "createGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
             "properties": {
                 "attendance_group": {
                     "type": "boolean"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "authman_enabled": {
                     "type": "boolean"
@@ -3792,10 +3795,6 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
-                },
-                "filters": {
-                    "type": "object",
-                    "additionalProperties": true
                 },
                 "hidden_for_search": {
                     "type": "boolean"
@@ -4348,13 +4347,16 @@ const docTemplate = `{
         "updateGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
             "properties": {
                 "attendance_group": {
                     "type": "boolean"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "authman_enabled": {
                     "type": "boolean"
@@ -4373,10 +4375,6 @@ const docTemplate = `{
                 },
                 "description": {
                     "type": "string"
-                },
-                "filters": {
-                    "type": "object",
-                    "additionalProperties": true
                 },
                 "hidden_for_search": {
                     "type": "boolean"

@@ -30,7 +30,7 @@ type GroupsFilter struct {
 	ResearchOpen     *bool                          `json:"research_open"`
 	ResearchGroup    bool                           `json:"research_group"`
 	ResearchAnswers  map[string]map[string][]string `json:"research_answers"`
-	Filters          map[string]interface{}         `json:"filters"`
+	Attributes       map[string]interface{}         `json:"attributes"`
 	Order            *string                        `json:"order"`  // order by category & name (asc desc)
 	Offset           *int64                         `json:"offset"` // result offset
 	Limit            *int64                         `json:"limit"`  // result limit

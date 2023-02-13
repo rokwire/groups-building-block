@@ -1,4 +1,4 @@
-FROM golang:1.18-buster as builder
+FROM golang:1.19-bullseye as builder
 
 ENV CGO_ENABLED=0
 
@@ -8,7 +8,7 @@ WORKDIR /groups-app
 COPY . .
 RUN make
 
-FROM alpine:3.16.2
+FROM alpine:3.17
 
 COPY --from=builder /groups-app/bin/groups /
 COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml
