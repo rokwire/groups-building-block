@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.1] - 2023-02-14
+### Fixed
+- Fix cast error within Tags backward compatibility handling [#357](https://github.com/rokwire/groups-building-block/issues/357)
+
 ## [1.16.0] - 2023-02-07
 ### Added
 - Introduce category and tags backward compatibility [#355](https://github.com/rokwire/groups-building-block/issues/355)
