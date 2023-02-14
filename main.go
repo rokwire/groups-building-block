@@ -101,8 +101,8 @@ func main() {
 	}
 
 	// Notification adapter
-	// appID := getEnvKey("GROUPS_APP_ID", true)
-	// orgID := getEnvKey("GROUPS_ORG_ID", true)
+	appID := getEnvKey("GROUPS_APP_ID", true)
+	orgID := getEnvKey("GROUPS_ORG_ID", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter, err := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
 	if err != nil {
@@ -142,9 +142,8 @@ func main() {
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
-		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, serviceRegManager, groupServiceURL)
+	webAdapter := web.NewWebAdapter(application, host, appID, orgID, supportedClientIDs, apiKeys, oidcProvider,
+		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, intrernalAPIKey, serviceRegManager, groupServiceURL)
 	webAdapter.Start()
 }
 

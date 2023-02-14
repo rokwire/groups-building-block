@@ -42,7 +42,7 @@ type InternalApisHandler struct {
 // @Success 200 {object} userGroupShortDetail
 // @Security IntAPIKeyAuth
 // @Router /api/int/user/{identifier}/groups [get]
-func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) IntGetUserGroupMemberships(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -100,7 +100,7 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 // @Success 200 {object} model.Group
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/{identifier} [get]
-func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) IntGetGroup(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	identifier := params["identifier"]
 	if len(identifier) <= 0 {
@@ -150,7 +150,7 @@ func (h *InternalApisHandler) IntGetGroup(clientID string, w http.ResponseWriter
 // @Success 200 {array} model.ShortMemberRecord
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/title/{title}/members [get]
-func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	title := params["title"]
 
@@ -220,8 +220,8 @@ type synchronizeAuthmanRequestBody struct {
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /int/authman/synchronize [post]
-func (h *InternalApisHandler) SynchronizeAuthman(clientID string, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.SynchronizeAuthman(clientID)
+func (h *InternalApisHandler) SynchronizeAuthman(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.SynchronizeAuthman(appID, orgID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -253,7 +253,7 @@ type GroupStat struct {
 // @Success 200 {object} GroupsStats
 // @Security IntAPIKeyAuth
 // @Router /int/stats [get]
-func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) GroupStats(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 
 	groups, err := h.app.Services.GetAllGroups(clientID)
 	if err != nil {
@@ -309,7 +309,7 @@ type intCreateGroupEventRequestBody struct {
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/{group-id}/date_updated [post]
-func (h *InternalApisHandler) UpdateGroupDateUpdated(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) UpdateGroupDateUpdated(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -342,7 +342,7 @@ func (h *InternalApisHandler) UpdateGroupDateUpdated(clientID string, w http.Res
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/{group-id}/events [post]
-func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) CreateGroupEvent(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -418,7 +418,7 @@ func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseW
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/{group-id}/events/{event-id} [delete]
-func (h *InternalApisHandler) DeleteGroupEvent(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) DeleteGroupEvent(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -467,7 +467,7 @@ type sendGroupNotificationRequestBody struct {
 // @Success 200
 // @Security IntAPIKeyAuth
 // @Router /api/int/group/{group-id}/notification [post]
-func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *InternalApisHandler) SendGroupNotification(appID string, orgID string, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]

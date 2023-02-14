@@ -61,11 +61,11 @@ type Services interface {
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
 	UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
 	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
-	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
+	ReportPostAsAbuse(current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
 
-	SynchronizeAuthman(clientID string) error
-	SynchronizeAuthmanGroup(clientID string, groupID string) error
+	SynchronizeAuthman(appID string, orgID string) error
+	SynchronizeAuthmanGroup(appID string, orgID string, groupID string) error
 
 	// V3
 	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
@@ -198,20 +198,20 @@ func (s *servicesImpl) ReactToPost(clientID string, current *model.User, groupID
 	return s.app.reactToPost(clientID, current, groupID, postID, reaction)
 }
 
-func (s *servicesImpl) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-	return s.app.reportPostAsAbuse(clientID, current, group, post, comment, sendToDean, sendToGroupAdmins)
+func (s *servicesImpl) ReportPostAsAbuse(current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+	return s.app.reportPostAsAbuse(current, group, post, comment, sendToDean, sendToGroupAdmins)
 }
 
 func (s *servicesImpl) DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error {
 	return s.app.deletePost(clientID, current.ID, groupID, postID, force)
 }
 
-func (s *servicesImpl) SynchronizeAuthman(clientID string) error {
-	return s.app.synchronizeAuthman(clientID, false)
+func (s *servicesImpl) SynchronizeAuthman(appID string, orgID string) error {
+	return s.app.synchronizeAuthman(appID, orgID, false)
 }
 
-func (s *servicesImpl) SynchronizeAuthmanGroup(clientID string, groupID string) error {
-	return s.app.synchronizeAuthmanGroup(clientID, groupID)
+func (s *servicesImpl) SynchronizeAuthmanGroup(appID string, orgID string, groupID string) error {
+	return s.app.synchronizeAuthmanGroup(appID, orgID, groupID)
 }
 
 // V3
@@ -277,11 +277,6 @@ type Administration interface {
 	CreateConfig(config model.Config, claims *tokenauth.Claims) (*model.Config, error)
 	UpdateConfig(config model.Config, claims *tokenauth.Claims) error
 	DeleteConfig(id string, claims *tokenauth.Claims) error
-
-	// GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
-	// CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
-	// UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	// DeleteManagedGroupConfig(id string, clientID string) error
 }
 
 type administrationImpl struct {
@@ -291,22 +286,6 @@ type administrationImpl struct {
 func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	return s.app.getGroupsUnprotected(clientID, filter)
 }
-
-// func (s *administrationImpl) GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-// 	return s.app.getManagedGroupConfigs(clientID)
-// }
-
-// func (s *administrationImpl) CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
-// 	return s.app.createManagedGroupConfig(config)
-// }
-
-// func (s *administrationImpl) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
-// 	return s.app.updateManagedGroupConfig(config)
-// }
-
-// func (s *administrationImpl) DeleteManagedGroupConfig(id string, clientID string) error {
-// 	return s.app.deleteManagedGroupConfig(id, clientID)
-// }
 
 func (s *administrationImpl) GetConfig(id string, claims *tokenauth.Claims) (*model.Config, error) {
 	return s.app.getConfig(id, claims)
@@ -340,13 +319,11 @@ type Storage interface {
 	InsertConfig(config model.Config) error
 	UpdateConfig(config model.Config) error
 	DeleteConfig(id string) error
-	// LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
-	// FindSyncConfigs() ([]model.SyncConfig, error)
 
 	FindSyncTimes(context storage.TransactionContext, appID string, orgID string) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	FindUser(clientID string, id string, external bool) (*model.User, error)
+	FindUser(appID string, orgID string, id string, external bool) (*model.User, error)
 	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	LoginUser(clientID string, current *model.User) error
@@ -377,19 +354,12 @@ type Storage interface {
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
+	ReportPostAsAbuse(appID string, orgID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
-
-	// LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error)
-	// FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error)
-	// FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
-	// InsertManagedGroupConfig(config model.ManagedGroupConfig) error
-	// UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	// DeleteManagedGroupConfig(id string, clientID string) error
 
 	// V3
 	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)

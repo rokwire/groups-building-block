@@ -565,14 +565,14 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 	return app.storage.PerformTransaction(transaction)
 }
 
-func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+func (app *Application) reportPostAsAbuse(current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
 
 	if !sendToDean && !sendToGroupAdmins {
 		sendToDean = true
 	}
 
 	var creatorExternalID string
-	creator, err := app.storage.FindUser(clientID, post.Creator.UserID, false)
+	creator, err := app.storage.FindUser(post.AppID, post.OrgID, post.Creator.UserID, false)
 	if err != nil {
 		log.Printf("error retrieving user: %s", err)
 	} else if creator != nil {
@@ -894,13 +894,13 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string) error {
+func (app *Application) synchronizeAuthmanGroup(appID string, orgID string, groupID string) error {
 	if groupID == "" {
 		return errors.New("Missing group ID")
 	}
 	var group *model.Group
 	var err error
-	group, err = app.checkGroupSyncTimes(clientID, groupID)
+	group, err = app.checkGroupSyncTimes(appID, orgID, groupID)
 	if err != nil {
 		return err
 	}
@@ -933,7 +933,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	return nil
 }
 
-func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*model.Group, error) {
+func (app *Application) checkGroupSyncTimes(appID string, orgID string, groupID string) (*model.Group, error) {
 	var group *model.Group
 	var err error
 	startTime := time.Now()
@@ -950,13 +950,21 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 		}
 
 		if group.SyncStartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindConfig(model.ConfigTypeSync, appID, orgID)
 			if err != nil {
-				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+				log.Printf("error finding sync config for appID %s, orgID %s: %v", appID, orgID, err)
 			}
+
 			timeout := defaultConfigSyncTimeout
-			if config != nil && config.GroupTimeout > 0 {
-				timeout = config.GroupTimeout
+			var syncConfig *model.SyncConfigData
+			if config != nil {
+				syncConfig, err = config.DataAsSyncConfig()
+				if err != nil {
+					log.Printf("error asserting as sync config for appID %s, orgID %s: %v", appID, orgID, err)
+				}
+				if syncConfig != nil && syncConfig.Timeout > 0 {
+					timeout = syncConfig.GroupTimeout
+				}
 			}
 			if group.SyncEndTime == nil {
 				if !startTime.After(group.SyncStartTime.Add(time.Minute * time.Duration(timeout))) {

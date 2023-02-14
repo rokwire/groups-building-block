@@ -53,7 +53,7 @@ type Config struct {
 	Data        interface{} `json:"data" bson:"data"`
 	DateCreated time.Time   `json:"date_created" bson:"date_created"`
 	DateUpdated *time.Time  `json:"date_updated" bson:"date_updated"`
-}
+} //@name Config
 
 // DataAsEnvConfig returns the config Data as an EnvConfigData if the cast succeeds
 func (c Config) DataAsEnvConfig() (*EnvConfigData, error) {
@@ -94,14 +94,14 @@ func (c Config) DataAsManagedGroupConfig() (*ManagedGroupConfigData, error) {
 // EnvConfigData contains environment configs for this service
 type EnvConfigData struct {
 	ExampleEnv string `json:"example_env" bson:"example_env"`
-}
+} //@name EnvConfigData
 
 // ApplicationConfigData defines configs for managing authman sync and sending report emails
 type ApplicationConfigData struct {
 	//TODO: must not be empty
 	AuthmanAdminUINList       []string `json:"authman_admin_uin_list" bson:"authman_admin_uin_list"`
 	ReportAbuseRecipientEmail string   `json:"report_abuse_recipient_email" bson:"report_abuse_recipient_email"`
-}
+} //@name ApplicationConfigData
 
 // SyncConfigData defines system configs for managed group sync
 type SyncConfigData struct {
@@ -109,7 +109,7 @@ type SyncConfigData struct {
 	TimeThreshold int    `json:"time_threshold" bson:"time_threshold"` // Threshold from start_time to be considered same run in minutes
 	Timeout       int    `json:"timeout" bson:"timeout"`               // Time from start_time to be considered a failed run in minutes
 	GroupTimeout  int    `json:"group_timeout" bson:"group_timeout"`   // Time from sync_start_time to be considered a failed run for a single group in minutes
-}
+} //@name SyncConfigData
 
 // SyncTimes defines the times used to prevent concurrent syncs
 type SyncTimes struct {
@@ -121,9 +121,7 @@ type SyncTimes struct {
 
 // ManagedGroupConfigData defines a config for a set of managed groups
 type ManagedGroupConfigData struct {
-	AuthmanStems []string   `json:"authman_stems" bson:"authman_stems"`
-	AdminUINs    []string   `json:"admin_uins" bson:"admin_uins"`
-	Type         string     `json:"type" bson:"type"`
-	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
+	AuthmanStems []string `json:"authman_stems" bson:"authman_stems"`
+	AdminUINs    []string `json:"admin_uins" bson:"admin_uins"`
+	Type         string   `json:"type" bson:"type"`
 } //@name ManagedGroupConfigData

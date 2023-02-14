@@ -27,9 +27,8 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/rokwire/core-auth-library-go/v2/authutils"
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
-	"github.com/rokwire/logging-library-go/v2/logs"
-	"github.com/rokwire/logging-library-go/v2/logutils"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -902,7 +901,7 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 // @Security AppUserAuth
 // @Router /admin/authman/synchronize [post]
 func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.SynchronizeAuthman(clientID)
+	err := h.app.Services.SynchronizeAuthman(current.AppID, current.OrgID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -966,77 +965,155 @@ func (h AdminApisHandler) GetConfigs(clientID string, current *model.User, w htt
 		configType = &typeParam
 	}
 
-	configs, err := h.coreAPIs.Administration.AdmGetConfigs(configType, claims.AppID, claims.OrgID, claims.System)
+	configs, err := h.app.Administration.GetConfigs(configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionGet, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	data, err := json.Marshal(configListToDef(configs))
+	data, err := json.Marshal(configs)
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionMarshal, model.TypeConfig, nil, err, http.StatusInternalServerError, false)
+		log.Println("Error on marshal configs")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
-// createConfig creates a config by id
-func (h AdminApisHandler) createConfig(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
-	var requestData Def.Config
+type adminUpdateConfigsRequest struct {
+	AllApps *bool       `json:"all_apps,omitempty"`
+	AllOrgs *bool       `json:"all_orgs,omitempty"`
+	Data    interface{} `json:"data"`
+	System  bool        `json:"system"`
+	Type    string      `json:"type"`
+} // @name adminUpdateConfigsRequest
+
+// CreateConfig creates a new config
+// @Description Creates a new config
+// @ID AdminCreateConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body adminUpdateConfigsRequest true "body data"
+// @Param APP header string true "APP"
+// @Success 200 {object} model.Config
+// @Security AppUserAuth
+// @Router /api/admin/configs [post]
+func (h AdminApisHandler) CreateConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	var requestData adminUpdateConfigsRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionUnmarshal, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+		log.Printf("Error on unmarshal the create config request - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	config := configFromDef(requestData, claims.AppID, claims.OrgID)
-	newConfig, err := h.coreAPIs.Administration.AdmCreateConfig(config, claims.AppID, claims.OrgID, claims.System)
-	if err != nil || newConfig == nil {
-		return l.HTTPResponseErrorAction(logutils.ActionCreate, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+	appID := current.AppID
+	if requestData.AllApps != nil && *requestData.AllApps {
+		appID = authutils.AllApps
 	}
+	orgID := current.OrgID
+	if requestData.AllOrgs != nil && *requestData.AllOrgs {
+		orgID = authutils.AllOrgs
+	}
+	config := model.Config{Type: requestData.Type, AppID: appID, OrgID: orgID, System: requestData.System, Data: requestData.Data}
 
-	data, err := json.Marshal(configToDef(*newConfig))
+	newConfig, err := h.app.Administration.CreateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionMarshal, model.TypeConfig, nil, err, http.StatusInternalServerError, false)
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return l.HTTPResponseSuccessJSON(data)
+	data, err := json.Marshal(newConfig)
+	if err != nil {
+		log.Println("Error on marshal config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
-// updateConfig updates a config by id
-func (h AdminApisHandler) updateConfig(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+// UpdateConfig updates an existing config by ID
+// @Description Updates an existing config by its ID
+// @ID AdminUpdateConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body adminUpdateConfigsRequest true "body data"
+// @Param APP header string true "APP"
+// @Param id path string true "ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/configs/{id} [put]
+func (h AdminApisHandler) UpdateConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
 	}
 
-	var requestData Def.Config
+	var requestData adminUpdateConfigsRequest
 	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionUnmarshal, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+		log.Printf("Error on unmarshal the create config request - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
-	config := configFromDef(requestData, claims.AppID, claims.OrgID)
-	config.ID = id
-	err = h.coreAPIs.Administration.AdmUpdateConfig(config, claims.AppID, claims.OrgID, claims.System)
+	appID := current.AppID
+	if requestData.AllApps != nil && *requestData.AllApps {
+		appID = authutils.AllApps
+	}
+	orgID := current.OrgID
+	if requestData.AllOrgs != nil && *requestData.AllOrgs {
+		orgID = authutils.AllOrgs
+	}
+	config := model.Config{ID: id, Type: requestData.Type, AppID: appID, OrgID: orgID, System: requestData.System, Data: requestData.Data}
+
+	err = h.app.Administration.UpdateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionUpdate, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return l.HTTPResponseSuccess()
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 }
 
-// deleteConfig deletes a config by id
-func (h AdminApisHandler) deleteConfig(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+// DeleteConfig Deletes a config by ID
+// @Description Deletes a config by its ID
+// @ID AdminDeleteConfig
+// @Tags Admin
+// @Param APP header string true "APP"
+// @Param id path string true "ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/configs/{id} [delete]
+func (h AdminApisHandler) DeleteConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
-		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
 	}
 
-	err := h.coreAPIs.Administration.AdmDeleteConfig(id, claims.AppID, claims.OrgID, claims.System)
+	err := h.app.Administration.DeleteConfig(id, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
-		return l.HTTPResponseErrorAction(logutils.ActionDelete, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	return l.HTTPResponseSuccess()
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 }

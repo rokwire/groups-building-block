@@ -1474,7 +1474,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 		return
 	}
 
-	err = h.app.Services.SynchronizeAuthmanGroup(clientID, groupID)
+	err = h.app.Services.SynchronizeAuthmanGroup(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -2312,7 +2312,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	err = h.app.Services.ReportPostAsAbuse(clientID, current, group, post, body.Comment, body.SendToDean, body.SendToGroupAdmins)
+	err = h.app.Services.ReportPostAsAbuse(current, group, post, body.Comment, body.SendToDean, body.SendToGroupAdmins)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

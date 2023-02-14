@@ -300,12 +300,12 @@ func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTim
 }
 
 // FindUser finds the user for the provided external id and client id
-func (sa *Adapter) FindUser(clientID string, id string, external bool) (*model.User, error) {
+func (sa *Adapter) FindUser(appID string, orgID string, id string, external bool) (*model.User, error) {
 	var filter bson.D
 	if external {
-		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "external_id", Value: id}}
+		filter = bson.D{primitive.E{Key: "app_id", Value: appID}, primitive.E{Key: "org_id", Value: orgID}, primitive.E{Key: "external_id", Value: id}}
 	} else {
-		filter = bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: id}}
+		filter = bson.D{primitive.E{Key: "app_id", Value: appID}, primitive.E{Key: "org_id", Value: orgID}, primitive.E{Key: "_id", Value: id}}
 	}
 
 	var result []*model.User
@@ -1847,70 +1847,6 @@ func (sa *Adapter) FindAuthmanGroupByKey(clientID string, authmanGroupKey string
 
 	return nil, nil
 }
-
-/*
-// FindManagedGroupConfig finds a managed group config by ID
-func (sa *Adapter) FindManagedGroupConfig(id string, clientID string) (*model.ManagedGroupConfig, error) {
-	config, err := sa.getCachedManagedGroupConfig(id)
-	if err != nil {
-		return nil, err
-	}
-	if config.ClientID != clientID {
-		return nil, fmt.Errorf("invalid clientID %s for config ID %s", id, clientID)
-	}
-	return config, nil
-}
-
-// FindManagedGroupConfigs finds all managed group configs for a specified clientID
-func (sa *Adapter) FindManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-	return sa.getCachedManagedGroupConfigs(clientID)
-}
-
-// InsertManagedGroupConfig inserts a new managed group config
-func (sa *Adapter) InsertManagedGroupConfig(config model.ManagedGroupConfig) error {
-	_, err := sa.db.managedGroupConfigs.InsertOne(config)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// UpdateManagedGroupConfig updates an existing managed group config
-func (sa *Adapter) UpdateManagedGroupConfig(config model.ManagedGroupConfig) error {
-	filter := bson.M{"_id": config.ID, "client_id": config.ClientID}
-	update := bson.M{"$set": bson.M{
-		"authman_stems": config.AuthmanStems,
-		"admin_uins":    config.AdminUINs,
-		"type":          config.Type,
-		"date_updated":  time.Now().UTC(),
-	}}
-
-	res, err := sa.db.managedGroupConfigs.UpdateOne(filter, update, nil)
-	if err != nil {
-		return err
-	}
-	if res.ModifiedCount != 1 {
-		return fmt.Errorf("managed config could not be found for id: %s", config.ID)
-	}
-
-	return nil
-}
-
-// DeleteManagedGroupConfig deletes an existing managed group config
-func (sa *Adapter) DeleteManagedGroupConfig(id string, clientID string) error {
-	filter := bson.M{"_id": id, "client_id": clientID}
-
-	res, err := sa.db.managedGroupConfigs.DeleteOne(filter, nil)
-	if err != nil {
-		return err
-	}
-	if res.DeletedCount != 1 {
-		return fmt.Errorf("managed config could not be found for id: %s", id)
-	}
-	return nil
-}
-*/
 
 // PerformTransaction performs a transaction
 func (sa *Adapter) PerformTransaction(transaction func(context TransactionContext) error) error {

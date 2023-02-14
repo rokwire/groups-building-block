@@ -185,20 +185,20 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
+type apiKeyAuthFunc = func(string, string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated := we.auth.apiKeyCheck(req)
+		appID, orgID, authenticated := we.auth.apiKeyCheck(req)
 		if !authenticated {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, w, req)
+		handler(appID, orgID, w, req)
 	}
 }
 
@@ -253,14 +253,14 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated := we.auth.internalAuthCheck(w, req)
+		appID, orgID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
 			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, w, req)
+		handler(appID, orgID, w, req)
 	}
 }
 
@@ -303,12 +303,12 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
-	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
+func NewWebAdapter(app *core.Application, host string, appID string, orgID string, supportedClientIDs []string, appKeys []string, oidcProvider string,
+	oidcClientID string, oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, internalAPIKey string,
+	serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
+	auth := NewAuth(app, host, appID, orgID, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
