@@ -130,12 +130,15 @@ func (gr *Group) GetNewTags() []string {
 	if gr.Attributes != nil {
 		if val, ok := gr.Attributes["tags"]; ok {
 
-			interfaceList := val.([]interface{})
-			stringList := make([]string, len(interfaceList))
-			for i, v := range interfaceList {
-				stringList[i] = v.(string)
+			if interfaceList, ok := val.([]interface{}); ok {
+				stringList := make([]string, len(interfaceList))
+				for i, v := range interfaceList {
+					if stringValue, ok := v.(string); ok {
+						stringList[i] = stringValue
+					}
+				}
+				return stringList
 			}
-			return stringList
 		}
 	}
 	return nil
