@@ -131,10 +131,10 @@ func (gr *Group) GetNewTags() []string {
 		if val, ok := gr.Attributes["tags"]; ok {
 
 			if interfaceList, ok := val.([]interface{}); ok {
-				stringList := make([]string, len(interfaceList))
-				for i, v := range interfaceList {
+				stringList := []string{}
+				for _, v := range interfaceList {
 					if stringValue, ok := v.(string); ok {
-						stringList[i] = stringValue
+						stringList = append(stringList, stringValue)
 					}
 				}
 				return stringList
