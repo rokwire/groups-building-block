@@ -223,7 +223,7 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		if auth.coreTokenAuth != nil {
-			_, err := auth.coreTokenAuth.CheckRequestTokens(r)
+			_, err := auth.coreTokenAuth.CheckRequestToken(r)
 			if err == nil {
 				return true
 			}
@@ -322,7 +322,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
 			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
@@ -521,7 +521,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && !claims.Anonymous {
 			err := auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {

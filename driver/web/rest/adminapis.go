@@ -27,6 +27,9 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -709,7 +712,7 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 // @Router /api/admin/managed-group-configs [get]
 func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	configType := model.ConfigTypeManagedGroup
-	configs, err := h.app.Administration.GetConfigs(&configType, current.AppID, current.OrgID, current.System)
+	configs, err := h.app.Administration.GetConfigs(&configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error getting managed group configs events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -748,7 +751,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 	}
 
 	config := model.Config{Type: model.ConfigTypeManagedGroup, AppID: current.AppID, OrgID: current.OrgID, Data: managedGroupConfig}
-	newConfig, err := h.app.Administration.CreateConfig(config, current.AppID, current.OrgID, current.System)
+	newConfig, err := h.app.Administration.CreateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -788,7 +791,7 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 	}
 
 	config := model.Config{Type: model.ConfigTypeManagedGroup, AppID: current.AppID, OrgID: current.OrgID, Data: managedGroupConfig}
-	err = h.app.Administration.UpdateConfig(config, current.AppID, current.OrgID, current.System)
+	err = h.app.Administration.UpdateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -818,7 +821,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	err := h.app.Administration.DeleteConfig(id, current.AppID, current.OrgID, current.System)
+	err := h.app.Administration.DeleteConfig(id, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -840,7 +843,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 // @Router /api/admin/sync-configs [get]
 func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	configType := model.ConfigTypeManagedGroup
-	configs, err := h.app.Administration.GetConfigs(&configType, current.AppID, current.OrgID, current.System)
+	configs, err := h.app.Administration.GetConfigs(&configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error getting sync config - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -879,7 +882,7 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 	}
 
 	config := model.Config{Type: model.ConfigTypeSync, AppID: current.AppID, OrgID: current.OrgID, Data: syncConfig}
-	err = h.app.Administration.UpdateConfig(config, current.AppID, current.OrgID, current.System)
+	err = h.app.Administration.UpdateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -908,4 +911,132 @@ func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.Us
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
+}
+
+// GetConfig gets a config by ID
+// @Description Gets a config by its ID
+// @Tags Admin
+// @ID AdminGetConfig
+// @Accept json
+// @Param APP header string true "APP"
+// @Success 200 model.Config
+// @Security AppUserAuth
+// @Router /api/admin/configs/{id} [get]
+func (h *AdminApisHandler) GetConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
+	}
+
+	config, err := h.app.Administration.GetConfig(id, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		log.Println("Error on marshal config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetConfigs gets a list of configs by type
+// @Description Gets a list of configs by type
+// @Tags Admin
+// @ID AdminGetConfigs
+// @Accept json
+// @Param APP header string true "APP"
+// @Success 200 {array} model.Config
+// @Security AppUserAuth
+// @Router /api/admin/configs [get]
+func (h AdminApisHandler) GetConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	var configType *string
+	typeParam := r.URL.Query().Get("type")
+	if len(typeParam) > 0 {
+		configType = &typeParam
+	}
+
+	configs, err := h.coreAPIs.Administration.AdmGetConfigs(configType, claims.AppID, claims.OrgID, claims.System)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionGet, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(configListToDef(configs))
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, model.TypeConfig, nil, err, http.StatusInternalServerError, false)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// createConfig creates a config by id
+func (h AdminApisHandler) createConfig(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	var requestData Def.Config
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUnmarshal, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	config := configFromDef(requestData, claims.AppID, claims.OrgID)
+	newConfig, err := h.coreAPIs.Administration.AdmCreateConfig(config, claims.AppID, claims.OrgID, claims.System)
+	if err != nil || newConfig == nil {
+		return l.HTTPResponseErrorAction(logutils.ActionCreate, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+	}
+
+	data, err := json.Marshal(configToDef(*newConfig))
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionMarshal, model.TypeConfig, nil, err, http.StatusInternalServerError, false)
+	}
+
+	return l.HTTPResponseSuccessJSON(data)
+}
+
+// updateConfig updates a config by id
+func (h AdminApisHandler) updateConfig(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	var requestData Def.Config
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUnmarshal, logutils.TypeRequestBody, nil, err, http.StatusBadRequest, true)
+	}
+
+	config := configFromDef(requestData, claims.AppID, claims.OrgID)
+	config.ID = id
+	err = h.coreAPIs.Administration.AdmUpdateConfig(config, claims.AppID, claims.OrgID, claims.System)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionUpdate, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
+}
+
+// deleteConfig deletes a config by id
+func (h AdminApisHandler) deleteConfig(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		return l.HTTPResponseErrorData(logutils.StatusMissing, logutils.TypePathParam, logutils.StringArgs("id"), nil, http.StatusBadRequest, false)
+	}
+
+	err := h.coreAPIs.Administration.AdmDeleteConfig(id, claims.AppID, claims.OrgID, claims.System)
+	if err != nil {
+		return l.HTTPResponseErrorAction(logutils.ActionDelete, model.TypeConfig, nil, err, http.StatusInternalServerError, true)
+	}
+
+	return l.HTTPResponseSuccess()
 }

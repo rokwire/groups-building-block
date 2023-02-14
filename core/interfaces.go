@@ -20,6 +20,8 @@ import (
 	"groups/driven/storage"
 	"groups/utils"
 	"time"
+
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
 // Services exposes APIs for the driver adapters
@@ -270,11 +272,11 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 type Administration interface {
 	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 
-	GetConfig(id string, appID string, orgID string, system bool) (*model.Config, error)
-	GetConfigs(configType *string, appID string, orgID string, system bool) ([]model.Config, error)
-	CreateConfig(config model.Config, appID string, orgID string, system bool) (*model.Config, error)
-	UpdateConfig(config model.Config, appID string, orgID string, system bool) error
-	DeleteConfig(id string, appID string, orgID string, system bool) error
+	GetConfig(id string, claims *tokenauth.Claims) (*model.Config, error)
+	GetConfigs(configType *string, claims *tokenauth.Claims) ([]model.Config, error)
+	CreateConfig(config model.Config, claims *tokenauth.Claims) (*model.Config, error)
+	UpdateConfig(config model.Config, claims *tokenauth.Claims) error
+	DeleteConfig(id string, claims *tokenauth.Claims) error
 
 	// GetManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error)
 	// CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
@@ -306,8 +308,24 @@ func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilte
 // 	return s.app.deleteManagedGroupConfig(id, clientID)
 // }
 
-func (s *administrationImpl) GetConfig(configType string, appID string, orgID string) (*model.Config, error) {
-	return s.app.getConfig(configType, appID, orgID)
+func (s *administrationImpl) GetConfig(id string, claims *tokenauth.Claims) (*model.Config, error) {
+	return s.app.getConfig(id, claims)
+}
+
+func (s *administrationImpl) GetConfigs(configType *string, claims *tokenauth.Claims) ([]model.Config, error) {
+	return s.app.getConfigs(configType, claims)
+}
+
+func (s *administrationImpl) CreateConfig(config model.Config, claims *tokenauth.Claims) (*model.Config, error) {
+	return s.app.createConfig(config, claims)
+}
+
+func (s *administrationImpl) UpdateConfig(config model.Config, claims *tokenauth.Claims) error {
+	return s.app.updateConfig(config, claims)
+}
+
+func (s *administrationImpl) DeleteConfig(id string, claims *tokenauth.Claims) error {
+	return s.app.deleteConfig(id, claims)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc

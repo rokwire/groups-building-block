@@ -98,11 +98,11 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetSyncConfig)).Methods("GET")
 	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
 
-	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.getConfig)).Methods("GET")
-	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.getConfigs)).Methods("GET")
-	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.createConfig)).Methods("POST")
-	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.updateConfig)).Methods("PUT")
-	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.deleteConfig)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetConfig)).Methods("GET")
+	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetConfigs)).Methods("GET")
+	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateConfig)).Methods("POST")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateConfig)).Methods("PUT")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteConfig)).Methods("DELETE")
 
 	// Internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
