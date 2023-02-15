@@ -53,5 +53,3 @@ require (
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/rokwire/core-auth-library-go/v2 v2.2.0 => ../auth-lib

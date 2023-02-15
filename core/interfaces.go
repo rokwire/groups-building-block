@@ -39,16 +39,16 @@ type Services interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
-	GetAllGroups(clientID string) ([]model.Group, error)
-	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
-	GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
+	GetAllGroups(appID string, orgID string) ([]model.Group, error)
+	GetGroups(userID *string, filter model.GroupsFilter) ([]model.Group, error)
+	GetUserGroups(userID string, filter model.GroupsFilter) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
 
-	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
+	GetGroup(current *model.User, id string) (*model.Group, error)
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
-	UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
+	UpdateMembership(membership *model.GroupMembership, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
@@ -68,20 +68,20 @@ type Services interface {
 	SynchronizeAuthmanGroup(appID string, orgID string, groupID string) error
 
 	// V3
-	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
-	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
-	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
+	CheckUserGroupMembershipPermission(current *model.User, groupID string) (*model.Group, bool)
+	FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error)
+	FindGroupMemberships(filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
-	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
-	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
-	CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
-	CreatePendingMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
-	DeleteMembership(clientID string, current *model.User, groupID string) error
-	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
-	DeletePendingMembership(clientID string, current *model.User, groupID string) error
+	FindGroupMembershipByID(appID string, orgID string, id string) (*model.GroupMembership, error)
+	FindUserGroupMemberships(appID string, orgID string, userID string) (model.MembershipCollection, error)
+	CreateMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error
+	CreatePendingMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error
+	DeleteMembership(current *model.User, groupID string) error
+	DeleteMembershipByID(current *model.User, membershipID string) error
+	DeletePendingMembership(current *model.User, groupID string) error
 
 	// Group Notifications
-	SendGroupNotification(clientID string, notification model.GroupNotification) error
+	SendGroupNotification(appID string, orgID string, notification model.GroupNotification) error
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 }
 
@@ -122,16 +122,16 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 	return s.app.deleteGroup(clientID, current, id)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getGroups(clientID, current, filter)
+func (s *servicesImpl) GetGroups(userID *string, filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.getGroups(userID, filter)
 }
 
-func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
-	return s.app.getAllGroups(clientID)
+func (s *servicesImpl) GetAllGroups(appID string, orgID string) ([]model.Group, error) {
+	return s.app.getAllGroups(appID, orgID)
 }
 
-func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getUserGroups(clientID, current, filter)
+func (s *servicesImpl) GetUserGroups(userID string, filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.getUserGroups(userID, filter)
 }
 
 func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
@@ -142,8 +142,8 @@ func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
 	return s.app.deleteUser(clientID, current)
 }
 
-func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string) (*model.Group, error) {
-	return s.app.getGroup(clientID, current, id)
+func (s *servicesImpl) GetGroup(current *model.User, id string) (*model.Group, error) {
+	return s.app.getGroup(current, id)
 }
 
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
@@ -154,8 +154,8 @@ func (s *servicesImpl) ApplyMembershipApproval(clientID string, current *model.U
 	return s.app.applyMembershipApproval(clientID, current, membershipID, approve, rejectReason)
 }
 
-func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
-	return s.app.updateMembership(clientID, current, membershipID, status, dateAttended, notificationsPreferences)
+func (s *servicesImpl) UpdateMembership(membership *model.GroupMembership, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
+	return s.app.updateMembership(membership, status, dateAttended, notificationsPreferences)
 }
 
 func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
@@ -216,52 +216,52 @@ func (s *servicesImpl) SynchronizeAuthmanGroup(appID string, orgID string, group
 
 // V3
 
-func (s *servicesImpl) CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
-	return s.app.checkUserGroupMembershipPermission(clientID, current, groupID)
+func (s *servicesImpl) CheckUserGroupMembershipPermission(current *model.User, groupID string) (*model.Group, bool) {
+	return s.app.checkUserGroupMembershipPermission(current, groupID)
 }
 
-func (s *servicesImpl) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.findGroupsV3(clientID, filter)
+func (s *servicesImpl) FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.findGroupsV3(filter)
 }
 
-func (s *servicesImpl) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return s.app.findGroupMemberships(clientID, filter)
+func (s *servicesImpl) FindGroupMemberships(filter model.MembershipFilter) (model.MembershipCollection, error) {
+	return s.app.findGroupMemberships(filter)
 }
 
 func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
 	return s.app.findGroupMembership(clientID, groupID, userID)
 }
 
-func (s *servicesImpl) FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
-	return s.app.findGroupMembershipByID(clientID, id)
+func (s *servicesImpl) FindGroupMembershipByID(appID string, orgID string, id string) (*model.GroupMembership, error) {
+	return s.app.storage.FindGroupMembershipByID(appID, orgID, id)
 }
 
-func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
-	return s.app.findUserGroupMemberships(clientID, userID)
+func (s *servicesImpl) FindUserGroupMemberships(appID string, orgID string, userID string) (model.MembershipCollection, error) {
+	return s.app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{AppID: appID, OrgID: orgID, UserID: &userID})
 }
 
-func (s *servicesImpl) CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
-	return s.app.createMembership(clientID, current, group, membership)
+func (s *servicesImpl) CreateMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error {
+	return s.app.createMembership(current, group, membership)
 }
 
-func (s *servicesImpl) CreatePendingMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
-	return s.app.createPendingMembership(clientID, current, group, membership)
+func (s *servicesImpl) CreatePendingMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error {
+	return s.app.createPendingMembership(current, group, membership)
 }
 
-func (s *servicesImpl) DeletePendingMembership(clientID string, current *model.User, groupID string) error {
-	return s.app.deletePendingMembership(clientID, current, groupID)
+func (s *servicesImpl) DeletePendingMembership(current *model.User, groupID string) error {
+	return s.app.deletePendingMembership(current, groupID)
 }
 
-func (s *servicesImpl) DeleteMembershipByID(clientID string, current *model.User, membershipID string) error {
-	return s.app.deleteMembershipByID(clientID, current, membershipID)
+func (s *servicesImpl) DeleteMembershipByID(current *model.User, membershipID string) error {
+	return s.app.deleteMembershipByID(current, membershipID)
 }
 
-func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, groupID string) error {
-	return s.app.deleteMembership(clientID, current, groupID)
+func (s *servicesImpl) DeleteMembership(current *model.User, groupID string) error {
+	return s.app.deleteMembership(current, groupID)
 }
 
-func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification) error {
-	return s.app.sendGroupNotification(clientID, notification)
+func (s *servicesImpl) SendGroupNotification(appID string, orgID string, notification model.GroupNotification) error {
+	return s.app.sendGroupNotification(appID, orgID, notification)
 }
 
 func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
@@ -270,7 +270,7 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
+	GetGroups(filter model.GroupsFilter) ([]model.Group, error)
 
 	GetConfig(id string, claims *tokenauth.Claims) (*model.Config, error)
 	GetConfigs(configType *string, claims *tokenauth.Claims) ([]model.Config, error)
@@ -283,8 +283,8 @@ type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getGroupsUnprotected(clientID, filter)
+func (s *administrationImpl) GetGroups(filter model.GroupsFilter) ([]model.Group, error) {
+	return s.app.getGroupsUnprotected(filter)
 }
 
 func (s *administrationImpl) GetConfig(id string, claims *tokenauth.Claims) (*model.Config, error) {
@@ -315,7 +315,7 @@ type Storage interface {
 
 	FindConfig(configType string, appID string, orgID string) (*model.Config, error)
 	FindConfigByID(id string) (*model.Config, error)
-	FindConfigs(configType *string) ([]model.Config, error)
+	FindConfigs(configType *string, appID *string, orgID *string) ([]model.Config, error)
 	InsertConfig(config model.Config) error
 	UpdateConfig(config model.Config) error
 	DeleteConfig(id string) error
@@ -327,21 +327,19 @@ type Storage interface {
 	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	LoginUser(clientID string, current *model.User) error
-	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
-	DeleteUser(clientID string, userID string) error
+	CreateUser(id string, appID string, orgID string, externalID string, email string, name string) (*model.User, error)
+	DeleteUser(appID string, orgID string, userID string) error
 
 	CreateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
+	UpdateGroupWithMemberships(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
-	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
+	UpdateGroupStats(context storage.TransactionContext, appID string, orgID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
 	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, id string) error
-	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
-	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
+	FindGroupWithContext(context storage.TransactionContext, appID string, orgID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
-	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroups(userID *string, filter model.GroupsFilter) ([]model.Group, error)
+	FindUserGroups(userID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
@@ -354,7 +352,7 @@ type Storage interface {
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	ReportPostAsAbuse(appID string, orgID string, userID string, group *model.Group, post *model.Post) error
+	ReportPostAsAbuse(post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
 
@@ -362,24 +360,21 @@ type Storage interface {
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
 
 	// V3
-	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
-	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
-	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
-
-	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
-	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
-	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
+	FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error)
+	FindGroupMembershipsWithContext(context storage.TransactionContext, filter model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMembershipWithContext(context storage.TransactionContext, appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipByID(appID string, orgID string, id string) (*model.GroupMembership, error)
 	BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error)
 
-	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
-	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
+	CreateMembership(current *model.User, group *model.Group, member *model.GroupMembership) error
+	CreatePendingMembership(current *model.User, group *model.Group, member *model.GroupMembership) error
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
-	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
-	DeleteMembership(clientID string, groupID string, userID string) error
-	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
-	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
+	UpdateMembership(context storage.TransactionContext, membership *model.GroupMembership) error
+	DeleteMembershipWithContext(context storage.TransactionContext, appID string, orgID string, groupID string, userID string) error
+	DeleteMembershipByID(appID string, orgID string, membershipID string) error
+	DeleteUnsyncedGroupMemberships(appID string, orgID string, groupID string, syncID string) (int64, error)
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 }

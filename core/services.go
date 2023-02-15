@@ -147,13 +147,9 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 	return nil
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
+func (app *Application) getGroups(userID *string, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, userID, filter)
+	groups, err := app.storage.FindGroups(userID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +157,9 @@ func (app *Application) getGroups(clientID string, current *model.User, filter m
 	return groups, nil
 }
 
-func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
+func (app *Application) getAllGroups(appID string, orgID string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, model.GroupsFilter{})
+	groups, err := app.storage.FindGroups(nil, model.GroupsFilter{AppID: appID, OrgID: orgID})
 	if err != nil {
 		return nil, err
 	}
@@ -171,9 +167,9 @@ func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	return groups, nil
 }
 
-func (app *Application) getUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+func (app *Application) getUserGroups(userID string, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the user groups
-	groups, err := app.storage.FindUserGroups(clientID, current.ID, filter)
+	groups, err := app.storage.FindUserGroups(userID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -189,14 +185,14 @@ func (app *Application) deleteUser(clientID string, current *model.User) error {
 	return app.storage.DeleteUser(clientID, current.ID)
 }
 
-func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
+func (app *Application) getGroup(current *model.User, id string) (*model.Group, error) {
 	// find the group
 	var userID *string
 	if current != nil {
 		userID = &current.ID
 	}
 
-	group, err := app.storage.FindGroup(nil, clientID, id, userID)
+	group, err := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -270,8 +266,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
-	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
+func (app *Application) updateMembership(membership *model.GroupMembership, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
 	if membership != nil {
 		if status != nil && membership.Status != *status {
 			membership.Status = *status
@@ -283,10 +278,14 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 			membership.NotificationsPreferences = *notificationsPreferences
 		}
 
-		err := app.storage.UpdateMembership(clientID, current, membershipID, membership)
-		if err != nil {
-			return err
-		}
+		return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+			err := app.storage.UpdateMembership(context, membership)
+			if err != nil {
+				return err
+			}
+
+			return app.storage.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
+		})
 	}
 
 	return nil
@@ -462,7 +461,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 					"entity_type":  "group",
 					"entity_id":    group.ID,
 					"entity_name":  group.Title,
-					"post_id":      *post.ID,
+					"post_id":      post.ID,
 					"post_subject": post.Subject,
 					"post_body":    post.Body,
 				},
@@ -566,7 +565,9 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 }
 
 func (app *Application) reportPostAsAbuse(current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-
+	if post == nil {
+		return errors.New("post is missing")
+	}
 	if !sendToDean && !sendToGroupAdmins {
 		sendToDean = true
 	}
@@ -579,7 +580,7 @@ func (app *Application) reportPostAsAbuse(current *model.User, group *model.Grou
 		creatorExternalID = creator.ExternalID
 	}
 
-	err = app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
+	err = app.storage.ReportPostAsAbuse(post)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
 		return fmt.Errorf("error while reporting an abuse post: %s", err)
@@ -597,6 +598,17 @@ func (app *Application) reportPostAsAbuse(current *model.User, group *model.Grou
 	subject = fmt.Sprintf("%s %s", subject, post.DateCreated.Format(time.RFC850))
 
 	if sendToDean {
+		config, err := app.storage.FindConfig(model.ConfigTypeApplication, post.AppID, post.OrgID)
+		if err != nil || config == nil {
+			log.Printf("error finding application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+			return fmt.Errorf("error finding application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+		}
+		appConfig, err := model.GetConfigData[model.ApplicationConfigData](*config)
+		if err != nil {
+			log.Printf("error asserting as application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+			return fmt.Errorf("error asserting as application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+		}
+
 		body := fmt.Sprintf(`
 <div>Violation by: %s %s\n</div>
 <div>Group title: %s\n</div>
@@ -607,11 +619,13 @@ func (app *Application) reportPostAsAbuse(current *model.User, group *model.Grou
 	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 		body = strings.ReplaceAll(body, `\n`, "\n")
-		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+		app.notifications.SendMail(appConfig.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(model.MembershipFilter{
 			GroupIDs: []string{group.ID},
+			AppID:    post.AppID,
+			OrgID:    post.OrgID,
 			Statuses: []string{"admin"},
 		})
 		toMembers := result.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
@@ -634,7 +648,7 @@ Reported comment: %s
 			"entity_type":  "group",
 			"entity_id":    group.ID,
 			"entity_name":  group.Title,
-			"post_id":      *post.ID,
+			"post_id":      post.ID,
 			"post_subject": post.Subject,
 			"post_body":    post.Body,
 		},
@@ -667,7 +681,7 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 			timeout := defaultConfigSyncTimeout
 			var syncConfig *model.SyncConfigData
 			if config != nil {
-				syncConfig, err = config.DataAsSyncConfig()
+				syncConfig, err = model.GetConfigData[model.SyncConfigData](*config)
 				if err != nil {
 					log.Printf("error asserting as sync config for appID %s, orgID %s: %v", appID, orgID, err)
 				}
@@ -703,27 +717,33 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 		return err
 	}
 
-	log.Printf("Global Authman synchronization started for clientID: %s\n", clientID)
+	log.Printf("Global Authman synchronization started for appID %s, orgID %s\n", appID, orgID)
 
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
 		endTime := time.Now()
-		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID})
+		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, AppID: appID, OrgID: orgID})
 		if err != nil {
 			log.Printf("Error saving sync configs to end sync: %s\n", err)
 			return
 		}
-		log.Printf("Global Authman synchronization finished for clientID: %s\n", clientID)
+		log.Printf("Global Authman synchronization finished for appID %s, orgID %s\n", appID, orgID)
 	}
 	defer finishAuthmanSync()
 
-	configs, err := app.storage.FindManagedGroupConfigs(clientID)
+	configTypeManagedGroup := model.ConfigTypeManagedGroup
+	mgConfigs, err := app.storage.FindConfigs(&configTypeManagedGroup, &appID, &orgID)
 	if err != nil {
-		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+		return fmt.Errorf("error finding managed group configs for appID %s, orgID %s", appID, orgID)
 	}
 
-	for _, config := range configs {
-		for _, stemName := range config.AuthmanStems {
+	for _, config := range mgConfigs {
+		mgConfig, err := model.GetConfigData[model.ManagedGroupConfigData](config)
+		if err != nil {
+			log.Printf("Error asserting as managed gorup config for appID %s, orgID %s\n")
+			continue
+		}
+		for _, stemName := range mgConfig.AuthmanStems {
 			stemGroups, err := app.authman.RetrieveAuthmanStemGroups(stemName)
 			if err != nil {
 				return fmt.Errorf("error on requesting Authman for stem groups: %s", err)
@@ -745,7 +765,7 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 					for _, externalID := range app.config.AuthmanAdminUINList {
 						defaultAdminsMapping[externalID] = true
 					}
-					for _, externalID := range config.AdminUINs {
+					for _, externalID := range mgConfig.AdminUINs {
 						defaultAdminsMapping[externalID] = true
 					}
 
@@ -782,8 +802,10 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 						missedUINs := []string{}
 						groupUpdated := false
 
-						existingAdmins, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+						existingAdmins, err := app.storage.FindGroupMemberships(model.MembershipFilter{
 							GroupIDs: []string{storedStemGroup.ID},
+							AppID:    appID,
+							OrgID:    orgID,
 							Statuses: []string{"admin"},
 						})
 
@@ -849,7 +871,7 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 
 	if len(authmanGroups) > 0 {
 		for _, authmanGroup := range authmanGroups {
-			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
+			err := app.synchronizeAuthmanGroup(appID, orgID, authmanGroup.ID)
 			if err != nil {
 				log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 			}
@@ -958,7 +980,7 @@ func (app *Application) checkGroupSyncTimes(appID string, orgID string, groupID 
 			timeout := defaultConfigSyncTimeout
 			var syncConfig *model.SyncConfigData
 			if config != nil {
-				syncConfig, err = config.DataAsSyncConfig()
+				syncConfig, err = model.GetConfigData[model.SyncConfigData](*config)
 				if err != nil {
 					log.Printf("error asserting as sync config for appID %s, orgID %s: %v", appID, orgID, err)
 				}
@@ -992,7 +1014,7 @@ func (app *Application) checkGroupSyncTimes(appID string, orgID string, groupID 
 	return group, nil
 }
 
-func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGroup *model.Group, authmanExternalIDs []string) error {
+func (app *Application) syncAuthmanGroupMemberships(appID string, orgID string, authmanGroup *model.Group, authmanExternalIDs []string) error {
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
@@ -1187,14 +1209,16 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	return nil
 }
 
-func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification) error {
+func (app *Application) sendGroupNotification(appID string, orgID string, notification model.GroupNotification) error {
 	memberStatuses := notification.MemberStatuses
 	if len(memberStatuses) == 0 {
 		memberStatuses = []string{"admin", "member"}
 	}
 
-	members, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+	members, err := app.findGroupMemberships(model.MembershipFilter{
 		GroupIDs: []string{notification.GroupID},
+		AppID:    appID,
+		OrgID:    orgID,
 		UserIDs:  notification.Members.ToUserIDs(),
 		Statuses: memberStatuses,
 	})
@@ -1205,7 +1229,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 
 	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 		return true, true // Should it be a separate notification preference?
-	}), notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
+	}), notification.Topic, notification.Subject, notification.Body, notification.Data, appID, orgID)
 
 	return nil
 }

@@ -94,7 +94,7 @@ type userGroupShortDetail struct {
 // @Success 200 {object} createResponse
 // @Security AppUserAuth
 // @Router /api/groups [post]
-func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	// NOTE: Permissions should be handled using the admin auth wrap function and the associated authorization policy
 	// if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
 	// 	log.Printf("%s is not allowed to create a group", current.Email)
@@ -217,7 +217,7 @@ type updateGroupRequest struct {
 // @Success 200 {string} Successfully updated
 // @Security AppUserAuth
 // @Router /api/groups/{id} [put]
-func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	id := params["id"]
@@ -314,7 +314,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/stats [get]
-func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupStats(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["id"]
@@ -360,7 +360,7 @@ func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/group/{id} [delete]
-func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	id := params["id"]
@@ -417,7 +417,7 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/groups [get]
-func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
 	catogies, ok := r.URL.Query()["category"]
@@ -551,7 +551,7 @@ type getUserGroupsResponse struct {
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/user/groups [get]
-func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	var groupsFilter model.GroupsFilter
 
@@ -652,7 +652,7 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/user/login [get]
-func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) LoginUser(current *model.User, w http.ResponseWriter, r *http.Request) {
 	err := h.app.Services.LoginUser(clientID, current)
 	if err != nil {
 		log.Printf("error login user - %s", err)
@@ -674,7 +674,7 @@ type getUserStatsResponse struct {
 // @Success 200 {object} getUserStatsResponse
 // @Security AppUserAuth
 // @Router /api/user/stats [get]
-func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetUserStats(current *model.User, w http.ResponseWriter, r *http.Request) {
 	stats, err := h.app.Services.GetUserPostCount(clientID, current.ID)
 	if err != nil {
 		log.Printf("error getting user(%s) post count:  %s", current.ID, err)
@@ -709,7 +709,7 @@ func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/user [delete]
-func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteUser(current *model.User, w http.ResponseWriter, r *http.Request) {
 	err := h.app.Services.DeleteUser(clientID, current)
 	if err != nil {
 		log.Printf("error getting user groups - %s", err.Error())
@@ -728,7 +728,7 @@ func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.Re
 // @Success 200 {object} userGroupShortDetail
 // @Security AppUserAuth
 // @Router /api/user/group-memberships [get]
-func (h *ApisHandler) GetUserGroupMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetUserGroupMemberships(current *model.User, w http.ResponseWriter, r *http.Request) {
 	userGroups, err := h.app.Services.GetUserGroups(clientID, current, model.GroupsFilter{})
 	if err != nil {
 		log.Println("The user has no group memberships")
@@ -804,7 +804,7 @@ type getGroupResponse struct {
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/groups/{id} [get]
-func (h *ApisHandler) GetGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
@@ -864,7 +864,7 @@ type createPendingMemberRequest struct {
 // @Failure 423 {string} block_new_membership_requests flag is true
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/pending-members [post]
-func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -920,6 +920,8 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 
 	member := &model.GroupMembership{
 		UserID:        current.ID,
+		AppID:         current.AppID,
+		OrgID:         current.OrgID,
 		ExternalID:    current.ExternalID,
 		Name:          current.Name,
 		NetID:         current.NetID,
@@ -931,7 +933,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		member.NotificationsPreferences = *requestData.NotificationsPreferences
 	}
 
-	err = h.app.Services.CreatePendingMembership(clientID, current, group, member)
+	err = h.app.Services.CreatePendingMembership(current, group, member)
 	if err != nil {
 		log.Printf("Error on creating a pending member - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -953,7 +955,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/pending-members [delete]
-func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -962,7 +964,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	err := h.app.Services.DeletePendingMembership(clientID, current, groupID)
+	err := h.app.Services.DeletePendingMembership(current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -985,7 +987,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/members [get]
-func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupMembers(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -1063,7 +1065,7 @@ type createMemberRequest struct {
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/members [post]
-func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -1129,6 +1131,8 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	member := model.GroupMembership{
 		GroupID:      groupID,
 		UserID:       requestData.UserID,
+		AppID:        current.AppID,
+		OrgID:        current.OrgID,
 		ExternalID:   requestData.ExternalID,
 		Email:        requestData.Email,
 		Name:         requestData.Name,
@@ -1138,7 +1142,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		DateAttended: requestData.DateAttended,
 	}
 
-	err = h.app.Services.CreateMembership(clientID, current, group, &member)
+	err = h.app.Services.CreateMembership(current, group, &member)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1159,7 +1163,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/members [delete]
-func (h *ApisHandler) DeleteMember(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteMember(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -1168,7 +1172,7 @@ func (h *ApisHandler) DeleteMember(clientID string, current *model.User, w http.
 		return
 	}
 
-	err := h.app.Services.DeleteMembership(clientID, current, groupID)
+	err := h.app.Services.DeleteMembership(current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1197,7 +1201,7 @@ type membershipApprovalRequest struct {
 // @Success 200 {string} Successfully processed
 // @Security AppUserAuth
 // @Router /api/memberships/{membership-id}/approval [put]
-func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -1285,7 +1289,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/memberships/{membership-id} [delete]
-func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -1326,7 +1330,7 @@ func (h *ApisHandler) DeleteMembership(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.DeleteMembershipByID(clientID, current, membershipID)
+	err = h.app.Services.DeleteMembershipByID(current, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1356,7 +1360,7 @@ type updateMembershipRequest struct {
 // @Success 200 {string} Successfully updated
 // @Security AppUserAuth
 // @Router /api/memberships/{membership-id} [put]
-func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -1450,7 +1454,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/authman/synchronize [post]
-func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) SynchAuthmanGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -1496,7 +1500,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{group-id}/events [get]
-func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -1507,7 +1511,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 	}
 
 	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(current, groupID)
 	if group == nil || group.CurrentMember == nil || !hasPermission {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
@@ -1547,7 +1551,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 // @Success 200 {array} model.Event
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/events/v2 [get]
-func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupEventsV2(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -1558,7 +1562,7 @@ func (h *ApisHandler) GetGroupEventsV2(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(current, groupID)
 	if group == nil || group.CurrentMember == nil || !hasPermission {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
@@ -1608,7 +1612,7 @@ type groupEventRequest struct {
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/events [post]
-func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -1691,7 +1695,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 // @Success 200 {string} Successfully created
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/events [put]
-func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) UpdateGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -1769,7 +1773,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/group/{group-id}/event/{event-id} [delete]
-func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -1828,7 +1832,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupID}/posts [get]
-func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupPosts(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["groupID"]
 	if len(id) <= 0 {
@@ -1922,7 +1926,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupId}/posts [post]
-func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) CreateGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["groupID"]
 	if len(id) <= 0 {
@@ -2010,7 +2014,7 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupId}/posts/{postId} [get]
-func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -2076,7 +2080,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupId}/posts/{postId} [put]
-func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) UpdateGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -2107,7 +2111,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	if post.ID == nil || postID != *post.ID {
+	if post.ID == "" || postID != post.ID {
 		log.Printf("unexpected post id query param (%s) and post json data", postID)
 		http.Error(w, fmt.Sprintf("inconsistent post id query param (%s) and post json data", postID), http.StatusBadRequest)
 		return
@@ -2167,7 +2171,7 @@ type reactToGroupPostRequestBody struct {
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupId}/posts/{postId}/reactions [put]
-func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) ReactToGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -2252,7 +2256,7 @@ type reportAbuseGroupPostRequestBody struct {
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/group/{groupId}/posts/{postId}/report/abuse [put]
-func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) ReportAbuseGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -2333,7 +2337,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupId}/posts/{postId} [delete]
-func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) DeleteGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -2392,7 +2396,7 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 // @Success 200 {integer} 0
 // @Security AppUserAuth
 // @Router /api/research-profile/user-count [post]
-func (h *ApisHandler) GetResearchProfileUserCount(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetResearchProfileUserCount(current *model.User, w http.ResponseWriter, r *http.Request) {
 	var researchProfile map[string]map[string][]string
 	err := json.NewDecoder(r.Body).Decode(&researchProfile)
 	if err != nil {

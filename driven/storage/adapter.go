@@ -91,7 +91,19 @@ func (sa *Adapter) setCachedConfigs(configs []model.Config) {
 	sa.cachedConfigs = &syncmap.Map{}
 
 	for _, config := range configs {
-		err := parseConfigsData(&config)
+		var err error
+		switch config.Type {
+		case model.ConfigTypeEnv:
+			err = parseConfigsData[model.EnvConfigData](&config)
+		case model.ConfigTypeSync:
+			err = parseConfigsData[model.SyncConfigData](&config)
+		case model.ConfigTypeManagedGroup:
+			err = parseConfigsData[model.ManagedGroupConfigData](&config)
+		case model.ConfigTypeApplication:
+			err = parseConfigsData[model.ApplicationConfigData](&config)
+		default:
+			err = parseConfigsData[map[string]interface{}](&config)
+		}
 		if err != nil {
 			log.Println(err.Error())
 		}
@@ -99,48 +111,19 @@ func (sa *Adapter) setCachedConfigs(configs []model.Config) {
 	}
 }
 
-func parseConfigsData(config *model.Config) error {
+func parseConfigsData[T model.ConfigData](config *model.Config) error {
 	bsonBytes, err := bson.Marshal(config.Data)
 	if err != nil {
 		return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeConfig, nil, err)
 	}
 
-	switch config.Type {
-	case model.ConfigTypeEnv:
-		var data model.EnvConfigData
-		err = bson.Unmarshal(bsonBytes, &data)
-		if err != nil {
-			return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeEnvConfigData, nil, err)
-		}
-	case model.ConfigTypeSync:
-		var data model.SyncConfigData
-		err = bson.Unmarshal(bsonBytes, &data)
-		if err != nil {
-			return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeSyncConfigData, nil, err)
-		}
-		config.Data = data
-	case model.ConfigTypeManagedGroup:
-		var data model.ManagedGroupConfigData
-		err = bson.Unmarshal(bsonBytes, &data)
-		if err != nil {
-			return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeManagedGroupConfigData, nil, err)
-		}
-		config.Data = data
-	case model.ConfigTypeApplication:
-		var data model.ApplicationConfigData
-		err = bson.Unmarshal(bsonBytes, &data)
-		if err != nil {
-			return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeApplicationConfigData, nil, err)
-		}
-		config.Data = data
-	default:
-		var mapData map[string]interface{}
-		err = bson.Unmarshal(bsonBytes, &mapData)
-		if err != nil {
-			return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeConfig, nil, err)
-		}
-		config.Data = mapData
+	var data T
+	err = bson.Unmarshal(bsonBytes, &data)
+	if err != nil {
+		return errors.WrapErrorAction(logutils.ActionUnmarshal, model.TypeConfigData, &logutils.FieldArgs{"type": config.Type}, err)
 	}
+
+	config.Data = data
 	return nil
 }
 
@@ -168,7 +151,7 @@ func (sa *Adapter) getCachedConfig(id string, configType string, appID string, o
 	return nil, nil
 }
 
-func (sa *Adapter) getCachedConfigs(configType *string) ([]model.Config, error) {
+func (sa *Adapter) getCachedConfigs(configType *string, appID *string, orgID *string) ([]model.Config, error) {
 	sa.configsLock.RLock()
 	defer sa.configsLock.RUnlock()
 
@@ -189,7 +172,18 @@ func (sa *Adapter) getCachedConfigs(configType *string) ([]model.Config, error) 
 			return false
 		}
 
-		if configType == nil || strings.HasPrefix(keyStr, fmt.Sprintf("%s_", *configType)) {
+		match := true
+		if configType != nil && !strings.HasPrefix(keyStr, fmt.Sprintf("%s_", *configType)) {
+			match = false
+		}
+		if appID != nil && !strings.Contains(keyStr, fmt.Sprintf("_%s_", *appID)) {
+			match = false
+		}
+		if orgID != nil && !strings.HasSuffix(keyStr, fmt.Sprintf("_%s", *orgID)) {
+			match = false
+		}
+
+		if match {
 			configList = append(configList, config)
 		}
 
@@ -223,8 +217,8 @@ func (sa *Adapter) FindConfigByID(id string) (*model.Config, error) {
 }
 
 // FindConfigs finds all configs for the specified type
-func (sa *Adapter) FindConfigs(configType *string) ([]model.Config, error) {
-	return sa.getCachedConfigs(configType)
+func (sa *Adapter) FindConfigs(configType *string, appID *string, orgID *string) ([]model.Config, error) {
+	return sa.getCachedConfigs(configType, appID, orgID)
 }
 
 // InsertConfig inserts a new config
@@ -431,9 +425,9 @@ func (sa *Adapter) LoginUser(clientID string, current *model.User) error {
 }
 
 // CreateUser creates a new user
-func (sa *Adapter) CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error) {
+func (sa *Adapter) CreateUser(id string, appID string, orgID string, externalID string, email string, name string) (*model.User, error) {
 	dateCreated := time.Now()
-	user := model.User{ID: id, ClientID: clientID, ExternalID: externalID, Email: email, Name: name, DateCreated: dateCreated}
+	user := model.User{ID: id, AppID: appID, OrgID: orgID, ExternalID: externalID, Email: email, Name: name, DateCreated: dateCreated}
 	_, err := sa.db.users.InsertOne(&user)
 	if err != nil {
 		return nil, err
@@ -466,7 +460,7 @@ func (sa *Adapter) GetUserPostCount(clientID string, userID string) (*int64, err
 }
 
 // DeleteUser Deletes a user with all information
-func (sa *Adapter) DeleteUser(clientID string, userID string) error {
+func (sa *Adapter) DeleteUser(appID string, orgID string, userID string) error {
 
 	return sa.PerformTransaction(func(sessionContext TransactionContext) error {
 		posts, err := sa.FindAllUserPosts(sessionContext, clientID, userID)
@@ -476,7 +470,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 		}
 		if len(posts) > 0 {
 			for _, post := range posts {
-				err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
+				err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, post.ID, true)
 				if err != nil {
 					log.Printf("error on delete all posts for user (%s) - %s", userID, err.Error())
 					return err
@@ -484,7 +478,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 			}
 		}
 
-		memberships, err := sa.FindUserGroupMembershipsWithContext(sessionContext, clientID, userID)
+		memberships, err := sa.FindGroupMembershipsWithContext(sessionContext, model.MembershipFilter{AppID: appID, OrgID: orgID, UserID: &userID})
 		if err != nil {
 			log.Printf("error getting user memberships - %s", err.Error())
 			return err
@@ -603,13 +597,8 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	return &insertedID, nil
 }
 
-// UpdateGroup updates a group except the members attribute
-func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
-	return sa.updateGroup(clientID, current, group, nil)
-}
-
-// UpdateGroupWithMembership updates a group along with the memberships
-func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
+// UpdateGroupWithMemberships updates a group along with the memberships
+func (sa *Adapter) UpdateGroupWithMemberships(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
 	return sa.updateGroup(clientID, current, group, memberships)
 }
 
@@ -798,21 +787,15 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 	return nil
 }
 
-// FindGroup finds group by id and client id
-func (sa *Adapter) FindGroup(context TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error) {
-	return sa.FindGroupWithContext(context, clientID, groupID, userID)
-}
-
 // FindGroupWithContext finds group by id and client id with context
-func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: groupID},
-		primitive.E{Key: "client_id", Value: clientID}}
+func (sa *Adapter) FindGroupWithContext(context TransactionContext, appID string, orgID string, groupID string, userID *string) (*model.Group, error) {
+	filter := bson.D{primitive.E{Key: "_id", Value: groupID}, primitive.E{Key: "app_id", Value: appID}, primitive.E{Key: "org_id", Value: orgID}}
 
 	var err error
 	var membership *model.GroupMembership
 	if userID != nil {
 		// find group memberships
-		membership, err = sa.FindGroupMembership(clientID, groupID, *userID)
+		membership, err = sa.FindGroupMembershipWithContext(context, appID, orgID, groupID, *userID)
 	}
 
 	var rec model.Group
@@ -846,7 +829,7 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 }
 
 // FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter model.GroupsFilter) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(userID *string, groupsFilter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
 	var err error
@@ -864,7 +847,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 	}
 
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	filter := bson.D{primitive.E{Key: "app_id", Value: groupsFilter.AppID}, primitive.E{Key: "org_id", Value: groupsFilter.OrgID}}
 	if userID != nil {
 		innerOrFilter := []bson.M{}
 
@@ -1047,7 +1030,7 @@ func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, 
 }
 
 // FindUserGroups finds the user groups for client id
-func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter model.GroupsFilter) ([]model.Group, error) {
+func (sa *Adapter) FindUserGroups(userID string, groupsFilter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
 	// find group memberships
@@ -1061,8 +1044,9 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	}
 
 	mongoFilter := bson.M{
-		"_id":       bson.M{"$in": groupIDs},
-		"client_id": clientID,
+		"_id":    bson.M{"$in": groupIDs},
+		"app_id": groupsFilter.AppID,
+		"org_id": groupsFilter.OrgID,
 	}
 
 	if groupsFilter.Category != nil {
@@ -1308,7 +1292,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	if paging && len(list) > 0 {
 		for _, post := range list {
-			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, *post.ID, true, order)
+			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, post.ID, true, order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
 					if childPost.UserCanSeePost(current.ID) {
@@ -1326,7 +1310,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 		for i := range list {
 			postID := list[i].ID
 			list[i].Replies = make([]*model.Post, 0)
-			postMapping[*postID] = list[i]
+			postMapping[postID] = list[i]
 		}
 		for _, post := range list {
 			if post != nil {
@@ -1458,7 +1442,7 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 	if recursive {
 		if len(posts) > 0 {
 			for _, post := range posts {
-				childPosts, err := sa.FindPostsByParentID(ctx, clientID, userID, groupID, *post.ID, true, filterByToMembers, recursive, order)
+				childPosts, err := sa.FindPostsByParentID(ctx, clientID, userID, groupID, post.ID, true, filterByToMembers, recursive, order)
 				if err == nil && childPosts != nil {
 					for _, childPost := range childPosts {
 						posts = append(posts, childPost)
@@ -1508,13 +1492,12 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 
-		if post.ClientID == nil { // Always required
-			post.ClientID = &clientID
+		if post.ClientID == "" { // Always required
+			post.ClientID = clientID
 		}
 
-		if post.ID == nil { // Always required
-			id := uuid.New().String()
-			post.ID = &id
+		if post.ID == "" { // Always required
+			post.ID = uuid.NewString()
 		}
 
 		if post.Replies != nil { // This is constructed only for GET all for group
@@ -1524,7 +1507,7 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 		if post.ParentID != nil {
 			topPost, _ := sa.FindTopPostByParentID(clientID, current, post.GroupID, *post.ParentID, false)
 			if topPost != nil && topPost.ParentID == nil {
-				post.TopParentID = topPost.ID
+				post.TopParentID = &topPost.ID
 			}
 		}
 
@@ -1562,19 +1545,19 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 	if post != nil {
-		originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, *post.ID, true, true)
+		originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, post.ID, true, true)
 		if originalPost == nil {
-			return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
+			return nil, fmt.Errorf("unable to find post with id (%s) ", post.ID)
 		}
 		if originalPost.Creator.UserID != userID {
 			return nil, fmt.Errorf("only creator of the post can update it")
 		}
 
-		if post.ClientID == nil { // Always required
-			post.ClientID = &clientID
+		if post.ClientID == "" { // Always required
+			post.ClientID = clientID
 		}
 
-		if post.ID == nil { // Always required
+		if post.ID == "" { // Always required
 			return nil, fmt.Errorf("Missing id")
 		}
 
@@ -1615,9 +1598,9 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 }
 
 // ReportPostAsAbuse Report post as abuse
-func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error {
+func (sa *Adapter) ReportPostAsAbuse(post *model.Post) error {
 	if post != nil {
-		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
+		filter := bson.D{primitive.E{Key: "_id", Value: post.ID}, primitive.E{Key: "app_id", Value: post.AppID}, primitive.E{Key: "org_id", Value: post.OrgID}}
 
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -1682,7 +1665,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 		childPosts, err := sa.FindPostsByParentID(transactionContext, clientID, userID, groupID, postID, true, false, false, nil)
 		if len(childPosts) > 0 && err == nil {
 			for _, post := range childPosts {
-				sa.DeletePost(transactionContext, clientID, userID, groupID, *post.ID, true)
+				sa.DeletePost(transactionContext, clientID, userID, groupID, post.ID, true)
 			}
 		}
 
@@ -1705,7 +1688,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 }
 
 // UpdateGroupStats set the updated date to the current date time (now)
-func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate, resetMembershipUpdateDate, resetManagedMembershipUpdateDate, resetStats bool) error {
+func (sa *Adapter) UpdateGroupStats(context TransactionContext, appID string, orgID string, id string, resetUpdateDate, resetMembershipUpdateDate, resetManagedMembershipUpdateDate, resetStats bool) error {
 
 	updateStats := func(ctx TransactionContext) error {
 		innerUpdate := bson.D{}

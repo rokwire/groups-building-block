@@ -23,6 +23,8 @@ import (
 type Group struct {
 	ID                  string   `json:"id" bson:"_id"`
 	ClientID            string   `json:"client_id" bson:"client_id"`
+	AppID               string   `json:"app_id" bson:"app_id"`
+	OrgID               string   `json:"org_id" bson:"org_id"`
 	Category            string   `json:"category" bson:"category"` //one of the enums categories list
 	Title               string   `json:"title" bson:"title"`
 	Privacy             string   `json:"privacy" bson:"privacy"` //public or private

@@ -6,13 +6,13 @@ import (
 	"log"
 )
 
-func (app *Application) checkUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
+func (app *Application) checkUserGroupMembershipPermission(current *model.User, groupID string) (*model.Group, bool) {
 	if current == nil || current.IsAnonymous {
 		log.Println("app.checkUserGroupMembershipPermission() error - Anonymous user cannot see the events for a private group")
 		return nil, false
 	}
 
-	group, err := app.getGroup(clientID, current, groupID)
+	group, err := app.getGroup(current, groupID)
 	if err != nil {
 		log.Printf("app.checkUserGroupMembershipPermission() error - unable to find group %s - %s", groupID, err)
 		return group, false
@@ -25,15 +25,17 @@ func (app *Application) checkUserGroupMembershipPermission(clientID string, curr
 	return nil, false
 }
 
-func (app *Application) findGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return app.storage.FindGroupsV3(clientID, filter)
+func (app *Application) findGroupsV3(filter model.GroupsFilter) ([]model.Group, error) {
+	return app.storage.FindGroupsV3(filter)
 }
 
-func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	collection, err := app.storage.FindGroupMemberships(clientID, filter)
+func (app *Application) findGroupMemberships(filter model.MembershipFilter) (model.MembershipCollection, error) {
+	collection, err := app.storage.FindGroupMembershipsWithContext(nil, filter)
 
 	if len(filter.GroupIDs) > 0 {
-		groups, err := app.findGroupsV3(clientID, model.GroupsFilter{
+		groups, err := app.findGroupsV3(model.GroupsFilter{
+			AppID:    filter.AppID,
+			OrgID:    filter.OrgID,
 			GroupIDs: filter.GroupIDs,
 		})
 		if err != nil {
@@ -55,15 +57,7 @@ func (app *Application) findGroupMemberships(clientID string, filter model.Membe
 	return collection, err
 }
 
-func (app *Application) findGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
-	return app.storage.FindGroupMembershipByID(clientID, id)
-}
-
-func (app *Application) findUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
-	return app.storage.FindUserGroupMemberships(clientID, userID)
-}
-
-func (app *Application) createPendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error {
+func (app *Application) createPendingMembership(current *model.User, group *model.Group, member *model.GroupMembership) error {
 
 	if group.CanJoinAutomatically {
 		member.Status = "member"
@@ -71,13 +65,15 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 		member.Status = "pending"
 	}
 
-	err := app.storage.CreatePendingMembership(clientID, current, group, member)
+	err := app.storage.CreatePendingMembership(current, group, member)
 	if err != nil {
 		return err
 	}
 
-	adminMemberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+	adminMemberships, err := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 		Statuses: []string{"admin"},
 	})
 	if err == nil && len(adminMemberships.Items) > 0 {
@@ -128,17 +124,17 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) createMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
+func (app *Application) createMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error {
 
 	if membership.UserID != "" {
-		user, err := app.storage.FindUser(clientID, membership.UserID, false)
+		user, err := app.storage.FindUser(membership.AppID, membership.OrgID, membership.UserID, false)
 		if err == nil && user != nil {
 			membership.ApplyFromUserIfEmpty(user)
 		} else {
 			log.Printf("error app.createMembership() - unable to find user: %s", err)
 		}
 	} else if membership.ExternalID != "" {
-		user, err := app.storage.FindUser(clientID, membership.ExternalID, true)
+		user, err := app.storage.FindUser(membership.AppID, membership.OrgID, membership.ExternalID, true)
 		if err == nil && user != nil {
 			membership.ApplyFromUserIfEmpty(user)
 		} else {
@@ -146,13 +142,15 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 		}
 	}
 
-	err := app.storage.CreateMembership(clientID, current, group, membership)
+	err := app.storage.CreateMembership(current, group, membership)
 	if err != nil {
 		return err
 	}
 
-	memberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+	memberships, err := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 		Statuses: []string{"admin"},
 	})
 	if err == nil && len(memberships.Items) > 0 {
@@ -212,13 +210,13 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 	return nil
 }
 
-func (app *Application) deletePendingMembership(clientID string, current *model.User, groupID string) error {
-	err := app.storage.DeleteMembership(clientID, groupID, current.ID)
+func (app *Application) deletePendingMembership(current *model.User, groupID string) error {
+	err := app.storage.DeleteMembershipWithContext(nil, current.AppID, current.OrgID, groupID, current.ID)
 	if err != nil {
 		return err
 	}
 
-	group, err := app.storage.FindGroup(nil, clientID, groupID, nil)
+	group, err := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, groupID, nil)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -231,18 +229,18 @@ func (app *Application) deletePendingMembership(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) deleteMembershipByID(clientID string, current *model.User, membershipID string) error {
+func (app *Application) deleteMembershipByID(current *model.User, membershipID string) error {
 
-	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
+	membership, _ := app.storage.FindGroupMembershipByID(current.AppID, current.OrgID, membershipID)
 
 	if membership != nil {
-		err := app.storage.DeleteMembershipByID(clientID, current, membership.ID)
+		err := app.storage.DeleteMembershipByID(current.AppID, current.OrgID, membership.ID)
 		if err != nil {
 			return err
 		}
 
 		if membership != nil {
-			group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
+			group, _ := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, membership.GroupID, nil)
 			if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
 				err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
 				if err != nil {
@@ -254,13 +252,13 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 	return nil
 }
 
-func (app *Application) deleteMembership(clientID string, current *model.User, groupID string) error {
-	err := app.storage.DeleteMembership(clientID, groupID, current.ID)
+func (app *Application) deleteMembership(current *model.User, groupID string) error {
+	err := app.storage.DeleteMembershipWithContext(nil, current.AppID, current.OrgID, groupID, current.ID)
 	if err != nil {
 		return err
 	}
 
-	group, err := app.storage.FindGroup(nil, clientID, groupID, nil)
+	group, err := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, groupID, nil)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)

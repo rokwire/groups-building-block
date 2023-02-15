@@ -29,34 +29,14 @@ func (app *Application) getTODO() error {
 	return nil
 }
 
-func (app *Application) getGroupsUnprotected(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	groups, err := app.storage.FindGroups(clientID, nil, filter)
+func (app *Application) getGroupsUnprotected(filter model.GroupsFilter) ([]model.Group, error) {
+	groups, err := app.storage.FindGroups(nil, filter)
 	if err != nil {
 		return nil, err
 	}
 
 	return groups, nil
 }
-
-// func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfigData, error) {
-// 	return app.storage.FindManagedGroupConfigs(clientID)
-// }
-
-// func (app *Application) createManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
-// 	config.ID = uuid.NewString()
-// 	config.DateCreated = time.Now()
-// 	config.DateUpdated = nil
-// 	err := app.storage.InsertManagedGroupConfig(config)
-// 	return &config, err
-// }
-
-// func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig) error {
-// 	return app.storage.UpdateManagedGroupConfig(config)
-// }
-
-// func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
-// 	return app.storage.DeleteManagedGroupConfig(id, clientID)
-// }
 
 func (app *Application) getConfig(id string, claims *tokenauth.Claims) (*model.Config, error) {
 	config, err := app.storage.FindConfigByID(id)
@@ -76,7 +56,7 @@ func (app *Application) getConfig(id string, claims *tokenauth.Claims) (*model.C
 }
 
 func (app *Application) getConfigs(configType *string, claims *tokenauth.Claims) ([]model.Config, error) {
-	configs, err := app.storage.FindConfigs(configType)
+	configs, err := app.storage.FindConfigs(configType, nil, nil)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err)
 	}

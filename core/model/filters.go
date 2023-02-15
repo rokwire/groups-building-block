@@ -3,6 +3,8 @@ package model
 // MembershipFilter Wraps all possible filters for getting group members call
 type MembershipFilter struct {
 	ID         *string  `json:"id"`          // membership id
+	AppID      string   `json:"-"`           // app id
+	OrgID      string   `json:"-"`           // org id
 	GroupIDs   []string `json:"group_ids"`   // list of group ids
 	UserID     *string  `json:"user_id"`     // core user id
 	UserIDs    []string `json:"user_ids"`    // core user ids
@@ -17,6 +19,8 @@ type MembershipFilter struct {
 // GroupsFilter Wraps all possible filters for getting a group
 type GroupsFilter struct {
 	GroupIDs         []string                       `json:"ids"`                // membership id
+	AppID            string                         `json:"-"`                  // app id
+	OrgID            string                         `json:"-"`                  // org id
 	MemberID         *string                        `json:"member_id"`          // member id
 	MemberUserID     *string                        `json:"member_user_id"`     // member user id
 	MemberExternalID *string                        `json:"member_external_id"` // member user external id

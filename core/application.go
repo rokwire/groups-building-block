@@ -87,7 +87,7 @@ func (app *Application) LoginUser(clientID string, current *model.User, newID st
 }
 
 // CreateUser creates an user
-func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string, name *string) (*model.User, error) {
+func (app *Application) CreateUser(id string, appID string, orgID string, externalID *string, email *string, name *string) (*model.User, error) {
 	externalIDVal := ""
 	if externalID != nil {
 		externalIDVal = *externalID
@@ -103,7 +103,7 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 		nameVal = *name
 	}
 
-	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal, nameVal)
+	user, err := app.storage.CreateUser(id, appID, orgID, externalIDVal, emailVal, nameVal)
 	if err != nil {
 		return nil, err
 	}
@@ -114,13 +114,13 @@ func (app *Application) setupSyncManagedGroupTimer() {
 	log.Println("setupSyncManagedGroupTimer")
 
 	configTypeSync := model.ConfigTypeSync
-	configs, err := app.storage.FindConfigs(&configTypeSync)
+	configs, err := app.storage.FindConfigs(&configTypeSync, nil, nil)
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}
 
 	for _, config := range configs {
-		syncConfig, err := config.DataAsSyncConfig()
+		syncConfig, err := model.GetConfigData[model.SyncConfigData](config)
 		if err != nil {
 			log.Printf("error asserting as sync config for appID %s, orgID %s: %v", config.AppID, config.OrgID, err)
 			continue

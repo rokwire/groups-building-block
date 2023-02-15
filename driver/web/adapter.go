@@ -202,20 +202,20 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	}
 }
 
-type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
+type idTokenAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user := we.auth.idTokenCheck(w, req, false)
+		user := we.auth.idTokenCheck(w, req, false)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
@@ -223,14 +223,14 @@ func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFun
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user := we.auth.idTokenCheck(w, req, true)
+		user := we.auth.idTokenCheck(w, req, true)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
@@ -238,14 +238,14 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
+		user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
@@ -268,25 +268,25 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated, user := we.auth.mixedCheck(req)
-		if !authenticated {
+		user := we.auth.mixedCheck(req)
+		if user == nil {
 			log.Printf("Unauthorized - Mixed Check")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		//user can be nil
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
-type adminAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
+type adminAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user, forbidden := we.auth.adminCheck(req)
+		user, forbidden := we.auth.adminCheck(req)
 		if user == nil {
 			if forbidden {
 				log.Printf("Forbidden - Admin")
@@ -298,17 +298,17 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, appID string, orgID string, supportedClientIDs []string, appKeys []string, oidcProvider string,
+func NewWebAdapter(app *core.Application, host string, appID string, orgID string, appKeys []string, oidcProvider string,
 	oidcClientID string, oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, internalAPIKey string,
 	serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, appID, orgID, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
+	auth := NewAuth(app, host, appID, orgID, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)

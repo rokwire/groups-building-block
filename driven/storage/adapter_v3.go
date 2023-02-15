@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"fmt"
 	"groups/core/model"
 	"log"
@@ -19,14 +18,14 @@ import (
 )
 
 // FindGroupsV3 finds groups with filter
-func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
+func (sa *Adapter) FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
 	var groupIDs []string
 	var err error
 	var memberships model.MembershipCollection
 
-	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	groupFilter := bson.D{primitive.E{Key: "app_id", Value: filter.AppID}, primitive.E{Key: "org_id", Value: filter.OrgID}}
 	findOptions := options.Find()
 
 	groupIDMap := map[string]bool{}
@@ -40,8 +39,10 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 	// Credits to Ryan Oberlander suggest
 	if filter.MemberUserID != nil || filter.MemberID != nil || filter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
+		memberships, err = sa.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
 			ID:         filter.MemberID,
+			AppID:      filter.AppID,
+			OrgID:      filter.OrgID,
 			UserID:     filter.MemberUserID,
 			ExternalID: filter.MemberExternalID,
 		})
@@ -159,22 +160,15 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 	return list, nil
 }
 
-// FindGroupMemberships finds the group membership for a given group
-func (sa *Adapter) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return sa.FindGroupMembershipsWithContext(nil, clientID, filter)
-}
-
 // FindGroupMembershipsWithContext finds the group membership for a given group
-func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
+func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, filter model.MembershipFilter) (model.MembershipCollection, error) {
 
 	if filter.ID == nil && len(filter.GroupIDs) == 0 && filter.UserID == nil && filter.ExternalID == nil && filter.Name == nil {
 		log.Print("The memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
 		return model.MembershipCollection{}, fmt.Errorf("the memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
 	}
 
-	matchFilter := bson.D{
-		bson.E{Key: "client_id", Value: clientID},
-	}
+	matchFilter := bson.D{bson.E{Key: "app_id", Value: filter.AppID}, bson.E{Key: "org_id", Value: filter.OrgID}}
 	if len(filter.GroupIDs) > 0 {
 		matchFilter = append(matchFilter, bson.E{Key: "group_id", Value: bson.M{"$in": filter.GroupIDs}})
 	}
@@ -217,21 +211,12 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 	return model.MembershipCollection{Items: result}, err
 }
 
-// FindGroupMembership finds the group membership for a given user and group
-func (sa *Adapter) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return sa.FindGroupMembershipWithContext(nil, clientID, groupID, userID)
-}
-
 // FindGroupMembershipWithContext finds the group membership for a given user and group
-func (sa *Adapter) FindGroupMembershipWithContext(ctx context.Context, clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
-	filter := bson.M{"client_id": clientID, "group_id": groupID, "user_id": userID}
+func (sa *Adapter) FindGroupMembershipWithContext(context TransactionContext, appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error) {
+	filter := bson.M{"app_id": appID, "org_id": orgID, "group_id": groupID, "user_id": userID}
 
 	var result model.GroupMembership
-	err := sa.db.groupMemberships.FindOneWithContext(ctx, filter, &result, nil)
+	err := sa.db.groupMemberships.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -240,8 +225,8 @@ func (sa *Adapter) FindGroupMembershipWithContext(ctx context.Context, clientID 
 }
 
 // FindGroupMembershipByID finds the group membership by id
-func (sa *Adapter) FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
-	filter := bson.M{"client_id": clientID, "_id": id}
+func (sa *Adapter) FindGroupMembershipByID(appID string, orgID string, id string) (*model.GroupMembership, error) {
+	filter := bson.M{"app_id": appID, "org_id": orgID, "_id": id}
 
 	var result model.GroupMembership
 	err := sa.db.groupMemberships.FindOne(filter, &result, nil)
@@ -251,27 +236,12 @@ func (sa *Adapter) FindGroupMembershipByID(clientID string, id string) (*model.G
 	return &result, err
 }
 
-// FindUserGroupMemberships finds the group memberships for a given user
-func (sa *Adapter) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
-	return sa.FindUserGroupMembershipsWithContext(nil, clientID, userID)
-}
-
-// FindUserGroupMembershipsWithContext finds the group memberships for a given user with context
-func (sa *Adapter) FindUserGroupMembershipsWithContext(ctx TransactionContext, clientID string, userID string) (model.MembershipCollection, error) {
-	filter := bson.M{"client_id": clientID, "user_id": userID}
-
-	var result []model.GroupMembership
-	err := sa.db.groupMemberships.Find(filter, &result, nil)
-
-	return model.MembershipCollection{Items: result}, err
-}
-
 // CreatePendingMembership creates a pending membership for a specific group
-func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, group *model.Group, membership *model.GroupMembership) error {
-	if membership != nil && group != nil {
+func (sa *Adapter) CreatePendingMembership(user *model.User, group *model.Group, membership *model.GroupMembership) error {
+	if membership != nil && group != nil && user != nil {
 
 		//1. check if the user is already a member of this group - pending or member or admin or rejected
-		storedMembership, err := sa.FindGroupMembership(clientID, group.ID, user.ID)
+		storedMembership, err := sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, user.ID)
 		if err == nil && storedMembership != nil {
 			switch storedMembership.Status {
 			case "admin":
@@ -293,7 +263,8 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 		}
 
 		membership.ID = uuid.NewString()
-		membership.ClientID = clientID
+		membership.AppID = group.AppID
+		membership.OrgID = group.OrgID
 		membership.GroupID = group.ID
 		membership.DateCreated = time.Now().UTC()
 
@@ -303,7 +274,7 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 				return err
 			}
 
-			return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+			return sa.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
 		})
 		if err != nil {
 			return err
@@ -427,7 +398,7 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 }
 
 // CreateMembership Created a member to a group
-func (sa *Adapter) CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
+func (sa *Adapter) CreateMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error {
 	if group != nil {
 
 		if len(membership.UserID) == 0 && len(membership.ExternalID) == 0 {
@@ -435,27 +406,28 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 			return fmt.Errorf("expected user_id or external_id")
 		}
 
-		existingMembership, err := sa.FindGroupMembership(clientID, group.ID, current.ID)
+		existingMembership, err := sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, current.ID)
 		if err != nil || existingMembership == nil || !existingMembership.IsAdmin() {
 			log.Printf("error: storage.CreateMembership() - current user is not admin of the group")
 			return fmt.Errorf("current user is not admin of the group")
 		}
 
-		existingMembership, _ = sa.FindGroupMembership(clientID, group.ID, membership.UserID)
+		existingMembership, _ = sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, membership.UserID)
 		if existingMembership != nil {
 			log.Printf("error: storage.CreateMembership() - member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 		}
 
-		existingMembership, _ = sa.FindGroupMembership(clientID, group.ID, membership.ExternalID)
+		existingMembership, _ = sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, membership.ExternalID)
 		if existingMembership != nil {
 			log.Printf("error: storage.CreateMembership() - member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
 			return fmt.Errorf("member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
 		}
 
 		membership.ID = uuid.NewString()
-		membership.ClientID = clientID
 		membership.GroupID = group.ID
+		membership.AppID = group.AppID
+		membership.OrgID = group.OrgID
 		membership.DateCreated = time.Now()
 		membership.MemberAnswers = group.CreateMembershipEmptyAnswers()
 
@@ -465,7 +437,7 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 				return err
 			}
 
-			return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+			return sa.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
 		})
 	}
 
@@ -495,50 +467,46 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+		return sa.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
 	})
 }
 
 // UpdateMembership updates a membership
-func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error {
-	return sa.PerformTransaction(func(context TransactionContext) error {
-		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "status", Value: membership.Status},
-				primitive.E{Key: "reject_reason", Value: membership.RejectReason},
-				primitive.E{Key: "date_attended", Value: membership.DateAttended},
-				primitive.E{Key: "notifications_preferences", Value: membership.NotificationsPreferences},
-				primitive.E{Key: "date_updated", Value: time.Now()},
-			},
-			},
-		}
-		var membership model.GroupMembership
-		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
-		if err != nil {
-			return err
-		}
+func (sa *Adapter) UpdateMembership(context TransactionContext, membership *model.GroupMembership) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: membership.ID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "status", Value: membership.Status},
+			primitive.E{Key: "reject_reason", Value: membership.RejectReason},
+			primitive.E{Key: "date_attended", Value: membership.DateAttended},
+			primitive.E{Key: "notifications_preferences", Value: membership.NotificationsPreferences},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		},
+		},
+	}
+	res, err := sa.db.groupMemberships.UpdateOneWithContext(context, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	if res.ModifiedCount != 1 {
+		return fmt.Errorf("error updating membership %s: matched: %d, modified: %d", membership.ID, res.MatchedCount, res.ModifiedCount)
+	}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
-	})
-
-}
-
-// DeleteMembership deletes a member membership from a specific group
-func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID string) error {
-	return sa.DeleteMembershipWithContext(nil, clientID, groupID, userID)
+	return nil
 }
 
 // DeleteMembershipWithContext deletes a member membership from a specific group with context
-func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID string, groupID string, userID string) error {
+func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, appID string, orgID string, groupID string, userID string) error {
 
 	deleteWrapper := func(context TransactionContext) error {
-		currentMembership, _ := sa.FindGroupMembershipWithContext(context, clientID, groupID, userID)
+		currentMembership, _ := sa.FindGroupMembershipWithContext(context, appID, orgID, groupID, userID)
 		if currentMembership != nil {
 
 			if currentMembership.IsAdmin() {
-				adminMemberships, _ := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+				adminMemberships, _ := sa.FindGroupMembershipsWithContext(context, model.MembershipFilter{
 					GroupIDs: []string{groupID},
+					AppID:    appID,
+					OrgID:    orgID,
 					Statuses: []string{"admin"},
 				})
 				if len(adminMemberships.Items) <= 1 {
@@ -550,14 +518,15 @@ func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID 
 			filter := bson.D{
 				primitive.E{Key: "group_id", Value: groupID},
 				primitive.E{Key: "user_id", Value: userID},
-				primitive.E{Key: "client_id", Value: clientID},
+				primitive.E{Key: "app_id", Value: appID},
+				primitive.E{Key: "org_id", Value: orgID},
 			}
 			_, err := sa.db.groupMemberships.DeleteOneWithContext(context, filter, nil)
 			if err != nil {
 				log.Printf("error deleting membership - %s", err)
 				return err
 			}
-			return sa.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
+			return sa.UpdateGroupStats(context, appID, orgID, groupID, false, true, false, true)
 		}
 		return nil
 	}
@@ -571,9 +540,9 @@ func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID 
 }
 
 // DeleteMembershipByID deletes a membership by ID
-func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, membershipID string) error {
+func (sa *Adapter) DeleteMembershipByID(appID string, orgID string, membershipID string) error {
 	return sa.PerformTransaction(func(context TransactionContext) error {
-		membership, err := sa.FindGroupMembershipByID(clientID, membershipID)
+		membership, err := sa.FindGroupMembershipByID(appID, orgID, membershipID)
 		if err != nil {
 			return errors.WrapErrorAction(logutils.ActionFind, "group membership", &logutils.FieldArgs{"id": membershipID}, err)
 		}
@@ -587,19 +556,20 @@ func (sa *Adapter) DeleteMembershipByID(clientID string, current *model.User, me
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+		return sa.UpdateGroupStats(context, appID, orgID, membership.GroupID, false, true, false, true)
 	})
 }
 
 // DeleteUnsyncedGroupMemberships deletes group memberships that do not exist in the latest sync
-func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error) {
+func (sa *Adapter) DeleteUnsyncedGroupMemberships(appID string, orgID string, groupID string, syncID string) (int64, error) {
 	var deletedCount int64 = 0
 	err := sa.PerformTransaction(func(context TransactionContext) error {
 		filter := bson.M{
-			"client_id": clientID,
-			"group_id":  groupID,
-			"sync_id":   bson.M{"$ne": syncID},
-			"status":    bson.M{"$ne": "admin"},
+			"app_id":   appID,
+			"org_id":   orgID,
+			"group_id": groupID,
+			"sync_id":  bson.M{"$ne": syncID},
+			"status":   bson.M{"$ne": "admin"},
 		}
 
 		result, err := sa.db.groupMemberships.DeleteMany(filter, nil)
@@ -609,7 +579,7 @@ func (sa *Adapter) DeleteUnsyncedGroupMemberships(clientID string, groupID strin
 
 		deletedCount = result.DeletedCount
 		if deletedCount > 0 {
-			return sa.UpdateGroupStats(context, clientID, groupID, false, false, true, true)
+			return sa.UpdateGroupStats(context, appID, orgID, groupID, false, false, true, true)
 		}
 
 		return nil

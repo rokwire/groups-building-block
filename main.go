@@ -126,8 +126,6 @@ func main() {
 	}
 	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
-	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
-
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
 		coreAdapter, rewardsAdapter)
@@ -142,7 +140,7 @@ func main() {
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, appID, orgID, supportedClientIDs, apiKeys, oidcProvider,
+	webAdapter := web.NewWebAdapter(application, host, appID, orgID, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, intrernalAPIKey, serviceRegManager, groupServiceURL)
 	webAdapter.Start()
 }

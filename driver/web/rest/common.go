@@ -5,6 +5,10 @@ import (
 	"strconv"
 )
 
+type createResponse struct {
+	InsertedID string `json:"inserted_id"`
+} //@name createResponse
+
 func getStringQueryParam(r *http.Request, paramName string) *string {
 	params, ok := r.URL.Query()[paramName]
 	if ok && len(params[0]) > 0 {
