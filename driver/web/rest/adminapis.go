@@ -702,8 +702,8 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(current *model.User, w http.Re
 // @ID AdminCreateManagedGroupConfig
 // @Tags Admin
 // @Accept plain
-// @Param data body  model.ManagedGroupConfig true "body data"
-// @Success 200 {object} model.ManagedGroupConfig
+// @Param data body  model.ManagedGroupConfigData true "body data"
+// @Success 200 {object} model.ManagedGroupConfigData
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
 func (h *AdminApisHandler) CreateManagedGroupConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
@@ -740,7 +740,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(current *model.User, w http.
 // @ID AdminUpdateManagedGroupConfig
 // @Tags Admin
 // @Accept plain
-// @Param data body  model.ManagedGroupConfig true "body data"
+// @Param data body  model.ManagedGroupConfigData true "body data"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
@@ -829,7 +829,7 @@ func (h *AdminApisHandler) GetSyncConfig(current *model.User, w http.ResponseWri
 // @ID AdminSaveSyncConfig
 // @Tags Admin
 // @Accept plain
-// @Param data body model.SyncConfig true "body data"
+// @Param data body model.SyncConfigData true "body data"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
@@ -879,7 +879,7 @@ func (h *AdminApisHandler) SynchronizeAuthman(current *model.User, w http.Respon
 // @Tags Admin
 // @ID AdminGetConfig
 // @Accept json
-// @Success 200 model.Config
+// @Success 200 {object} model.Config
 // @Security AppUserAuth
 // @Router /api/admin/configs/{id} [get]
 func (h *AdminApisHandler) GetConfig(current *model.User, w http.ResponseWriter, r *http.Request) {

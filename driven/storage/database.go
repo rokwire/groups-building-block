@@ -38,7 +38,6 @@ type database struct {
 	configs          *collectionWrapper
 	syncTimes        *collectionWrapper
 	users            *collectionWrapper
-	enums            *collectionWrapper
 	groups           *collectionWrapper
 	groupMemberships *collectionWrapper
 	events           *collectionWrapper
@@ -84,12 +83,6 @@ func (m *database) start() error {
 
 	users := &collectionWrapper{database: m, coll: db.Collection("users")}
 	err = m.applyUsersChecks(users)
-	if err != nil {
-		return err
-	}
-
-	enums := &collectionWrapper{database: m, coll: db.Collection("enums")}
-	err = m.applyEnumsChecks(enums)
 	if err != nil {
 		return err
 	}
@@ -148,7 +141,6 @@ func (m *database) start() error {
 	m.configs = configs
 	m.syncTimes = syncTimes
 	m.users = users
-	m.enums = enums
 	m.groups = groups
 	m.groupMemberships = groupMemberships
 	m.events = events
@@ -237,13 +229,6 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 	}
 
 	log.Println("users checks passed")
-	return nil
-}
-
-func (m *database) applyEnumsChecks(enums *collectionWrapper) error {
-	log.Println("apply enums checks.....")
-
-	log.Println("enums checks passed")
 	return nil
 }
 

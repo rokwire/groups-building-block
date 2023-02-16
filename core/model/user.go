@@ -19,8 +19,6 @@ import "time"
 // User represents user entity
 type User struct {
 	ID            string     `json:"id" bson:"_id"`
-	AppID         string     `json:"app_id"`
-	OrgID         string     `json:"org_id"`
 	IsAnonymous   bool       `json:"is_anonymous" bson:"is_anonymous"`
 	IsCoreUser    bool       `json:"is_core_user" bson:"is_core_user"`
 	ExternalID    string     `json:"external_id" bson:"external_id"`
@@ -30,6 +28,8 @@ type User struct {
 	DateCreated   time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated   *time.Time `json:"date_updated" bson:"date_updated"`
 	ClientID      string     `bson:"client_id"`
+	AppID         string     `bson:"app_id"`
+	OrgID         string     `bson:"org_id"`
 	Permissions   []string   `bson:"permissions"`
 	OriginalToken string
 	System        bool
