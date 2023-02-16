@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"groups/core/model"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -63,14 +63,8 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("RetrieveAuthmanGroupMembersError: unable to read json: %s", err)
-			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: unable to parse json: %s", err)
-		}
-
 		var authmanData model.AuthmanGroupResponse
-		err = json.Unmarshal(data, &authmanData)
+		err = json.NewDecoder(resp.Body).Decode(&authmanData)
 		if err != nil {
 			log.Printf("RetrieveAuthmanGroupMembersError: unable to parse json: %s", err)
 			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: unable to parse json: %s", err)
@@ -150,16 +144,16 @@ func (a *Adapter) RemoveAuthmanMemberFromGroup(groupName string, uin string) err
 func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.AuthmanSubject, error) {
 	externalIDCount := len(externalIDs)
 	if externalIDCount > 0 {
-		subjectLookups := make([]model.АuthmanSubjectLookup, externalIDCount)
+		subjectLookups := make([]model.AuthmanSubjectLookup, externalIDCount)
 		for i, externalID := range externalIDs {
-			subjectLookups[i] = model.АuthmanSubjectLookup{
+			subjectLookups[i] = model.AuthmanSubjectLookup{
 				SubjectID:       externalID,
 				SubjectSourceID: SubjectsourceidUofinetid,
 			}
 		}
 
-		requestBodyStruct := model.АuthmanUserRequest{
-			WsRestGetSubjectsRequest: model.АuthmanUserData{
+		requestBodyStruct := model.AuthmanUserRequest{
+			WsRestGetSubjectsRequest: model.AuthmanUserData{
 				WsSubjectLookups:      subjectLookups,
 				SubjectAttributeNames: []string{"userprincipalname"},
 			},
@@ -188,7 +182,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			errordata, err := ioutil.ReadAll(resp.Body)
+			errordata, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Printf("RetrieveAuthmanUsers: unable to read error response: %s", errordata)
 				return nil, fmt.Errorf("RetrieveAuthmanUsers: unable to  error response: %s", errordata)
@@ -197,14 +191,8 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 			return nil, fmt.Errorf("RetrieveAuthmanUsers: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("RetrieveAuthmanUsers: unable to read json: %s", err)
-			return nil, fmt.Errorf("RetrieveAuthmanUsers: unable to  read json: %s", err)
-		}
-
-		var authmanData model.АuthmanUserResponse
-		err = json.Unmarshal(data, &authmanData)
+		var authmanData model.AuthmanUserResponse
+		err = json.NewDecoder(resp.Body).Decode(&authmanData)
 		if err != nil {
 			log.Printf("RetrieveAuthmanUsers: unable to parse json: %s", err)
 			return nil, fmt.Errorf("RetrieveAuthmanUsers: unable to parse json: %s", err)
@@ -220,7 +208,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 }
 
 // RetrieveAuthmanStemGroups retrieve Authman user data based on external IDs for a given stem
-func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGroupsResponse, error) {
+func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.AuthmanGroupsResponse, error) {
 
 	// Hardcoded until it needs to be configurable
 	requestBody := fmt.Sprintf(`{
@@ -250,7 +238,7 @@ func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGro
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		errordata, err := ioutil.ReadAll(resp.Body)
+		errordata, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveAuthmanStemGroups: unable to read error response: %s", errordata)
 			return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to  error response: %s", errordata)
@@ -259,14 +247,8 @@ func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGro
 		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("RetrieveAuthmanStemGroups: unable to read json: %s", err)
-		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to  read json: %s", err)
-	}
-
-	var authmanData model.АuthmanGroupsResponse
-	err = json.Unmarshal(data, &authmanData)
+	var authmanData model.AuthmanGroupsResponse
+	err = json.NewDecoder(resp.Body).Decode(&authmanData)
 	if err != nil {
 		log.Printf("RetrieveAuthmanStemGroups: unable to parse json: %s", err)
 		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to parse json: %s", err)

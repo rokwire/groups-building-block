@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"groups/core"
 	"groups/core/model"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -52,7 +51,9 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(appID string, orgID str
 	}
 	externalID := identifier
 
-	groups, err := h.app.Services.FindGroupsV3(clientID, model.GroupsFilter{
+	groups, err := h.app.Services.FindGroupsV3(model.GroupsFilter{
+		AppID:            appID,
+		OrgID:            orgID,
 		MemberExternalID: &externalID,
 	})
 	if err != nil {
@@ -109,15 +110,17 @@ func (h *InternalApisHandler) IntGetGroup(appID string, orgID string, w http.Res
 		return
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, identifier)
+	group, err := h.app.Services.GetGroupEntity(appID, orgID, identifier)
 	if err != nil {
 		log.Printf("Unable to retrieve group with ID '%s': %s", identifier, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: []string{group.ID},
+		AppID:    appID,
+		OrgID:    orgID,
 	})
 	if err != nil {
 		log.Printf("Unable to retrieve memberships: %s", err)
@@ -172,15 +175,17 @@ func (h *InternalApisHandler) IntGetGroupMembersByGroupTitle(appID string, orgID
 		}
 	}
 
-	group, err := h.app.Services.GetGroupEntityByTitle(clientID, title)
+	group, err := h.app.Services.GetGroupEntityByTitle(appID, orgID, title)
 	if err != nil {
 		log.Printf("Unable to retrieve group with title '%s': %s", title, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: []string{group.ID},
+		AppID:    appID,
+		OrgID:    orgID,
 		Offset:   offset,
 		Limit:    limit,
 	})
@@ -282,7 +287,7 @@ func (h *InternalApisHandler) GroupStats(appID string, orgID string, w http.Resp
 
 	data, err := json.Marshal(groupsStats)
 	if err != nil {
-		log.Printf("Error GroupStats(%s): %s", clientID, err)
+		log.Printf("Error GroupStats(appID %s, orgID %s): %s", appID, orgID, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -319,7 +324,7 @@ func (h *InternalApisHandler) UpdateGroupDateUpdated(appID string, orgID string,
 		return
 	}
 
-	err := h.app.Services.UpdateGroupDateUpdated(clientID, groupID)
+	err := h.app.Services.UpdateGroupDateUpdated(appID, orgID, groupID)
 	if err != nil {
 		log.Printf("Error on updating date updated of group %s - %s\n", groupID, err)
 		http.Error(w, fmt.Sprintf("Error on updating date updated of group %s - %s\n", groupID, err), http.StatusInternalServerError)
@@ -352,15 +357,8 @@ func (h *InternalApisHandler) CreateGroupEvent(appID string, orgID string, w htt
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the create group event - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData intCreateGroupEventRequestBody
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create event request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -376,7 +374,7 @@ func (h *InternalApisHandler) CreateGroupEvent(appID string, orgID string, w htt
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(appID, orgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -389,7 +387,7 @@ func (h *InternalApisHandler) CreateGroupEvent(appID string, orgID string, w htt
 		return
 	}
 
-	grEvent, err := h.app.Services.CreateEvent(clientID, nil, requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
+	grEvent, err := h.app.Services.CreateEvent(appID, orgID, requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, fmt.Sprintf("Error on creating an event - %s\n", err), http.StatusInternalServerError)
@@ -434,7 +432,7 @@ func (h *InternalApisHandler) DeleteGroupEvent(appID string, orgID string, w htt
 		return
 	}
 
-	err := h.app.Services.DeleteEvent(clientID, nil, eventID, groupID)
+	err := h.app.Services.DeleteEvent(appID, orgID, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -477,15 +475,8 @@ func (h *InternalApisHandler) SendGroupNotification(appID string, orgID string, 
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on read the sendGroupNotificationRequestBody - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData sendGroupNotificationRequestBody
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the sendGroupNotificationRequestBody - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -510,7 +501,7 @@ func (h *InternalApisHandler) SendGroupNotification(appID string, orgID string, 
 		Topic:          requestData.Topic,
 		Data:           requestData.Data,
 	}
-	err = h.app.Services.SendGroupNotification(clientID, notification)
+	err = h.app.Services.SendGroupNotification(appID, orgID, notification)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

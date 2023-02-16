@@ -17,7 +17,7 @@ package rewards
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -87,7 +87,7 @@ func (a *Adapter) CreateUserReward(userID string, rewardType string, description
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			errorBody, err := ioutil.ReadAll(resp.Body)
+			errorBody, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Printf("CreateUserReward: unable to read json: %s", err)
 				return fmt.Errorf("CreateUserReward: unable to parse json: %s", err)

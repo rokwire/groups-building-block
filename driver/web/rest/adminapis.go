@@ -494,7 +494,7 @@ func (h *AdminApisHandler) GetGroupPosts(current *model.User, w http.ResponseWri
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(current, id, nil, false, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -533,7 +533,7 @@ func (h *AdminApisHandler) GetGroupEvents(current *model.User, w http.ResponseWr
 		return
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, false)
+	events, err := h.app.Services.GetEvents(current, groupID, false)
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -578,7 +578,7 @@ func (h *AdminApisHandler) DeleteGroup(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
@@ -590,7 +590,7 @@ func (h *AdminApisHandler) DeleteGroup(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	err = h.app.Services.DeleteGroup(clientID, current, id)
+	err = h.app.Services.DeleteGroup(current.AppID, current.OrgID, id)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -630,7 +630,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(current *model.User, w http.Response
 		return
 	}
 
-	err := h.app.Services.DeleteEvent(clientID, current, eventID, groupID)
+	err := h.app.Services.DeleteEvent(current.AppID, current.OrgID, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -668,7 +668,7 @@ func (h *AdminApisHandler) DeleteGroupPost(current *model.User, w http.ResponseW
 		return
 	}
 
-	err := h.app.Services.DeletePost(clientID, current, groupID, postID, true)
+	err := h.app.Services.DeletePost(current, groupID, postID, true)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

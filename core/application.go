@@ -82,8 +82,8 @@ func (app *Application) FindUser(appID string, orgID string, id *string, externa
 }
 
 // LoginUser refactors the user using the new id
-func (app *Application) LoginUser(clientID string, current *model.User, newID string) error {
-	return app.storage.LoginUser(clientID, current)
+func (app *Application) LoginUser(current *model.User) error {
+	return app.storage.LoginUser(current)
 }
 
 // CreateUser creates an user

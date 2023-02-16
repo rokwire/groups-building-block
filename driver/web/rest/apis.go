@@ -20,8 +20,6 @@ import (
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -102,15 +100,8 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 	// 	return
 	// }
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal create a group - %s\n", err.Error())
-		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
-		return
-	}
-
 	var requestData createGroupRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create group data - %s\n", err.Error())
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
@@ -138,7 +129,9 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 		return
 	}
 
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
+	insertedID, groupErr := h.app.Services.CreateGroup(current, &model.Group{
+		AppID:                    current.AppID,
+		OrgID:                    current.OrgID,
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
 		Category:                 requestData.Category,
@@ -167,7 +160,7 @@ func (h *ApisHandler) CreateGroup(current *model.User, w http.ResponseWriter, r 
 		return
 	}
 
-	data, err = json.Marshal(createResponse{InsertedID: *insertedID})
+	data, err := json.Marshal(createResponse{InsertedID: *insertedID})
 	if err != nil {
 		log.Println("Error on marshal create group response")
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
@@ -227,15 +220,8 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the update group item - %s\n", err.Error())
-		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
-		return
-	}
-
 	var requestData updateGroupRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the update group request data - %s\n", err.Error())
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
@@ -251,7 +237,7 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(current, id)
 	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
 		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could update a group", current.Email, group.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
@@ -268,7 +254,7 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 		return
 	}
 
-	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
+	groupErr := h.app.Services.UpdateGroup(&current.ID, &model.Group{
 		ID:                       id,
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
@@ -324,7 +310,7 @@ func (h *ApisHandler) GetGroupStats(current *model.User, w http.ResponseWriter, 
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(current, groupID)
 	if err != nil {
 		log.Printf("error getting group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -371,7 +357,7 @@ func (h *ApisHandler) DeleteGroup(current *model.User, w http.ResponseWriter, r 
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(current, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
@@ -388,7 +374,7 @@ func (h *ApisHandler) DeleteGroup(current *model.User, w http.ResponseWriter, r 
 		return
 	}
 
-	err = h.app.Services.DeleteGroup(clientID, current, id)
+	err = h.app.Services.DeleteGroup(current.AppID, current.OrgID, id)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -464,7 +450,9 @@ func (h *ApisHandler) GetGroups(current *model.User, w http.ResponseWriter, r *h
 		}
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	groupsFilter.AppID = current.AppID
+	groupsFilter.OrgID = current.OrgID
+	groups, err := h.app.Services.GetGroups(&current.ID, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -476,8 +464,10 @@ func (h *ApisHandler) GetGroups(current *model.User, w http.ResponseWriter, r *h
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: groupIDs,
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 	})
 	if err != nil {
 		log.Printf("apis.GetGroups() unable to retrieve memberships: %s", err)
@@ -591,22 +581,15 @@ func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, 
 		groupsFilter.Order = &orders[0]
 	}
 
-	requestData, err := io.ReadAll(r.Body)
+	err := json.NewDecoder(r.Body).Decode(&groupsFilter)
 	if err != nil {
-		log.Printf("apis.GetUserGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+		// just log an error and proceed and assume an empty filter
+		log.Printf("apis.GetUserGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 	}
 
-	if len(requestData) > 0 {
-		err = json.Unmarshal(requestData, &groupsFilter)
-		if err != nil {
-			// just log an error and proceed and assume an empty filter
-			log.Printf("apis.GetUserGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
-		}
-	}
-
-	groups, err := h.app.Services.GetUserGroups(clientID, current, groupsFilter)
+	groupsFilter.AppID = current.AppID
+	groupsFilter.OrgID = current.OrgID
+	groups, err := h.app.Services.GetUserGroups(current.ID, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetUserGroups() error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -618,8 +601,10 @@ func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, 
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: groupIDs,
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 	})
 	if err != nil {
 		log.Printf("apis.GetUserGroups() unable to retrieve memberships: %s", err)
@@ -653,7 +638,7 @@ func (h *ApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, 
 // @Security APIKeyAuth
 // @Router /api/user/login [get]
 func (h *ApisHandler) LoginUser(current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.LoginUser(clientID, current)
+	err := h.app.Services.LoginUser(current)
 	if err != nil {
 		log.Printf("error login user - %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -675,7 +660,7 @@ type getUserStatsResponse struct {
 // @Security AppUserAuth
 // @Router /api/user/stats [get]
 func (h *ApisHandler) GetUserStats(current *model.User, w http.ResponseWriter, r *http.Request) {
-	stats, err := h.app.Services.GetUserPostCount(clientID, current.ID)
+	stats, err := h.app.Services.GetUserPostCount(current.AppID, current.OrgID, current.ID)
 	if err != nil {
 		log.Printf("error getting user(%s) post count:  %s", current.ID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -710,7 +695,7 @@ func (h *ApisHandler) GetUserStats(current *model.User, w http.ResponseWriter, r
 // @Security APIKeyAuth
 // @Router /api/user [delete]
 func (h *ApisHandler) DeleteUser(current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.DeleteUser(clientID, current)
+	err := h.app.Services.DeleteUser(current)
 	if err != nil {
 		log.Printf("error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -729,7 +714,7 @@ func (h *ApisHandler) DeleteUser(current *model.User, w http.ResponseWriter, r *
 // @Security AppUserAuth
 // @Router /api/user/group-memberships [get]
 func (h *ApisHandler) GetUserGroupMemberships(current *model.User, w http.ResponseWriter, r *http.Request) {
-	userGroups, err := h.app.Services.GetUserGroups(clientID, current, model.GroupsFilter{})
+	userGroups, err := h.app.Services.GetUserGroups(current.ID, model.GroupsFilter{AppID: current.AppID, OrgID: current.OrgID})
 	if err != nil {
 		log.Println("The user has no group memberships")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -813,15 +798,17 @@ func (h *ApisHandler) GetGroup(current *model.User, w http.ResponseWriter, r *ht
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(current, id)
 	if err != nil {
 		log.Printf("adminapis.GetGroupV2() error on getting group %s", err)
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: []string{id},
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 	})
 	if err != nil {
 		log.Printf("Unable to retrieve memberships: %s", err)
@@ -873,15 +860,8 @@ func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWr
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData createPendingMemberRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create pending member data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -897,7 +877,7 @@ func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWr
 		return
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Printf("error getting a group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -996,26 +976,19 @@ func (h *ApisHandler) GetGroupMembers(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	requestData, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal model.MembershipFilter request body - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var request model.MembershipFilter
-	if len(requestData) > 0 {
-		err = json.Unmarshal(requestData, &request)
-		if err != nil {
-			// just log an error and proceed and assume an empty filter
-			log.Printf("Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
-		}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		// just log an error and proceed and assume an empty filter
+		log.Printf("Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
 	}
 
 	request.GroupIDs = append(request.GroupIDs, groupID)
+	request.AppID = current.AppID
+	request.OrgID = current.OrgID
 
 	//check if allowed to update
-	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	members, err := h.app.Services.FindGroupMemberships(request)
 	if err != nil {
 		log.Printf("api.GetGroupMembers error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -1074,15 +1047,8 @@ func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData createMemberRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create pending member data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1108,7 +1074,7 @@ func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1120,7 +1086,7 @@ func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r
 		return
 	}
 
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	membership, _ := h.app.Services.FindGroupMembership(current.AppID, current.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdmin() {
 		log.Printf("error: api.CreateMember() - %s is not allowed to create group member", current.Email)
 		w.WriteHeader(http.StatusForbidden)
@@ -1211,15 +1177,8 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the membership item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData membershipApprovalRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the membership request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1370,15 +1329,8 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the membership update item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData updateMembershipRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the membership request update data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1622,15 +1574,8 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the create group item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData groupEventRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create event request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1705,15 +1650,8 @@ func (h *ApisHandler) UpdateGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the update group item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData groupEventRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the update event request data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1935,15 +1873,8 @@ func (h *ApisHandler) CreateGroupPost(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the create group item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var post *model.Post
-	err = json.Unmarshal(data, &post)
+	err := json.NewDecoder(r.Body).Decode(&post)
 	if err != nil {
 		log.Printf("error on unmarshal posts for group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -2096,15 +2027,8 @@ func (h *ApisHandler) UpdateGroupPost(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on marshal the create group item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var post *model.Post
-	err = json.Unmarshal(data, &post)
+	err := json.NewDecoder(r.Body).Decode(&post)
 	if err != nil {
 		log.Printf("error on unmarshal post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -2187,15 +2111,8 @@ func (h *ApisHandler) ReactToGroupPost(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on read reactToGroupPostRequestBody - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var body reactToGroupPostRequestBody
-	err = json.Unmarshal(data, &body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		log.Printf("error on unmarshal reactToGroupPostRequestBody (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -2272,15 +2189,8 @@ func (h *ApisHandler) ReportAbuseGroupPost(current *model.User, w http.ResponseW
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error on read reportAbuseGroupPostRequestBody - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var body *reportAbuseGroupPostRequestBody
-	err = json.Unmarshal(data, &body)
+	err := json.NewDecoder(r.Body).Decode(&body)
 	if err != nil {
 		log.Printf("error on unmarshal reportAbuseGroupPostRequestBody (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)

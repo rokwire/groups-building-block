@@ -56,16 +56,16 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(nil, clientID, id, nil)
+func (app *Application) getGroupEntity(appID string, orgID string, id string) (*model.Group, error) {
+	group, err := app.storage.FindGroupWithContext(nil, appID, orgID, id, nil)
 	if err != nil {
 		return nil, err
 	}
 	return group, nil
 }
 
-func (app *Application) getGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
-	group, err := app.storage.FindGroupByTitle(clientID, title)
+func (app *Application) getGroupEntityByTitle(appID string, orgID string, title string) (*model.Group, error) {
+	group, err := app.storage.FindGroupByTitle(appID, orgID, title)
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +84,8 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
+func (app *Application) createGroup(current *model.User, group *model.Group) (*string, *utils.GroupError) {
+	insertedID, err := app.storage.CreateGroup(current, group, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,25 +122,25 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	return insertedID, nil
 }
 
-func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (app *Application) updateGroup(userID *string, group *model.Group) *utils.GroupError {
 
-	err := app.storage.UpdateGroup(clientID, current, group)
+	err := app.storage.UpdateGroup(userID, group, nil)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) updateGroupDateUpdated(clientID string, groupID string) error {
-	err := app.storage.UpdateGroupDateUpdated(clientID, groupID)
+func (app *Application) updateGroupDateUpdated(appID string, orgID string, groupID string) error {
+	err := app.storage.UpdateGroupDateUpdated(appID, orgID, groupID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
-	err := app.storage.DeleteGroup(clientID, id)
+func (app *Application) deleteGroup(appID string, orgID string, id string) error {
+	err := app.storage.DeleteGroup(appID, orgID, id)
 	if err != nil {
 		return err
 	}
@@ -177,12 +177,37 @@ func (app *Application) getUserGroups(userID string, filter model.GroupsFilter) 
 	return groups, nil
 }
 
-func (app *Application) loginUser(clientID string, current *model.User) error {
-	return app.storage.LoginUser(clientID, current)
-}
+func (app *Application) deleteUser(current *model.User) error {
+	return app.storage.PerformTransaction(func(sessionContext storage.TransactionContext) error {
+		posts, err := app.storage.FindAllUserPosts(sessionContext, current.AppID, current.OrgID, current.ID)
+		if err != nil {
+			log.Printf("error on find all posts for user (%s) - %s", current.ID, err.Error())
+			return err
+		}
+		for _, post := range posts {
+			err = app.deletePost(sessionContext, current.AppID, current.OrgID, current.ID, post.GroupID, post.ID, true)
+			if err != nil {
+				log.Printf("error on delete all posts for user (%s) - %s", current.ID, err.Error())
+				return err
+			}
+		}
 
-func (app *Application) deleteUser(clientID string, current *model.User) error {
-	return app.storage.DeleteUser(clientID, current.ID)
+		memberships, err := app.storage.FindGroupMembershipsWithContext(sessionContext, model.MembershipFilter{AppID: current.AppID, OrgID: current.OrgID, UserID: &current.ID})
+		if err != nil {
+			log.Printf("error getting user memberships - %s", err.Error())
+			return err
+		}
+		for _, membership := range memberships.Items {
+			err = app.storage.DeleteMembershipWithContext(sessionContext, membership.AppID, membership.OrgID, membership.GroupID, membership.UserID)
+			if err != nil {
+				log.Printf("error deleting user membership - %s", err.Error())
+				return err
+			}
+		}
+
+		return app.storage.DeleteUserWithContext(sessionContext, current.AppID, current.OrgID, current.ID)
+	})
+
 }
 
 func (app *Application) getGroup(current *model.User, id string) (*model.Group, error) {
@@ -291,29 +316,22 @@ func (app *Application) updateMembership(membership *model.GroupMembership, stat
 	return nil
 }
 
-func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
-	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
+func (app *Application) getEvents(current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	events, err := app.storage.FindEvents(current, groupID, filterByToMembers)
 	if err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+func (app *Application) createEvent(appID string, orgID string, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
 	var skipUserID *string
 
-	if current != nil && creator == nil {
-		creator = &model.Creator{
-			UserID: current.ID,
-			Name:   current.Name,
-			Email:  current.Email,
-		}
-	}
 	if creator != nil {
 		skipUserID = &creator.UserID
 	}
 
-	event, err := app.storage.CreateEvent(clientID, eventID, group.ID, toMemberList, creator)
+	event, err := app.storage.CreateEvent(appID, orgID, eventID, group.ID, toMemberList, creator)
 	if err != nil {
 		return nil, err
 	}
@@ -324,8 +342,10 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 		userIDs = event.GetMembersAsUserIDs(skipUserID)
 	}
 
-	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+	result, _ := app.storage.FindGroupMembershipsWithContext(nil, appID, orgID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
+		AppID:    appID,
+		OrgID:    orgID,
 		UserIDs:  userIDs,
 		Statuses: []string{"member", "admin"},
 	})
@@ -350,8 +370,8 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 				"entity_name": group.Title,
 			},
 			nil,
-			current.AppID,
-			current.OrgID,
+			appID,
+			orgID,
 		)
 	}
 
@@ -362,24 +382,23 @@ func (app *Application) updateEvent(clientID string, _ *model.User, eventID stri
 	return app.storage.UpdateEvent(clientID, eventID, groupID, toMemberList)
 }
 
-func (app *Application) deleteEvent(clientID string, _ *model.User, eventID string, groupID string) error {
-	err := app.storage.DeleteEvent(clientID, eventID, groupID)
-	if err != nil {
-		return err
-	}
-	return nil
+func (app *Application) deleteEvent(appID string, orgID string, eventID string, groupID string) error {
+	return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		err := app.storage.DeleteEventWithContext(context, appID, orgID, eventID, groupID)
+		if err != nil {
+			return err
+		}
+
+		return app.storage.UpdateGroupStats(context, appID, orgID, groupID, true, false, false, false)
+	})
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+func (app *Application) getPosts(current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return app.storage.FindPosts(current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
 	return app.storage.FindPost(nil, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
-}
-
-func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
-	return app.storage.GetUserPostCount(clientID, userID)
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
@@ -660,8 +679,46 @@ Reported comment: %s
 	return nil
 }
 
-func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
+func (app *Application) deletePost(context storage.TransactionContext, appID string, orgID string, userID string, groupID string, postID string, force bool) error {
+	deleteWrapper := func(transactionContext storage.TransactionContext) error {
+		membership, _ := app.storage.FindGroupMembershipWithContext(transactionContext, appID, orgID, groupID, userID)
+		filterToMembers := true
+		if membership != nil && membership.IsAdmin() {
+			filterToMembers = false
+		}
+
+		originalPost, _ := app.storage.FindPost(transactionContext, clientID, &userID, groupID, postID, true, filterToMembers)
+		if originalPost == nil {
+			return fmt.Errorf("unable to find post with id (%s) ", postID)
+		}
+
+		if !force {
+			if originalPost == nil || membership == nil || (!membership.IsAdmin() && originalPost.Creator.UserID != userID) {
+				return fmt.Errorf("only creator of the post or group admin can delete it")
+			}
+		}
+
+		childPosts, err := app.storage.FindPostsByParentID(transactionContext, clientID, userID, groupID, postID, true, false, false, nil)
+		if len(childPosts) > 0 && err == nil {
+			for _, post := range childPosts {
+				app.deletePost(transactionContext, appID, orgID, userID, groupID, post.ID, true)
+			}
+		}
+
+		err = app.storage.DeletePost(transactionContext, appID, orgID, userID, groupID, postID, force)
+		if err != nil {
+			return err
+		}
+
+		return app.storage.UpdateGroupStats(transactionContext, clientID, groupID, true, false, false, false)
+	}
+
+	if context != nil {
+		return deleteWrapper(context)
+	}
+	return app.storage.PerformTransaction(func(transactionContext storage.TransactionContext) error {
+		return deleteWrapper(transactionContext)
+	})
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
@@ -783,7 +840,9 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 						}
 
 						emptyText := ""
-						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
+						_, err := app.storage.CreateGroup(nil, &model.Group{
+							AppID:                appID,
+							OrgID:                orgID,
 							Title:                title,
 							Description:          &emptyText,
 							Category:             "Academic", // Hardcoded.
@@ -853,7 +912,7 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 						}
 
 						if groupUpdated {
-							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
+							err := app.storage.UpdateGroup(nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
 								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
@@ -1236,10 +1295,6 @@ func (app *Application) sendGroupNotification(appID string, orgID string, notifi
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
 	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
-}
-
-func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return app.storage.FindGroupMembership(clientID, groupID, userID)
 }
 
 func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {

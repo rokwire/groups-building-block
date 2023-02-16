@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"groups/core/model"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -62,14 +61,8 @@ func (a *Adapter) RetrieveCoreUserAccount(token string) (*model.CoreAccount, err
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("RetrieveCoreUserAccount: unable to read json: %s", err)
-			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
-		}
-
 		var coreAccount model.CoreAccount
-		err = json.Unmarshal(data, &coreAccount)
+		err = json.NewDecoder(resp.Body).Decode(&coreAccount)
 		if err != nil {
 			log.Printf("RetrieveCoreUserAccount: unable to parse json: %s", err)
 			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: unable to parse json: %s", err)
@@ -102,14 +95,8 @@ func (a *Adapter) RetrieveCoreServices(serviceIDs []string) ([]model.CoreService
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			log.Printf("RetrieveCoreServices: unable to read json: %s", err)
-			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
-		}
-
 		var coreServices []model.CoreService
-		err = json.Unmarshal(data, &coreServices)
+		err = json.NewDecoder(resp.Body).Decode(&coreServices)
 		if err != nil {
 			log.Printf("RetrieveCoreServices: unable to parse json: %s", err)
 			return nil, fmt.Errorf("RetrieveCoreServices: unable to parse json: %s", err)
@@ -172,14 +159,8 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 		return 0, fmt.Errorf("GetAccountsCount: error with response code != 200")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("GetAccountsCount: unable to read json: %s", err)
-		return 0, fmt.Errorf("GetAccountsCount: unable to parse json: %s", err)
-	}
-
 	var count int64
-	err = json.Unmarshal(data, &count)
+	err = json.NewDecoder(resp.Body).Decode(&count)
 	if err != nil {
 		log.Printf("GetAccountsCount: unable to parse json: %s", err)
 		return 0, fmt.Errorf("GetAccountsCount: unable to parse json: %s", err)
