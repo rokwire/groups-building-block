@@ -16,7 +16,6 @@ import (
 // @ID GetGroupsV2
 // @Tags Client-V2
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
 // @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
@@ -109,7 +108,6 @@ func (h *ApisHandler) GetGroupsV2(current *model.User, w http.ResponseWriter, r 
 // @ID GetUserGroupsV2
 // @Tags Client-V2
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
 // @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
@@ -194,7 +192,6 @@ func (h *ApisHandler) GetUserGroupsV2(current *model.User, w http.ResponseWriter
 // @ID GetGroupV2
 // @Tags Client-V2
 // @Accept json
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200 {object} model.Group
 // @Security AppUserAuth

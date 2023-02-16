@@ -40,7 +40,6 @@ type AdminApisHandler struct {
 // @ID AdminGetUserGroups
 // @Tags Admin-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Filtering by group's title (case-insensitive)"
 // @Param category query string false "category - filter by category"
 // @Param privacy query string false "privacy - filter by privacy"
@@ -143,7 +142,6 @@ func (h *AdminApisHandler) GetUserGroups(current *model.User, w http.ResponseWri
 // @ID AdminGetAllGroups
 // @Tags Admin-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
 // @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
@@ -253,7 +251,6 @@ func (h *AdminApisHandler) GetAllGroups(current *model.User, w http.ResponseWrit
 // @ID AdminGetGroupStats
 // @Tags Admin-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
@@ -299,7 +296,6 @@ func (h *AdminApisHandler) GetGroupStats(current *model.User, w http.ResponseWri
 // @Tags Admin-V1
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
@@ -358,7 +354,6 @@ type adminUpdateMembershipRequest struct {
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body updateMembershipRequest true "body data"
 // @Param membership-id path string true "Membership ID"
 // @Success 200
@@ -417,7 +412,6 @@ func (h *AdminApisHandler) UpdateMembership(current *model.User, w http.Response
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param membership-id path string true "Membership ID"
 // @Success 200
 // @Security AppUserAuth
@@ -457,7 +451,6 @@ func (h *AdminApisHandler) DeleteMembership(current *model.User, w http.Response
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
 // @Tags Admin-V1
-// @Param APP header string true "APP"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Router /api/admin/group/{groupID}/posts [get]
@@ -518,7 +511,6 @@ func (h *AdminApisHandler) GetGroupPosts(current *model.User, w http.ResponseWri
 // @ID AdminGetGroupEvents
 // @Tags Admin-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} string
 // @Security AppUserAuth
@@ -563,7 +555,6 @@ func (h *AdminApisHandler) GetGroupEvents(current *model.User, w http.ResponseWr
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
@@ -608,7 +599,6 @@ func (h *AdminApisHandler) DeleteGroup(current *model.User, w http.ResponseWrite
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Param event-id path string true "Event ID"
 // @Success 200 {string} Successfully deleted
@@ -647,7 +637,6 @@ func (h *AdminApisHandler) DeleteGroupEvent(current *model.User, w http.Response
 // @ID AdminDeleteGroupPost
 // @Tags Admin-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -684,7 +673,6 @@ func (h *AdminApisHandler) DeleteGroupPost(current *model.User, w http.ResponseW
 // @ID AdminGetManagedGroupConfigs
 // @Tags Admin
 // @Accept json
-// @Param APP header string true "APP"
 // @Success 200 {array}  model.Config
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [get]
@@ -715,7 +703,6 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(current *model.User, w http.Re
 // @Tags Admin
 // @Accept plain
 // @Param data body  model.ManagedGroupConfig true "body data"
-// @Param APP header string true "APP"
 // @Success 200 {object} model.ManagedGroupConfig
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
@@ -754,7 +741,6 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(current *model.User, w http.
 // @Tags Admin
 // @Accept plain
 // @Param data body  model.ManagedGroupConfig true "body data"
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
@@ -784,7 +770,6 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(current *model.User, w http.
 // @Description Deletes a managed group config
 // @ID AdminDeleteManagedGroupConfig
 // @Tags Admin
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
@@ -815,7 +800,6 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(current *model.User, w http.
 // @ID AdminGetSyncConfigs
 // @Tags Admin
 // @Accept json
-// @Param APP header string true "APP"
 // @Success 200 {array}  model.Config
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [get]
@@ -846,7 +830,6 @@ func (h *AdminApisHandler) GetSyncConfig(current *model.User, w http.ResponseWri
 // @Tags Admin
 // @Accept plain
 // @Param data body model.SyncConfig true "body data"
-// @Param APP header string true "APP"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
@@ -896,7 +879,6 @@ func (h *AdminApisHandler) SynchronizeAuthman(current *model.User, w http.Respon
 // @Tags Admin
 // @ID AdminGetConfig
 // @Accept json
-// @Param APP header string true "APP"
 // @Success 200 model.Config
 // @Security AppUserAuth
 // @Router /api/admin/configs/{id} [get]
@@ -933,7 +915,6 @@ func (h *AdminApisHandler) GetConfig(current *model.User, w http.ResponseWriter,
 // @Tags Admin
 // @ID AdminGetConfigs
 // @Accept json
-// @Param APP header string true "APP"
 // @Success 200 {array} model.Config
 // @Security AppUserAuth
 // @Router /api/admin/configs [get]
@@ -977,7 +958,6 @@ type adminUpdateConfigsRequest struct {
 // @Tags Admin
 // @Accept plain
 // @Param data body adminUpdateConfigsRequest true "body data"
-// @Param APP header string true "APP"
 // @Success 200 {object} model.Config
 // @Security AppUserAuth
 // @Router /api/admin/configs [post]
@@ -1025,7 +1005,6 @@ func (h AdminApisHandler) CreateConfig(current *model.User, w http.ResponseWrite
 // @Tags Admin
 // @Accept plain
 // @Param data body adminUpdateConfigsRequest true "body data"
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
@@ -1072,7 +1051,6 @@ func (h AdminApisHandler) UpdateConfig(current *model.User, w http.ResponseWrite
 // @Description Deletes a config by its ID
 // @ID AdminDeleteConfig
 // @Tags Admin
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth

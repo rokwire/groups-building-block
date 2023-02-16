@@ -87,7 +87,6 @@ type userGroupShortDetail struct {
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body createGroupRequest true "body data"
 // @Success 200 {object} createResponse
 // @Security AppUserAuth
@@ -204,7 +203,6 @@ type updateGroupRequest struct {
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body updateGroupRequest true "body data"
 // @Param id path string true "ID"
 // @Success 200 {string} Successfully updated
@@ -295,7 +293,6 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 // @ID GetGroupStats
 // @Tags Client-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
@@ -341,7 +338,6 @@ func (h *ApisHandler) GetGroupStats(current *model.User, w http.ResponseWriter, 
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
@@ -391,7 +387,6 @@ func (h *ApisHandler) DeleteGroup(current *model.User, w http.ResponseWriter, r 
 // @ID GetGroups
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
 // @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
@@ -529,7 +524,6 @@ type getUserGroupsResponse struct {
 // @ID GetUserGroups
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
 // @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
@@ -655,7 +649,6 @@ type getUserStatsResponse struct {
 // @Description Gets user stat information. Responds with {"posts_count": xxx}
 // @ID GetUserStats
 // @Tags Client-V1
-// @Param APP header string true "APP"
 // @Success 200 {object} getUserStatsResponse
 // @Security AppUserAuth
 // @Router /api/user/stats [get]
@@ -783,7 +776,6 @@ type getGroupResponse struct {
 // @ID GetGroup
 // @Tags Client-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200 {object} getGroupResponse
 // @Security AppUserAuth
@@ -844,7 +836,6 @@ type createPendingMemberRequest struct {
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body createPendingMemberRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
@@ -930,7 +921,6 @@ func (h *ApisHandler) CreatePendingMember(current *model.User, w http.ResponseWr
 // @ID DeletePendingMember
 // @Tags Client-V1
 // @Accept plain
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
@@ -962,7 +952,6 @@ func (h *ApisHandler) DeletePendingMember(current *model.User, w http.ResponseWr
 // @Tags Client-V1
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
@@ -1033,7 +1022,6 @@ type createMemberRequest struct {
 // @Tags Client-V1
 // @Accept plain
 // @Param data body createMemberRequest true "body data"
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
@@ -1124,7 +1112,6 @@ func (h *ApisHandler) CreateMember(current *model.User, w http.ResponseWriter, r
 // @ID DeleteMember
 // @Tags Client-V1
 // @Accept plain
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} string "Successfuly deleted"
 // @Security AppUserAuth
@@ -1161,7 +1148,6 @@ type membershipApprovalRequest struct {
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body membershipApprovalRequest true "body data"
 // @Param membership-id path string true "Membership ID"
 // @Success 200 {string} Successfully processed
@@ -1193,7 +1179,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(current.AppID, current.OrgID, membershipID)
 	if err != nil || membership == nil {
 		log.Printf("Membership %s not found - %s\n", membershipID, err.Error())
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -1201,7 +1187,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
+	group, err := h.app.Services.GetGroup(current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1225,7 +1211,7 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 	approve := *requestData.Approve
 	rejectedReason := requestData.RejectedReason
 
-	err = h.app.Services.ApplyMembershipApproval(clientID, current, membershipID, approve, rejectedReason)
+	err = h.app.Services.ApplyMembershipApproval(current.AppID, current.OrgID, membershipID, approve, rejectedReason)
 	if err != nil {
 		log.Printf("Error on applying membership approval - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1243,7 +1229,6 @@ func (h *ApisHandler) MembershipApproval(current *model.User, w http.ResponseWri
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param membership-id path string true "Membership ID"
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
@@ -1258,7 +1243,7 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(current.AppID, current.OrgID, membershipID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1269,7 +1254,7 @@ func (h *ApisHandler) DeleteMembership(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
+	group, err := h.app.Services.GetGroup(current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1313,7 +1298,6 @@ type updateMembershipRequest struct {
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body updateMembershipRequest true "body data"
 // @Param membership-id path string true "Membership ID"
 // @Success 200 {string} Successfully updated
@@ -1345,7 +1329,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(current.AppID, current.OrgID, membershipID)
 	if err != nil || membership == nil {
 		log.Printf("Membership %s not found - %s\n", membershipID, err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -1353,7 +1337,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroup(clientID, current, membership.GroupID)
+	group, err := h.app.Services.GetGroup(current, membership.GroupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1384,7 +1368,7 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 		notificationsPreferences = requestData.NotificationsPreferences
 	}
 
-	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, dateAttended, notificationsPreferences)
+	err = h.app.Services.UpdateMembership(membership, status, dateAttended, notificationsPreferences)
 	if err != nil {
 		log.Printf("Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1401,7 +1385,6 @@ func (h *ApisHandler) UpdateMembership(current *model.User, w http.ResponseWrite
 // @ID SynchAuthmanGroup
 // @Tags Client-V1
 // @Accept plain
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
@@ -1416,7 +1399,7 @@ func (h *ApisHandler) SynchAuthmanGroup(current *model.User, w http.ResponseWrit
 	}
 
 	//check if allowed to update
-	isAdmin, err := h.app.Services.IsGroupAdmin(clientID, groupID, current.ID)
+	isAdmin, err := h.app.Services.IsGroupAdmin(current.AppID, current.OrgID, groupID, current.ID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1446,7 +1429,6 @@ func (h *ApisHandler) SynchAuthmanGroup(current *model.User, w http.ResponseWrit
 // @ID GetGroupEvents
 // @Tags Client-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} string
 // @Security AppUserAuth
@@ -1469,7 +1451,7 @@ func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter,
 		return
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
+	events, err := h.app.Services.GetEvents(current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1498,7 +1480,6 @@ func (h *ApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter,
 // @ID GetGroupEventsV2
 // @Tags Client-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.Event
 // @Security AppUserAuth
@@ -1520,7 +1501,7 @@ func (h *ApisHandler) GetGroupEventsV2(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
+	events, err := h.app.Services.GetEvents(current, groupID, group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember())
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1558,7 +1539,6 @@ type groupEventRequest struct {
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body groupEventRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
@@ -1591,7 +1571,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1603,7 +1583,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	membership, _ := h.app.Services.FindGroupMembership(group.AppID, group.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
 
@@ -1612,7 +1592,7 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	_, err = h.app.Services.CreateEvent(clientID, current, requestData.EventID, group, requestData.ToMembersList, &model.Creator{
+	_, err = h.app.Services.CreateEvent(requestData.EventID, group, requestData.ToMembersList, &model.Creator{
 		UserID: current.ID,
 		Name:   current.Name,
 		Email:  current.Email,
@@ -1634,7 +1614,6 @@ func (h *ApisHandler) CreateGroupEvent(current *model.User, w http.ResponseWrite
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body groupEventRequest true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200 {string} Successfully created
@@ -1667,7 +1646,7 @@ func (h *ApisHandler) UpdateGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to create
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1679,7 +1658,7 @@ func (h *ApisHandler) UpdateGroupEvent(current *model.User, w http.ResponseWrite
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	membership, _ := h.app.Services.FindGroupMembership(group.AppID, group.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to create event for %s", current.Email, group.Title)
 
@@ -1688,7 +1667,7 @@ func (h *ApisHandler) UpdateGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	err = h.app.Services.UpdateEvent(clientID, current, requestData.EventID, group.ID, requestData.ToMembersList)
+	err = h.app.Services.UpdateEvent(group.AppID, group.OrgID, requestData.EventID, group.ID, requestData.ToMembersList)
 	if err != nil {
 		log.Printf("Error on updating a group event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1705,7 +1684,6 @@ func (h *ApisHandler) UpdateGroupEvent(current *model.User, w http.ResponseWrite
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Param event-id path string true "Event ID"
 // @Success 200 {string} Successfully deleted
@@ -1728,7 +1706,7 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1740,7 +1718,7 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	membership, _ := h.app.Services.FindGroupMembership(group.AppID, group.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdmin() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
@@ -1749,7 +1727,7 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	err = h.app.Services.DeleteEvent(clientID, current, eventID, groupID)
+	err = h.app.Services.DeleteEvent(group.AppID, group.OrgID, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1765,7 +1743,6 @@ func (h *ApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWrite
 // @Description gets all posts for the desired group.
 // @ID GetGroupPosts
 // @Tags Client-V1
-// @Param APP header string true "APP"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -1804,7 +1781,7 @@ func (h *ApisHandler) GetGroupPosts(current *model.User, w http.ResponseWriter, 
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1817,8 +1794,7 @@ func (h *ApisHandler) GetGroupPosts(current *model.User, w http.ResponseWriter, 
 		return
 	}
 
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
-
+	membership, _ := h.app.Services.FindGroupMembership(group.AppID, group.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to get posts for group %s", current.Email, group.Title)
 
@@ -1834,7 +1810,7 @@ func (h *ApisHandler) GetGroupPosts(current *model.User, w http.ResponseWriter, 
 	}
 
 	filterByToMembers := true
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1859,7 +1835,6 @@ func (h *ApisHandler) GetGroupPosts(current *model.User, w http.ResponseWriter, 
 // @Tags Client-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Success 200 {object} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -1873,7 +1848,7 @@ func (h *ApisHandler) CreateGroupPost(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	var post *model.Post
+	var post model.Post
 	err := json.NewDecoder(r.Body).Decode(&post)
 	if err != nil {
 		log.Printf("error on unmarshal posts for group - %s", err.Error())
@@ -1882,7 +1857,7 @@ func (h *ApisHandler) CreateGroupPost(current *model.User, w http.ResponseWriter
 	}
 
 	// check if allowed to create
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(current, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1915,17 +1890,18 @@ func (h *ApisHandler) CreateGroupPost(current *model.User, w http.ResponseWriter
 	}
 
 	post.GroupID = id // Set group id from the query param
-
-	post, err = h.app.Services.CreatePost(clientID, current, post, group)
+	post.AppID = group.AppID
+	post.OrgID = group.OrgID
+	err = h.app.Services.CreatePost(current, &post, group)
 	if err != nil {
-		log.Printf("error getting posts for group - %s", err.Error())
+		log.Printf("error creating post for group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	data, err = json.Marshal(post)
+	data, err := json.Marshal(post)
 	if err != nil {
-		log.Printf("error on marshal posts for group - %s", err.Error())
+		log.Printf("error on marshal post for group - %s", err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -1940,7 +1916,6 @@ func (h *ApisHandler) CreateGroupPost(current *model.User, w http.ResponseWriter
 // @ID GetGroupPost
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Success 200 {object} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -1962,7 +1937,7 @@ func (h *ApisHandler) GetGroupPost(current *model.User, w http.ResponseWriter, r
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1975,14 +1950,14 @@ func (h *ApisHandler) GetGroupPost(current *model.User, w http.ResponseWriter, r
 		return
 	}
 	if group.CurrentMember == nil || !group.CurrentMember.IsAdminOrMember() {
-		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
+		log.Printf("%s is not allowed to get post for %s", current.Email, group.Title)
 
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte("Forbidden"))
 		return
 	}
 
-	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, true)
+	post, err := h.app.Services.GetPost(current.AppID, current.OrgID, &current.ID, groupID, postID, true, true)
 	if err != nil {
 		log.Printf("error getting post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2006,7 +1981,6 @@ func (h *ApisHandler) GetGroupPost(current *model.User, w http.ResponseWriter, r
 // @ID UpdateGroupPost
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Success 200 {object} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -2027,7 +2001,7 @@ func (h *ApisHandler) UpdateGroupPost(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	var post *model.Post
+	var post model.Post
 	err := json.NewDecoder(r.Body).Decode(&post)
 	if err != nil {
 		log.Printf("error on unmarshal post (%s) - %s", postID, err.Error())
@@ -2042,7 +2016,7 @@ func (h *ApisHandler) UpdateGroupPost(current *model.User, w http.ResponseWriter
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2061,14 +2035,16 @@ func (h *ApisHandler) UpdateGroupPost(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	post, err = h.app.Services.UpdatePost(clientID, current, group, post)
+	post.AppID = group.AppID
+	post.OrgID = group.OrgID
+	err = h.app.Services.UpdatePost(current.ID, group, &post)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	data, err = json.Marshal(post)
+	data, err := json.Marshal(post)
 	if err != nil {
 		log.Printf("error on marshal post (%s) - %s", postID, err.Error())
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -2090,7 +2066,6 @@ type reactToGroupPostRequestBody struct {
 // @ID ReactToGroupPost
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Success 200 {string} Success
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -2120,7 +2095,7 @@ func (h *ApisHandler) ReactToGroupPost(current *model.User, w http.ResponseWrite
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2144,7 +2119,7 @@ func (h *ApisHandler) ReactToGroupPost(current *model.User, w http.ResponseWrite
 		return
 	}
 
-	err = h.app.Services.ReactToPost(clientID, current, groupID, postID, body.Reaction)
+	err = h.app.Services.ReactToPost(current, groupID, postID, body.Reaction)
 	if err != nil {
 		log.Printf("error reacting to post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2168,7 +2143,6 @@ type reportAbuseGroupPostRequestBody struct {
 // @ID ReportAbuseGroupPost
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param data body reportAbuseGroupPostRequestBody true "body data"
 // @Success 200
 // @Security AppUserAuth
@@ -2198,7 +2172,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(current *model.User, w http.ResponseW
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2210,7 +2184,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(current *model.User, w http.ResponseW
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	membership, _ := h.app.Services.FindGroupMembership(group.AppID, group.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
@@ -2219,7 +2193,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(current *model.User, w http.ResponseW
 		return
 	}
 
-	post, err := h.app.Services.GetPost(clientID, &current.ID, group.ID, postID, true, false)
+	post, err := h.app.Services.GetPost(group.AppID, group.OrgID, &current.ID, group.ID, postID, true, false)
 	if err != nil {
 		log.Printf("error retrieve post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2242,7 +2216,6 @@ func (h *ApisHandler) ReportAbuseGroupPost(current *model.User, w http.ResponseW
 // @ID DeleteGroupPost
 // @Tags Client-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -2264,7 +2237,7 @@ func (h *ApisHandler) DeleteGroupPost(current *model.User, w http.ResponseWriter
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2276,7 +2249,7 @@ func (h *ApisHandler) DeleteGroupPost(current *model.User, w http.ResponseWriter
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
-	membership, _ := h.app.Services.FindGroupMembership(clientID, group.ID, current.ID)
+	membership, _ := h.app.Services.FindGroupMembership(group.AppID, group.OrgID, group.ID, current.ID)
 	if membership == nil || !membership.IsAdminOrMember() {
 		log.Printf("%s is not allowed to delete event for %s", current.Email, group.Title)
 
@@ -2285,7 +2258,7 @@ func (h *ApisHandler) DeleteGroupPost(current *model.User, w http.ResponseWriter
 		return
 	}
 
-	err = h.app.Services.DeletePost(clientID, current, groupID, postID, false)
+	err = h.app.Services.DeletePost(current, groupID, postID, false)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -2301,7 +2274,6 @@ func (h *ApisHandler) DeleteGroupPost(current *model.User, w http.ResponseWriter
 // @ID GetResearchProfileUserCount
 // @Tags Client-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param data body map[string]map[string][]string true "Research profile"
 // @Success 200 {integer} 0
 // @Security AppUserAuth
@@ -2315,7 +2287,7 @@ func (h *ApisHandler) GetResearchProfileUserCount(current *model.User, w http.Re
 		return
 	}
 
-	count, err := h.app.Services.GetResearchProfileUserCount(clientID, current, researchProfile)
+	count, err := h.app.Services.GetResearchProfileUserCount(current, researchProfile)
 	if err != nil {
 		log.Printf("error getting user count - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

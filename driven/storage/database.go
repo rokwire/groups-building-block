@@ -141,7 +141,7 @@ func (m *database) start() error {
 		return err
 	}
 
-	//asign the db, db client and the collections
+	//assign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
 
@@ -845,7 +845,7 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 						stats.AttendanceCount++
 					}
 
-					memberships = append(memberships, member.ToGroupMembership(group.ClientID, group.ID))
+					memberships = append(memberships, member.ToGroupMembership(group.AppID, group.OrgID, group.ID))
 				}
 
 				_, err = groupMemberships.InsertManyWithContext(sessionContext, memberships, &options.InsertManyOptions{})
@@ -855,7 +855,8 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 				}
 
 				_, err = groups.UpdateOneWithContext(sessionContext, bson.D{
-					{Key: "client_id", Value: group.ClientID},
+					{Key: "app_id", Value: group.AppID},
+					{Key: "org_id", Value: group.OrgID},
 					{Key: "_id", Value: group.ID},
 				}, bson.D{
 					{Key: "$set", Value: bson.D{

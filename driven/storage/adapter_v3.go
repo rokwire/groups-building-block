@@ -286,8 +286,6 @@ func (sa *Adapter) CreatePendingMembership(user *model.User, group *model.Group,
 
 // SingleMembershipOperation wraps single membership operation for possible updates
 type SingleMembershipOperation struct {
-	ClientID   string
-	GroupID    string
 	ExternalID string
 	UserID     *string
 	Status     *string
@@ -298,13 +296,13 @@ type SingleMembershipOperation struct {
 }
 
 // BulkUpdateGroupMembershipsByExternalID Bulk update with a list of memberships
-func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []SingleMembershipOperation, updateGroupStats bool) error {
+func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(appID string, orgID string, groupID string, saveOperations []SingleMembershipOperation, updateGroupStats bool) error {
 	now := time.Now()
 
 	var updateModels []mongo.WriteModel
 	upsert := true
 	for _, operation := range saveOperations {
-		filter := bson.M{"client_id": operation.ClientID, "group_id": operation.GroupID, "external_id": operation.ExternalID}
+		filter := bson.M{"app_id": appID, "org_id": orgID, "group_id": groupID, "external_id": operation.ExternalID}
 		update := bson.M{"date_updated": now}
 		if operation.UserID != nil {
 			update["user_id"] = *operation.UserID
@@ -337,7 +335,7 @@ func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, group
 			}
 
 			if updateGroupStats {
-				return sa.UpdateGroupStats(context, clientID, groupID, false, false, true, true)
+				return sa.UpdateGroupStats(context, appID, orgID, groupID, false, false, true, true)
 			}
 
 			return nil
@@ -348,12 +346,12 @@ func (sa *Adapter) BulkUpdateGroupMembershipsByExternalID(clientID string, group
 }
 
 // SaveGroupMembershipByExternalID creates or updates a group membership for a given external ID
-func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
-	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error) {
+func (sa *Adapter) SaveGroupMembershipByExternalID(context TransactionContext, appID string, orgID string, groupID string, externalID string, userID *string, status *string,
+	email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string) error {
 
 	now := time.Now()
 
-	filter := bson.M{"client_id": clientID, "group_id": groupID, "external_id": externalID}
+	filter := bson.M{"app_id": appID, "org_id": orgID, "group_id": groupID, "external_id": externalID}
 
 	update := bson.M{"date_updated": now}
 	if userID != nil {
@@ -372,29 +370,16 @@ func (sa *Adapter) SaveGroupMembershipByExternalID(clientID string, groupID stri
 		update["sync_id"] = *syncID
 	}
 
-	var result model.GroupMembership
-	err := sa.PerformTransaction(func(context TransactionContext) error {
-		onInsert := bson.M{"_id": uuid.NewString(), "member_answers": memberAnswers, "date_created": now}
+	onInsert := bson.M{"_id": uuid.NewString(), "member_answers": memberAnswers, "date_created": now}
+	upsert := true
+	opts := options.UpdateOptions{Upsert: &upsert}
 
-		upsert := true
-		returnDoc := options.After
-		opts := options.FindOneAndUpdateOptions{Upsert: &upsert, ReturnDocument: &returnDoc}
-
-		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, bson.M{"$set": update, "$setOnInsert": onInsert}, &result, &opts)
-		if err != nil {
-			return err
-		}
-
-		if updateGroupStats {
-			return sa.UpdateGroupStats(context, clientID, groupID, false, false, true, true)
-		}
-		return nil
-	})
+	_, err := sa.db.groupMemberships.UpdateOneWithContext(context, filter, bson.M{"$set": update, "$setOnInsert": onInsert}, &opts)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &result, nil
+	return nil
 }
 
 // CreateMembership Created a member to a group
@@ -445,30 +430,28 @@ func (sa *Adapter) CreateMembership(current *model.User, group *model.Group, mem
 }
 
 // ApplyMembershipApproval applies a membership approval
-func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
-	return sa.PerformTransaction(func(context TransactionContext) error {
-		status := "rejected"
-		if approve {
-			status = "member"
-		}
+func (sa *Adapter) ApplyMembershipApproval(context TransactionContext, appID string, orgID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error) {
+	status := "rejected"
+	if approve {
+		status = "member"
+	}
 
-		var membership model.GroupMembership
-		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
-		update := bson.D{
-			primitive.E{Key: "$set", Value: bson.D{
-				primitive.E{Key: "status", Value: status},
-				primitive.E{Key: "reject_reason", Value: rejectReason},
-				primitive.E{Key: "date_updated", Value: time.Now()},
-			},
-			},
-		}
-		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
-		if err != nil {
-			return err
-		}
+	var membership model.GroupMembership
+	filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "app_id", Value: appID}, primitive.E{Key: "org_id", Value: orgID}}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: bson.D{
+			primitive.E{Key: "status", Value: status},
+			primitive.E{Key: "reject_reason", Value: rejectReason},
+			primitive.E{Key: "date_updated", Value: time.Now()},
+		},
+		},
+	}
+	err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
+	if err != nil {
+		return nil, err
+	}
 
-		return sa.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
-	})
+	return &membership, nil
 }
 
 // UpdateMembership updates a membership
@@ -587,10 +570,9 @@ func (sa *Adapter) DeleteUnsyncedGroupMemberships(appID string, orgID string, gr
 	return deletedCount, err
 }
 
-// UpdateGroupSyncTimes updates a group uses group membership
-func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, clientID string, group *model.Group) error {
-
-	filter := bson.D{primitive.E{Key: "_id", Value: group.ID}, primitive.E{Key: "client_id", Value: clientID}}
+// UpdateGroupSyncTimes updates group sync times
+func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, group *model.Group) error {
+	filter := bson.D{primitive.E{Key: "_id", Value: group.ID}, primitive.E{Key: "app_id", Value: group.AppID}, primitive.E{Key: "org_id", Value: group.OrgID}}
 	update := bson.D{
 		primitive.E{Key: "$set", Value: bson.D{
 			primitive.E{Key: "sync_start_time", Value: group.SyncStartTime},
@@ -610,11 +592,12 @@ func (sa *Adapter) UpdateGroupSyncTimes(context TransactionContext, clientID str
 }
 
 // GetGroupMembershipStats Retrieves group membership stats
-func (sa Adapter) GetGroupMembershipStats(context TransactionContext, clientID string, groupID string) (*model.GroupStats, error) {
+func (sa Adapter) GetGroupMembershipStats(context TransactionContext, appID string, orgID string, groupID string) (*model.GroupStats, error) {
 	pipeline := bson.A{
 		bson.D{{Key: "$match", Value: bson.D{
 			{Key: "group_id", Value: groupID},
-			{Key: "client_id", Value: clientID},
+			{Key: "app_id", Value: appID},
+			{Key: "org_id", Value: orgID},
 		}}},
 		bson.D{
 			{Key: "$facet",

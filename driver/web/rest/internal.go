@@ -309,7 +309,6 @@ type intCreateGroupEventRequestBody struct {
 // @Tags Internal
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security IntAPIKeyAuth
@@ -341,7 +340,6 @@ func (h *InternalApisHandler) UpdateGroupDateUpdated(appID string, orgID string,
 // @Tags Internal
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body intCreateGroupEventRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200
@@ -387,7 +385,7 @@ func (h *InternalApisHandler) CreateGroupEvent(appID string, orgID string, w htt
 		return
 	}
 
-	grEvent, err := h.app.Services.CreateEvent(appID, orgID, requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
+	grEvent, err := h.app.Services.CreateEvent(requestData.EventID, group, requestData.ToMembersList, requestData.Creator)
 	if err != nil {
 		log.Printf("Error on creating an event - %s\n", err)
 		http.Error(w, fmt.Sprintf("Error on creating an event - %s\n", err), http.StatusInternalServerError)
@@ -410,7 +408,6 @@ func (h *InternalApisHandler) CreateGroupEvent(appID string, orgID string, w htt
 // @Description Deletes a group event
 // @ID IntDeleteGroupEvent
 // @Tags Internal
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Param event-id path string true "Event ID"
 // @Success 200
@@ -459,7 +456,6 @@ type sendGroupNotificationRequestBody struct {
 // @ID SendGroupNotification
 // @Tags Internal
 // @Accept json
-// @Param APP header string true "APP"
 // @Param data body sendGroupNotificationRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200

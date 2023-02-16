@@ -1,6 +1,6 @@
 module groups
 
-go 1.18
+go 1.20
 
 require (
 	github.com/casbin/casbin v1.9.1
