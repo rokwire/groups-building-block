@@ -30,7 +30,7 @@ func (app *Application) findGroupsV3(filter model.GroupsFilter) ([]model.Group, 
 }
 
 func (app *Application) findGroupMemberships(filter model.MembershipFilter) (model.MembershipCollection, error) {
-	collection, err := app.storage.FindGroupMembershipsWithContext(nil, filter)
+	collection, err := app.storage.FindGroupMemberships(nil, filter)
 
 	if len(filter.GroupIDs) > 0 {
 		groups, err := app.findGroupsV3(model.GroupsFilter{
@@ -70,7 +70,7 @@ func (app *Application) createPendingMembership(current *model.User, group *mode
 		return err
 	}
 
-	adminMemberships, err := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+	adminMemberships, err := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		AppID:    current.AppID,
 		OrgID:    current.OrgID,
@@ -147,7 +147,7 @@ func (app *Application) createMembership(current *model.User, group *model.Group
 		return err
 	}
 
-	memberships, err := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+	memberships, err := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		AppID:    current.AppID,
 		OrgID:    current.OrgID,
@@ -211,12 +211,12 @@ func (app *Application) createMembership(current *model.User, group *model.Group
 }
 
 func (app *Application) deletePendingMembership(current *model.User, groupID string) error {
-	err := app.storage.DeleteMembershipWithContext(nil, current.AppID, current.OrgID, groupID, current.ID)
+	err := app.storage.DeleteMembership(nil, current.AppID, current.OrgID, groupID, current.ID)
 	if err != nil {
 		return err
 	}
 
-	group, err := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, groupID, nil)
+	group, err := app.storage.FindGroup(nil, current.AppID, current.OrgID, groupID, nil)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)
@@ -240,7 +240,7 @@ func (app *Application) deleteMembershipByID(current *model.User, membershipID s
 		}
 
 		if membership != nil {
-			group, _ := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, membership.GroupID, nil)
+			group, _ := app.storage.FindGroup(nil, current.AppID, current.OrgID, membership.GroupID, nil)
 			if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
 				err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
 				if err != nil {
@@ -253,12 +253,12 @@ func (app *Application) deleteMembershipByID(current *model.User, membershipID s
 }
 
 func (app *Application) deleteMembership(current *model.User, groupID string) error {
-	err := app.storage.DeleteMembershipWithContext(nil, current.AppID, current.OrgID, groupID, current.ID)
+	err := app.storage.DeleteMembership(nil, current.AppID, current.OrgID, groupID, current.ID)
 	if err != nil {
 		return err
 	}
 
-	group, err := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, groupID, nil)
+	group, err := app.storage.FindGroup(nil, current.AppID, current.OrgID, groupID, nil)
 	if err == nil && group != nil {
 		if group.CanJoinAutomatically && group.AuthmanEnabled {
 			err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, current.ExternalID)

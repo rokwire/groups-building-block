@@ -39,7 +39,7 @@ func (sa *Adapter) FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error
 	// Credits to Ryan Oberlander suggest
 	if filter.MemberUserID != nil || filter.MemberID != nil || filter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err = sa.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+		memberships, err = sa.FindGroupMemberships(nil, model.MembershipFilter{
 			ID:         filter.MemberID,
 			AppID:      filter.AppID,
 			OrgID:      filter.OrgID,
@@ -160,8 +160,8 @@ func (sa *Adapter) FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error
 	return list, nil
 }
 
-// FindGroupMembershipsWithContext finds the group membership for a given group
-func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, filter model.MembershipFilter) (model.MembershipCollection, error) {
+// FindGroupMemberships finds the group membership for a given group
+func (sa *Adapter) FindGroupMemberships(ctx TransactionContext, filter model.MembershipFilter) (model.MembershipCollection, error) {
 
 	if filter.ID == nil && len(filter.GroupIDs) == 0 && filter.UserID == nil && filter.ExternalID == nil && filter.Name == nil {
 		log.Print("The memberships filter requires at least one of the listed filters to be set: ID, GroupsIDs, UserID, ExternalID or Name")
@@ -211,8 +211,8 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, filte
 	return model.MembershipCollection{Items: result}, err
 }
 
-// FindGroupMembershipWithContext finds the group membership for a given user and group
-func (sa *Adapter) FindGroupMembershipWithContext(context TransactionContext, appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error) {
+// FindGroupMembership finds the group membership for a given user and group
+func (sa *Adapter) FindGroupMembership(context TransactionContext, appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error) {
 	filter := bson.M{"app_id": appID, "org_id": orgID, "group_id": groupID, "user_id": userID}
 
 	var result model.GroupMembership
@@ -241,7 +241,7 @@ func (sa *Adapter) CreatePendingMembership(user *model.User, group *model.Group,
 	if membership != nil && group != nil && user != nil {
 
 		//1. check if the user is already a member of this group - pending or member or admin or rejected
-		storedMembership, err := sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, user.ID)
+		storedMembership, err := sa.FindGroupMembership(nil, group.AppID, group.OrgID, group.ID, user.ID)
 		if err == nil && storedMembership != nil {
 			switch storedMembership.Status {
 			case "admin":
@@ -391,19 +391,19 @@ func (sa *Adapter) CreateMembership(current *model.User, group *model.Group, mem
 			return fmt.Errorf("expected user_id or external_id")
 		}
 
-		existingMembership, err := sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, current.ID)
+		existingMembership, err := sa.FindGroupMembership(nil, group.AppID, group.OrgID, group.ID, current.ID)
 		if err != nil || existingMembership == nil || !existingMembership.IsAdmin() {
 			log.Printf("error: storage.CreateMembership() - current user is not admin of the group")
 			return fmt.Errorf("current user is not admin of the group")
 		}
 
-		existingMembership, _ = sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, membership.UserID)
+		existingMembership, _ = sa.FindGroupMembership(nil, group.AppID, group.OrgID, group.ID, membership.UserID)
 		if existingMembership != nil {
 			log.Printf("error: storage.CreateMembership() - member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 			return fmt.Errorf("member of group '%s' with user id %s already exists", group.Title, membership.UserID)
 		}
 
-		existingMembership, _ = sa.FindGroupMembershipWithContext(nil, group.AppID, group.OrgID, group.ID, membership.ExternalID)
+		existingMembership, _ = sa.FindGroupMembership(nil, group.AppID, group.OrgID, group.ID, membership.ExternalID)
 		if existingMembership != nil {
 			log.Printf("error: storage.CreateMembership() - member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
 			return fmt.Errorf("member of group '%s' with external id %s already exists", group.Title, membership.ExternalID)
@@ -478,15 +478,15 @@ func (sa *Adapter) UpdateMembership(context TransactionContext, membership *mode
 	return nil
 }
 
-// DeleteMembershipWithContext deletes a member membership from a specific group with context
-func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, appID string, orgID string, groupID string, userID string) error {
+// DeleteMembership deletes a member membership from a specific group with context
+func (sa *Adapter) DeleteMembership(ctx TransactionContext, appID string, orgID string, groupID string, userID string) error {
 
 	deleteWrapper := func(context TransactionContext) error {
-		currentMembership, _ := sa.FindGroupMembershipWithContext(context, appID, orgID, groupID, userID)
+		currentMembership, _ := sa.FindGroupMembership(context, appID, orgID, groupID, userID)
 		if currentMembership != nil {
 
 			if currentMembership.IsAdmin() {
-				adminMemberships, _ := sa.FindGroupMembershipsWithContext(context, model.MembershipFilter{
+				adminMemberships, _ := sa.FindGroupMemberships(context, model.MembershipFilter{
 					GroupIDs: []string{groupID},
 					AppID:    appID,
 					OrgID:    orgID,

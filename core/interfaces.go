@@ -229,7 +229,7 @@ func (s *servicesImpl) FindGroupMemberships(filter model.MembershipFilter) (mode
 }
 
 func (s *servicesImpl) FindGroupMembership(appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return s.app.storage.FindGroupMembershipWithContext(nil, appID, orgID, groupID, userID)
+	return s.app.storage.FindGroupMembership(nil, appID, orgID, groupID, userID)
 }
 
 func (s *servicesImpl) FindGroupMembershipByID(appID string, orgID string, id string) (*model.GroupMembership, error) {
@@ -237,7 +237,7 @@ func (s *servicesImpl) FindGroupMembershipByID(appID string, orgID string, id st
 }
 
 func (s *servicesImpl) FindUserGroupMemberships(appID string, orgID string, userID string) (model.MembershipCollection, error) {
-	return s.app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{AppID: appID, OrgID: orgID, UserID: &userID})
+	return s.app.storage.FindGroupMemberships(nil, model.MembershipFilter{AppID: appID, OrgID: orgID, UserID: &userID})
 }
 
 func (s *servicesImpl) CreateMembership(current *model.User, group *model.Group, membership *model.GroupMembership) error {
@@ -329,7 +329,7 @@ type Storage interface {
 	GetUserPostCount(appID string, orgID string, userID string) (*int64, error)
 	LoginUser(current *model.User) error
 	CreateUser(id string, appID string, orgID string, externalID string, email string, name string) (*model.User, error)
-	DeleteUserWithContext(context storage.TransactionContext, appID string, orgID string, userID string) error
+	DeleteUser(context storage.TransactionContext, appID string, orgID string, userID string) error
 
 	CreateGroup(current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
 	UpdateGroup(userID *string, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
@@ -337,7 +337,7 @@ type Storage interface {
 	UpdateGroupStats(context storage.TransactionContext, appID string, orgID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
 	UpdateGroupDateUpdated(appID string, orgID string, groupID string) error
 	DeleteGroup(appID string, orgID string, id string) error
-	FindGroupWithContext(context storage.TransactionContext, appID string, orgID string, groupID string, userID *string) (*model.Group, error)
+	FindGroup(context storage.TransactionContext, appID string, orgID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(appID string, orgID string, title string) (*model.Group, error)
 	FindGroups(userID *string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroups(userID string, filter model.GroupsFilter) ([]model.Group, error)
@@ -345,8 +345,8 @@ type Storage interface {
 
 	FindEvents(current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(appID string, orgID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
-	UpdateEventWithContext(context storage.TransactionContext, appID string, orgID string, eventID string, groupID string, toMemberList []model.ToMember) error
-	DeleteEventWithContext(context storage.TransactionContext, appID string, orgID string, eventID string, groupID string) error
+	UpdateEvent(context storage.TransactionContext, appID string, orgID string, eventID string, groupID string, toMemberList []model.ToMember) error
+	DeleteEvent(context storage.TransactionContext, appID string, orgID string, eventID string, groupID string) error
 
 	FindPosts(current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	FindPost(context storage.TransactionContext, appID string, orgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
@@ -363,8 +363,8 @@ type Storage interface {
 
 	// V3
 	FindGroupsV3(filter model.GroupsFilter) ([]model.Group, error)
-	FindGroupMembershipsWithContext(context storage.TransactionContext, filter model.MembershipFilter) (model.MembershipCollection, error)
-	FindGroupMembershipWithContext(context storage.TransactionContext, appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMemberships(context storage.TransactionContext, filter model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMembership(context storage.TransactionContext, appID string, orgID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(appID string, orgID string, id string) (*model.GroupMembership, error)
 	BulkUpdateGroupMembershipsByExternalID(appID string, orgID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
 	SaveGroupMembershipByExternalID(context storage.TransactionContext, appID string, orgID string, groupID string, externalID string, userID *string, status *string,
@@ -374,7 +374,7 @@ type Storage interface {
 	CreatePendingMembership(current *model.User, group *model.Group, member *model.GroupMembership) error
 	ApplyMembershipApproval(context storage.TransactionContext, appID string, orgID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
 	UpdateMembership(context storage.TransactionContext, membership *model.GroupMembership) error
-	DeleteMembershipWithContext(context storage.TransactionContext, appID string, orgID string, groupID string, userID string) error
+	DeleteMembership(context storage.TransactionContext, appID string, orgID string, groupID string, userID string) error
 	DeleteMembershipByID(appID string, orgID string, membershipID string) error
 	DeleteUnsyncedGroupMemberships(appID string, orgID string, groupID string, syncID string) (int64, error)
 

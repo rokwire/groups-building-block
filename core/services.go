@@ -57,7 +57,7 @@ func (app *Application) getVersion() string {
 }
 
 func (app *Application) getGroupEntity(appID string, orgID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroupWithContext(nil, appID, orgID, id, nil)
+	group, err := app.storage.FindGroup(nil, appID, orgID, id, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +73,7 @@ func (app *Application) getGroupEntityByTitle(appID string, orgID string, title 
 }
 
 func (app *Application) isGroupAdmin(appID string, orgID string, groupID string, userID string) (bool, error) {
-	membership, err := app.storage.FindGroupMembershipWithContext(nil, appID, orgID, groupID, userID)
+	membership, err := app.storage.FindGroupMembership(nil, appID, orgID, groupID, userID)
 	if err != nil {
 		return false, err
 	}
@@ -192,20 +192,20 @@ func (app *Application) deleteUser(current *model.User) error {
 			}
 		}
 
-		memberships, err := app.storage.FindGroupMembershipsWithContext(sessionContext, model.MembershipFilter{AppID: current.AppID, OrgID: current.OrgID, UserID: &current.ID})
+		memberships, err := app.storage.FindGroupMemberships(sessionContext, model.MembershipFilter{AppID: current.AppID, OrgID: current.OrgID, UserID: &current.ID})
 		if err != nil {
 			log.Printf("error getting user memberships - %s", err.Error())
 			return err
 		}
 		for _, membership := range memberships.Items {
-			err = app.storage.DeleteMembershipWithContext(sessionContext, membership.AppID, membership.OrgID, membership.GroupID, membership.UserID)
+			err = app.storage.DeleteMembership(sessionContext, membership.AppID, membership.OrgID, membership.GroupID, membership.UserID)
 			if err != nil {
 				log.Printf("error deleting user membership - %s", err.Error())
 				return err
 			}
 		}
 
-		return app.storage.DeleteUserWithContext(sessionContext, current.AppID, current.OrgID, current.ID)
+		return app.storage.DeleteUser(sessionContext, current.AppID, current.OrgID, current.ID)
 	})
 
 }
@@ -217,7 +217,7 @@ func (app *Application) getGroup(current *model.User, id string) (*model.Group, 
 		userID = &current.ID
 	}
 
-	group, err := app.storage.FindGroupWithContext(nil, current.AppID, current.OrgID, id, userID)
+	group, err := app.storage.FindGroup(nil, current.AppID, current.OrgID, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -240,7 +240,7 @@ func (app *Application) applyMembershipApproval(appID string, orgID string, memb
 
 	membership, err := app.storage.FindGroupMembershipByID(appID, orgID, membershipID)
 	if err == nil && membership != nil {
-		group, _ := app.storage.FindGroupWithContext(nil, appID, orgID, membership.GroupID, nil)
+		group, _ := app.storage.FindGroup(nil, appID, orgID, membership.GroupID, nil)
 		topic := "group.invitations"
 		if approve {
 			app.notifications.SendNotification(
@@ -348,7 +348,7 @@ func (app *Application) createEvent(eventID string, group *model.Group, toMember
 		userIDs = event.GetMembersAsUserIDs(skipUserID)
 	}
 
-	result, _ := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+	result, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		AppID:    group.AppID,
 		OrgID:    group.OrgID,
@@ -386,7 +386,7 @@ func (app *Application) createEvent(eventID string, group *model.Group, toMember
 
 func (app *Application) updateEvent(appID string, orgID string, eventID string, groupID string, toMemberList []model.ToMember) error {
 	return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		err := app.storage.UpdateEventWithContext(context, appID, orgID, eventID, groupID, toMemberList)
+		err := app.storage.UpdateEvent(context, appID, orgID, eventID, groupID, toMemberList)
 		if err == nil {
 			return err
 		}
@@ -397,7 +397,7 @@ func (app *Application) updateEvent(appID string, orgID string, eventID string, 
 
 func (app *Application) deleteEvent(appID string, orgID string, eventID string, groupID string) error {
 	return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		err := app.storage.DeleteEventWithContext(context, appID, orgID, eventID, groupID)
+		err := app.storage.DeleteEvent(context, appID, orgID, eventID, groupID)
 		if err != nil {
 			return err
 		}
@@ -431,7 +431,7 @@ func (app *Application) createPost(current *model.User, post *model.Post, group 
 	}
 
 	if current != nil {
-		membership, err := app.storage.FindGroupMembershipWithContext(nil, post.AppID, post.OrgID, post.GroupID, current.ID)
+		membership, err := app.storage.FindGroupMembership(nil, post.AppID, post.OrgID, post.GroupID, current.ID)
 		if membership == nil || err != nil || !membership.IsAdminOrMember() {
 			return fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -491,7 +491,7 @@ func (app *Application) createPost(current *model.User, post *model.Post, group 
 
 		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(post, &current.ID)
 
-		result, _ := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 			GroupIDs: []string{group.ID},
 			AppID:    group.AppID,
 			OrgID:    group.OrgID,
@@ -709,7 +709,7 @@ func (app *Application) reportPostAsAbuse(current *model.User, group *model.Grou
 		app.notifications.SendMail(appConfig.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		result, _ := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 			GroupIDs: []string{group.ID},
 			AppID:    post.AppID,
 			OrgID:    post.OrgID,
@@ -749,7 +749,7 @@ Reported comment: %s
 
 func (app *Application) deletePost(context storage.TransactionContext, appID string, orgID string, userID string, groupID string, postID string, force bool) error {
 	deleteWrapper := func(transactionContext storage.TransactionContext) error {
-		membership, _ := app.storage.FindGroupMembershipWithContext(transactionContext, appID, orgID, groupID, userID)
+		membership, _ := app.storage.FindGroupMembership(transactionContext, appID, orgID, groupID, userID)
 		filterToMembers := true
 		if membership != nil && membership.IsAdmin() {
 			filterToMembers = false
@@ -941,7 +941,7 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 						missedUINs := []string{}
 						groupUpdated := false
 
-						existingAdmins, err := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+						existingAdmins, err := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 							GroupIDs: []string{storedStemGroup.ID},
 							AppID:    appID,
 							OrgID:    orgID,
@@ -1097,7 +1097,7 @@ func (app *Application) checkGroupSyncTimes(appID string, orgID string, groupID 
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, appID, orgID, groupID, nil)
+		group, err = app.storage.FindGroup(context, appID, orgID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
@@ -1162,7 +1162,7 @@ func (app *Application) syncAuthmanGroupMemberships(authmanGroup *model.Group, a
 
 	// Load existing admins
 	adminExternalIDsMap := map[string]bool{}
-	adminMembers, err := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+	adminMembers, err := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
 		AppID:    authmanGroup.AppID,
 		OrgID:    authmanGroup.OrgID,
@@ -1229,7 +1229,7 @@ func (app *Application) syncAuthmanGroupMemberships(authmanGroup *model.Group, a
 			log.Printf("Error on bulk saving membership (phase 1) in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
 		} else {
 			log.Printf("Successful bulk saving membership (phase 1) in Authman '%s'", *authmanGroup.AuthmanGroup)
-			memberships, _ := app.storage.FindGroupMembershipsWithContext(nil, model.MembershipFilter{
+			memberships, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 				GroupIDs: []string{authmanGroup.ID},
 				AppID:    authmanGroup.AppID,
 				OrgID:    authmanGroup.OrgID,
