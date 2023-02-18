@@ -51,12 +51,12 @@ type Config struct {
 
 // EnvConfigData contains environment configs for this service
 type EnvConfigData struct {
-	ExampleEnv string `json:"example_env" bson:"example_env"`
+	//TODO: move more environment variables here as desired
+	NotificationsReportAbuseEmail string `json:"notifications_report_abuse_email" bson:"notifications_report_abuse_email"`
 } //@name EnvConfigData
 
 // ApplicationConfigData defines configs for managing authman sync and sending report emails
 type ApplicationConfigData struct {
-	//TODO: must not be empty
 	AuthmanAdminUINList       []string `json:"authman_admin_uin_list" bson:"authman_admin_uin_list"`
 	ReportAbuseRecipientEmail string   `json:"report_abuse_recipient_email" bson:"report_abuse_recipient_email"`
 } //@name ApplicationConfigData
@@ -81,7 +81,6 @@ type SyncTimes struct {
 type ManagedGroupConfigData struct {
 	AuthmanStems []string `json:"authman_stems" bson:"authman_stems"`
 	AdminUINs    []string `json:"admin_uins" bson:"admin_uins"`
-	Type         string   `json:"type" bson:"type"`
 } //@name ManagedGroupConfigData
 
 // GetConfigData returns a pointer to the given config's Data as the given type T

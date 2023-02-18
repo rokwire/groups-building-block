@@ -21,7 +21,6 @@ import (
 
 // Event represents event entity
 type Event struct {
-	ClientID      string     `json:"client_id" bson:"client_id"`
 	AppID         string     `json:"app_id" bson:"app_id"`
 	OrgID         string     `json:"org_id" bson:"org_id"`
 	EventID       string     `json:"event_id" bson:"event_id"`

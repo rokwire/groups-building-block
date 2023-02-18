@@ -35,8 +35,6 @@ definitions:
     properties:
       app_id:
         type: string
-      client_id:
-        type: string
       creator:
         $ref: '#/definitions/Creator'
       date_created:
@@ -73,8 +71,6 @@ definitions:
         type: boolean
       category:
         description: one of the enums categories list
-        type: string
-      client_id:
         type: string
       current_member:
         allOf:
@@ -152,8 +148,6 @@ definitions:
   GroupMembership:
     properties:
       app_id:
-        type: string
-      client_id:
         type: string
       date_attended:
         type: string
@@ -312,8 +306,6 @@ definitions:
         items:
           type: string
         type: array
-      type:
-        type: string
     type: object
   Member:
     properties:
@@ -790,8 +782,6 @@ definitions:
       app_id:
         type: string
       body:
-        type: string
-      client_id:
         type: string
       date_created:
         type: string

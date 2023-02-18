@@ -47,8 +47,8 @@ type Adapter struct {
 }
 
 // Start starts the storage
-func (sa *Adapter) Start() error {
-	err := sa.db.start()
+func (sa *Adapter) Start(defaultAppID string, defaultOrgID string, defaultAppConfig *model.Config) error {
+	err := sa.db.start(defaultAppID, defaultOrgID, defaultAppConfig)
 	if err != nil {
 		return err
 	}
@@ -1718,13 +1718,6 @@ func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout stri
 	cachedConfigs := &syncmap.Map{}
 	configsLock := &sync.RWMutex{}
 	return &Adapter{db: db, cachedConfigs: cachedConfigs, configsLock: configsLock}
-}
-
-func abortTransaction(sessionContext mongo.SessionContext) {
-	err := sessionContext.AbortTransaction(sessionContext)
-	if err != nil {
-		log.Printf("error on aborting a transaction - %s", err)
-	}
 }
 
 type storageListener struct {
