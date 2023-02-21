@@ -10,6 +10,13 @@ type MembershipCollection struct {
 	Items []GroupMembership
 }
 
+// ApplyGroupSettings Applies group settings
+func (c *MembershipCollection) ApplyGroupSettings(settings *GroupSettings) {
+	for index := range c.Items {
+		c.Items[index].ApplyGroupSettings(settings)
+	}
+}
+
 // GetMembershipBy Finds a membership by
 func (c *MembershipCollection) GetMembershipBy(checker func(membership GroupMembership) bool) *GroupMembership {
 	if len(c.Items) > 0 {
@@ -88,9 +95,7 @@ type GroupMembership struct {
 	Email      string `json:"email" bson:"email"`
 	PhotoURL   string `json:"photo_url" bson:"photo_url"`
 
-	// TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.
-	Status string `json:"status" bson:"status"` //pending, member, rejected
-	Admin  bool   `json:"admin" bson:"admin"`
+	Status string `json:"status" bson:"status"` //admin, pending, member, rejected
 
 	RejectReason  string         `json:"reject_reason" bson:"reject_reason"`
 	MemberAnswers []MemberAnswer `json:"member_answers" bson:"member_answers"`
@@ -102,29 +107,6 @@ type GroupMembership struct {
 	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
 	DateAttended *time.Time `json:"date_attended" bson:"date_attended"`
 } //@name GroupMembership
-
-// ToMember converts the GroupMembership model to the Member model
-func (m *GroupMembership) ToMember() Member {
-	status := m.Status
-	if m.Admin {
-		status = "admin"
-	}
-	return Member{
-		ID:            m.ID,
-		UserID:        m.UserID,
-		ExternalID:    m.ExternalID,
-		Name:          m.Name,
-		NetID:         m.NetID,
-		Email:         m.Email,
-		PhotoURL:      m.PhotoURL,
-		Status:        status,
-		RejectReason:  m.RejectReason,
-		MemberAnswers: m.MemberAnswers,
-		DateCreated:   m.DateCreated,
-		DateUpdated:   m.DateUpdated,
-		DateAttended:  m.DateAttended,
-	}
-}
 
 // GetDisplayName Constructs a display name based on the current data state
 func (m *GroupMembership) GetDisplayName() string {
@@ -154,15 +136,6 @@ func (m *GroupMembership) ApplyFromUserIfEmpty(user *User) {
 	}
 }
 
-// ToNotificationRecipient construct notifications.Recipient based on the data
-func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recipient {
-	return notifications.Recipient{
-		UserID: m.UserID,
-		Name:   m.Name,
-		Mute:   mute,
-	}
-}
-
 // IsAdmin says if the user is admin of the group
 func (m *GroupMembership) IsAdmin() bool {
 	return m.Status == "admin"
@@ -188,6 +161,28 @@ func (m *GroupMembership) IsRejected() bool {
 	return m.Status == "rejected"
 }
 
+// ApplyGroupSettings Applies group settings and removes forbidden fields
+func (m *GroupMembership) ApplyGroupSettings(settings *GroupSettings) {
+	if settings == nil {
+		val := DefaultGroupSettings()
+		settings = &val
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberName {
+		m.Name = ""
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberNetID {
+		m.NetID = ""
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberEmail {
+		m.Email = ""
+	}
+	if !settings.MemberInfoPreferences.CanViewMemberPhone {
+		// Just a placeholder.
+	}
+	m.ExternalID = ""
+
+}
+
 // ToShortMemberRecord converts to ShortMemberRecord
 func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 	return ShortMemberRecord{
@@ -201,9 +196,38 @@ func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 	}
 }
 
+// ToNotificationRecipient construct notifications.Recipient based on the data
+func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recipient {
+	return notifications.Recipient{
+		UserID: m.UserID,
+		Name:   m.Name,
+		Mute:   mute,
+	}
+}
+
+// ToMember converts the GroupMembership model to the Member model
+func (m *GroupMembership) ToMember() Member {
+	return Member{
+		ID:            m.ID,
+		UserID:        m.UserID,
+		ExternalID:    m.ExternalID,
+		Name:          m.Name,
+		NetID:         m.NetID,
+		Email:         m.Email,
+		PhotoURL:      m.PhotoURL,
+		Status:        m.Status,
+		RejectReason:  m.RejectReason,
+		MemberAnswers: m.MemberAnswers,
+		DateCreated:   m.DateCreated,
+		DateUpdated:   m.DateUpdated,
+		DateAttended:  m.DateAttended,
+	}
+}
+
 // NotificationsPreferences overrides default notification preferences on group level
 type NotificationsPreferences struct {
 	OverridePreferences bool `json:"override_preferences" bson:"override_preferences"`
+	AllMute             bool `json:"all_mute" bson:"all_mute"`
 	InvitationsMuted    bool `json:"invitations_mute" bson:"invitations_mute"`
 	PostsMuted          bool `json:"posts_mute" bson:"posts_mute"`
 	EventsMuted         bool `json:"events_mute" bson:"events_mute"`

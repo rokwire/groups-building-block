@@ -27,8 +27,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/logging-library-go/logs"
+	"github.com/golang-jwt/jwt"
+
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/sigauth"
 )
 
 var (
@@ -62,11 +64,57 @@ func main() {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
 
+	// Auth Service
+	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
+
+	authService := authservice.AuthService{
+		ServiceID:   "groups",
+		ServiceHost: groupServiceURL,
+		FirstParty:  true,
+		AuthBaseURL: coreBBHost,
+	}
+
+	serviceRegLoader, err := authservice.NewRemoteServiceRegLoader(&authService, []string{"rewards"})
+	if err != nil {
+		log.Fatalf("Error initializing remote service registration loader: %v", err)
+	}
+
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service registration manager: %v", err)
+	}
+
+	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
+	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
+	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
+	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	if err != nil {
+		log.Fatalf("Error parsing priv key: %v", err)
+	}
+	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
+	if err != nil {
+		log.Fatalf("Error initializing signature auth: %v", err)
+	}
+
+	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+	if err != nil {
+		log.Fatalf("Error initializing remote service account loader: %v", err)
+	}
+
+	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
+	if err != nil {
+		log.Fatalf("Error initializing service account manager: %v", err)
+	}
+
 	// Notification adapter
+	appID := getEnvKey("GROUPS_APP_ID", true)
+	orgID := getEnvKey("GROUPS_ORG_ID", true)
 	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
-	notificationsInternalAPIKey := getEnvKey("NOTIFICATIONS_INTERNAL_API_KEY", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
-	notificationsAdapter := notifications.NewNotificationsAdapter(notificationsInternalAPIKey, notificationsBaseURL)
+	notificationsAdapter, err := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("Error initializing notification adapter: %v", err)
+	}
 
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
@@ -77,27 +125,10 @@ func main() {
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
 	// Core adapter
-	coreAdapter := corebb.NewCoreAdapter(coreBBHost)
-
-	// Auth Service
-	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
-	remoteConfig := authservice.RemoteAuthDataLoaderConfig{
-		AuthServicesHost: coreBBHost,
-	}
-
-	// Instantiate a remote ServiceRegLoader to load auth service registration record from auth service
-	serviceLoader, err := authservice.NewRemoteAuthDataLoader(remoteConfig, []string{"rewards"}, logs.NewLogger("groupsbb", &logs.LoggerOpts{}))
-	if err != nil {
-		log.Fatalf("error instancing auth data loader: %s", err)
-	}
-	// Instantiate AuthService instance
-	authService, err := authservice.NewTestAuthService("groups", groupServiceURL, serviceLoader)
-	if err != nil {
-		log.Fatalf("error instancing auth service: %s", err)
-	}
+	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
 
 	// Rewards adapter
-	rewardsServiceReg, err := authService.GetServiceReg("rewards")
+	rewardsServiceReg, err := serviceRegManager.GetServiceReg("rewards")
 	if err != nil {
 		log.Fatalf("error finding rewards service reg: %s", err)
 	}
@@ -109,6 +140,8 @@ func main() {
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
 		SupportedClientIDs:        supportedClientIDs,
+		AppID:                     appID,
+		OrgID:                     orgID,
 	}
 
 	//application
@@ -127,7 +160,7 @@ func main() {
 
 	webAdapter := web.NewWebAdapter(application, host, port, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, authService, groupServiceURL)
+		intrernalAPIKey, serviceRegManager, groupServiceURL)
 	webAdapter.Start()
 }
 

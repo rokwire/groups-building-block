@@ -76,7 +76,7 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 
 	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("apis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		log.Printf("adminapis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -85,11 +85,11 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		err = json.Unmarshal(requestData, &groupsFilter)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("apis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+			log.Printf("adminapis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -178,7 +178,7 @@ func (h *AdminApisHandler) GetUserGroupsV2(clientID string, current *model.User,
 
 	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("apis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		log.Printf("adminapis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -187,7 +187,7 @@ func (h *AdminApisHandler) GetUserGroupsV2(clientID string, current *model.User,
 		err = json.Unmarshal(requestData, &groupsFilter)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("apis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+			log.Printf("adminapis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
 	}
 

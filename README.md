@@ -38,6 +38,8 @@ GR_OIDC_ADMIN_CLIENT_ID | < url > | yes | Client ID to validate with OIDC for ad
 GR_OIDC_ADMIN_WEB_CLIENT_ID | < url > | yes | Client ID to validate with OIDC for web client
 ROKWIRE_API_KEYS | < string (comma-separated) > | yes | List of API keys to be used for client verification
 AUTHMAN_ADMIN_UIN_LIST | < string (comma-separated) > | yes | List of UINs for admin users used when loading data from AuthMan
+GR_SERVICE_ACCOUNT_ID | < string > | yes | ID of Service Account for Groups BB
+GR_PRIV_KEY | < string > | yes | PEM encoded private key for Groups BB
 
 ### Run Application
 

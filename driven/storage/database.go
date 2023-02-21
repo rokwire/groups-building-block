@@ -137,6 +137,17 @@ func (m *database) start() error {
 		return err
 	}
 
+	// apply default group settings
+	err = m.ApplyDefaultGroupSettings(client, groups)
+	if err != nil {
+		return err
+	}
+
+	err = m.ApplyGroupsAttributesTransition(client, groups)
+	if err != nil {
+		return err
+	}
+
 	//asign the db, db client and the collections
 	m.db = db
 	m.dbClient = client
@@ -188,11 +199,9 @@ func (m *database) applyUsersChecks(users *collectionWrapper) error {
 
 	indexes, _ := users.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
 
 	if indexMapping["external_id_1"] == nil {
@@ -242,21 +251,10 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 
 	indexes, _ := groups.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
-	}
 
-	if indexMapping["title_1"] == nil {
-		err := groups.AddIndex(
-			bson.D{
-				primitive.E{Key: "title", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
 
 	if indexMapping["client_id_1"] == nil {
@@ -264,25 +262,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 			bson.D{
 				primitive.E{Key: "client_id", Value: 1},
 			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["client_id_1_title_1_"] == nil {
-		err := groups.AddIndex(
-			bson.D{
-				primitive.E{Key: "client_id", Value: 1},
-				primitive.E{Key: "title", Value: 1},
-			}, true)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["title_1_client_id_1"] != nil {
-		// Drop the old one
-		err := groups.DropIndex("title_1_client_id_1")
 		if err != nil {
 			return err
 		}
@@ -372,11 +351,50 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["title_1"] == nil {
+		err := groups.AddIndex(
+			bson.D{
+				primitive.E{Key: "title", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1_title_1_"] != nil {
+		err := groups.DropIndex("client_id_1_title_1_")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["client_id_1_title_1"] != nil {
+		err := groups.DropIndex("client_id_1_title_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["title_1_client_id_1"] != nil {
+		// Drop the old one
+		err := groups.DropIndex("title_1_client_id_1")
+		if err != nil {
+			return err
+		}
+	}
+
+	name := "title_unique"
+	unique := true
+	if indexMapping["title_unique"] != nil {
+		err := groups.DropIndex("title_unique")
+		if err != nil {
+			return err
+		}
+	}
 	if indexMapping["title_unique"] == nil {
-		name := "title_unique"
-		unique := true
 		err := groups.AddIndexWithOptions(
 			bson.D{
+				primitive.E{Key: "client_id", Value: 1},
 				primitive.E{Key: "title", Value: 1},
 			},
 			&options.IndexOptions{
@@ -391,7 +409,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 			return err
 		}
 	}
-
 	log.Println("groups checks passed")
 	return nil
 }
@@ -444,6 +461,14 @@ func (m *database) applyGroupMembershipsChecks(groupMemberships *collectionWrapp
 		return err
 	}
 
+	err = groupMemberships.AddIndex(bson.D{
+		primitive.E{Key: "status", Value: 1},
+		primitive.E{Key: "name", Value: 1},
+	}, false)
+	if err != nil {
+		return err
+	}
+
 	err = groupMemberships.AddIndex(bson.D{primitive.E{Key: "date_created", Value: 1}}, false)
 	if err != nil {
 		return err
@@ -458,11 +483,9 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 
 	indexes, _ := events.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
 
 	if indexMapping["event_id_1_group_id_1_client_id_1"] == nil {
@@ -565,13 +588,12 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 
 	indexes, _ := posts.ListIndexes()
 	indexMapping := map[string]interface{}{}
-	if indexes != nil {
 
-		for _, index := range indexes {
-			name := index["name"].(string)
-			indexMapping[name] = index
-		}
+	for _, index := range indexes {
+		name := index["name"].(string)
+		indexMapping[name] = index
 	}
+
 	if indexMapping["client_id_1"] == nil {
 		err := posts.AddIndex(
 			bson.D{
@@ -786,7 +808,7 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 
 	var migrationGroup []model.Group
 	err := groups.Find(bson.D{
-		{"members.id", bson.M{"$exists": true}},
+		{Key: "members.id", Value: bson.M{"$exists": true}},
 	}, &migrationGroup, nil)
 	if err != nil {
 		return err
@@ -801,8 +823,8 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 			}
 
 			_, err = groups.UpdateManyWithContext(sessionContext, bson.D{}, bson.D{
-				{"$set", bson.D{
-					{"stats", model.GroupStats{}},
+				{Key: "$set", Value: bson.D{
+					{Key: "stats", Value: model.GroupStats{}},
 				}},
 			}, nil)
 			if err != nil {
@@ -841,12 +863,12 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 				}
 
 				_, err = groups.UpdateOneWithContext(sessionContext, bson.D{
-					{"client_id", group.ClientID},
-					{"_id", group.ID},
+					{Key: "client_id", Value: group.ClientID},
+					{Key: "_id", Value: group.ID},
 				}, bson.D{
-					{"$set", bson.D{
-						{"members", nil},
-						{"stats", stats},
+					{Key: "$set", Value: bson.D{
+						{Key: "members", Value: nil},
+						{Key: "stats", Value: stats},
 					}},
 				}, nil)
 				if err != nil {
@@ -872,6 +894,96 @@ func (m *database) ApplyMembershipTransition(client *mongo.Client, groups *colle
 	}
 
 	log.Println("memberships transition passed")
+	return nil
+}
+
+func (m *database) ApplyDefaultGroupSettings(client *mongo.Client, groups *collectionWrapper) error {
+	log.Println("apply group settings migration.....")
+
+	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+		var migrationGroup []model.Group
+
+		filter := bson.D{
+			{Key: "settings", Value: bson.M{"$exists": false}},
+		}
+
+		err = groups.FindWithContext(sessionContext, filter, &migrationGroup, nil)
+		if err != nil {
+			return err
+		}
+
+		if len(migrationGroup) > 0 {
+			_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
+				{Key: "$set", Value: bson.D{
+					{Key: "settings", Value: model.DefaultGroupSettings()},
+				}},
+			}, nil)
+			if err != nil {
+				abortTransaction(sessionContext)
+				return err
+			}
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("group settings migration passed")
+	return nil
+}
+
+func (m *database) ApplyGroupsAttributesTransition(client *mongo.Client, groups *collectionWrapper) error {
+	log.Println("apply group attributes migration.....")
+
+	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+		err := sessionContext.StartTransaction()
+		if err != nil {
+			log.Printf("error starting a transaction - %s", err)
+			return err
+		}
+
+		filter := bson.D{
+			{Key: "attributes", Value: bson.M{"$exists": false}},
+		}
+		_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
+			{Key: "$set", Value: bson.D{
+				{Key: "attributes.category", Value: "$category"},
+				{Key: "attributes.tags", Value: "$tags"},
+			}},
+		}, nil)
+		if err != nil {
+			abortTransaction(sessionContext)
+			return err
+		}
+
+		//commit the transaction
+		err = sessionContext.CommitTransaction(sessionContext)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Println("group attributes migration passed")
 	return nil
 }
 

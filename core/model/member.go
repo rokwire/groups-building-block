@@ -15,9 +15,10 @@
 package model
 
 import (
-	"github.com/google/uuid"
 	"groups/driven/notifications"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 // Member represents group member entity
@@ -86,12 +87,6 @@ func (m *Member) ToNotificationRecipient() notifications.Recipient {
 
 // ToGroupMembership converts the Member model to the GroupMembership model
 func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembership {
-	admin := false
-	status := m.Status
-	if status == "admin" {
-		admin = true
-	}
-
 	return GroupMembership{
 		ID:            uuid.NewString(),
 		ClientID:      clientID,
@@ -102,8 +97,7 @@ func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembersh
 		NetID:         m.NetID,
 		Email:         m.Email,
 		PhotoURL:      m.PhotoURL,
-		Status:        status,
-		Admin:         admin,
+		Status:        m.Status,
 		RejectReason:  m.RejectReason,
 		MemberAnswers: m.MemberAnswers,
 		DateCreated:   m.DateCreated,

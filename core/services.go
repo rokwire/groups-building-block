@@ -77,7 +77,7 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	if err != nil {
 		return false, err
 	}
-	if membership == nil || !membership.Admin {
+	if membership == nil || membership.Status != "admin" {
 		return false, nil
 	}
 
@@ -88,6 +88,23 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if group.ResearchGroup {
+		searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
+		//TODO: verify this verbage
+		app.notifications.SendNotification(nil, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
+			map[string]string{
+				"type":        "group",
+				"operation":   "research_group",
+				"entity_type": "group",
+				"entity_id":   group.ID,
+				"entity_name": group.Title,
+			},
+			searchParams,
+			current.AppID,
+			current.OrgID)
+
 	}
 
 	handleRewardsAsync := func(clientID, userID string) {
@@ -114,6 +131,14 @@ func (app *Application) updateGroup(clientID string, current *model.User, group 
 	return nil
 }
 
+func (app *Application) updateGroupDateUpdated(clientID string, groupID string) error {
+	err := app.storage.UpdateGroupDateUpdated(clientID, groupID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
 	err := app.storage.DeleteGroup(clientID, id)
 	if err != nil {
@@ -123,8 +148,12 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 }
 
 func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	var userID *string
+	if current != nil {
+		userID = &current.ID
+	}
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, &current.ID, filter)
+	groups, err := app.storage.FindGroups(clientID, userID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +217,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 		if approve {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences && membership.NotificationsPreferences.InvitationsMuted),
+					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences &&
+						(membership.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -200,11 +230,15 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 		} else {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
-					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences && membership.NotificationsPreferences.InvitationsMuted),
+					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences &&
+						(membership.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)),
 				},
 				&topic,
 				fmt.Sprintf("Group - %s", group.Title),
@@ -216,6 +250,9 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 		}
 
@@ -238,7 +275,6 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	if membership != nil {
 		if status != nil && membership.Status != *status {
 			membership.Status = *status
-			membership.Admin = membership.IsAdmin()
 		}
 		if dateAttended != nil && membership.DateAttended == nil {
 			membership.DateAttended = dateAttended
@@ -296,7 +332,8 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	})
 	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 		return member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID),
-			member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.EventsMuted
+			member.NotificationsPreferences.OverridePreferences &&
+				(member.NotificationsPreferences.EventsMuted || member.NotificationsPreferences.AllMute)
 	})
 
 	if len(recipients) > 0 {
@@ -313,6 +350,9 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 				"entity_id":   group.ID,
 				"entity_name": group.Title,
 			},
+			nil,
+			current.AppID,
+			current.OrgID,
 		)
 	}
 
@@ -344,6 +384,30 @@ func (app *Application) getUserPostCount(clientID string, userID string) (*int64
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+
+	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
+		userIDs := post.GetMembersAsUserIDs(&current.ID)
+		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{post.GroupID},
+			UserIDs:  userIDs,
+			Statuses: []string{"admin"},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(memberships.Items) > 0 {
+			var toMembers []model.ToMember
+			for _, membership := range memberships.Items {
+				toMembers = append(toMembers, model.ToMember{
+					UserID: membership.UserID,
+					Name:   membership.Name,
+				})
+			}
+			post.ToMembersList = toMembers
+		}
+	}
+
 	post, err := app.storage.CreatePost(clientID, current, post)
 	if err != nil {
 		return nil, err
@@ -374,7 +438,8 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		})
 		recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 			return member.IsAdminOrMember() && (current.ID != member.UserID),
-				member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.PostsMuted
+				member.NotificationsPreferences.OverridePreferences &&
+					(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
 		})
 
 		if len(recipients) > 0 {
@@ -401,6 +466,9 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 					"post_subject": post.Subject,
 					"post_body":    post.Body,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 		}
 	}
@@ -438,7 +506,30 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 	return nil, nil
 }
 
-func (app *Application) updatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
+func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
+		userIDs := post.GetMembersAsUserIDs(&current.ID)
+		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{post.GroupID},
+			UserIDs:  userIDs,
+			Statuses: []string{"admin"},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		if len(memberships.Items) > 0 {
+			var toMembers []model.ToMember
+			for _, membership := range memberships.Items {
+				toMembers = append(toMembers, model.ToMember{
+					UserID: membership.UserID,
+					Name:   membership.Name,
+				})
+			}
+			post.ToMembersList = toMembers
+		}
+	}
+
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
@@ -498,7 +589,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	if sendToDean && !sendToGroupAdmins {
 		subject = "Report violation of Student Code to Dean of Students"
 	} else if !sendToDean && sendToGroupAdmins {
-		subject = "Report obscene, threatening, or harassing content to Group Administrators"
+		subject = "Report of Obscene, Harassing, or Threatening Content to Group Administrators"
 	} else {
 		subject = "Report violation of Student Code to Dean of Students and obscene, threatening, or harassing content to Group Administrators"
 	}
@@ -546,14 +637,17 @@ Reported comment: %s
 			"post_id":      *post.ID,
 			"post_subject": post.Subject,
 			"post_body":    post.Body,
-		})
+		},
+			nil,
+			current.AppID,
+			current.OrgID)
 	}
 
 	return nil
 }
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	return app.storage.DeletePost(clientID, userID, groupID, postID, force)
+	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
@@ -694,7 +788,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 										if member.Status != "admin" {
 											now := time.Now()
 											member.Status = "admin"
-											member.Admin = true
 											member.DateUpdated = &now
 											membershipsForUpdate = append(membershipsForUpdate, member)
 											groupUpdated = true
@@ -732,7 +825,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						if groupUpdated {
 							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
-								fmt.Errorf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
+								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
 						}
 					}
@@ -750,7 +843,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		for _, authmanGroup := range authmanGroups {
 			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
 			if err != nil {
-				fmt.Errorf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
+				log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 			}
 		}
 	}
@@ -887,19 +980,25 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
+	//TODO: These operations should ideally use a transaction, but the transaction may get too large
+
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
+
+	// Load existing admins
+	adminExternalIDsMap := map[string]bool{}
 	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
 		Statuses: []string{"admin"},
 	})
 	if err != nil {
-		log.Printf("Error finding admin memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
-	} else {
-		for _, adminMember := range adminMembers.Items {
-			if len(adminMember.ExternalID) > 0 {
-				allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
-			}
+		return fmt.Errorf("error finding admin memberships in authman %s: %s", *authmanGroup.AuthmanGroup, err)
+	}
+
+	for _, adminMember := range adminMembers.Items {
+		if len(adminMember.ExternalID) > 0 {
+			allExternalIDs = append(allExternalIDs, adminMember.ExternalID)
+			adminExternalIDsMap[adminMember.ExternalID] = true
 		}
 	}
 
@@ -919,6 +1018,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
 		status := "member"
+		if _, ok := adminExternalIDsMap[externalID]; ok {
+			status = "admin"
+		}
 		var userID *string
 		var name *string
 		var email *string
@@ -984,7 +1086,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 		if updatedInfo {
-			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, nil, email, name, nil, nil, false)
+			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, email, name, nil, nil, true)
 			if err != nil {
 				log.Printf("Error saving admin membership with missing info for external ID %s in Authman %s: %s\n", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
 			} else {
@@ -1042,7 +1144,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 
 			if len(updateOperations) > 0 {
-				err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
+				err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, true)
 				if err != nil {
 					log.Printf("Error on bulk saving membership (phase 2) in Authman '%s': %s\n", *authmanGroup.AuthmanGroup, err)
 				} else {
@@ -1054,15 +1156,14 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Delete removed non-admin members
 	log.Printf("Deleting removed members for Authman %s...\n", *authmanGroup.AuthmanGroup)
-	admin := false
-	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID, &admin)
+	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID)
 	if err != nil {
 		log.Printf("Error deleting removed memberships in Authman %s\n", *authmanGroup.AuthmanGroup)
 	} else {
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
 	}
 
-	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, true, true)
+	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, false, false, true, true)
 	if err != nil {
 		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
 	}
@@ -1088,13 +1189,13 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 
 	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 		return true, true // Should it be a separate notification preference?
-	}), notification.Topic, notification.Subject, notification.Body, notification.Data)
+	}), notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
 
 	return nil
 }
 
-func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
-	app.notifications.SendNotification(recipients, topic, title, text, data)
+func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
+	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
 }
 
 func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
@@ -1127,4 +1228,25 @@ func (app *Application) updateSyncConfig(config model.SyncConfig) error {
 
 func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
 	return app.storage.FindGroupMembership(clientID, groupID, userID)
+}
+
+func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+	searchParams := app.formatCoreAccountSearchParams(researchProfile)
+	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
+}
+
+func (app *Application) formatCoreAccountSearchParams(researchProfile map[string]map[string][]string) map[string]interface{} {
+	searchParams := map[string]interface{}{}
+	for k1, v1 := range researchProfile {
+		for k2, v2 := range v1 {
+			searchParams["profile.unstructured_properties.research_questionnaire_answers."+k1+"."+k2] = map[string]interface{}{"operation": "any", "value": v2}
+		}
+	}
+	// If empty profile is provided, find all users that have filled out the profile
+	//TODO: Handle filled out profile search better
+	if len(searchParams) == 0 {
+		searchParams["profile.unstructured_properties.research_questionnaire_answers.demographics"] = "$exists"
+	}
+
+	return searchParams
 }

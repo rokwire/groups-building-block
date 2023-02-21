@@ -2,9 +2,9 @@
     "app_secret": {
         "INTERNAL_API_KEY": "",
         "GR_MONGO_AUTH": "<mongo-url>",
-        "NOTIFICATIONS_INTERNAL_API_KEY": "",
         "AUTHMAN_PASSWORD": "",
-        "ROKWIRE_API_KEYS": ""
+        "ROKWIRE_API_KEYS": "",
+        "GR_PRIV_KEY": "<service account priv key>"
     },
     "app_config":{
         "PORT": "",
@@ -22,6 +22,9 @@
         "GR_OIDC_EXTENDED_CLIENT_IDS": "",
         "GR_OIDC_ADMIN_CLIENT_ID": "",
         "GR_OIDC_ADMIN_WEB_CLIENT_ID": "",
-        "AUTHMAN_ADMIN_UIN_LIST": ""
+        "AUTHMAN_ADMIN_UIN_LIST": "",
+        "GR_SERVICE_ACCOUNT_ID": "<service account id>",
+        "GROUPS_APP_ID": "",
+        "GROUPS_ORG_ID": ""
     }
 }

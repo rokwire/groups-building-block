@@ -30,10 +30,10 @@ import (
 	"golang.org/x/sync/syncmap"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/authorization"
-	"github.com/rokwire/core-auth-library-go/authservice"
-	"github.com/rokwire/core-auth-library-go/authutils"
-	"github.com/rokwire/core-auth-library-go/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v2/authorization"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authutils"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
 // Auth handler
@@ -73,14 +73,14 @@ func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
 	return clientID, authenticated
 }
 
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
 	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, false, nil, r)
+	user := auth.idTokenAuth.check(clientID, idToken, allowAnonymousCoreToken, nil, r)
 	return clientID, user
 }
 
@@ -187,15 +187,15 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 // NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, authService *authservice.AuthService, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
-	if authService != nil {
+	if serviceRegManager != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
-		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", authService.GetServiceID())
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceRegManager.AuthService.ServiceID)
 
 		// Instantiate TokenAuth instance to perform token validation
 		var err error
-		tokenAuth, err = tokenauth.NewTokenAuth(true, authService, permissionAuth, scopeAuth)
+		tokenAuth, err = tokenauth.NewTokenAuth(true, serviceRegManager, permissionAuth, scopeAuth)
 		if err != nil {
 			log.Fatalf("error instancing token auth: %s", err)
 		}
@@ -258,6 +258,8 @@ func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKe
 type userData struct {
 	UIuceduUIN  *string  `json:"uiucedu_uin"`
 	Sub         *string  `json:"sub"`
+	AppID       *string  `json:"app_id"`
+	OrgID       *string  `json:"org_id"`
 	Aud         *string  `json:"aud"`
 	Email       *string  `json:"email"`
 	Name        *string  `json:"name"`
@@ -335,7 +337,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
+			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID, NetID: netID}
 			isCoreUser = true
 			isAnonymous = claims.Anonymous
@@ -419,9 +421,15 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	//5. Get the user for the provided external id.
-	var name, externalID, email, netID string
+	var name, externalID, email, netID, appID, orgID string
 	if data.Name != nil {
 		name = *data.Name
+	}
+	if data.AppID != nil {
+		appID = *data.AppID
+	}
+	if data.OrgID != nil {
+		orgID = *data.OrgID
 	}
 	if data.UIuceduUIN != nil {
 		externalID = *data.UIuceduUIN
@@ -433,7 +441,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 		netID = *data.NetID
 	}
 	return &model.User{
-		ID: userID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		ID: userID, AppID: appID, OrgID: orgID, ClientID: clientID, ExternalID: externalID, NetID: netID,
 		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
 		Permissions: data.Permissions,
 	}
@@ -520,7 +528,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 			}
 
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, Email: &claims.Email, Name: &claims.Name,
+			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID}
 			isCoreUser = true
 		}
@@ -579,9 +587,15 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		return nil, false
 	}
 
-	var name, externalID, email, userID string
+	var name, externalID, email, userID, appID, orgID string
 	if data.Sub != nil {
 		userID = *data.Sub
+	}
+	if data.AppID != nil {
+		appID = *data.AppID
+	}
+	if data.OrgID != nil {
+		orgID = *data.OrgID
 	}
 	if data.Name != nil {
 		name = *data.Name
@@ -597,6 +611,8 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	}
 	return &model.User{
 		ID:          userID,
+		AppID:       appID,
+		OrgID:       orgID,
 		ClientID:    clientID,
 		ExternalID:  externalID,
 		Email:       email,
@@ -686,7 +702,6 @@ func newAdminAuth(app *core.Application, oidcProvider string, appClientID string
 		if err != nil {
 			log.Fatalln(err)
 		}
-
 		appVerifier = provider.Verifier(&oidc.Config{ClientID: appClientID})
 		webAppVerifier = provider.Verifier(&oidc.Config{ClientID: webAppClientID})
 	}

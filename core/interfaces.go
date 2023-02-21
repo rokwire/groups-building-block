@@ -28,12 +28,14 @@ type Services interface {
 
 	LoginUser(clientID string, currentGetUserGroups *model.User) error
 
+	// TODO: Deprecate this method due to missed CurrentMember!
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError)
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroups(clientID string) ([]model.Group, error)
 	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
@@ -55,7 +57,7 @@ type Services interface {
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
-	UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
 	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, current *model.User, groupID string, postID string, force bool) error
@@ -73,7 +75,7 @@ type Services interface {
 
 	// V3
 	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
-	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
+	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
@@ -86,6 +88,7 @@ type Services interface {
 
 	// Group Notifications
 	SendGroupNotification(clientID string, notification model.GroupNotification) error
+	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 }
 
 type servicesImpl struct {
@@ -96,6 +99,7 @@ func (s *servicesImpl) GetVersion() string {
 	return s.app.getVersion()
 }
 
+// TODO: Deprecate this method due to missed CurrentMember!
 func (s *servicesImpl) GetGroupEntity(clientID string, id string) (*model.Group, error) {
 	return s.app.getGroupEntity(clientID, id)
 }
@@ -114,6 +118,10 @@ func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 	return s.app.updateGroup(clientID, current, group)
+}
+
+func (s *servicesImpl) UpdateGroupDateUpdated(clientID string, groupID string) error {
+	return s.app.updateGroupDateUpdated(clientID, groupID)
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
@@ -188,8 +196,8 @@ func (s *servicesImpl) CreatePost(clientID string, current *model.User, post *mo
 	return s.app.createPost(clientID, current, post, group)
 }
 
-func (s *servicesImpl) UpdatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error) {
-	return s.app.updatePost(clientID, current, post)
+func (s *servicesImpl) UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+	return s.app.updatePost(clientID, current, group, post)
 }
 
 func (s *servicesImpl) ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
@@ -242,24 +250,24 @@ func (s *servicesImpl) CheckUserGroupMembershipPermission(clientID string, curre
 	return s.app.checkUserGroupMembershipPermission(clientID, current, groupID)
 }
 
-func (s *servicesImpl) FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
+func (s *servicesImpl) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	return s.app.findGroupsV3(clientID, filter)
 }
 
 func (s *servicesImpl) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return s.app.storage.FindGroupMemberships(clientID, filter)
+	return s.app.findGroupMemberships(clientID, filter)
 }
 
 func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return s.app.storage.FindGroupMembership(clientID, groupID, userID)
+	return s.app.findGroupMembership(clientID, groupID, userID)
 }
 
 func (s *servicesImpl) FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
-	return s.app.storage.FindGroupMembershipByID(clientID, id)
+	return s.app.findGroupMembershipByID(clientID, id)
 }
 
 func (s *servicesImpl) FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error) {
-	return s.app.storage.FindUserGroupMemberships(clientID, userID)
+	return s.app.findUserGroupMemberships(clientID, userID)
 }
 
 func (s *servicesImpl) CreateMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
@@ -284,6 +292,10 @@ func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, gr
 
 func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification) error {
 	return s.app.sendGroupNotification(clientID, notification)
+}
+
+func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+	return s.app.getResearchProfileUserCount(clientID, current, researchProfile)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -324,7 +336,8 @@ type Storage interface {
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
-	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetStats bool) error
+	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
+	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
@@ -340,12 +353,12 @@ type Storage interface {
 
 	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
-	FindPostsByParentID(clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
+	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
-	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
@@ -358,7 +371,7 @@ type Storage interface {
 	DeleteManagedGroupConfig(id string, clientID string) error
 
 	// V3
-	FindGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error)
+	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 
@@ -366,7 +379,7 @@ type Storage interface {
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
 	BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
-	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string, admin *bool,
+	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error)
 
 	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
@@ -375,7 +388,7 @@ type Storage interface {
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
-	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string, admin *bool) (int64, error)
+	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 }
@@ -391,16 +404,8 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string)
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string)
 	SendMail(toEmail string, subject string, body string)
-}
-
-type notificationsImpl struct {
-	app *Application
-}
-
-func (n *notificationsImpl) SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string) {
-	n.app.sendNotification(recipients, topic, title, text, data)
 }
 
 // Authman exposes Authman APIs for the driver adapters
@@ -416,6 +421,7 @@ type Authman interface {
 type Core interface {
 	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
+	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users

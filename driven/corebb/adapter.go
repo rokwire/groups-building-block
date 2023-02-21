@@ -15,23 +15,28 @@
 package corebb
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"groups/core/model"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
 )
 
 // Adapter implements the Core interface
 type Adapter struct {
-	coreURL string
+	coreURL               string
+	serviceAccountManager *authservice.ServiceAccountManager
 }
 
 // NewCoreAdapter creates a new adapter for Core API
-func NewCoreAdapter(coreURL string) *Adapter {
-	return &Adapter{coreURL: coreURL}
+func NewCoreAdapter(coreURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
+	return &Adapter{coreURL: coreURL, serviceAccountManager: serviceAccountManager}
 }
 
 // RetrieveCoreUserAccount retrieves Core user account
@@ -113,4 +118,72 @@ func (a *Adapter) RetrieveCoreServices(serviceIDs []string) ([]model.CoreService
 		return coreServices, nil
 	}
 	return nil, nil
+}
+
+// GetAccountsCount retrieves account count for provided params
+func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error) {
+	if a.serviceAccountManager == nil {
+		log.Println("GetAccountsCount: service account manager is nil")
+		return 0, errors.New("service account manager is nil")
+	}
+
+	url := fmt.Sprintf("%s/bbs/accounts/count", a.coreURL)
+	queryString := ""
+	if appID != nil {
+		queryString += "?app_id=" + *appID
+	}
+	if orgID != nil {
+		if queryString == "" {
+			queryString += "?"
+		} else {
+			queryString += "&"
+		}
+		queryString += "org_id=" + *orgID
+	}
+	bodyBytes, err := json.Marshal(searchParams)
+	if err != nil {
+		log.Printf("GetAccountsCount: error marshalling body - %s", err)
+		return 0, err
+	}
+
+	req, err := http.NewRequest("POST", url+queryString, bytes.NewReader(bodyBytes))
+	if err != nil {
+		log.Printf("GetAccountsCount: error creating request - %s", err)
+		return 0, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	appIDVal := "all"
+	if appID != nil {
+		appIDVal = *appID
+	}
+	orgIDVal := "all"
+	if orgID != nil {
+		appIDVal = *orgID
+	}
+	resp, err := a.serviceAccountManager.MakeRequest(req, appIDVal, orgIDVal)
+	if err != nil {
+		log.Printf("GetAccountsCount: error sending request - %s", err)
+		return 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("GetAccountsCount: error with response code - %d", resp.StatusCode)
+		return 0, fmt.Errorf("GetAccountsCount: error with response code != 200")
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("GetAccountsCount: unable to read json: %s", err)
+		return 0, fmt.Errorf("GetAccountsCount: unable to parse json: %s", err)
+	}
+
+	var count int64
+	err = json.Unmarshal(data, &count)
+	if err != nil {
+		log.Printf("GetAccountsCount: unable to parse json: %s", err)
+		return 0, fmt.Errorf("GetAccountsCount: unable to parse json: %s", err)
+	}
+
+	return count, nil
 }

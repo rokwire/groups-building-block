@@ -6,6 +6,140 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.1] - 2023-02-14
+### Fixed
+- Fix cast error within Tags backward compatibility handling [#357](https://github.com/rokwire/groups-building-block/issues/357)
+
+## [1.16.0] - 2023-02-07
+### Added
+- Introduce category and tags backward compatibility [#355](https://github.com/rokwire/groups-building-block/issues/355)
+
+## [1.15.0] - 2023-02-01
+### Added
+- Add indexes for the nested attributes [#351](https://github.com/rokwire/groups-building-block/issues/351)
+### Changed
+- Remove category validation on create & update group operations [#352](https://github.com/rokwire/groups-building-block/issues/352)
+
+## [1.14.0] - 2023-01-30
+### Added
+- Integrate govulncheck within the build process [#319](https://github.com/rokwire/groups-building-block/issues/319)
+### Changed
+- Rename group filters to attributes [#348](https://github.com/rokwire/groups-building-block/issues/348)
+
+## [1.13.0] - 2023-01-26
+### Added
+- Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)
+
+## [1.12.3] - 2023-01-23
+### Security
+- Use admin token check for delete group membership admin API
+
+## [1.12.2] - 2023-01-23
+### Fixed
+- Incorrect membership "status" for admins in managed group sync [#341](https://github.com/rokwire/groups-building-block/issues/341)
+
+## [1.12.1] - 2023-01-23
+### Fixed
+- Additional fixes that improves the admin client APIs [#339](https://github.com/rokwire/groups-building-block/issues/339)
+
+## [1.12.0] - 2023-01-20
+### Added
+- Add membership retrieve, update & delete admin APIs [#339](https://github.com/rokwire/groups-building-block/issues/339)
+
+## [1.11.0] - 2023-01-13
+### Added
+- Create internal API for updating group's date updated [#335](https://github.com/rokwire/groups-building-block/issues/335)
+
+## [1.10.1] - 2023-01-10
+### Changed
+- Split date modified field and introduce member & managed member modified date fields [#330](https://github.com/rokwire/groups-building-block/issues/330)
+
+## [1.9.5] - 2023-01-04
+### Changed
+- Report of offensive speech automatic title [#328](https://github.com/rokwire/groups-building-block/issues/328)
+
+## [1.9.4] - 2022-12-21
+### Changed
+- Group admins must not see direct messages if they are not listed explicitly within. the ACL list[#326](https://github.com/rokwire/groups-building-block/issues/326)
+
+## [1.9.3] - 2022-12-20
+### Fixed
+- Delete group post request fails [#321](https://github.com/rokwire/groups-building-block/issues/321)
+
+## [1.9.2] - 2022-12-14
+### Fixed
+- Admin must make posts and reactions no matter of group settings [#315](https://github.com/rokwire/groups-building-block/issues/315)
+
+## [1.9.1] - 2022-12-14
+### Changed 
+- Change the group sorting only to title [#313](https://github.com/rokwire/groups-building-block/issues/313)
+### Fixed
+- Fix backward compatibility for old clients which don't support group settings [#311](https://github.com/rokwire/groups-building-block/issues/311)
+
+
+## [1.9.0] - 2022-12-07
+### Added
+- Add group settings and preferences [#309](https://github.com/rokwire/groups-building-block/issues/309)
+
+## [1.8.0] - 2022-12-01
+### Added
+- Send notification to potential research group candidates [#298](https://github.com/rokwire/groups-building-block/issues/298)
+
+## [1.7.6] - 2022-11-28
+### Fixed
+- Fix inappropriate permission check in GET /api/group/{groupId}/posts/{postId} request [#305](https://github.com/rokwire/groups-building-block/issues/305)
+
+## [1.7.5] - 2022-11-23
+### Changed
+- Upgrade auth library [#303](https://github.com/rokwire/groups-building-block/issues/303)
+
+## [1.7.4] - 2022-11-22
+### Changed
+- Disable auto join feature for research groups [#301](https://github.com/rokwire/groups-building-block/issues/301)
+
+## [1.7.3] - 2022-11-21
+### Fixed
+- Count of users matching research profile wrong for empty profile [#299](https://github.com/rokwire/groups-building-block/issues/299)
+
+## [1.7.2] - 2022-11-18
+### Added
+- Set appID and orgID for notifications [#268](https://github.com/rokwire/groups-building-block/issues/268)
+
+## [1.7.1] - 2022-11-18
+### Added
+- Add ability to exclude user's groups from response [#295](https://github.com/rokwire/groups-building-block/issues/295)
+### Fixed
+- Bad title index produce wrong client error for unique title violation [#296](https://github.com/rokwire/groups-building-block/issues/296)
+
+## [1.7.0] - 2022-11-16
+### Added
+- Add API to get count of users matching research profile [#291](https://github.com/rokwire/groups-building-block/issues/291)
+### Changed
+- Upgrade auth library [#290](https://github.com/rokwire/groups-building-block/issues/290)
+
+## [1.6.7] - 2022-11-16
+### Changed
+- Improvement of the original ticket: (research_confirmation is renamed to research_consent_statement and added new field with name research_consent_details)[#288](https://github.com/rokwire/groups-building-block/issues/288)
+
+## [1.6.6] - 2022-11-15
+### Added
+- Add research_confirmation field within the group [#288](https://github.com/rokwire/groups-building-block/issues/288)
+- Bad transaction handling on delete post and delete user data [#287](https://github.com/rokwire/groups-building-block/issues/287)
+
+## [1.6.5] - 2022-11-14
+### Fixed
+- Wrong property name usage for membership notification preferences for create/update membership records [#285](https://github.com/rokwire/groups-building-block/issues/285)
+
+## [1.6.4] - 2022-11-10
+### Fixed
+GET /v2/groups doesn't support anonymous users (tokens) [#282](https://github.com/rokwire/groups-building-block/issues/282)
+
+## [1.6.3] - 2022-11-09
+### Changed
+- Included additional setting to mute all notifications to the original feature [#270](https://github.com/rokwire/groups-building-block/issues/270)
+### Fixed
+- Fix bad group stats bug [#279](https://github.com/rokwire/groups-building-block/issues/279)
+
 ## [1.6.2] - 2022-11-03
 ### Added
 - Override update notifications preferences [#270](https://github.com/rokwire/groups-building-block/issues/270)
