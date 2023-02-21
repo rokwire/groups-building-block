@@ -33,12 +33,17 @@ type Group struct {
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
 
+	Settings   *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
+	Attributes map[string]interface{} `json:"attributes" bson:"attributes"`
+
 	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
 	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`
 	Stats         GroupStats       `json:"stats" bson:"stats"`
 
-	DateCreated time.Time  `json:"date_created" bson:"date_created"`
-	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
+	DateCreated                  time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated                  *time.Time `json:"date_updated" bson:"date_updated"`
+	DateMembershipUpdated        *time.Time `json:"date_membership_updated" bson:"date_membership_updated"`
+	DateManagedMembershipUpdated *time.Time `json:"date_managed_membership_updated" bson:"date_managed_membership_updated"`
 
 	AuthmanEnabled             bool    `json:"authman_enabled" bson:"authman_enabled"`
 	AuthmanGroup               *string `json:"authman_group" bson:"authman_group"`
@@ -47,10 +52,12 @@ type Group struct {
 	BlockNewMembershipRequests bool    `json:"block_new_membership_requests" bson:"block_new_membership_requests"`
 	AttendanceGroup            bool    `json:"attendance_group" bson:"attendance_group"`
 
-	ResearchOpen        bool                           `json:"research_open" bson:"research_open"`
-	ResearchGroup       bool                           `json:"research_group" bson:"research_group"`
-	ResearchDescription string                         `json:"research_description" bson:"research_description"`
-	ResearchProfile     map[string]map[string][]string `json:"research_profile" bson:"research_profile"`
+	ResearchOpen             bool                           `json:"research_open" bson:"research_open"`
+	ResearchGroup            bool                           `json:"research_group" bson:"research_group"`
+	ResearchConsentStatement string                         `json:"research_consent_statement" bson:"research_consent_statement"`
+	ResearchConsentDetails   string                         `json:"research_consent_details" bson:"research_consent_details"`
+	ResearchDescription      string                         `json:"research_description" bson:"research_description"`
+	ResearchProfile          map[string]map[string][]string `json:"research_profile" bson:"research_profile"`
 
 	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
@@ -79,7 +86,7 @@ func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection
 }
 
 // CreateMembershipEmptyAnswers creates membership empty answers list for the exact number of questions
-func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
+func (gr *Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 
 	var answers []MemberAnswer
 	if len(gr.MembershipQuestions) > 0 {
@@ -95,6 +102,52 @@ func (gr Group) CreateMembershipEmptyAnswers() []MemberAnswer {
 }
 
 // IsAuthmanSyncEligible Checks if the group has all required artefacts for an Authman Synchronization
-func (gr Group) IsAuthmanSyncEligible() bool {
+func (gr *Group) IsAuthmanSyncEligible() bool {
 	return gr.AuthmanEnabled && gr.AuthmanGroup != nil && *gr.AuthmanGroup != ""
+}
+
+// GetNewCategory gets new category attribute
+func (gr *Group) GetNewCategory() *string {
+	if gr.Attributes != nil {
+		if val, ok := gr.Attributes["category"]; ok {
+			category := val.(string)
+			return &category
+		}
+	}
+	return nil
+}
+
+// SetNewCategory Sets new category attribute
+func (gr *Group) SetNewCategory(category string) {
+	if gr.Attributes == nil {
+		gr.Attributes = map[string]interface{}{}
+	}
+	gr.Attributes["category"] = category
+}
+
+// GetNewTags Gets new tags attribute
+func (gr *Group) GetNewTags() []string {
+	if gr.Attributes != nil {
+		if val, ok := gr.Attributes["tags"]; ok {
+
+			if interfaceList, ok := val.([]interface{}); ok {
+				stringList := []string{}
+				for _, v := range interfaceList {
+					if stringValue, ok := v.(string); ok {
+						stringList = append(stringList, stringValue)
+					}
+				}
+				return stringList
+			}
+		}
+	}
+	return nil
+}
+
+// SetNewTags Sets new tags attribute
+func (gr *Group) SetNewTags(tags []string) {
+	if gr.Attributes == nil {
+		gr.Attributes = map[string]interface{}{}
+	}
+	gr.Attributes["tags"] = tags
 }

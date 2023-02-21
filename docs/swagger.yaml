@@ -36,6 +36,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -53,6 +56,10 @@ definitions:
         $ref: '#/definitions/GroupMembership'
         description: this is indicative and it's not required for update APIs
       date_created:
+        type: string
+      date_managed_membership_updated:
+        type: string
+      date_membership_updated:
         type: string
       date_updated:
         type: string
@@ -77,6 +84,10 @@ definitions:
       privacy:
         description: public or private
         type: string
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -91,6 +102,10 @@ definitions:
             type: array
           type: object
         type: object
+      settings:
+        $ref: '#/definitions/GroupSettings'
+        description: 'TODO: Remove the pointer once the backward support is not needed
+          any more!'
       stats:
         $ref: '#/definitions/GroupStats'
       sync_end_time:
@@ -108,8 +123,6 @@ definitions:
     type: object
   GroupMembership:
     properties:
-      admin:
-        type: boolean
       client_id:
         type: string
       date_attended:
@@ -141,14 +154,20 @@ definitions:
       reject_reason:
         type: string
       status:
-        description: 'TODO: This is dangerous code-breaking change. There are existing
-          clients that may use it in the old way.'
+        description: admin, pending, member, rejected
         type: string
       sync_id:
         description: ID of sync that last updated this membership
         type: string
       user_id:
         type: string
+    type: object
+  GroupSettings:
+    properties:
+      member_info_preferences:
+        $ref: '#/definitions/MemberInfoPreferences'
+      post_preferences:
+        $ref: '#/definitions/PostPreferences'
     type: object
   GroupStat:
     properties:
@@ -179,9 +198,19 @@ definitions:
     type: object
   GroupsFilter:
     properties:
+      attributes:
+        additionalProperties: true
+        type: object
       category:
         description: group category
         type: string
+      exclude_my_groups:
+        description: Exclude My groups
+        type: boolean
+      hidden:
+        description: 'Filter by hidden flag. Values: true (show only hidden), false
+          (show only not hidden), missing - don''t do any filtering on this field.'
+        type: boolean
       ids:
         description: membership id
         items:
@@ -301,6 +330,19 @@ definitions:
       question:
         type: string
     type: object
+  MemberInfoPreferences:
+    properties:
+      allow_member_info:
+        type: boolean
+      can_view_member_email:
+        type: boolean
+      can_view_member_name:
+        type: boolean
+      can_view_member_net_id:
+        type: boolean
+      can_view_member_phone:
+        type: boolean
+    type: object
   MembershipFilter:
     properties:
       external_id:
@@ -342,6 +384,8 @@ definitions:
     type: object
   NotificationsPreferences:
     properties:
+      all_mute:
+        type: boolean
       events_mute:
         type: boolean
       invitations_mute:
@@ -351,6 +395,21 @@ definitions:
       polls_mute:
         type: boolean
       posts_mute:
+        type: boolean
+    type: object
+  PostPreferences:
+    properties:
+      allow_send_post:
+        type: boolean
+      can_send_post_reactions:
+        type: boolean
+      can_send_post_replies:
+        type: boolean
+      can_send_post_to_admins:
+        type: boolean
+      can_send_post_to_all:
+        type: boolean
+      can_send_post_to_specific_members:
         type: boolean
     type: object
   Sender:
@@ -401,6 +460,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -432,6 +494,10 @@ definitions:
         - public
         - private
         type: string
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -446,6 +512,8 @@ definitions:
             type: array
           type: object
         type: object
+      settings:
+        $ref: '#/definitions/GroupSettings'
       tags:
         items:
           type: string
@@ -455,7 +523,6 @@ definitions:
       web_url:
         type: string
     required:
-    - category
     - privacy
     - title
     type: object
@@ -499,7 +566,7 @@ definitions:
               type: string
           type: object
         type: array
-      notification_preferences:
+      notifications_preferences:
         $ref: '#/definitions/NotificationsPreferences'
     type: object
   createResponse:
@@ -667,6 +734,54 @@ definitions:
     required:
     - approve
     type: object
+  model.Post:
+    properties:
+      body:
+        type: string
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      image_url:
+        type: string
+      is_abuse:
+        type: boolean
+      member:
+        $ref: '#/definitions/Creator'
+      parent_id:
+        type: string
+      private:
+        type: boolean
+      reactions:
+        additionalProperties:
+          items:
+            type: string
+          type: array
+        type: object
+      replies:
+        description: This is constructed by the code (ParentID)
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+      subject:
+        type: string
+      to_members:
+        description: nil or empty means everyone; non-empty means visible to those
+          user ids and admins
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+      top_parent_id:
+        type: string
+      use_as_notification:
+        type: boolean
+    type: object
   model.SyncConfig:
     properties:
       client_id:
@@ -694,21 +809,6 @@ definitions:
         type: boolean
       send_to_group_admins:
         type: boolean
-    type: object
-  rest.postResponse:
-    properties:
-      body:
-        type: string
-      group_id:
-        type: string
-      id:
-        type: string
-      parent_id:
-        type: string
-      private:
-        type: boolean
-      subject:
-        type: string
     type: object
   rest.userGroupShortDetail:
     properties:
@@ -752,6 +852,9 @@ definitions:
     properties:
       attendance_group:
         type: boolean
+      attributes:
+        additionalProperties: true
+        type: object
       authman_enabled:
         type: boolean
       authman_group:
@@ -779,6 +882,10 @@ definitions:
         - public
         - private
         type: string
+      research_consent_details:
+        type: string
+      research_consent_statement:
+        type: string
       research_description:
         type: string
       research_group:
@@ -793,6 +900,8 @@ definitions:
             type: array
           type: object
         type: object
+      settings:
+        $ref: '#/definitions/GroupSettings'
       tags:
         items:
           type: string
@@ -802,7 +911,6 @@ definitions:
       web_url:
         type: string
     required:
-    - category
     - privacy
     - title
     type: object
@@ -810,7 +918,7 @@ definitions:
     properties:
       date_attended:
         type: string
-      notification_preferences:
+      notifications_preferences:
         $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
@@ -825,7 +933,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.6.1
+  version: 1.12.3
 paths:
   /admin/authman/synchronize:
     post:
@@ -901,12 +1009,46 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin-V1
+  /api/admin/group/{group-id}/members:
+    get:
+      consumes:
+      - text/plain
+      description: Gets the list of group members.
+      operationId: AdminGetGroupMembers
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMembership'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
   /api/admin/group/{group-id}/stats:
     get:
       consumes:
       - application/json
       description: Retrieves stats for a group by id
-      operationId: GetGroupStats
+      operationId: AdminGetGroupStats
       parameters:
       - description: APP
         in: header
@@ -928,7 +1070,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Admin-V1
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -944,7 +1086,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/rest.postResponse'
+              $ref: '#/definitions/model.Post'
             type: array
       security:
       - AppUserAuth: []
@@ -1159,6 +1301,63 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/memberships/{membership-id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes a membership
+      operationId: AdminDeleteMembership
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
+    put:
+      consumes:
+      - application/json
+      description: Updates a membership. Only the status can be changed.
+      operationId: AdminUpdateMembership
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateMembershipRequest'
+      - description: Membership ID
+        in: path
+        name: membership-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V1
   /api/admin/sync-configs:
     get:
       consumes:
@@ -1639,7 +1838,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/Member'
+              $ref: '#/definitions/GroupMembership'
             type: array
       security:
       - AppUserAuth: []
@@ -1738,6 +1937,34 @@ paths:
       - AppUserAuth: []
       tags:
       - Client-V1
+  /api/group/{group-id}/stats:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves stats for a group by id
+      operationId: GetGroupStats
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupStats'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -1753,7 +1980,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/rest.postResponse'
+              $ref: '#/definitions/model.Post'
             type: array
       security:
       - AppUserAuth: []
@@ -1778,7 +2005,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1819,7 +2046,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1840,7 +2067,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/rest.postResponse'
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2072,6 +2299,32 @@ paths:
       - AppUserAuth: []
       tags:
       - Client-V1
+  /api/int/group/{group-id}/date_updated:
+    post:
+      consumes:
+      - application/json
+      description: Updates the date updated field of the desired group
+      operationId: IntUpdateGroupDateUpdated
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Internal
   /api/int/group/{group-id}/events:
     post:
       consumes:
@@ -2327,6 +2580,39 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
+  /api/research-profile/user-count:
+    post:
+      consumes:
+      - application/json
+      description: Retrieves the user count matching the provided research profile
+      operationId: GetResearchProfileUserCount
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Research profile
+        in: body
+        name: data
+        required: true
+        schema:
+          additionalProperties:
+            additionalProperties:
+              items:
+                type: string
+              type: array
+            type: object
+          type: object
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: integer
       security:
       - AppUserAuth: []
       tags:
@@ -2650,7 +2936,7 @@ paths:
       tags:
       - Client-V1
 schemes:
-- https
+- http
 securityDefinitions:
   APIKeyAuth:
     in: header

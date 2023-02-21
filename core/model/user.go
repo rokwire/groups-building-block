@@ -19,6 +19,8 @@ import "time"
 // User represents user entity
 type User struct {
 	ID            string     `json:"id" bson:"_id"`
+	AppID         string     `json:"app_id"`
+	OrgID         string     `json:"org_id"`
 	IsAnonymous   bool       `json:"is_anonymous" bson:"is_anonymous"`
 	IsCoreUser    bool       `json:"is_core_user" bson:"is_core_user"`
 	ExternalID    string     `json:"external_id" bson:"external_id"`

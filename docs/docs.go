@@ -133,6 +133,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/group/{group-id}/members": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets the list of group members.",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin-V1"
+                ],
+                "operationId": "AdminGetGroupMembers",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MembershipFilter"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupMembership"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/group/{group-id}/stats": {
             "get": {
                 "security": [
@@ -145,9 +198,9 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Admin-V1"
                 ],
-                "operationId": "GetGroupStats",
+                "operationId": "AdminGetGroupStats",
                 "parameters": [
                     {
                         "type": "string",
@@ -204,7 +257,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/rest.postResponse"
+                                "$ref": "#/definitions/model.Post"
                             }
                         }
                     }
@@ -521,6 +574,95 @@ const docTemplate = `{
                         "type": "string",
                         "description": "ID",
                         "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/admin/memberships/{membership-id}": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a membership. Only the status can be changed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V1"
+                ],
+                "operationId": "AdminUpdateMembership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/updateMembershipRequest"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Membership ID",
+                        "name": "membership-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Deletes a membership",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin-V1"
+                ],
+                "operationId": "AdminDeleteMembership",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Membership ID",
+                        "name": "membership-id",
                         "in": "path",
                         "required": true
                     }
@@ -1219,7 +1361,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/Member"
+                                "$ref": "#/definitions/GroupMembership"
                             }
                         }
                     }
@@ -1408,6 +1550,50 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{group-id}/stats": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves stats for a group by id",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetGroupStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupStats"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{groupID}/posts": {
             "get": {
                 "security": [
@@ -1438,7 +1624,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/rest.postResponse"
+                                "$ref": "#/definitions/model.Post"
                             }
                         }
                     }
@@ -1479,7 +1665,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/model.Post"
                         }
                     }
                 }
@@ -1516,7 +1702,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/model.Post"
                         }
                     }
                 }
@@ -1551,7 +1737,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.postResponse"
+                            "$ref": "#/definitions/model.Post"
                         }
                     }
                 }
@@ -1983,6 +2169,47 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/int/group/{group-id}/date_updated": {
+            "post": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Updates the date updated field of the desired group",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Internal"
+                ],
+                "operationId": "IntUpdateGroupDateUpdated",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/int/group/{group-id}/events": {
             "post": {
                 "security": [
@@ -2333,6 +2560,58 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/research-profile/user-count": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Retrieves the user count matching the provided research profile",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetResearchProfileUserCount",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "Research profile",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "object",
+                                "additionalProperties": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "integer"
                         }
                     }
                 }
@@ -2861,6 +3140,10 @@ const docTemplate = `{
                 "attendance_group": {
                     "type": "boolean"
                 },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "authman_enabled": {
                     "type": "boolean"
                 },
@@ -2885,6 +3168,12 @@ const docTemplate = `{
                     "$ref": "#/definitions/GroupMembership"
                 },
                 "date_created": {
+                    "type": "string"
+                },
+                "date_managed_membership_updated": {
+                    "type": "string"
+                },
+                "date_membership_updated": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -2921,6 +3210,12 @@ const docTemplate = `{
                     "description": "public or private",
                     "type": "string"
                 },
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -2941,6 +3236,10 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "settings": {
+                    "description": "TODO: Remove the pointer once the backward support is not needed any more!",
+                    "$ref": "#/definitions/GroupSettings"
                 },
                 "stats": {
                     "$ref": "#/definitions/GroupStats"
@@ -2968,9 +3267,6 @@ const docTemplate = `{
         "GroupMembership": {
             "type": "object",
             "properties": {
-                "admin": {
-                    "type": "boolean"
-                },
                 "client_id": {
                     "type": "string"
                 },
@@ -3017,7 +3313,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "description": "TODO: This is dangerous code-breaking change. There are existing clients that may use it in the old way.",
+                    "description": "admin, pending, member, rejected",
                     "type": "string"
                 },
                 "sync_id": {
@@ -3026,6 +3322,17 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "GroupSettings": {
+            "type": "object",
+            "properties": {
+                "member_info_preferences": {
+                    "$ref": "#/definitions/MemberInfoPreferences"
+                },
+                "post_preferences": {
+                    "$ref": "#/definitions/PostPreferences"
                 }
             }
         },
@@ -3073,9 +3380,21 @@ const docTemplate = `{
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
                 "category": {
                     "description": "group category",
                     "type": "string"
+                },
+                "exclude_my_groups": {
+                    "description": "Exclude My groups",
+                    "type": "boolean"
+                },
+                "hidden": {
+                    "description": "Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.",
+                    "type": "boolean"
                 },
                 "ids": {
                     "description": "membership id",
@@ -3252,6 +3571,26 @@ const docTemplate = `{
                 }
             }
         },
+        "MemberInfoPreferences": {
+            "type": "object",
+            "properties": {
+                "allow_member_info": {
+                    "type": "boolean"
+                },
+                "can_view_member_email": {
+                    "type": "boolean"
+                },
+                "can_view_member_name": {
+                    "type": "boolean"
+                },
+                "can_view_member_net_id": {
+                    "type": "boolean"
+                },
+                "can_view_member_phone": {
+                    "type": "boolean"
+                }
+            }
+        },
         "MembershipFilter": {
             "type": "object",
             "properties": {
@@ -3309,6 +3648,9 @@ const docTemplate = `{
         "NotificationsPreferences": {
             "type": "object",
             "properties": {
+                "all_mute": {
+                    "type": "boolean"
+                },
                 "events_mute": {
                     "type": "boolean"
                 },
@@ -3322,6 +3664,29 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "posts_mute": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "PostPreferences": {
+            "type": "object",
+            "properties": {
+                "allow_send_post": {
+                    "type": "boolean"
+                },
+                "can_send_post_reactions": {
+                    "type": "boolean"
+                },
+                "can_send_post_replies": {
+                    "type": "boolean"
+                },
+                "can_send_post_to_admins": {
+                    "type": "boolean"
+                },
+                "can_send_post_to_all": {
+                    "type": "boolean"
+                },
+                "can_send_post_to_specific_members": {
                     "type": "boolean"
                 }
             }
@@ -3396,13 +3761,16 @@ const docTemplate = `{
         "createGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
             "properties": {
                 "attendance_group": {
                     "type": "boolean"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "authman_enabled": {
                     "type": "boolean"
@@ -3450,6 +3818,12 @@ const docTemplate = `{
                         "private"
                     ]
                 },
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -3470,6 +3844,9 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "settings": {
+                    "$ref": "#/definitions/GroupSettings"
                 },
                 "tags": {
                     "type": "array",
@@ -3546,7 +3923,7 @@ const docTemplate = `{
                         }
                     }
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 }
             }
@@ -3800,6 +4177,76 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Post": {
+            "type": "object",
+            "properties": {
+                "body": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "is_abuse": {
+                    "type": "boolean"
+                },
+                "member": {
+                    "$ref": "#/definitions/Creator"
+                },
+                "parent_id": {
+                    "type": "string"
+                },
+                "private": {
+                    "type": "boolean"
+                },
+                "reactions": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "replies": {
+                    "description": "This is constructed by the code (ParentID)",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Post"
+                    }
+                },
+                "subject": {
+                    "type": "string"
+                },
+                "to_members": {
+                    "description": "nil or empty means everyone; non-empty means visible to those user ids and admins",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                },
+                "top_parent_id": {
+                    "type": "string"
+                },
+                "use_as_notification": {
+                    "type": "boolean"
+                }
+            }
+        },
         "model.SyncConfig": {
             "type": "object",
             "properties": {
@@ -3837,29 +4284,6 @@ const docTemplate = `{
                 },
                 "send_to_group_admins": {
                     "type": "boolean"
-                }
-            }
-        },
-        "rest.postResponse": {
-            "type": "object",
-            "properties": {
-                "body": {
-                    "type": "string"
-                },
-                "group_id": {
-                    "type": "string"
-                },
-                "id": {
-                    "type": "string"
-                },
-                "parent_id": {
-                    "type": "string"
-                },
-                "private": {
-                    "type": "boolean"
-                },
-                "subject": {
-                    "type": "string"
                 }
             }
         },
@@ -3923,13 +4347,16 @@ const docTemplate = `{
         "updateGroupRequest": {
             "type": "object",
             "required": [
-                "category",
                 "privacy",
                 "title"
             ],
             "properties": {
                 "attendance_group": {
                     "type": "boolean"
+                },
+                "attributes": {
+                    "type": "object",
+                    "additionalProperties": true
                 },
                 "authman_enabled": {
                     "type": "boolean"
@@ -3971,6 +4398,12 @@ const docTemplate = `{
                         "private"
                     ]
                 },
+                "research_consent_details": {
+                    "type": "string"
+                },
+                "research_consent_statement": {
+                    "type": "string"
+                },
                 "research_description": {
                     "type": "string"
                 },
@@ -3991,6 +4424,9 @@ const docTemplate = `{
                             }
                         }
                     }
+                },
+                "settings": {
+                    "$ref": "#/definitions/GroupSettings"
                 },
                 "tags": {
                     "type": "array",
@@ -4015,7 +4451,7 @@ const docTemplate = `{
                 "date_attended": {
                     "type": "string"
                 },
-                "notification_preferences": {
+                "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
                 },
                 "status": {
@@ -4049,10 +4485,10 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.6.1",
+	Version:          "1.12.3",
 	Host:             "localhost",
 	BasePath:         "/gr",
-	Schemes:          []string{"https"},
+	Schemes:          []string{"http"},
 	Title:            "Rokwire Groups Building Block API",
 	Description:      "Rokwire Groups Building Block API Documentation.",
 	InfoInstanceName: "swagger",

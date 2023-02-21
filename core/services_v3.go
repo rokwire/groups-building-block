@@ -25,12 +25,34 @@ func (app *Application) checkUserGroupMembershipPermission(clientID string, curr
 	return nil, false
 }
 
-func (app *Application) findGroupsV3(clientID string, filter *model.GroupsFilter) ([]model.Group, error) {
+func (app *Application) findGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	return app.storage.FindGroupsV3(clientID, filter)
 }
 
 func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return app.storage.FindGroupMemberships(clientID, filter)
+	collection, err := app.storage.FindGroupMemberships(clientID, filter)
+
+	if len(filter.GroupIDs) > 0 {
+		groups, err := app.findGroupsV3(clientID, model.GroupsFilter{
+			GroupIDs: filter.GroupIDs,
+		})
+		if err != nil {
+			return model.MembershipCollection{}, fmt.Errorf("app.findGroupMemberships() error: %s", err)
+		}
+
+		groupIDMapping := map[string]model.Group{}
+		for _, group := range groups {
+			groupIDMapping[group.ID] = group
+		}
+
+		for index, member := range collection.Items {
+			if group, ok := groupIDMapping[member.GroupID]; ok {
+				collection.Items[index].ApplyGroupSettings(group.Settings)
+			}
+		}
+	}
+
+	return collection, err
 }
 
 func (app *Application) findGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
@@ -61,7 +83,8 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 	if err == nil && len(adminMemberships.Items) > 0 {
 		if len(adminMemberships.Items) > 0 {
 			recipients := adminMemberships.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-				return true, member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.InvitationsMuted
+				return true, member.NotificationsPreferences.OverridePreferences &&
+					(member.NotificationsPreferences.InvitationsMuted || member.NotificationsPreferences.AllMute)
 			})
 
 			if len(recipients) > 0 {
@@ -84,6 +107,9 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 						"entity_id":   group.ID,
 						"entity_name": group.Title,
 					},
+					nil,
+					current.AppID,
+					current.OrgID,
 				)
 			}
 		}
@@ -131,7 +157,8 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 	})
 	if err == nil && len(memberships.Items) > 0 {
 		recipients := memberships.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-			return member.UserID != current.ID, member.NotificationsPreferences.OverridePreferences && member.NotificationsPreferences.InvitationsMuted
+			return member.UserID != current.ID, member.NotificationsPreferences.OverridePreferences &&
+				(member.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)
 		})
 
 		var message string
@@ -155,6 +182,9 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
+				nil,
+				current.AppID,
+				current.OrgID,
 			)
 
 		}

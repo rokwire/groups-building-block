@@ -24,7 +24,7 @@ import (
 	"net/http"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
 
 	"github.com/gorilla/mux"
 
@@ -44,10 +44,10 @@ type Adapter struct {
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.6.1
+// @version 1.12.3
 // @host localhost
 // @BasePath /gr
-// @schemes https
+// @schemes http
 
 // @securityDefinitions.apikey APIKeyAuth
 // @in header
@@ -84,11 +84,14 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembers)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/events", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts/{postID}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMembership)).Methods("PUT")
+	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMembership)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetManagedGroupConfigs)).Methods("GET")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateManagedGroupConfig)).Methods("POST")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateManagedGroupConfig)).Methods("PUT")
@@ -102,13 +105,14 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/group/title/{title}/members", we.internalKeyAuthFunc(we.internalApisHandler.IntGetGroupMembersByGroupTitle)).Methods("GET")
 	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.internalApisHandler.SynchronizeAuthman)).Methods("POST")
 	restSubrouter.HandleFunc("/int/stats", we.internalKeyAuthFunc(we.internalApisHandler.GroupStats)).Methods("GET")
+	restSubrouter.HandleFunc("/int/group/{group-id}/date_updated", we.internalKeyAuthFunc(we.internalApisHandler.UpdateGroupDateUpdated)).Methods("POST")
 	restSubrouter.HandleFunc("/int/group/{group-id}/events", we.internalKeyAuthFunc(we.internalApisHandler.CreateGroupEvent)).Methods("POST")
 	restSubrouter.HandleFunc("/int/group/{group-id}/events/{event-id}", we.internalKeyAuthFunc(we.internalApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// V2 Client APIs
-	restSubrouter.HandleFunc("/v2/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
-	restSubrouter.HandleFunc("/v2/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupV2)).Methods("GET")
+	restSubrouter.HandleFunc("/v2/groups", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
+	restSubrouter.HandleFunc("/v2/groups/{id}", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupV2)).Methods("GET")
 	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 
 	//V1 Client APIs
@@ -118,7 +122,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	restSubrouter.HandleFunc("/user/login", we.idTokenAuthWrapFunc(we.apisHandler.LoginUser)).Methods("GET")
 	restSubrouter.HandleFunc("/user/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetUserStats)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{id}/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{id}/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
@@ -146,6 +150,8 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/reactions", we.idTokenAuthWrapFunc(we.apisHandler.ReactToGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroupPost)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPost)).Methods("DELETE")
+
+	restSubrouter.HandleFunc("/research-profile/user-count", we.adminIDTokenAuthWrapFunc(we.apisHandler.GetResearchProfileUserCount)).Methods("POST")
 
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
@@ -197,7 +203,22 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user := we.auth.idTokenCheck(w, req)
+		clientID, user := we.auth.idTokenCheck(w, req, false)
+		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		handler(clientID, user, w, req)
+	}
+}
+
+func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		clientID, user := we.auth.idTokenCheck(w, req, true)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
@@ -279,11 +300,11 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, authService *authservice.AuthService, groupServiceURL string) *Adapter {
+	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
-		oidcAdminWebClientID, authService, groupServiceURL, authorization)
+		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)

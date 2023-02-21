@@ -349,7 +349,15 @@ func (collWrapper *collectionWrapper) Watch(pipeline interface{}) error {
 }
 
 func (collWrapper *collectionWrapper) ListIndexes() ([]bson.M, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
+	return collWrapper.ListIndexesWithContext(nil)
+}
+
+func (collWrapper *collectionWrapper) ListIndexesWithContext(ctx context.Context) ([]bson.M, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*15000)
 	defer cancel()
 
 	indexes, err := collWrapper.coll.Indexes().List(ctx, nil)
@@ -368,7 +376,16 @@ func (collWrapper *collectionWrapper) ListIndexes() ([]bson.M, error) {
 }
 
 func (collWrapper *collectionWrapper) AddIndex(keys interface{}, unique bool) error {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond*15000)
+	return collWrapper.AddIndexWithContext(nil, keys, unique)
+}
+
+func (collWrapper *collectionWrapper) AddIndexWithContext(ctx context.Context, keys interface{}, unique bool) error {
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, time.Millisecond*15000)
 	defer cancel()
 
 	index := mongo.IndexModel{Keys: keys}
