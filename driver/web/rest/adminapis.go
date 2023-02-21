@@ -206,6 +206,8 @@ func (h *AdminApisHandler) GetAllGroups(current *model.User, w http.ResponseWrit
 		log.Printf("adminapis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 	}
 
+	groupsFilter.AppID = current.AppID
+	groupsFilter.OrgID = current.OrgID
 	groups, err := h.app.Services.GetGroups(nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
@@ -804,7 +806,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(current *model.User, w http.
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [get]
 func (h *AdminApisHandler) GetSyncConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
-	configType := model.ConfigTypeManagedGroup
+	configType := model.ConfigTypeSync
 	configs, err := h.app.Administration.GetConfigs(&configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error getting sync config - %s", err.Error())

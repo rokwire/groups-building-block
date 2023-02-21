@@ -114,6 +114,7 @@ func (app *Application) updateConfig(config model.Config, claims *tokenauth.Clai
 	}
 
 	now := time.Now().UTC()
+	config.ID = oldConfig.ID
 	config.DateUpdated = &now
 
 	err = app.storage.UpdateConfig(config)

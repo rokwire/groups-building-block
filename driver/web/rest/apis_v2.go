@@ -80,6 +80,8 @@ func (h *ApisHandler) GetGroupsV2(current *model.User, w http.ResponseWriter, r 
 		log.Printf("apis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 	}
 
+	groupsFilter.AppID = current.AppID
+	groupsFilter.OrgID = current.OrgID
 	groups, err := h.app.Services.GetGroups(&current.ID, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetGroupsV2() error getting groups - %s", err.Error())
@@ -164,6 +166,8 @@ func (h *ApisHandler) GetUserGroupsV2(current *model.User, w http.ResponseWriter
 		log.Printf("apis.GetUserGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 	}
 
+	groupsFilter.AppID = current.AppID
+	groupsFilter.OrgID = current.OrgID
 	groups, err := h.app.Services.GetUserGroups(current.ID, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetUserGroupsV2() error getting user groups - %s", err.Error())

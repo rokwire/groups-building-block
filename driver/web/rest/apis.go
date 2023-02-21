@@ -254,6 +254,8 @@ func (h *ApisHandler) UpdateGroup(current *model.User, w http.ResponseWriter, r 
 
 	groupErr := h.app.Services.UpdateGroup(&current.ID, &model.Group{
 		ID:                       id,
+		AppID:                    group.AppID,
+		OrgID:                    group.OrgID,
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
 		Category:                 requestData.Category,

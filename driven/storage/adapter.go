@@ -107,6 +107,7 @@ func (sa *Adapter) setCachedConfigs(configs []model.Config) {
 		if err != nil {
 			log.Println(err.Error())
 		}
+		sa.cachedConfigs.Store(config.ID, config)
 		sa.cachedConfigs.Store(fmt.Sprintf("%s_%s_%s", config.Type, config.AppID, config.OrgID), config)
 	}
 }
