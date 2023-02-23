@@ -3250,7 +3250,7 @@
                 }
             }
         },
-        "ManagedGroupConfigData": {
+        "ManagedGroupConfig": {
             "type": "object",
             "properties": {
                 "admin_uins": {
@@ -3263,6 +3263,23 @@
                     "type": "array",
                     "items": {
                         "type": "string"
+                    }
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
+        "ManagedGroupConfigData": {
+            "type": "object",
+            "properties": {
+                "managed_groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ManagedGroupConfig"
                     }
                 }
             }
@@ -4218,13 +4235,17 @@
                 "status"
             ],
             "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "pending",
                         "member",
-                        "admin",
-                        "rejected"
+                        "admin"
                     ]
                 }
             }

@@ -296,7 +296,7 @@ definitions:
           $ref: '#/definitions/GroupStat'
         type: array
     type: object
-  ManagedGroupConfigData:
+  ManagedGroupConfig:
     properties:
       admin_uins:
         items:
@@ -305,6 +305,17 @@ definitions:
       authman_stems:
         items:
           type: string
+        type: array
+      name:
+        type: string
+      type:
+        type: string
+    type: object
+  ManagedGroupConfigData:
+    properties:
+      managed_groups:
+        items:
+          $ref: '#/definitions/ManagedGroupConfig'
         type: array
     type: object
   Member:
@@ -942,12 +953,14 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
+      date_attended:
+        type: string
+      notifications_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
-        - pending
         - member
         - admin
-        - rejected
         type: string
     required:
     - status

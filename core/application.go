@@ -114,7 +114,7 @@ func (app *Application) setupSyncManagedGroupTimer() {
 	log.Println("setupSyncManagedGroupTimer")
 
 	configTypeSync := model.ConfigTypeSync
-	configs, err := app.storage.FindConfigs(&configTypeSync, nil, nil)
+	configs, err := app.storage.FindConfigs(&configTypeSync)
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}

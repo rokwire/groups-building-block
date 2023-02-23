@@ -56,7 +56,7 @@ func (app *Application) getConfig(id string, claims *tokenauth.Claims) (*model.C
 }
 
 func (app *Application) getConfigs(configType *string, claims *tokenauth.Claims) ([]model.Config, error) {
-	configs, err := app.storage.FindConfigs(configType, nil, nil)
+	configs, err := app.storage.FindConfigs(configType)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionFind, model.TypeConfig, nil, err)
 	}

@@ -868,18 +868,20 @@ func (app *Application) synchronizeAuthman(appID string, orgID string, checkThre
 		return fmt.Errorf("error asserting as application config for appID %s, orgID %s: %v", appID, orgID, err)
 	}
 
-	configTypeManagedGroup := model.ConfigTypeManagedGroup
-	mgConfigs, err := app.storage.FindConfigs(&configTypeManagedGroup, &appID, &orgID)
+	config, err := app.storage.FindConfig(model.ConfigTypeManagedGroup, appID, orgID)
 	if err != nil {
-		return fmt.Errorf("error finding managed group configs for appID %s, orgID %s", appID, orgID)
+		return fmt.Errorf("error finding managed group config for appID %s, orgID %s: %v", appID, orgID, err)
+	}
+	if config == nil {
+		return fmt.Errorf("missing managed group config for appID %s, orgID %s", appID, orgID)
 	}
 
-	for _, config := range mgConfigs {
-		mgConfig, err := model.GetConfigData[model.ManagedGroupConfigData](config)
-		if err != nil {
-			log.Printf("Error asserting as managed group config for appID %s, orgID %s: %v\n", appID, orgID, err)
-			continue
-		}
+	mgConfigData, err := model.GetConfigData[model.ManagedGroupConfigData](*config)
+	if err != nil {
+		return fmt.Errorf("error asserting as managed group config for appID %s, orgID %s: %v", appID, orgID, err)
+	}
+
+	for _, mgConfig := range mgConfigData.ManagedGroups {
 		for _, stemName := range mgConfig.AuthmanStems {
 			stemGroups, err := app.authman.RetrieveAuthmanStemGroups(stemName)
 			if err != nil {

@@ -152,7 +152,7 @@ func (sa *Adapter) getCachedConfig(id string, configType string, appID string, o
 	return nil, nil
 }
 
-func (sa *Adapter) getCachedConfigs(configType *string, appID *string, orgID *string) ([]model.Config, error) {
+func (sa *Adapter) getCachedConfigs(configType *string) ([]model.Config, error) {
 	sa.configsLock.RLock()
 	defer sa.configsLock.RUnlock()
 
@@ -173,18 +173,7 @@ func (sa *Adapter) getCachedConfigs(configType *string, appID *string, orgID *st
 			return false
 		}
 
-		match := true
-		if configType != nil && !strings.HasPrefix(keyStr, fmt.Sprintf("%s_", *configType)) {
-			match = false
-		}
-		if appID != nil && !strings.Contains(keyStr, fmt.Sprintf("_%s_", *appID)) {
-			match = false
-		}
-		if orgID != nil && !strings.HasSuffix(keyStr, fmt.Sprintf("_%s", *orgID)) {
-			match = false
-		}
-
-		if match {
+		if configType == nil || strings.HasPrefix(keyStr, fmt.Sprintf("%s_", *configType)) {
 			configList = append(configList, config)
 		}
 
@@ -218,8 +207,8 @@ func (sa *Adapter) FindConfigByID(id string) (*model.Config, error) {
 }
 
 // FindConfigs finds all configs for the specified type
-func (sa *Adapter) FindConfigs(configType *string, appID *string, orgID *string) ([]model.Config, error) {
-	return sa.getCachedConfigs(configType, appID, orgID)
+func (sa *Adapter) FindConfigs(configType *string) ([]model.Config, error) {
+	return sa.getCachedConfigs(configType)
 }
 
 // InsertConfig inserts a new config

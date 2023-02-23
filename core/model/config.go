@@ -77,11 +77,18 @@ type SyncTimes struct {
 	EndTime   *time.Time `json:"end_time" bson:"end_time"`
 }
 
-// ManagedGroupConfigData defines a config for a set of managed groups
+// ManagedGroupConfigData defines a set of managed groups
 type ManagedGroupConfigData struct {
+	ManagedGroups []ManagedGroupConfig `json:"managed_groups" bson:"managed_groups"`
+} //@name ManagedGroupConfigData
+
+// ManagedGroupConfig defines a config for a single managed group
+type ManagedGroupConfig struct {
+	Name         string   `json:"name" bson:"name"`
+	Type         string   `json:"type" bson:"type"`
 	AuthmanStems []string `json:"authman_stems" bson:"authman_stems"`
 	AdminUINs    []string `json:"admin_uins" bson:"admin_uins"`
-} //@name ManagedGroupConfigData
+} //@name ManagedGroupConfig
 
 // GetConfigData returns a pointer to the given config's Data as the given type T
 func GetConfigData[T ConfigData](c Config) (*T, error) {
