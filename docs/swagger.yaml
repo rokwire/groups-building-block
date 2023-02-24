@@ -306,7 +306,7 @@ definitions:
         items:
           type: string
         type: array
-      name:
+      id:
         type: string
       type:
         type: string
@@ -953,14 +953,12 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
-      date_attended:
-        type: string
-      notifications_preferences:
-        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
+        - pending
         - member
         - admin
+        - rejected
         type: string
     required:
     - status

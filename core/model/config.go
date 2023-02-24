@@ -84,7 +84,7 @@ type ManagedGroupConfigData struct {
 
 // ManagedGroupConfig defines a config for a single managed group
 type ManagedGroupConfig struct {
-	Name         string   `json:"name" bson:"name"`
+	ID           string   `json:"id" bson:"_id"`
 	Type         string   `json:"type" bson:"type"`
 	AuthmanStems []string `json:"authman_stems" bson:"authman_stems"`
 	AdminUINs    []string `json:"admin_uins" bson:"admin_uins"`

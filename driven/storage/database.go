@@ -735,7 +735,7 @@ func (m *database) applyConfigsTransition(configs *collectionWrapper, managedGro
 		}
 
 		//3. wrap mg configs in new config model
-		var mgConfigs []model.ManagedGroupConfigData
+		var mgConfigs []model.ManagedGroupConfig
 		mgFilter := bson.M{"client_id": "edu.illinois.rokwire"}
 		err = managedGroupConfigs.FindWithContext(context, mgFilter, &mgConfigs, nil)
 		if err != nil {
@@ -747,16 +747,14 @@ func (m *database) applyConfigsTransition(configs *collectionWrapper, managedGro
 			if err != nil {
 				return err
 			}
-		}
 
-		for _, mgConfig := range mgConfigs {
 			newManagedGroupConfig := model.Config{
 				ID:          uuid.NewString(),
 				Type:        model.ConfigTypeManagedGroup,
 				AppID:       defaultAppID,
 				OrgID:       defaultOrgID,
 				System:      false,
-				Data:        mgConfig,
+				Data:        model.ManagedGroupConfigData{ManagedGroups: mgConfigs},
 				DateCreated: now,
 			}
 			_, err = configs.InsertOneWithContext(context, newManagedGroupConfig)
