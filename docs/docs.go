@@ -4237,13 +4237,17 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "pending",
                         "member",
-                        "admin",
-                        "rejected"
+                        "admin"
                     ]
                 }
             }

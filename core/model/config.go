@@ -46,7 +46,7 @@ type Config struct {
 	System      bool        `json:"system" bson:"system"`
 	Data        interface{} `json:"data" bson:"data"`
 	DateCreated time.Time   `json:"date_created" bson:"date_created"`
-	DateUpdated *time.Time  `json:"date_updated" bson:"date_updated"`
+	DateUpdated *time.Time  `json:"date_updated,omitempty" bson:"date_updated"`
 } //@name Config
 
 // EnvConfigData contains environment configs for this service
