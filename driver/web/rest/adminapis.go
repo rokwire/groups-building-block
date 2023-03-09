@@ -16,17 +16,18 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
-	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"github.com/rokwire/core-auth-library-go/v2/authutils"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // AdminApisHandler handles the rest Admin APIs implementation
@@ -39,7 +40,6 @@ type AdminApisHandler struct {
 // @ID AdminGetUserGroups
 // @Tags Admin-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Filtering by group's title (case-insensitive)"
 // @Param category query string false "category - filter by category"
 // @Param privacy query string false "privacy - filter by privacy"
@@ -50,7 +50,7 @@ type AdminApisHandler struct {
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/user/groups [get]
-func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetUserGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
 	catogies, ok := r.URL.Query()["category"]
@@ -97,7 +97,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		}
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	groups, err := h.app.Services.GetGroups(&current.ID, groupsFilter)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -109,8 +109,10 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: groupIDs,
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 	})
 	if err != nil {
 		log.Printf("Unable to retrieve memberships: %s", err)
@@ -140,7 +142,6 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @ID AdminGetAllGroups
 // @Tags Admin-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
 // @Param category query string false "Deprecated - instead use request body filter! category - filter by category"
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
@@ -152,7 +153,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/groups [get]
-func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetAllGroups(current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
 	catogies, ok := r.URL.Query()["category"]
@@ -199,22 +200,15 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		}
 	}
 
-	requestData, err := io.ReadAll(r.Body)
+	err := json.NewDecoder(r.Body).Decode(&groupsFilter)
 	if err != nil {
-		log.Printf("adminapis.GetAllGroups() error on marshal model.GroupsFilter request body - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
+		// just log an error and proceed and assume an empty filter
+		log.Printf("adminapis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 	}
 
-	if len(requestData) > 0 {
-		err = json.Unmarshal(requestData, &groupsFilter)
-		if err != nil {
-			// just log an error and proceed and assume an empty filter
-			log.Printf("adminapis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
-		}
-	}
-
-	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
+	groupsFilter.AppID = current.AppID
+	groupsFilter.OrgID = current.OrgID
+	groups, err := h.app.Services.GetGroups(nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -222,12 +216,14 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 	}
 
 	groupIDs := []string{}
-	for _, grouop := range groups {
-		groupIDs = append(groupIDs, grouop.ID)
+	for _, group := range groups {
+		groupIDs = append(groupIDs, group.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(model.MembershipFilter{
 		GroupIDs: groupIDs,
+		AppID:    current.AppID,
+		OrgID:    current.OrgID,
 	})
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() unable to retrieve memberships: %s", err)
@@ -257,12 +253,11 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 // @ID AdminGetGroupStats
 // @Tags Admin-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/stats [get]
-func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupStats(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -272,7 +267,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(current, groupID)
 	if err != nil {
 		log.Printf("error getting group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -303,12 +298,11 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 // @Tags Admin-V1
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/members [get]
-func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupMembers(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -317,26 +311,19 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 		return
 	}
 
-	requestData, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("adminapis.GetGroupMembers() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var request model.MembershipFilter
-	if len(requestData) > 0 {
-		err = json.Unmarshal(requestData, &request)
-		if err != nil {
-			// just log an error and proceed and assume an empty filter
-			log.Printf("adminapis.GetGroupMembers() Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
-		}
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		// just log an error and proceed and assume an empty filter
+		log.Printf("adminapis.GetGroupMembers() Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
 	}
 
 	request.GroupIDs = append(request.GroupIDs, groupID)
+	request.AppID = current.AppID
+	request.OrgID = current.OrgID
 
 	//check if allowed to update
-	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	members, err := h.app.Services.FindGroupMemberships(request)
 	if err != nil {
 		log.Printf("adminapis.GetGroupMembers()  error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -369,13 +356,12 @@ type adminUpdateMembershipRequest struct {
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param data body updateMembershipRequest true "body data"
 // @Param membership-id path string true "Membership ID"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/memberships/{membership-id} [put]
-func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -385,15 +371,8 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("adminapis.UpdateMembership() Error on marshal the membership update item - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
 	var requestData adminUpdateMembershipRequest
-	err = json.Unmarshal(data, &requestData)
+	err := json.NewDecoder(r.Body).Decode(&requestData)
 	if err != nil {
 		log.Printf("adminapis.UpdateMembership() Error on unmarshal the membership request update data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -408,7 +387,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(current.AppID, current.OrgID, membershipID)
 	if err != nil || membership == nil {
 		log.Printf("adminapis.UpdateMembership() Error: Membership %s not found - %s\n", membershipID, err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -418,7 +397,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 	var status *string
 	status = requestData.Status
 
-	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, nil, nil)
+	err = h.app.Services.UpdateMembership(membership, status, nil, nil)
 	if err != nil {
 		log.Printf("adminapis.UpdateMembership() Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -435,12 +414,11 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param membership-id path string true "Membership ID"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/memberships/{membership-id} [delete]
-func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteMembership(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -450,7 +428,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(current.AppID, current.OrgID, membershipID)
 	if err != nil {
 		log.Printf("adminapis.DeleteMembership() Error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -460,7 +438,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
 
-	err = h.app.Services.DeleteMembershipByID(clientID, current, membershipID)
+	err = h.app.Services.DeleteMembershipByID(current, membershipID)
 	if err != nil {
 		log.Printf("adminapis.DeleteMembership() Error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -475,11 +453,10 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
 // @Tags Admin-V1
-// @Param APP header string true "APP"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Router /api/admin/group/{groupID}/posts [get]
-func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupPosts(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["group-id"]
 	if len(id) <= 0 {
@@ -512,7 +489,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(current, id, nil, false, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -536,12 +513,11 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 // @ID AdminGetGroupEvents
 // @Tags Admin-V1
 // @Accept json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200 {array} string
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/events [get]
-func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupEvents(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -551,7 +527,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 		return
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, false)
+	events, err := h.app.Services.GetEvents(current, groupID, false)
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -581,12 +557,11 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/admin/group/{id} [delete]
-func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteGroup(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	id := params["id"]
@@ -596,7 +571,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroupEntity(current.AppID, current.OrgID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
@@ -608,7 +583,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.DeleteGroup(clientID, current, id)
+	err = h.app.Services.DeleteGroup(current.AppID, current.OrgID, id)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -626,13 +601,12 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 // @Tags Admin-V1
 // @Accept json
 // @Produce json
-// @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Param event-id path string true "Event ID"
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/event/{event-id} [delete]
-func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteGroupEvent(current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -648,7 +622,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 		return
 	}
 
-	err := h.app.Services.DeleteEvent(clientID, current, eventID, groupID)
+	err := h.app.Services.DeleteEvent(current.AppID, current.OrgID, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -665,12 +639,11 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 // @ID AdminDeleteGroupPost
 // @Tags Admin-V1
 // @Accept  json
-// @Param APP header string true "APP"
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/group/{groupId}/posts/{postId} [delete]
-func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteGroupPost(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -686,7 +659,7 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	err := h.app.Services.DeletePost(clientID, current, groupID, postID, true)
+	err := h.app.Services.DeletePost(current, groupID, postID, true)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -702,12 +675,12 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 // @ID AdminGetManagedGroupConfigs
 // @Tags Admin
 // @Accept json
-// @Param APP header string true "APP"
-// @Success 200 {array}  model.ManagedGroupConfig
+// @Success 200 {array}  model.Config
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [get]
-func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Services.GetManagedGroupConfigs(clientID)
+func (h *AdminApisHandler) GetManagedGroupConfigs(current *model.User, w http.ResponseWriter, r *http.Request) {
+	configType := model.ConfigTypeManagedGroup
+	configs, err := h.app.Administration.GetConfigs(&configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error getting managed group configs events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -731,36 +704,28 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // @ID AdminCreateManagedGroupConfig
 // @Tags Admin
 // @Accept plain
-// @Param data body  model.ManagedGroupConfig true "body data"
-// @Param APP header string true "APP"
-// @Success 200 {object} model.ManagedGroupConfig
+// @Param data body  model.ManagedGroupConfigData true "body data"
+// @Success 200 {object} model.ManagedGroupConfigData
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
-func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var config model.ManagedGroupConfig
-	err = json.Unmarshal(data, &config)
+func (h *AdminApisHandler) CreateManagedGroupConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	var managedGroupConfig model.ManagedGroupConfigData
+	err := json.NewDecoder(r.Body).Decode(&managedGroupConfig)
 	if err != nil {
 		log.Printf("Error on unmarshal the managed group config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config.ClientID = clientID
-	newConfig, err := h.app.Services.CreateManagedGroupConfig(config)
+	config := model.Config{Type: model.ConfigTypeManagedGroup, AppID: current.AppID, OrgID: current.OrgID, Data: managedGroupConfig}
+	newConfig, err := h.app.Administration.CreateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response, err := json.Marshal(newConfig)
+	response, err := json.Marshal(newConfig.Data)
 	if err != nil {
 		log.Println("Error on marshal created managed group config")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -777,30 +742,22 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // @ID AdminUpdateManagedGroupConfig
 // @Tags Admin
 // @Accept plain
-// @Param data body  model.ManagedGroupConfig true "body data"
-// @Param APP header string true "APP"
+// @Param data body  model.ManagedGroupConfigData true "body data"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [put]
-func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var config model.ManagedGroupConfig
-	err = json.Unmarshal(data, &config)
+func (h *AdminApisHandler) UpdateManagedGroupConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	var managedGroupConfig model.ManagedGroupConfigData
+	err := json.NewDecoder(r.Body).Decode(&managedGroupConfig)
 	if err != nil {
 		log.Printf("Error on unmarshal the managed group config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config.ClientID = clientID
-	err = h.app.Services.UpdateManagedGroupConfig(config)
+	config := model.Config{Type: model.ConfigTypeManagedGroup, AppID: current.AppID, OrgID: current.OrgID, Data: managedGroupConfig}
+	err = h.app.Administration.UpdateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -815,12 +772,11 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 // @Description Deletes a managed group config
 // @ID AdminDeleteManagedGroupConfig
 // @Tags Admin
-// @Param APP header string true "APP"
 // @Param id path string true "ID"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs/{id} [delete]
-func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteManagedGroupConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
@@ -830,7 +786,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	err := h.app.Services.DeleteManagedGroupConfig(id, clientID)
+	err := h.app.Administration.DeleteConfig(id, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -846,12 +802,12 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 // @ID AdminGetSyncConfigs
 // @Tags Admin
 // @Accept json
-// @Param APP header string true "APP"
-// @Success 200 {array}  model.SyncConfig
+// @Success 200 {array}  model.Config
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [get]
-func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Services.GetSyncConfig(clientID)
+func (h *AdminApisHandler) GetSyncConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	configType := model.ConfigTypeSync
+	configs, err := h.app.Administration.GetConfigs(&configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Printf("error getting sync config - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -875,29 +831,21 @@ func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w
 // @ID AdminSaveSyncConfig
 // @Tags Admin
 // @Accept plain
-// @Param data body model.SyncConfig true "body data"
-// @Param APP header string true "APP"
+// @Param data body model.SyncConfigData true "body data"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
-func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		log.Printf("Error reading body on create sync config - %s\n", err.Error())
-		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
-
-	var config model.SyncConfig
-	err = json.Unmarshal(data, &config)
+func (h *AdminApisHandler) SaveSyncConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	var syncConfig model.SyncConfigData
+	err := json.NewDecoder(r.Body).Decode(&syncConfig)
 	if err != nil {
 		log.Printf("Error on unmarshal the sync config data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	config.ClientID = clientID
-	err = h.app.Services.UpdateSyncConfig(config)
+	config := model.Config{Type: model.ConfigTypeSync, AppID: current.AppID, OrgID: current.OrgID, Data: syncConfig}
+	err = h.app.Administration.UpdateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -916,10 +864,211 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 // @Success 200
 // @Security AppUserAuth
 // @Router /admin/authman/synchronize [post]
-func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.SynchronizeAuthman(clientID)
+func (h *AdminApisHandler) SynchronizeAuthman(current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.SynchronizeAuthman(current.AppID, current.OrgID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+// GetConfig gets a config by ID
+// @Description Gets a config by its ID
+// @Tags Admin
+// @ID AdminGetConfig
+// @Accept json
+// @Success 200 {object} model.Config
+// @Security AppUserAuth
+// @Router /api/admin/configs/{id} [get]
+func (h *AdminApisHandler) GetConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
+	}
+
+	config, err := h.app.Administration.GetConfig(id, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		log.Println("Error on marshal config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetConfigs gets a list of configs by type
+// @Description Gets a list of configs by type
+// @Tags Admin
+// @ID AdminGetConfigs
+// @Accept json
+// @Success 200 {array} model.Config
+// @Security AppUserAuth
+// @Router /api/admin/configs [get]
+func (h AdminApisHandler) GetConfigs(current *model.User, w http.ResponseWriter, r *http.Request) {
+	var configType *string
+	typeParam := r.URL.Query().Get("type")
+	if len(typeParam) > 0 {
+		configType = &typeParam
+	}
+
+	configs, err := h.app.Administration.GetConfigs(configType, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(configs)
+	if err != nil {
+		log.Println("Error on marshal configs")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type adminUpdateConfigsRequest struct {
+	AllApps *bool       `json:"all_apps,omitempty"`
+	AllOrgs *bool       `json:"all_orgs,omitempty"`
+	Data    interface{} `json:"data"`
+	System  bool        `json:"system"`
+	Type    string      `json:"type"`
+} // @name adminUpdateConfigsRequest
+
+// CreateConfig creates a new config
+// @Description Creates a new config
+// @ID AdminCreateConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body adminUpdateConfigsRequest true "body data"
+// @Success 200 {object} model.Config
+// @Security AppUserAuth
+// @Router /api/admin/configs [post]
+func (h AdminApisHandler) CreateConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	var requestData adminUpdateConfigsRequest
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create config request - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	appID := current.AppID
+	if requestData.AllApps != nil && *requestData.AllApps {
+		appID = authutils.AllApps
+	}
+	orgID := current.OrgID
+	if requestData.AllOrgs != nil && *requestData.AllOrgs {
+		orgID = authutils.AllOrgs
+	}
+	config := model.Config{Type: requestData.Type, AppID: appID, OrgID: orgID, System: requestData.System, Data: requestData.Data}
+
+	newConfig, err := h.app.Administration.CreateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(newConfig)
+	if err != nil {
+		log.Println("Error on marshal config")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// UpdateConfig updates an existing config by ID
+// @Description Updates an existing config by its ID
+// @ID AdminUpdateConfig
+// @Tags Admin
+// @Accept plain
+// @Param data body adminUpdateConfigsRequest true "body data"
+// @Param id path string true "ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/configs/{id} [put]
+func (h AdminApisHandler) UpdateConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
+	}
+
+	var requestData adminUpdateConfigsRequest
+	err := json.NewDecoder(r.Body).Decode(&requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create config request - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	appID := current.AppID
+	if requestData.AllApps != nil && *requestData.AllApps {
+		appID = authutils.AllApps
+	}
+	orgID := current.OrgID
+	if requestData.AllOrgs != nil && *requestData.AllOrgs {
+		orgID = authutils.AllOrgs
+	}
+	config := model.Config{ID: id, Type: requestData.Type, AppID: appID, OrgID: orgID, System: requestData.System, Data: requestData.Data}
+
+	err = h.app.Administration.UpdateConfig(config, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
+// DeleteConfig Deletes a config by ID
+// @Description Deletes a config by its ID
+// @ID AdminDeleteConfig
+// @Tags Admin
+// @Param id path string true "ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/admin/configs/{id} [delete]
+func (h AdminApisHandler) DeleteConfig(current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("id param is required")
+		http.Error(w, "id param is required", http.StatusBadRequest)
+		return
+	}
+
+	err := h.app.Administration.DeleteConfig(id, &tokenauth.Claims{AppID: current.AppID, OrgID: current.OrgID, System: current.System})
+	if err != nil {
+		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -48,13 +48,27 @@ func main() {
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 
 	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
+	appID := getEnvKey("GROUPS_APP_ID", true)
+	orgID := getEnvKey("GROUPS_ORG_ID", true)
+
+	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
+	authmanAdminUINList := getAuthmanAdminUINList()
+	appConfig := model.Config{
+		// remaining data will be set if config needs to be inserted into storage
+		Type:   model.ConfigTypeApplication,
+		System: false,
+		Data: model.ApplicationConfigData{
+			AuthmanAdminUINList:       authmanAdminUINList,
+			ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
+		},
+	}
 
 	//mongoDB adapter
 	mongoDBAuth := getEnvKey("GR_MONGO_AUTH", true)
 	mongoDBName := getEnvKey("GR_MONGO_DATABASE", true)
 	mongoTimeout := getEnvKey("GR_MONGO_TIMEOUT", false)
 	storageAdapter := storage.NewStorageAdapter(mongoDBAuth, mongoDBName, mongoTimeout)
-	err := storageAdapter.Start()
+	err := storageAdapter.Start(appID, orgID, &appConfig)
 	if err != nil {
 		log.Fatal("Cannot start the mongoDB adapter - " + err.Error())
 	}
@@ -102,9 +116,6 @@ func main() {
 	}
 
 	// Notification adapter
-	appID := getEnvKey("GROUPS_APP_ID", true)
-	orgID := getEnvKey("GROUPS_ORG_ID", true)
-	notificationsReportAbuseEmail := getEnvKey("NOTIFICATIONS_REPORT_ABUSE_EMAIL", true)
 	notificationsBaseURL := getEnvKey("NOTIFICATIONS_BASE_URL", true)
 	notificationsAdapter, err := notifications.NewNotificationsAdapter(notificationsBaseURL, serviceAccountManager)
 	if err != nil {
@@ -114,7 +125,6 @@ func main() {
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
-	authmanAdminUINList := getAuthmanAdminUINList()
 
 	// Authman adapter
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
@@ -129,19 +139,8 @@ func main() {
 	}
 	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
-	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
-
-	config := &model.ApplicationConfig{
-		AuthmanAdminUINList:       authmanAdminUINList,
-		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SupportedClientIDs:        supportedClientIDs,
-		AppID:                     appID,
-		OrgID:                     orgID,
-	}
-
 	//application
-	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, config)
+	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter, coreAdapter, rewardsAdapter)
 	application.Start()
 
 	//web adapter
@@ -153,9 +152,8 @@ func main() {
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
-		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, serviceRegManager, groupServiceURL)
+	webAdapter := web.NewWebAdapter(application, host, appID, orgID, apiKeys, oidcProvider,
+		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID, intrernalAPIKey, serviceRegManager, groupServiceURL)
 	webAdapter.Start()
 }
 

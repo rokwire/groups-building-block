@@ -98,6 +98,12 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetSyncConfig)).Methods("GET")
 	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
 
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetConfig)).Methods("GET")
+	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetConfigs)).Methods("GET")
+	adminSubrouter.HandleFunc("/configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateConfig)).Methods("POST")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateConfig)).Methods("PUT")
+	adminSubrouter.HandleFunc("/configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteConfig)).Methods("DELETE")
+
 	// Internal key protection
 	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
 	restSubrouter.HandleFunc("/int/group/{identifier}", we.internalKeyAuthFunc(we.internalApisHandler.IntGetGroup)).Methods("GET")
@@ -179,67 +185,20 @@ func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
+type apiKeyAuthFunc = func(string, string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated := we.auth.apiKeyCheck(req)
+		appID, orgID, authenticated := we.auth.apiKeyCheck(req)
 		if !authenticated {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, w, req)
-	}
-}
-
-type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
-
-func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		clientID, user := we.auth.idTokenCheck(w, req, false)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(clientID, user, w, req)
-	}
-}
-
-func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		clientID, user := we.auth.idTokenCheck(w, req, true)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(clientID, user, w, req)
-	}
-}
-
-func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
-		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(clientID, user, w, req)
+		handler(appID, orgID, w, req)
 	}
 }
 
@@ -247,14 +206,61 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated := we.auth.internalAuthCheck(w, req)
+		appID, orgID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
 			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, w, req)
+		handler(appID, orgID, w, req)
+	}
+}
+
+type idTokenAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
+
+func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		user := we.auth.idTokenCheck(w, req, false)
+		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		handler(user, w, req)
+	}
+}
+
+func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		user := we.auth.idTokenCheck(w, req, true)
+		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		handler(user, w, req)
+	}
+}
+
+func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		utils.LogRequest(req)
+
+		user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
+		if user == nil {
+			log.Printf("Unauthorized")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		handler(user, w, req)
 	}
 }
 
@@ -262,25 +268,25 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, authenticated, user := we.auth.mixedCheck(req)
-		if !authenticated {
+		user := we.auth.mixedCheck(req)
+		if user == nil {
 			log.Printf("Unauthorized - Mixed Check")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		//user can be nil
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
-type adminAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
+type adminAuthFunc = func(*model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		utils.LogRequest(req)
 
-		clientID, user, forbidden := we.auth.adminCheck(req)
+		user, forbidden := we.auth.adminCheck(req)
 		if user == nil {
 			if forbidden {
 				log.Printf("Forbidden - Admin")
@@ -292,17 +298,17 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(user, w, req)
 	}
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
-	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
+func NewWebAdapter(app *core.Application, host string, appID string, orgID string, appKeys []string, oidcProvider string,
+	oidcClientID string, oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, internalAPIKey string,
+	serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
+	auth := NewAuth(app, host, appID, orgID, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)

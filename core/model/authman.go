@@ -59,25 +59,25 @@ type AuthmanGroupResponse struct {
 	} `json:"WsGetMembersLiteResult"`
 }
 
-// АuthmanUserRequest Authman user request wrapper
-type АuthmanUserRequest struct {
-	WsRestGetSubjectsRequest АuthmanUserData `json:"WsRestGetSubjectsRequest"`
+// AuthmanUserRequest Authman user request wrapper
+type AuthmanUserRequest struct {
+	WsRestGetSubjectsRequest AuthmanUserData `json:"WsRestGetSubjectsRequest"`
 }
 
-// АuthmanUserData Authman user data
-type АuthmanUserData struct {
-	WsSubjectLookups      []АuthmanSubjectLookup `json:"wsSubjectLookups"`
+// AuthmanUserData Authman user data
+type AuthmanUserData struct {
+	WsSubjectLookups      []AuthmanSubjectLookup `json:"wsSubjectLookups"`
 	SubjectAttributeNames []string               `json:"subjectAttributeNames"`
 }
 
-// АuthmanSubjectLookup Authman subject lookup
-type АuthmanSubjectLookup struct {
+// AuthmanSubjectLookup Authman subject lookup
+type AuthmanSubjectLookup struct {
 	SubjectID       string `json:"subjectId"`
 	SubjectSourceID string `json:"subjectSourceId"`
 }
 
-// АuthmanUserResponse Authman user response wrapper
-type АuthmanUserResponse struct {
+// AuthmanUserResponse Authman user response wrapper
+type AuthmanUserResponse struct {
 	WsGetSubjectsResults struct {
 		ResultMetadata struct {
 			Success       string `json:"success"`
@@ -93,8 +93,8 @@ type АuthmanUserResponse struct {
 	} `json:"WsGetSubjectsResults"`
 }
 
-// АuthmanGroupsResponse Authman groups response wrapper
-type АuthmanGroupsResponse struct {
+// AuthmanGroupsResponse Authman groups response wrapper
+type AuthmanGroupsResponse struct {
 	WsFindGroupsResults struct {
 		GroupResults   []AuthmanGroupEntry `json:"groupResults"`
 		ResultMetadata struct {

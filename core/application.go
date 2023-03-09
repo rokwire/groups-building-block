@@ -16,6 +16,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"groups/core/model"
 	"groups/driven/corebb"
 	"groups/driven/rewards"
@@ -34,8 +35,6 @@ type scheduledTask struct {
 type Application struct {
 	version string
 	build   string
-
-	config *model.ApplicationConfig
 
 	Services       Services       //expose to the drivers adapters
 	Administration Administration //expose to the drivrs adapters
@@ -63,16 +62,19 @@ func (app *Application) Start() {
 }
 
 // FindUser finds an user for the provided external id
-func (app *Application) FindUser(clientID string, id *string, external bool) (*model.User, error) {
-	if clientID == "" {
-		return nil, errors.New("clientID cannot be empty")
+func (app *Application) FindUser(appID string, orgID string, id *string, external bool) (*model.User, error) {
+	if appID == "" {
+		return nil, errors.New("appID cannot be empty")
+	}
+	if orgID == "" {
+		return nil, errors.New("orgID cannot be empty")
 	}
 
 	if id == nil || *id == "" {
 		return nil, errors.New("id cannot be empty")
 	}
 
-	user, err := app.storage.FindUser(clientID, *id, external)
+	user, err := app.storage.FindUser(appID, orgID, *id, external)
 	if err != nil {
 		return nil, err
 	}
@@ -80,12 +82,12 @@ func (app *Application) FindUser(clientID string, id *string, external bool) (*m
 }
 
 // LoginUser refactors the user using the new id
-func (app *Application) LoginUser(clientID string, current *model.User, newID string) error {
-	return app.storage.LoginUser(clientID, current)
+func (app *Application) LoginUser(current *model.User) error {
+	return app.storage.LoginUser(current)
 }
 
 // CreateUser creates an user
-func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string, name *string) (*model.User, error) {
+func (app *Application) CreateUser(id string, appID string, orgID string, externalID *string, email *string, name *string) (*model.User, error) {
 	externalIDVal := ""
 	if externalID != nil {
 		externalIDVal = *externalID
@@ -101,7 +103,7 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 		nameVal = *name
 	}
 
-	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal, nameVal)
+	user, err := app.storage.CreateUser(id, appID, orgID, externalIDVal, emailVal, nameVal)
 	if err != nil {
 		return nil, err
 	}
@@ -111,34 +113,42 @@ func (app *Application) CreateUser(clientID string, id string, externalID *strin
 func (app *Application) setupSyncManagedGroupTimer() {
 	log.Println("setupSyncManagedGroupTimer")
 
-	configs, err := app.storage.FindSyncConfigs()
+	configTypeSync := model.ConfigTypeSync
+	configs, err := app.storage.FindConfigs(&configTypeSync)
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}
 
 	for _, config := range configs {
-		task, ok := app.managedGroupTasks[config.ClientID]
-
-		//cancel if active
-		if ok && task.cron != config.CRON && task.taskID != nil {
-			app.scheduler.Remove(*task.taskID)
-			delete(app.managedGroupTasks, config.ClientID)
+		syncConfig, err := model.GetConfigData[model.SyncConfigData](config)
+		if err != nil {
+			log.Printf("error asserting as sync config for appID %s, orgID %s: %v", config.AppID, config.OrgID, err)
+			continue
 		}
 
-		if (!ok || task.cron != config.CRON) && config.CRON != "" {
+		managedGroupTasksKey := fmt.Sprintf("%s_%s", config.AppID, config.OrgID)
+		task, ok := app.managedGroupTasks[managedGroupTasksKey]
+
+		//cancel if active
+		if ok && task.cron != syncConfig.CRON && task.taskID != nil {
+			app.scheduler.Remove(*task.taskID)
+			delete(app.managedGroupTasks, managedGroupTasksKey)
+		}
+
+		if (!ok || task.cron != syncConfig.CRON) && syncConfig.CRON != "" {
 			sync := func() {
-				log.Println("syncManagedGroups for clientID " + config.ClientID)
-				err := app.synchronizeAuthman(config.ClientID, true)
+				log.Printf("syncManagedGroups for appID %s, orgID %s\n"+config.AppID, config.OrgID)
+				err := app.synchronizeAuthman(config.AppID, config.OrgID, true)
 				if err != nil {
-					log.Printf("error syncing Authman groups for clientID %s: %s\n", config.ClientID, err.Error())
+					log.Printf("error syncing Authman groups for appID %s, orgID %s: %s\n", config.AppID, config.OrgID, err.Error())
 				}
 			}
-			taskID, err := app.scheduler.AddFunc(config.CRON, sync)
+			taskID, err := app.scheduler.AddFunc(syncConfig.CRON, sync)
 			if err != nil {
-				log.Printf("error scheduling managed group sync for clientID %s: %s\n", config.ClientID, err)
+				log.Printf("error scheduling managed group sync for appID %s, orgID %s: %s\n", config.AppID, config.OrgID, err)
 			}
-			app.managedGroupTasks[config.ClientID] = scheduledTask{taskID: &taskID, cron: config.CRON}
-			log.Printf("sync managed group task scheduled for clientID=%s at %s\n", config.ClientID, config.CRON)
+			app.managedGroupTasks[managedGroupTasksKey] = scheduledTask{taskID: &taskID, cron: syncConfig.CRON}
+			log.Printf("sync managed group task scheduled for appID=%s, orgID=%s at %s\n", config.AppID, config.OrgID, syncConfig.CRON)
 		}
 	}
 	app.scheduler.Start()
@@ -146,12 +156,12 @@ func (app *Application) setupSyncManagedGroupTimer() {
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
 	managedGroupTasks := map[string]scheduledTask{}
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
+		authman: authman, corebb: core, rewards: rewards, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

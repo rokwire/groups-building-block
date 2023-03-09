@@ -56,24 +56,24 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(nil, clientID, id, nil)
+func (app *Application) getGroupEntity(appID string, orgID string, id string) (*model.Group, error) {
+	group, err := app.storage.FindGroup(nil, appID, orgID, id, nil)
 	if err != nil {
 		return nil, err
 	}
 	return group, nil
 }
 
-func (app *Application) getGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
-	group, err := app.storage.FindGroupByTitle(clientID, title)
+func (app *Application) getGroupEntityByTitle(appID string, orgID string, title string) (*model.Group, error) {
+	group, err := app.storage.FindGroupByTitle(appID, orgID, title)
 	if err != nil {
 		return nil, err
 	}
 	return group, nil
 }
 
-func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, error) {
-	membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
+func (app *Application) isGroupAdmin(appID string, orgID string, groupID string, userID string) (bool, error) {
+	membership, err := app.storage.FindGroupMembership(nil, appID, orgID, groupID, userID)
 	if err != nil {
 		return false, err
 	}
@@ -84,8 +84,8 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
+func (app *Application) createGroup(current *model.User, group *model.Group) (*string, *utils.GroupError) {
+	insertedID, err := app.storage.CreateGroup(current, group, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -107,8 +107,8 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 	}
 
-	handleRewardsAsync := func(clientID, userID string) {
-		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
+	handleRewardsAsync := func(appID, orgID, userID string) {
+		count, grErr := app.storage.FindUserGroupsCount(appID, orgID, current.ID)
 		if grErr != nil {
 			log.Printf("Error createGroup(): %s", grErr)
 		} else {
@@ -117,43 +117,39 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 			}
 		}
 	}
-	go handleRewardsAsync(clientID, current.ID)
+	go handleRewardsAsync(current.AppID, current.OrgID, current.ID)
 
 	return insertedID, nil
 }
 
-func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (app *Application) updateGroup(userID *string, group *model.Group) *utils.GroupError {
 
-	err := app.storage.UpdateGroup(clientID, current, group)
+	err := app.storage.UpdateGroup(userID, group, nil)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) updateGroupDateUpdated(clientID string, groupID string) error {
-	err := app.storage.UpdateGroupDateUpdated(clientID, groupID)
+func (app *Application) updateGroupDateUpdated(appID string, orgID string, groupID string) error {
+	err := app.storage.UpdateGroupDateUpdated(appID, orgID, groupID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
-	err := app.storage.DeleteGroup(clientID, id)
+func (app *Application) deleteGroup(appID string, orgID string, id string) error {
+	err := app.storage.DeleteGroup(appID, orgID, id)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
+func (app *Application) getGroups(userID *string, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, userID, filter)
+	groups, err := app.storage.FindGroups(userID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -161,9 +157,9 @@ func (app *Application) getGroups(clientID string, current *model.User, filter m
 	return groups, nil
 }
 
-func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
+func (app *Application) getAllGroups(appID string, orgID string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, model.GroupsFilter{})
+	groups, err := app.storage.FindGroups(nil, model.GroupsFilter{AppID: appID, OrgID: orgID})
 	if err != nil {
 		return nil, err
 	}
@@ -171,9 +167,9 @@ func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	return groups, nil
 }
 
-func (app *Application) getUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+func (app *Application) getUserGroups(userID string, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the user groups
-	groups, err := app.storage.FindUserGroups(clientID, current.ID, filter)
+	groups, err := app.storage.FindUserGroups(userID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -181,22 +177,47 @@ func (app *Application) getUserGroups(clientID string, current *model.User, filt
 	return groups, nil
 }
 
-func (app *Application) loginUser(clientID string, current *model.User) error {
-	return app.storage.LoginUser(clientID, current)
+func (app *Application) deleteUser(current *model.User) error {
+	return app.storage.PerformTransaction(func(sessionContext storage.TransactionContext) error {
+		posts, err := app.storage.FindAllUserPosts(sessionContext, current.AppID, current.OrgID, current.ID)
+		if err != nil {
+			log.Printf("error on find all posts for user (%s) - %s", current.ID, err.Error())
+			return err
+		}
+		for _, post := range posts {
+			err = app.deletePost(sessionContext, current.AppID, current.OrgID, current.ID, post.GroupID, post.ID, true)
+			if err != nil {
+				log.Printf("error on delete all posts for user (%s) - %s", current.ID, err.Error())
+				return err
+			}
+		}
+
+		memberships, err := app.storage.FindGroupMemberships(sessionContext, model.MembershipFilter{AppID: current.AppID, OrgID: current.OrgID, UserID: &current.ID})
+		if err != nil {
+			log.Printf("error getting user memberships - %s", err.Error())
+			return err
+		}
+		for _, membership := range memberships.Items {
+			err = app.storage.DeleteMembership(sessionContext, membership.AppID, membership.OrgID, membership.GroupID, membership.UserID)
+			if err != nil {
+				log.Printf("error deleting user membership - %s", err.Error())
+				return err
+			}
+		}
+
+		return app.storage.DeleteUser(sessionContext, current.AppID, current.OrgID, current.ID)
+	})
+
 }
 
-func (app *Application) deleteUser(clientID string, current *model.User) error {
-	return app.storage.DeleteUser(clientID, current.ID)
-}
-
-func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
+func (app *Application) getGroup(current *model.User, id string) (*model.Group, error) {
 	// find the group
 	var userID *string
 	if current != nil {
 		userID = &current.ID
 	}
 
-	group, err := app.storage.FindGroup(nil, clientID, id, userID)
+	group, err := app.storage.FindGroup(nil, current.AppID, current.OrgID, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -204,15 +225,22 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return group, nil
 }
 
-func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
-	err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
+func (app *Application) applyMembershipApproval(appID string, orgID string, membershipID string, approve bool, rejectReason string) error {
+	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		membership, err := app.storage.ApplyMembershipApproval(context, appID, orgID, membershipID, approve, rejectReason)
+		if err != nil {
+			return fmt.Errorf("error applying membership approval: %s", err)
+		}
+
+		return app.storage.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
+	})
 	if err != nil {
-		return fmt.Errorf("error applying membership approval: %s", err)
+		return err
 	}
 
-	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := app.storage.FindGroupMembershipByID(appID, orgID, membershipID)
 	if err == nil && membership != nil {
-		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
+		group, _ := app.storage.FindGroup(nil, appID, orgID, membership.GroupID, nil)
 		topic := "group.invitations"
 		if approve {
 			app.notifications.SendNotification(
@@ -231,8 +259,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_name": group.Title,
 				},
 				nil,
-				current.AppID,
-				current.OrgID,
+				appID,
+				orgID,
 			)
 		} else {
 			app.notifications.SendNotification(
@@ -251,8 +279,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_name": group.Title,
 				},
 				nil,
-				current.AppID,
-				current.OrgID,
+				appID,
+				orgID,
 			)
 		}
 
@@ -270,8 +298,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
-	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
+func (app *Application) updateMembership(membership *model.GroupMembership, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
 	if membership != nil {
 		if status != nil && membership.Status != *status {
 			membership.Status = *status
@@ -283,38 +310,34 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 			membership.NotificationsPreferences = *notificationsPreferences
 		}
 
-		err := app.storage.UpdateMembership(clientID, current, membershipID, membership)
-		if err != nil {
-			return err
-		}
+		return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+			err := app.storage.UpdateMembership(context, membership)
+			if err != nil {
+				return err
+			}
+
+			return app.storage.UpdateGroupStats(context, membership.AppID, membership.OrgID, membership.GroupID, false, true, false, true)
+		})
 	}
 
 	return nil
 }
 
-func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
-	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
+func (app *Application) getEvents(current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	events, err := app.storage.FindEvents(current, groupID, filterByToMembers)
 	if err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+func (app *Application) createEvent(eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
 	var skipUserID *string
-
-	if current != nil && creator == nil {
-		creator = &model.Creator{
-			UserID: current.ID,
-			Name:   current.Name,
-			Email:  current.Email,
-		}
-	}
 	if creator != nil {
 		skipUserID = &creator.UserID
 	}
 
-	event, err := app.storage.CreateEvent(clientID, eventID, group.ID, toMemberList, creator)
+	event, err := app.storage.CreateEvent(group.AppID, group.OrgID, eventID, group.ID, toMemberList, creator)
 	if err != nil {
 		return nil, err
 	}
@@ -325,8 +348,10 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 		userIDs = event.GetMembersAsUserIDs(skipUserID)
 	}
 
-	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+	result, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
+		AppID:    group.AppID,
+		OrgID:    group.OrgID,
 		UserIDs:  userIDs,
 		Statuses: []string{"member", "admin"},
 	})
@@ -351,88 +376,125 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 				"entity_name": group.Title,
 			},
 			nil,
-			current.AppID,
-			current.OrgID,
+			group.AppID,
+			group.OrgID,
 		)
 	}
 
 	return event, nil
 }
 
-func (app *Application) updateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
-	return app.storage.UpdateEvent(clientID, eventID, groupID, toMemberList)
+func (app *Application) updateEvent(appID string, orgID string, eventID string, groupID string, toMemberList []model.ToMember) error {
+	return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		err := app.storage.UpdateEvent(context, appID, orgID, eventID, groupID, toMemberList)
+		if err == nil {
+			return err
+		}
+
+		return app.storage.UpdateGroupStats(context, appID, orgID, groupID, true, false, false, false)
+	})
 }
 
-func (app *Application) deleteEvent(clientID string, _ *model.User, eventID string, groupID string) error {
-	err := app.storage.DeleteEvent(clientID, eventID, groupID)
-	if err != nil {
-		return err
-	}
-	return nil
+func (app *Application) deleteEvent(appID string, orgID string, eventID string, groupID string) error {
+	return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		err := app.storage.DeleteEvent(context, appID, orgID, eventID, groupID)
+		if err != nil {
+			return err
+		}
+
+		return app.storage.UpdateGroupStats(context, appID, orgID, groupID, true, false, false, false)
+	})
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
-}
-
-func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return app.storage.FindPost(nil, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
-}
-
-func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
-	return app.storage.GetUserPostCount(clientID, userID)
-}
-
-func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-
+func (app *Application) createPost(current *model.User, post *model.Post, group *model.Group) error {
 	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
 		userIDs := post.GetMembersAsUserIDs(&current.ID)
-		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		memberships, err := app.Services.FindGroupMemberships(model.MembershipFilter{
 			GroupIDs: []string{post.GroupID},
+			AppID:    post.AppID,
+			OrgID:    post.OrgID,
 			UserIDs:  userIDs,
 			Statuses: []string{"admin"},
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		if len(memberships.Items) > 0 {
-			var toMembers []model.ToMember
-			for _, membership := range memberships.Items {
-				toMembers = append(toMembers, model.ToMember{
-					UserID: membership.UserID,
-					Name:   membership.Name,
-				})
+		var toMembers []model.ToMember
+		for _, membership := range memberships.Items {
+			toMembers = append(toMembers, model.ToMember{
+				UserID: membership.UserID,
+				Name:   membership.Name,
+			})
+		}
+		post.ToMembersList = toMembers
+	}
+
+	if current != nil {
+		membership, err := app.storage.FindGroupMembership(nil, post.AppID, post.OrgID, post.GroupID, current.ID)
+		if membership == nil || err != nil || !membership.IsAdminOrMember() {
+			return fmt.Errorf("the user is not member or admin of the group")
+		}
+
+		if post.ID == "" { // Always required
+			post.ID = uuid.NewString()
+		}
+
+		if post.Replies != nil { // This is constructed only for GET all for group
+			post.Replies = nil
+		}
+
+		if post.ParentID != nil {
+			topPost, _ := app.storage.FindTopPostByParentID(current, post.GroupID, *post.ParentID, false)
+			if topPost != nil && topPost.ParentID == nil {
+				post.TopParentID = &topPost.ID
 			}
-			post.ToMembersList = toMembers
+		}
+
+		now := time.Now()
+		post.DateCreated = &now
+		post.DateUpdated = &now
+		post.Creator = model.Creator{
+			UserID: current.ID,
+			Email:  current.Email,
+			Name:   current.Name,
+		}
+
+		err = app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+			err := app.storage.CreatePost(context, post)
+			if err != nil {
+				return err
+			}
+
+			return app.storage.UpdateGroupStats(context, post.AppID, post.OrgID, post.GroupID, true, false, false, false)
+		})
+		if err != nil {
+			return err
 		}
 	}
 
-	post, err := app.storage.CreatePost(clientID, current, post)
-	if err != nil {
-		return nil, err
-	}
-
-	handleRewardsAsync := func(clientID, userID string) {
-		count, grErr := app.storage.GetUserPostCount(clientID, current.ID)
+	handleRewardsAsync := func(appID, orgID, userID string) {
+		count, grErr := app.storage.GetUserPostCount(appID, orgID, userID)
 		if grErr != nil {
 			log.Printf("Error createPost(): %s", grErr)
 		} else if count != nil {
 			if *count > 1 {
-				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserSubmittedPost, "")
+				app.rewards.CreateUserReward(userID, rewards.GroupsUserSubmittedPost, "")
 			} else if *count == 1 {
-				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserSubmittedFirstPost, "")
+				app.rewards.CreateUserReward(userID, rewards.GroupsUserSubmittedFirstPost, "")
 			}
 		}
 	}
-	go handleRewardsAsync(clientID, current.ID)
+	go handleRewardsAsync(current.AppID, current.OrgID, current.ID)
 
 	handleNotification := func() {
 
-		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, &current.ID)
+		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(post, &current.ID)
 
-		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 			GroupIDs: []string{group.ID},
+			AppID:    group.AppID,
+			OrgID:    group.OrgID,
 			UserIDs:  recipientsUserIDs,
 			Statuses: []string{"member", "admin"},
 		})
@@ -462,7 +524,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 					"entity_type":  "group",
 					"entity_id":    group.ID,
 					"entity_name":  group.Title,
-					"post_id":      *post.ID,
+					"post_id":      post.ID,
 					"post_subject": post.Subject,
 					"post_body":    post.Body,
 				},
@@ -474,10 +536,10 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	}
 	go handleNotification()
 
-	return post, nil
+	return nil
 }
 
-func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, post *model.Post, skipUserID *string) ([]string, error) {
+func (app *Application) getPostNotificationRecipientsAsUserIDs(post *model.Post, skipUserID *string) ([]string, error) {
 	if post == nil {
 		return nil, nil
 	}
@@ -492,7 +554,7 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 			break
 		}
 
-		post, err = app.storage.FindPost(nil, clientID, nil, post.GroupID, *post.ParentID, true, false)
+		post, err = app.storage.FindPost(nil, post.AppID, post.OrgID, nil, post.GroupID, *post.ParentID, true, false)
 		if err != nil {
 			log.Printf("error app.getPostToMemberList() - %s", err)
 			return nil, fmt.Errorf("error app.getPostToMemberList() - %s", err)
@@ -506,16 +568,18 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 	return nil, nil
 }
 
-func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+func (app *Application) updatePost(userID string, group *model.Group, post *model.Post) error {
 	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
-		userIDs := post.GetMembersAsUserIDs(&current.ID)
-		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+		userIDs := post.GetMembersAsUserIDs(&userID)
+		memberships, err := app.Services.FindGroupMemberships(model.MembershipFilter{
 			GroupIDs: []string{post.GroupID},
+			AppID:    post.AppID,
+			OrgID:    post.OrgID,
 			UserIDs:  userIDs,
 			Statuses: []string{"admin"},
 		})
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		if len(memberships.Items) > 0 {
@@ -530,12 +594,34 @@ func (app *Application) updatePost(clientID string, current *model.User, group *
 		}
 	}
 
-	return app.storage.UpdatePost(clientID, current.ID, post)
+	originalPost, _ := app.storage.FindPost(nil, post.AppID, post.OrgID, &userID, post.GroupID, post.ID, true, true)
+	if originalPost == nil {
+		return fmt.Errorf("unable to find post with id (%s) ", post.ID)
+	}
+	if originalPost.Creator.UserID != userID {
+		return fmt.Errorf("only creator of the post can update it")
+	}
+
+	if post.ID == "" { // Always required
+		return fmt.Errorf("Missing id")
+	}
+
+	now := time.Now()
+	post.DateUpdated = &now
+
+	return app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		err := app.storage.UpdatePost(context, userID, post)
+		if err != nil {
+			return err
+		}
+
+		return app.storage.UpdateGroupStats(context, post.AppID, post.OrgID, post.GroupID, true, false, false, false)
+	})
 }
 
-func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
+func (app *Application) reactToPost(current *model.User, groupID string, postID string, reaction string) error {
 	transaction := func(context storage.TransactionContext) error {
-		post, err := app.storage.FindPost(context, clientID, &current.ID, groupID, postID, true, false)
+		post, err := app.storage.FindPost(context, current.AppID, current.OrgID, &current.ID, groupID, postID, true, false)
 		if err != nil {
 			return fmt.Errorf("error finding post: %v", err)
 		}
@@ -565,21 +651,23 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 	return app.storage.PerformTransaction(transaction)
 }
 
-func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-
+func (app *Application) reportPostAsAbuse(current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+	if post == nil {
+		return errors.New("post is missing")
+	}
 	if !sendToDean && !sendToGroupAdmins {
 		sendToDean = true
 	}
 
 	var creatorExternalID string
-	creator, err := app.storage.FindUser(clientID, post.Creator.UserID, false)
+	creator, err := app.storage.FindUser(post.AppID, post.OrgID, post.Creator.UserID, false)
 	if err != nil {
 		log.Printf("error retrieving user: %s", err)
 	} else if creator != nil {
 		creatorExternalID = creator.ExternalID
 	}
 
-	err = app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
+	err = app.storage.ReportPostAsAbuse(post)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
 		return fmt.Errorf("error while reporting an abuse post: %s", err)
@@ -597,6 +685,17 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	subject = fmt.Sprintf("%s %s", subject, post.DateCreated.Format(time.RFC850))
 
 	if sendToDean {
+		config, err := app.storage.FindConfig(model.ConfigTypeApplication, post.AppID, post.OrgID)
+		if err != nil || config == nil {
+			log.Printf("error finding application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+			return fmt.Errorf("error finding application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+		}
+		appConfig, err := model.GetConfigData[model.ApplicationConfigData](*config)
+		if err != nil {
+			log.Printf("error asserting as application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+			return fmt.Errorf("error asserting as application config for appID %s, orgID %s: %v", post.AppID, post.OrgID, err)
+		}
+
 		body := fmt.Sprintf(`
 <div>Violation by: %s %s\n</div>
 <div>Group title: %s\n</div>
@@ -607,11 +706,13 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 		body = strings.ReplaceAll(body, `\n`, "\n")
-		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+		app.notifications.SendMail(appConfig.ReportAbuseRecipientEmail, subject, body)
 	}
 	if sendToGroupAdmins {
-		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+		result, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 			GroupIDs: []string{group.ID},
+			AppID:    post.AppID,
+			OrgID:    post.OrgID,
 			Statuses: []string{"admin"},
 		})
 		toMembers := result.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
@@ -634,7 +735,7 @@ Reported comment: %s
 			"entity_type":  "group",
 			"entity_id":    group.ID,
 			"entity_name":  group.Title,
-			"post_id":      *post.ID,
+			"post_id":      post.ID,
 			"post_subject": post.Subject,
 			"post_body":    post.Body,
 		},
@@ -646,48 +747,94 @@ Reported comment: %s
 	return nil
 }
 
-func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
+func (app *Application) deletePost(context storage.TransactionContext, appID string, orgID string, userID string, groupID string, postID string, force bool) error {
+	deleteWrapper := func(transactionContext storage.TransactionContext) error {
+		membership, _ := app.storage.FindGroupMembership(transactionContext, appID, orgID, groupID, userID)
+		filterToMembers := true
+		if membership != nil && membership.IsAdmin() {
+			filterToMembers = false
+		}
+
+		originalPost, _ := app.storage.FindPost(transactionContext, appID, orgID, &userID, groupID, postID, true, filterToMembers)
+		if originalPost == nil {
+			return fmt.Errorf("unable to find post with id (%s) ", postID)
+		}
+
+		if !force {
+			if originalPost == nil || membership == nil || (!membership.IsAdmin() && originalPost.Creator.UserID != userID) {
+				return fmt.Errorf("only creator of the post or group admin can delete it")
+			}
+		}
+
+		childPosts, err := app.storage.FindPostsByParentID(transactionContext, appID, orgID, userID, groupID, postID, true, false, false, nil)
+		if len(childPosts) > 0 && err == nil {
+			for _, post := range childPosts {
+				app.deletePost(transactionContext, appID, orgID, userID, groupID, post.ID, true)
+			}
+		}
+
+		err = app.storage.DeletePost(transactionContext, appID, orgID, userID, groupID, postID, force)
+		if err != nil {
+			return err
+		}
+
+		return app.storage.UpdateGroupStats(transactionContext, appID, orgID, groupID, true, false, false, false)
+	}
+
+	if context != nil {
+		return deleteWrapper(context)
+	}
+	return app.storage.PerformTransaction(func(transactionContext storage.TransactionContext) error {
+		return deleteWrapper(transactionContext)
+	})
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool) error {
+func (app *Application) synchronizeAuthman(appID string, orgID string, checkThreshold bool) error {
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		times, err := app.storage.FindSyncTimes(context, clientID)
+		times, err := app.storage.FindSyncTimes(context, appID, orgID)
 		if err != nil {
 			return err
 		}
 		if times != nil && times.StartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindConfig(model.ConfigTypeSync, appID, orgID)
 			if err != nil {
-				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+				log.Printf("error finding sync config for appID %s, orgID %s: %v", appID, orgID, err)
 			}
+
 			timeout := defaultConfigSyncTimeout
-			if config != nil && config.Timeout > 0 {
-				timeout = config.Timeout
+			var syncConfig *model.SyncConfigData
+			if config != nil {
+				syncConfig, err = model.GetConfigData[model.SyncConfigData](*config)
+				if err != nil {
+					log.Printf("error asserting as sync config for appID %s, orgID %s: %v", appID, orgID, err)
+				}
+				if syncConfig != nil && syncConfig.Timeout > 0 {
+					timeout = syncConfig.Timeout
+				}
 			}
 
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
-					log.Println("Another Authman sync process is running for clientID " + clientID)
-					return fmt.Errorf("another Authman sync process is running" + clientID)
+					log.Printf("Another Authman sync process is running for appID %s, orgID %s", appID, orgID)
+					return fmt.Errorf("another Authman sync process is running for appID %s, orgID %s", appID, orgID)
 				}
-				log.Printf("Authman sync past timeout threshold %d mins for client ID %s\n", timeout, clientID)
+				log.Printf("Authman sync past timeout threshold %d mins for appID %s, orgID %s\n", timeout, appID, orgID)
 			}
 			if checkThreshold {
-				if config == nil {
-					log.Printf("missing sync configs for clientID %s", clientID)
-					return fmt.Errorf("missing sync configs for clientID %s: %v", clientID, err)
+				if syncConfig == nil {
+					log.Printf("missing sync configs for appID %s, orgID %s", appID, orgID)
+					return fmt.Errorf("missing sync configs for appID %s, orgID %s: %v", appID, orgID, err)
 				}
-				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(config.TimeThreshold))) {
-					log.Println("Authman has already been synced for clientID " + clientID)
-					return fmt.Errorf("Authman has already been synced for clientID %s", clientID)
+				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(syncConfig.TimeThreshold))) {
+					log.Printf("Authman has already been synced for appID %s, orgID %s", appID, orgID)
+					return fmt.Errorf("Authman has already been synced for appID %s, orgID %s", appID, orgID)
 				}
 			}
 		}
 
-		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID})
+		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, AppID: appID, OrgID: orgID})
 	}
 
 	err := app.storage.PerformTransaction(transaction)
@@ -695,27 +842,47 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		return err
 	}
 
-	log.Printf("Global Authman synchronization started for clientID: %s\n", clientID)
+	log.Printf("Global Authman synchronization started for appID %s, orgID %s\n", appID, orgID)
 
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
 		endTime := time.Now()
-		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID})
+		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, AppID: appID, OrgID: orgID})
 		if err != nil {
 			log.Printf("Error saving sync configs to end sync: %s\n", err)
 			return
 		}
-		log.Printf("Global Authman synchronization finished for clientID: %s\n", clientID)
+		log.Printf("Global Authman synchronization finished for appID %s, orgID %s\n", appID, orgID)
 	}
 	defer finishAuthmanSync()
 
-	configs, err := app.storage.FindManagedGroupConfigs(clientID)
+	appConfig, err := app.storage.FindConfig(model.ConfigTypeApplication, appID, orgID)
 	if err != nil {
-		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+		return fmt.Errorf("error finding application config for appID %s, orgID %s: %v", appID, orgID, err)
+	}
+	if appConfig == nil {
+		return fmt.Errorf("missing application config for appID %s, orgID %s", appID, orgID)
+	}
+	applicationConfig, err := model.GetConfigData[model.ApplicationConfigData](*appConfig)
+	if err != nil {
+		return fmt.Errorf("error asserting as application config for appID %s, orgID %s: %v", appID, orgID, err)
 	}
 
-	for _, config := range configs {
-		for _, stemName := range config.AuthmanStems {
+	config, err := app.storage.FindConfig(model.ConfigTypeManagedGroup, appID, orgID)
+	if err != nil {
+		return fmt.Errorf("error finding managed group config for appID %s, orgID %s: %v", appID, orgID, err)
+	}
+	if config == nil {
+		return fmt.Errorf("missing managed group config for appID %s, orgID %s", appID, orgID)
+	}
+
+	mgConfigData, err := model.GetConfigData[model.ManagedGroupConfigData](*config)
+	if err != nil {
+		return fmt.Errorf("error asserting as managed group config for appID %s, orgID %s: %v", appID, orgID, err)
+	}
+
+	for _, mgConfig := range mgConfigData.ManagedGroups {
+		for _, stemName := range mgConfig.AuthmanStems {
 			stemGroups, err := app.authman.RetrieveAuthmanStemGroups(stemName)
 			if err != nil {
 				return fmt.Errorf("error on requesting Authman for stem groups: %s", err)
@@ -723,7 +890,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 
 			if stemGroups != nil && len(stemGroups.WsFindGroupsResults.GroupResults) > 0 {
 				for _, stemGroup := range stemGroups.WsFindGroupsResults.GroupResults {
-					storedStemGroup, err := app.storage.FindAuthmanGroupByKey(clientID, stemGroup.Name)
+					storedStemGroup, err := app.storage.FindAuthmanGroupByKey(appID, orgID, stemGroup.Name)
 					if err != nil {
 						return fmt.Errorf("error on requesting Authman for stem groups: %s", err)
 					}
@@ -734,10 +901,10 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					for _, externalID := range adminUINs {
 						defaultAdminsMapping[externalID] = true
 					}
-					for _, externalID := range app.config.AuthmanAdminUINList {
+					for _, externalID := range applicationConfig.AuthmanAdminUINList {
 						defaultAdminsMapping[externalID] = true
 					}
-					for _, externalID := range config.AdminUINs {
+					for _, externalID := range mgConfig.AdminUINs {
 						defaultAdminsMapping[externalID] = true
 					}
 
@@ -751,11 +918,13 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					if storedStemGroup == nil {
 						var memberships []model.GroupMembership
 						if len(constructedAdminUINs) > 0 {
-							memberships = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
+							memberships = app.buildMembersByExternalIDs(appID, orgID, constructedAdminUINs, "admin")
 						}
 
 						emptyText := ""
-						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
+						_, err := app.storage.CreateGroup(nil, &model.Group{
+							AppID:                appID,
+							OrgID:                orgID,
 							Title:                title,
 							Description:          &emptyText,
 							Category:             "Academic", // Hardcoded.
@@ -774,8 +943,10 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						missedUINs := []string{}
 						groupUpdated := false
 
-						existingAdmins, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+						existingAdmins, err := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 							GroupIDs: []string{storedStemGroup.ID},
+							AppID:    appID,
+							OrgID:    orgID,
 							Statuses: []string{"admin"},
 						})
 
@@ -801,11 +972,11 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 								}
 							}
 						} else if err != nil {
-							log.Printf("error rertieving admins for group: %s - %s", stemGroup.Name, err)
+							log.Printf("error retreiving admins for group: %s - %s", stemGroup.Name, err)
 						}
 
 						if len(missedUINs) > 0 {
-							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
+							missedMembers := app.buildMembersByExternalIDs(appID, orgID, missedUINs, "admin")
 							if len(missedMembers) > 0 {
 								membershipsForUpdate = append(membershipsForUpdate, missedMembers...)
 								groupUpdated = true
@@ -823,7 +994,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						if groupUpdated {
-							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
+							err := app.storage.UpdateGroup(nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
 								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
@@ -834,26 +1005,24 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		}
 	}
 
-	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
+	authmanGroups, err := app.storage.FindAuthmanGroups(appID, orgID)
 	if err != nil {
 		return err
 	}
 
-	if len(authmanGroups) > 0 {
-		for _, authmanGroup := range authmanGroups {
-			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
-			if err != nil {
-				log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
-			}
+	for _, authmanGroup := range authmanGroups {
+		err := app.synchronizeAuthmanGroup(authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID)
+		if err != nil {
+			log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 		}
 	}
 
 	return nil
 }
 
-func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.GroupMembership {
+func (app *Application) buildMembersByExternalIDs(appID string, orgID string, externalIDs []string, memberStatus string) []model.GroupMembership {
 	if len(externalIDs) > 0 {
-		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
+		users, _ := app.storage.FindUsers(appID, orgID, externalIDs, true)
 		members := []model.GroupMembership{}
 		userExternalIDmapping := map[string]model.User{}
 		for _, user := range users {
@@ -886,13 +1055,13 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 }
 
 // TODO this logic needs to be refactored because it's over complicated!
-func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string) error {
+func (app *Application) synchronizeAuthmanGroup(appID string, orgID string, groupID string) error {
 	if groupID == "" {
 		return errors.New("Missing group ID")
 	}
 	var group *model.Group
 	var err error
-	group, err = app.checkGroupSyncTimes(clientID, groupID)
+	group, err = app.checkGroupSyncTimes(appID, orgID, groupID)
 	if err != nil {
 		return err
 	}
@@ -908,7 +1077,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	finishAuthmanSync := func() {
 		endTime := time.Now()
 		group.SyncEndTime = &endTime
-		err = app.storage.UpdateGroupSyncTimes(nil, clientID, group)
+		err = app.storage.UpdateGroupSyncTimes(nil, group)
 		if err != nil {
 			log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
 			return
@@ -917,7 +1086,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	}
 	defer finishAuthmanSync()
 
-	err = app.syncAuthmanGroupMemberships(clientID, group, authmanExternalIDs)
+	err = app.syncAuthmanGroupMemberships(group, authmanExternalIDs)
 	if err != nil {
 		return fmt.Errorf("error updating group memberships for Authman %s: %s", *group.AuthmanGroup, err)
 	}
@@ -925,12 +1094,12 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	return nil
 }
 
-func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*model.Group, error) {
+func (app *Application) checkGroupSyncTimes(appID string, orgID string, groupID string) (*model.Group, error) {
 	var group *model.Group
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, clientID, groupID, nil)
+		group, err = app.storage.FindGroup(context, appID, orgID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
@@ -942,13 +1111,21 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 		}
 
 		if group.SyncStartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindConfig(model.ConfigTypeSync, appID, orgID)
 			if err != nil {
-				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+				log.Printf("error finding sync config for appID %s, orgID %s: %v", appID, orgID, err)
 			}
+
 			timeout := defaultConfigSyncTimeout
-			if config != nil && config.GroupTimeout > 0 {
-				timeout = config.GroupTimeout
+			var syncConfig *model.SyncConfigData
+			if config != nil {
+				syncConfig, err = model.GetConfigData[model.SyncConfigData](*config)
+				if err != nil {
+					log.Printf("error asserting as sync config for appID %s, orgID %s: %v", appID, orgID, err)
+				}
+				if syncConfig != nil && syncConfig.Timeout > 0 {
+					timeout = syncConfig.GroupTimeout
+				}
 			}
 			if group.SyncEndTime == nil {
 				if !startTime.After(group.SyncStartTime.Add(time.Minute * time.Duration(timeout))) {
@@ -961,7 +1138,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 
 		group.SyncStartTime = &startTime
 		group.SyncEndTime = nil
-		err = app.storage.UpdateGroupSyncTimes(context, clientID, group)
+		err = app.storage.UpdateGroupSyncTimes(context, group)
 		if err != nil {
 			return fmt.Errorf("error switching to group memberships for Authman %s: %s", *group.AuthmanGroup, err)
 		}
@@ -976,7 +1153,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	return group, nil
 }
 
-func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGroup *model.Group, authmanExternalIDs []string) error {
+func (app *Application) syncAuthmanGroupMemberships(authmanGroup *model.Group, authmanExternalIDs []string) error {
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
@@ -987,8 +1164,10 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Load existing admins
 	adminExternalIDsMap := map[string]bool{}
-	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+	adminMembers, err := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
+		AppID:    authmanGroup.AppID,
+		OrgID:    authmanGroup.OrgID,
 		Statuses: []string{"admin"},
 	})
 	if err != nil {
@@ -1004,7 +1183,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Load user records for all members
 	localUsersMapping := map[string]model.User{}
-	localUsers, err := app.storage.FindUsers(clientID, allExternalIDs, true)
+	localUsers, err := app.storage.FindUsers(authmanGroup.AppID, authmanGroup.OrgID, allExternalIDs, true)
 	if err != nil {
 		return fmt.Errorf("error on getting %d users for Authman %s: %s", len(allExternalIDs), *authmanGroup.AuthmanGroup, err)
 	}
@@ -1037,8 +1216,6 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		}
 
 		updateOperations = append(updateOperations, storage.SingleMembershipOperation{
-			ClientID:   clientID,
-			GroupID:    authmanGroup.ID,
 			ExternalID: externalID,
 			UserID:     userID,
 			Status:     &status,
@@ -1049,13 +1226,15 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		})
 	}
 	if len(updateOperations) > 0 {
-		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
+		err = app.storage.BulkUpdateGroupMembershipsByExternalID(authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID, updateOperations, false)
 		if err != nil {
 			log.Printf("Error on bulk saving membership (phase 1) in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
 		} else {
 			log.Printf("Successful bulk saving membership (phase 1) in Authman '%s'", *authmanGroup.AuthmanGroup)
-			memberships, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+			memberships, _ := app.storage.FindGroupMemberships(nil, model.MembershipFilter{
 				GroupIDs: []string{authmanGroup.ID},
+				AppID:    authmanGroup.AppID,
+				OrgID:    authmanGroup.OrgID,
 			})
 			for _, membership := range memberships.Items {
 				if membership.Email == "" || membership.Name == "" {
@@ -1086,11 +1265,17 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 		if updatedInfo {
-			_, err := app.storage.SaveGroupMembershipByExternalID(clientID, authmanGroup.ID, adminMember.ExternalID, userID, nil, email, name, nil, nil, true)
-			if err != nil {
-				log.Printf("Error saving admin membership with missing info for external ID %s in Authman %s: %s\n", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
-			} else {
+			err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+				err := app.storage.SaveGroupMembershipByExternalID(context, authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID, adminMember.ExternalID, userID, nil, email, name, nil, nil)
+				if err != nil {
+					return fmt.Errorf("error saving admin membership with missing info for external ID %s in Authman %s: %s", adminMember.ExternalID, *authmanGroup.AuthmanGroup, err)
+				}
+
 				log.Printf("Update admin member %s for group '%s'", adminMember.ExternalID, authmanGroup.Title)
+				return app.storage.UpdateGroupStats(context, authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID, false, false, true, true)
+			})
+			if err != nil {
+				log.Println(err.Error())
 			}
 		}
 	}
@@ -1133,8 +1318,6 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 				}
 				if updatedInfo {
 					updateOperations = append(updateOperations, storage.SingleMembershipOperation{
-						ClientID:   clientID,
-						GroupID:    authmanGroup.ID,
 						ExternalID: member.ExternalID,
 						Email:      email,
 						Name:       name,
@@ -1144,7 +1327,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 
 			if len(updateOperations) > 0 {
-				err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, true)
+				err = app.storage.BulkUpdateGroupMembershipsByExternalID(authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID, updateOperations, true)
 				if err != nil {
 					log.Printf("Error on bulk saving membership (phase 2) in Authman '%s': %s\n", *authmanGroup.AuthmanGroup, err)
 				} else {
@@ -1156,14 +1339,14 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Delete removed non-admin members
 	log.Printf("Deleting removed members for Authman %s...\n", *authmanGroup.AuthmanGroup)
-	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID)
+	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID, syncID)
 	if err != nil {
 		log.Printf("Error deleting removed memberships in Authman %s\n", *authmanGroup.AuthmanGroup)
 	} else {
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
 	}
 
-	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, false, false, true, true)
+	err = app.storage.UpdateGroupStats(nil, authmanGroup.AppID, authmanGroup.OrgID, authmanGroup.ID, false, false, true, true)
 	if err != nil {
 		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
 	}
@@ -1171,14 +1354,16 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	return nil
 }
 
-func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification) error {
+func (app *Application) sendGroupNotification(appID string, orgID string, notification model.GroupNotification) error {
 	memberStatuses := notification.MemberStatuses
 	if len(memberStatuses) == 0 {
 		memberStatuses = []string{"admin", "member"}
 	}
 
-	members, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+	members, err := app.findGroupMemberships(model.MembershipFilter{
 		GroupIDs: []string{notification.GroupID},
+		AppID:    appID,
+		OrgID:    orgID,
 		UserIDs:  notification.Members.ToUserIDs(),
 		Statuses: memberStatuses,
 	})
@@ -1189,7 +1374,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 
 	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
 		return true, true // Should it be a separate notification preference?
-	}), notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
+	}), notification.Topic, notification.Subject, notification.Body, notification.Data, appID, orgID)
 
 	return nil
 }
@@ -1198,39 +1383,7 @@ func (app *Application) sendNotification(recipients []notifications.Recipient, t
 	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
 }
 
-func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-	return app.storage.FindManagedGroupConfigs(clientID)
-}
-
-func (app *Application) createManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
-	config.ID = uuid.NewString()
-	config.DateCreated = time.Now()
-	config.DateUpdated = nil
-	err := app.storage.InsertManagedGroupConfig(config)
-	return &config, err
-}
-
-func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig) error {
-	return app.storage.UpdateManagedGroupConfig(config)
-}
-
-func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
-	return app.storage.DeleteManagedGroupConfig(id, clientID)
-}
-
-func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return app.storage.FindSyncConfig(clientID)
-}
-
-func (app *Application) updateSyncConfig(config model.SyncConfig) error {
-	return app.storage.SaveSyncConfig(nil, config)
-}
-
-func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return app.storage.FindGroupMembership(clientID, groupID, userID)
-}
-
-func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+func (app *Application) getResearchProfileUserCount(current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
 	searchParams := app.formatCoreAccountSearchParams(researchProfile)
 	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
 }

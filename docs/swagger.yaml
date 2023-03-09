@@ -1,5 +1,23 @@
 basePath: /gr
 definitions:
+  Config:
+    properties:
+      app_id:
+        type: string
+      data: {}
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      id:
+        type: string
+      org_id:
+        type: string
+      system:
+        type: boolean
+      type:
+        type: string
+    type: object
   Creator:
     properties:
       email:
@@ -15,7 +33,7 @@ definitions:
     type: object
   Event:
     properties:
-      client_id:
+      app_id:
         type: string
       creator:
         $ref: '#/definitions/Creator'
@@ -24,6 +42,8 @@ definitions:
       event_id:
         type: string
       group_id:
+        type: string
+      org_id:
         type: string
       to_members:
         description: nil or empty means everyone; non-empty means visible to those
@@ -34,6 +54,8 @@ definitions:
     type: object
   Group:
     properties:
+      app_id:
+        type: string
       attendance_group:
         type: boolean
       attributes:
@@ -50,10 +72,9 @@ definitions:
       category:
         description: one of the enums categories list
         type: string
-      client_id:
-        type: string
       current_member:
-        $ref: '#/definitions/GroupMembership'
+        allOf:
+        - $ref: '#/definitions/GroupMembership'
         description: this is indicative and it's not required for update APIs
       date_created:
         type: string
@@ -81,6 +102,8 @@ definitions:
         type: array
       only_admins_can_create_polls:
         type: boolean
+      org_id:
+        type: string
       privacy:
         description: public or private
         type: string
@@ -103,7 +126,8 @@ definitions:
           type: object
         type: object
       settings:
-        $ref: '#/definitions/GroupSettings'
+        allOf:
+        - $ref: '#/definitions/GroupSettings'
         description: 'TODO: Remove the pointer once the backward support is not needed
           any more!'
       stats:
@@ -123,7 +147,7 @@ definitions:
     type: object
   GroupMembership:
     properties:
-      client_id:
+      app_id:
         type: string
       date_attended:
         type: string
@@ -149,6 +173,8 @@ definitions:
         type: string
       notifications_preferences:
         $ref: '#/definitions/NotificationsPreferences'
+      org_id:
+        type: string
       photo_url:
         type: string
       reject_reason:
@@ -280,16 +306,17 @@ definitions:
         items:
           type: string
         type: array
-      client_id:
-        type: string
-      date_created:
-        type: string
-      date_updated:
-        type: string
       id:
         type: string
       type:
         type: string
+    type: object
+  ManagedGroupConfigData:
+    properties:
+      managed_groups:
+        items:
+          $ref: '#/definitions/ManagedGroupConfig'
+        type: array
     type: object
   Member:
     properties:
@@ -438,6 +465,21 @@ definitions:
       user_id:
         type: string
     type: object
+  SyncConfigData:
+    properties:
+      cron:
+        type: string
+      group_timeout:
+        description: Time from sync_start_time to be considered a failed run for a
+          single group in minutes
+        type: integer
+      time_threshold:
+        description: Threshold from start_time to be considered same run in minutes
+        type: integer
+      timeout:
+        description: Time from start_time to be considered a failed run in minutes
+        type: integer
+    type: object
   ToMember:
     properties:
       email:
@@ -454,6 +496,18 @@ definitions:
       name:
         type: string
       user_id:
+        type: string
+    type: object
+  adminUpdateConfigsRequest:
+    properties:
+      all_apps:
+        type: boolean
+      all_orgs:
+        type: boolean
+      data: {}
+      system:
+        type: boolean
+      type:
         type: string
     type: object
   createGroupRequest:
@@ -736,9 +790,9 @@ definitions:
     type: object
   model.Post:
     properties:
-      body:
+      app_id:
         type: string
-      client_id:
+      body:
         type: string
       date_created:
         type: string
@@ -754,6 +808,8 @@ definitions:
         type: boolean
       member:
         $ref: '#/definitions/Creator'
+      org_id:
+        type: string
       parent_id:
         type: string
       private:
@@ -781,25 +837,6 @@ definitions:
         type: string
       use_as_notification:
         type: boolean
-    type: object
-  model.SyncConfig:
-    properties:
-      client_id:
-        type: string
-      cron:
-        type: string
-      group_timeout:
-        description: Time from sync_start_time to be considered a failed run for a
-          single group in minutes
-        type: integer
-      time_threshold:
-        description: Threshold from start_time to be considered same run in minutes
-        type: integer
-      timeout:
-        description: Time from start_time to be considered a failed run in minutes
-        type: integer
-      type:
-        type: string
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -943,7 +980,100 @@ paths:
       operationId: AdminSynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/configs:
+    get:
+      consumes:
+      - application/json
+      description: Gets a list of configs by type
+      operationId: AdminGetConfigs
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Config'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    post:
+      consumes:
+      - text/plain
+      description: Creates a new config
+      operationId: AdminCreateConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/adminUpdateConfigsRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Config'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/configs/{id}:
+    delete:
+      description: Deletes a config by its ID
+      operationId: AdminDeleteConfig
+      parameters:
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    get:
+      consumes:
+      - application/json
+      description: Gets a config by its ID
+      operationId: AdminGetConfig
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/Config'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - text/plain
+      description: Updates an existing config by its ID
+      operationId: AdminUpdateConfig
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/adminUpdateConfigsRequest'
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -955,11 +1085,6 @@ paths:
       description: Deletes a group event
       operationId: AdminDeleteGroupEvent
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -988,11 +1113,6 @@ paths:
       description: Gives the group events.
       operationId: AdminGetGroupEvents
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1022,11 +1142,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/MembershipFilter'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1050,11 +1165,6 @@ paths:
       description: Retrieves stats for a group by id
       operationId: AdminGetGroupStats
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1075,12 +1185,6 @@ paths:
     get:
       description: gets all posts for the desired group.
       operationId: AdminGetGroupPosts
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
@@ -1098,15 +1202,9 @@ paths:
       - application/json
       description: Updates a post within the desired group.
       operationId: AdminDeleteGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1119,11 +1217,6 @@ paths:
       description: Deletes a group.
       operationId: AdminDeleteGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: ID
         in: path
         name: id
@@ -1147,11 +1240,6 @@ paths:
       description: Gives the groups list. It can be filtered by category
       operationId: AdminGetAllGroups
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -1207,18 +1295,12 @@ paths:
       - application/json
       description: Gets managed group configs
       operationId: AdminGetManagedGroupConfigs
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/ManagedGroupConfig'
+              $ref: '#/definitions/Config'
             type: array
       security:
       - AppUserAuth: []
@@ -1235,17 +1317,12 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/ManagedGroupConfig'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
+          $ref: '#/definitions/ManagedGroupConfigData'
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/ManagedGroupConfig'
+            $ref: '#/definitions/ManagedGroupConfigData'
       security:
       - AppUserAuth: []
       tags:
@@ -1261,12 +1338,7 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/ManagedGroupConfig'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
+          $ref: '#/definitions/ManagedGroupConfigData'
       - description: ID
         in: path
         name: id
@@ -1274,7 +1346,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1284,11 +1356,6 @@ paths:
       description: Deletes a managed group config
       operationId: AdminDeleteManagedGroupConfig
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: ID
         in: path
         name: id
@@ -1296,7 +1363,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1308,11 +1375,6 @@ paths:
       description: Deletes a membership
       operationId: AdminDeleteMembership
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Membership ID
         in: path
         name: membership-id
@@ -1322,7 +1384,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1333,11 +1395,6 @@ paths:
       description: Updates a membership. Only the status can be changed.
       operationId: AdminUpdateMembership
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -1353,7 +1410,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1364,18 +1421,12 @@ paths:
       - application/json
       description: Gets sync config
       operationId: AdminGetSyncConfigs
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/model.SyncConfig'
+              $ref: '#/definitions/Config'
             type: array
       security:
       - AppUserAuth: []
@@ -1392,15 +1443,10 @@ paths:
         name: data
         required: true
         schema:
-          $ref: '#/definitions/model.SyncConfig'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
+          $ref: '#/definitions/SyncConfigData'
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1412,11 +1458,6 @@ paths:
       description: Gives the groups list. It can be filtered by category
       operationId: AdminGetUserGroups
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Filtering by group's title (case-insensitive)
         in: query
         name: title
@@ -1462,11 +1503,6 @@ paths:
         privacy. V2
       operationId: AdminGetGroupsV2
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -1522,11 +1558,6 @@ paths:
       description: Gives a group. V2
       operationId: AdminGetGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: ID
         in: path
         name: id
@@ -1549,11 +1580,6 @@ paths:
         privacy. V2.
       operationId: AdminGetUserGroupsV2
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -1611,11 +1637,6 @@ paths:
         the operation
       operationId: SynchAuthmanGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1623,7 +1644,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1635,11 +1656,6 @@ paths:
       description: Deletes a group event
       operationId: DeleteGroupEvent
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1668,11 +1684,6 @@ paths:
       description: Gives the group events.
       operationId: GetGroupEvents
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1696,11 +1707,6 @@ paths:
       description: Creates a group event
       operationId: CreateGroupEvent
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -1729,11 +1735,6 @@ paths:
       description: Updates a group event
       operationId: UpdateGroupEvent
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -1763,11 +1764,6 @@ paths:
       description: Gives the group events.
       operationId: GetGroupEventsV2
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1791,11 +1787,6 @@ paths:
       description: Deletes a member membership from a group
       operationId: DeleteMember
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1823,11 +1814,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/MembershipFilter'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1857,11 +1843,6 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/createMemberRequest'
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1869,7 +1850,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1881,11 +1862,6 @@ paths:
       description: Deletes a group pending member
       operationId: DeletePendingMember
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1906,11 +1882,6 @@ paths:
       description: Creates a group pending member
       operationId: CreatePendingMember
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -1944,11 +1915,6 @@ paths:
       description: Retrieves stats for a group by id
       operationId: GetGroupStats
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -1969,12 +1935,6 @@ paths:
     get:
       description: gets all posts for the desired group.
       operationId: GetGroupPosts
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
@@ -1993,12 +1953,6 @@ paths:
       - application/json
       description: creates a post within the desired group.
       operationId: CreateGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       produces:
       - application/json
       responses:
@@ -2017,15 +1971,9 @@ paths:
       - application/json
       description: Updates a post within the desired group.
       operationId: DeleteGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2036,12 +1984,6 @@ paths:
       - application/json
       description: Gets a post within the desired group.
       operationId: GetGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
@@ -2057,12 +1999,6 @@ paths:
       - application/json
       description: Updates a post within the desired group.
       operationId: UpdateGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
@@ -2079,12 +2015,6 @@ paths:
       - application/json
       description: Reacts to a post within the desired group.
       operationId: ReactToGroupPost
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
@@ -2102,11 +2032,6 @@ paths:
       description: Reports an abusive group post
       operationId: ReportAbuseGroupPost
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2115,7 +2040,7 @@ paths:
           $ref: '#/definitions/reportAbuseGroupPostRequestBody'
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -2127,11 +2052,6 @@ paths:
       description: Deletes a group.
       operationId: DeleteGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: ID
         in: path
         name: id
@@ -2155,11 +2075,6 @@ paths:
       description: Gives the groups list. It can be filtered by category
       operationId: GetGroups
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -2217,11 +2132,6 @@ paths:
         list. Privacy can be public or private
       operationId: CreateGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2246,11 +2156,6 @@ paths:
       description: Gives a group
       operationId: GetGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: ID
         in: path
         name: id
@@ -2272,11 +2177,6 @@ paths:
       description: Updates a group.
       operationId: UpdateGroup
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2306,11 +2206,6 @@ paths:
       description: Updates the date updated field of the desired group
       operationId: IntUpdateGroupDateUpdated
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -2320,7 +2215,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2332,11 +2227,6 @@ paths:
       description: Creates a group event
       operationId: IntCreateGroupEvent
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2352,7 +2242,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2362,11 +2252,6 @@ paths:
       description: Deletes a group event
       operationId: IntDeleteGroupEvent
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Group ID
         in: path
         name: group-id
@@ -2379,7 +2264,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2391,11 +2276,6 @@ paths:
       description: Sends a notification to members of a group
       operationId: SendGroupNotification
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2409,7 +2289,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2494,11 +2374,6 @@ paths:
       description: Deletes a membership
       operationId: DeleteMembership
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Membership ID
         in: path
         name: membership-id
@@ -2523,11 +2398,6 @@ paths:
         preferences.
       operationId: UpdateMembership
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2557,11 +2427,6 @@ paths:
       description: Аpprove/Deny a membership
       operationId: MembershipApproval
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: body data
         in: body
         name: data
@@ -2591,11 +2456,6 @@ paths:
       description: Retrieves the user count matching the provided research profile
       operationId: GetResearchProfileUserCount
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Research profile
         in: body
         name: data
@@ -2625,7 +2485,7 @@ paths:
       operationId: DeleteUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2659,11 +2519,6 @@ paths:
       description: Gives the user groups.
       operationId: GetUserGroups
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -2720,7 +2575,7 @@ paths:
       operationId: LoginUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2730,12 +2585,6 @@ paths:
     get:
       description: 'Gets user stat information. Responds with {"posts_count": xxx}'
       operationId: GetUserStats
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       responses:
         "200":
           description: OK
@@ -2753,11 +2602,6 @@ paths:
         privacy. V2
       operationId: GetGroupsV2
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -2813,11 +2657,6 @@ paths:
       description: Gives a group. V2
       operationId: GetGroupV2
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: ID
         in: path
         name: id
@@ -2840,11 +2679,6 @@ paths:
         privacy. V2.
       operationId: GetUserGroupsV2
       parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
       - description: Deprecated - instead use request body filter! Filtering by group's
           title (case-insensitive)
         in: query
@@ -2902,7 +2736,7 @@ paths:
       operationId: SynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:

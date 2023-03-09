@@ -43,106 +43,57 @@ type Auth struct {
 	internalAuth *InternalAuth
 	adminAuth    *AdminAuth
 
-	supportedClients []string
+	defaultAppID string
+	defaultOrgID string
 }
 
-func (auth *Auth) clientIDCheck(r *http.Request) (bool, string) {
-	clientID := r.Header.Get("APP")
-	if len(clientID) == 0 {
-		clientID = "edu.illinois.rokwire"
-	}
-
-	//check if supported
-	for _, s := range auth.supportedClients {
-		if s == clientID {
-			return true, clientID
-		}
-	}
-	return false, ""
-}
-
-func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		return "", false
-	}
-
+func (auth *Auth) apiKeyCheck(r *http.Request) (string, string, bool) {
 	apiKey := auth.getAPIKey(r)
 	authenticated := auth.apiKeysAuth.check(apiKey, r)
 
-	return clientID, authenticated
+	return auth.defaultAppID, auth.defaultOrgID, authenticated
 }
 
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		return "", nil
-	}
-
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) *model.User {
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, allowAnonymousCoreToken, nil, r)
-	return clientID, user
+	user := auth.idTokenAuth.check(idToken, allowAnonymousCoreToken, nil, r)
+	return user
 }
 
-func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCClientIDs []string) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		return "", nil
-	}
-
+func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCClientIDs []string) *model.User {
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, false, allowedOIDCClientIDs, r)
-	return clientID, user
+	user := auth.idTokenAuth.check(idToken, false, allowedOIDCClientIDs, r)
+	return user
 }
 
-func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		log.Printf("%s %s error - missing or bad APP header", r.Method, r.URL.Path)
-		return "", false
-	}
-
+func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, string, bool) {
 	internalAuthKey := auth.getInternalAPIKey(r)
 	authenticated := auth.internalAuth.check(internalAuthKey, w)
 
-	return clientID, authenticated
+	return auth.defaultAppID, auth.defaultOrgID, authenticated
 }
 
-func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
-	//get client ID
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		return "", false, nil
-	}
-
+func (auth *Auth) mixedCheck(r *http.Request) *model.User {
 	//first check for id token
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
-		authenticated := false
-		user := auth.idTokenAuth.check(clientID, idToken, true, nil, r)
-		if user != nil {
-			authenticated = true
-		}
-		return clientID, authenticated, user
+		user := auth.idTokenAuth.check(idToken, true, nil, r)
+		return user
 	}
 
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
-		authenticated := auth.apiKeysAuth.check(apiKey, r)
-		return clientID, authenticated, nil
+		if auth.apiKeysAuth.check(apiKey, r) {
+			return &model.User{AppID: auth.defaultAppID, OrgID: auth.defaultOrgID}
+		}
 	}
-	return clientID, false, nil
+	return nil
 }
 
-func (auth *Auth) adminCheck(r *http.Request) (string, *model.User, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
-		return "", nil, false
-	}
-
-	user, forbidden := auth.adminAuth.check(clientID, r)
-	return clientID, user, forbidden
+func (auth *Auth) adminCheck(r *http.Request) (*model.User, bool) {
+	user, forbidden := auth.adminAuth.check(r)
+	return user, forbidden
 }
 
 func (auth *Auth) getAPIKey(r *http.Request) *string {
@@ -186,8 +137,9 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+func NewAuth(app *core.Application, host string, appID string, orgID string, appKeys []string, internalAPIKey string, oidcProvider string,
+	oidcClientID string, oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager,
+	groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if serviceRegManager != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -202,11 +154,11 @@ func NewAuth(app *core.Application, host string, supportedClientIDs []string, ap
 	}
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
-	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
+	idTokenAuth := newIDTokenAuth(app, appID, orgID, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
 	internalAuth := newInternalAuth(internalAPIKey)
-	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
+	adminAuth := newAdminAuth(app, appID, orgID, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClientIDs}
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth}
 	return &auth
 }
 
@@ -223,11 +175,10 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		if auth.coreTokenAuth != nil {
-			_, err := auth.coreTokenAuth.CheckRequestTokens(r)
+			_, err := auth.coreTokenAuth.CheckRequestToken(r)
 			if err == nil {
 				return true
 			}
-			return false
 		}
 		return false
 	}
@@ -258,14 +209,15 @@ func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKe
 type userData struct {
 	UIuceduUIN  *string  `json:"uiucedu_uin"`
 	Sub         *string  `json:"sub"`
-	AppID       *string  `json:"app_id"`
-	OrgID       *string  `json:"org_id"`
+	AppID       string   `json:"app_id"`
+	OrgID       string   `json:"org_id"`
 	Aud         *string  `json:"aud"`
 	Email       *string  `json:"email"`
 	Name        *string  `json:"name"`
 	Uin         *string  `json:"uin"`
 	NetID       *string  `json:"net_id"`
 	Permissions []string `json:"uiucedu_is_member_of"`
+	System      bool     `json:"system"`
 }
 
 ////////////////////////////////////
@@ -301,7 +253,9 @@ func newInternalAuth(internalAPIKey string) *InternalAuth {
 
 // IDTokenAuth entity
 type IDTokenAuth struct {
-	app *core.Application
+	app          *core.Application
+	defaultAppID string
+	defaultOrgID string
 
 	idTokenVerifier   *oidc.IDTokenVerifier
 	appClientIDs      []string
@@ -314,14 +268,14 @@ type IDTokenAuth struct {
 	cachedUsersLockMapping map[string]*sync.Mutex
 }
 
-func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCoreToken bool, allowedClientIDs []string, r *http.Request) *model.User {
+func (auth *IDTokenAuth) check(token *string, allowAnonymousCoreToken bool, allowedClientIDs []string, r *http.Request) *model.User {
 	var data *userData
 	var isCoreUser = false
 	var isAnonymous = false
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
 			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
@@ -337,7 +291,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 
 			log.Printf("Authentication successful for user: %v", claims)
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
+			data = &userData{Sub: &claims.Subject, AppID: claims.AppID, OrgID: claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID, NetID: netID}
 			isCoreUser = true
 			isAnonymous = claims.Anonymous
@@ -369,6 +323,8 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 			log.Printf("error getting user data from token - %s\n", err)
 			return nil
 		}
+		data.AppID = auth.defaultAppID
+		data.OrgID = auth.defaultOrgID
 
 		if allowedClientIDs == nil {
 			allowedClientIDs = auth.appClientIDs
@@ -402,7 +358,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	if isCoreUser {
 		userID = *data.Sub
 	} else {
-		persistedUser, err := auth.app.FindUser(clientID, data.UIuceduUIN, true)
+		persistedUser, err := auth.app.FindUser(data.AppID, data.OrgID, data.UIuceduUIN, true)
 		if err != nil {
 			log.Printf("error retriving user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
 		}
@@ -410,7 +366,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 			isCoreUser = persistedUser.IsCoreUser
 			userID = persistedUser.ID
 		} else {
-			legacyUser, err := auth.app.CreateUser(clientID, uuid.NewString(), data.UIuceduUIN, data.Email, data.Name)
+			legacyUser, err := auth.app.CreateUser(uuid.NewString(), data.AppID, data.OrgID, data.UIuceduUIN, data.Email, data.Name)
 			if err != nil {
 				log.Printf("error creating legacy user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
 			}
@@ -421,15 +377,9 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	}
 
 	//5. Get the user for the provided external id.
-	var name, externalID, email, netID, appID, orgID string
+	var name, externalID, email, netID string
 	if data.Name != nil {
 		name = *data.Name
-	}
-	if data.AppID != nil {
-		appID = *data.AppID
-	}
-	if data.OrgID != nil {
-		orgID = *data.OrgID
 	}
 	if data.UIuceduUIN != nil {
 		externalID = *data.UIuceduUIN
@@ -441,7 +391,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 		netID = *data.NetID
 	}
 	return &model.User{
-		ID: userID, AppID: appID, OrgID: orgID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		ID: userID, AppID: data.AppID, OrgID: data.OrgID, ExternalID: externalID, NetID: netID,
 		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
 		Permissions: data.Permissions,
 	}
@@ -469,7 +419,7 @@ func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
 }
 
 // newIDTokenAuth creates new id token auth
-func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
+func newIDTokenAuth(app *core.Application, appID string, orgID string, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
 	var idTokenVerifier *oidc.IDTokenVerifier
 	if len(oidcProvider) > 0 {
 		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
@@ -485,9 +435,8 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs str
 	appClientIDList := strings.Split(appClientIDs, ",")
 	extendedClientIDList := strings.Split(extendedClientIDs, ",")
 
-	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
-		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList,
-		cachedUsers: cacheUsers, cachedUsersLock: lock}
+	auth := IDTokenAuth{app: app, defaultAppID: appID, defaultOrgID: orgID, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
+		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList, cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }
 
@@ -495,7 +444,9 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs str
 
 // AdminAuth entity
 type AdminAuth struct {
-	app *core.Application
+	app          *core.Application
+	defaultAppID string
+	defaultOrgID string
 
 	appVerifier    *oidc.IDTokenVerifier
 	appClientID    string
@@ -514,13 +465,13 @@ func (auth *AdminAuth) start() {
 
 }
 
-func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, bool) {
+func (auth *AdminAuth) check(r *http.Request) (*model.User, bool) {
 	var data *userData
 	var isCoreUser = false
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && !claims.Anonymous {
 			err := auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {
@@ -528,8 +479,8 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 			}
 
 			permissions := strings.Split(claims.Permissions, ",")
-			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
-				Permissions: permissions, UIuceduUIN: &claims.UID}
+			data = &userData{Sub: &claims.Subject, AppID: claims.AppID, OrgID: claims.OrgID, Email: &claims.Email, Name: &claims.Name,
+				Permissions: permissions, UIuceduUIN: &claims.UID, System: claims.System}
 			isCoreUser = true
 		}
 	}
@@ -558,6 +509,8 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 			log.Printf("error getting user data from token - %s\n", err)
 			return nil, false
 		}
+		data.AppID = auth.defaultAppID
+		data.OrgID = auth.defaultOrgID
 
 		//we must have UIuceduUIN
 		if data.UIuceduUIN == nil {
@@ -587,15 +540,9 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		return nil, false
 	}
 
-	var name, externalID, email, userID, appID, orgID string
+	var name, externalID, email, userID string
 	if data.Sub != nil {
 		userID = *data.Sub
-	}
-	if data.AppID != nil {
-		appID = *data.AppID
-	}
-	if data.OrgID != nil {
-		orgID = *data.OrgID
 	}
 	if data.Name != nil {
 		name = *data.Name
@@ -606,19 +553,16 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	if data.Email != nil {
 		email = *data.Email
 	}
-	if data.Email != nil {
-		email = *data.Email
-	}
 	return &model.User{
 		ID:          userID,
-		AppID:       appID,
-		OrgID:       orgID,
-		ClientID:    clientID,
+		AppID:       data.AppID,
+		OrgID:       data.OrgID,
 		ExternalID:  externalID,
 		Email:       email,
 		Name:        name,
 		IsCoreUser:  isCoreUser,
 		Permissions: data.Permissions,
+		System:      data.System,
 	}, false
 }
 
@@ -694,7 +638,8 @@ func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
 	w.Write([]byte("Internal Server Error"))
 }
 
-func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string, coreTokenAuth *tokenauth.TokenAuth, authorization *casbin.Enforcer) *AdminAuth {
+func newAdminAuth(app *core.Application, appID string, orgID string, oidcProvider string, appClientID string, webAppClientID string, coreTokenAuth *tokenauth.TokenAuth,
+	authorization *casbin.Enforcer) *AdminAuth {
 	var appVerifier *oidc.IDTokenVerifier
 	var webAppVerifier *oidc.IDTokenVerifier
 	if len(oidcProvider) > 0 {
@@ -709,7 +654,7 @@ func newAdminAuth(app *core.Application, oidcProvider string, appClientID string
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
-	auth := AdminAuth{app: app, appVerifier: appVerifier, appClientID: appClientID,
+	auth := AdminAuth{app: app, defaultAppID: appID, defaultOrgID: orgID, appVerifier: appVerifier, appClientID: appClientID,
 		webAppVerifier: webAppVerifier, webAppClientID: webAppClientID, coreTokenAuth: coreTokenAuth,
 		cachedUsers: cacheUsers, cachedUsersLock: lock, authorization: authorization}
 	return &auth
