@@ -1,2 +1,11 @@
 p, all_admin_groups, /gr/api/admin/*, (GET)|(POST)|(PUT)|(DELETE), All admin actions for Groups BB
 p, research_group_admin, /gr/api/research-profile/user-count, (POST), Manage research groups
+
+p, all_admin_configs, /gr/api/admin/configs/*, (GET)|(PUT)|(DELETE), All groups config admin actions
+p, all_admin_configs, /gr/api/admin/configs, (GET)|(POST),
+p, get_admin_configs, /gr/api/admin/configs/*, (GET), Get groups configs
+p, get_admin_configs, /gr/api/admin/configs, (GET),
+p, update_admin_configs, /gr/api/admin/configs/*, (GET)|(PUT), Update groups configs
+p, update_admin_configs, /gr/api/admin/configs, (GET)|(POST),
+p, delete_admin_configs, /gr/api/admin/configs/*, (GET)|(DELETE), Delete groups configs
+p, delete_admin_configs, /gr/api/admin/configs, (GET),
