@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.2] - 2023-03-15
+### Fixed
+- Internal create event api crashes woth error 500 bug [#360](https://github.com/rokwire/groups-building-block/issues/357)
+
 ## [1.16.1] - 2023-02-14
 ### Fixed
 - Fix cast error within Tags backward compatibility handling [#357](https://github.com/rokwire/groups-building-block/issues/357)
