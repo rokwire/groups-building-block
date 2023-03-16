@@ -21,7 +21,7 @@ import (
 	"groups/utils"
 	"time"
 
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 )
 
 // Services exposes APIs for the driver adapters

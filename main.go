@@ -27,10 +27,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
-
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/sigauth"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/keys"
+	"github.com/rokwire/core-auth-library-go/v3/sigauth"
 )
 
 var (
@@ -88,19 +87,18 @@ func main() {
 		log.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
 
-	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader, true)
 	if err != nil {
 		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
 
 	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
 	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
-	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	privKey, err := keys.NewPrivKey(keys.PS256, strings.ReplaceAll(privKeyRaw, "\\n", "\n"))
 	if err != nil {
-		log.Fatalf("Error parsing priv key: %v", err)
+		log.Fatalf("Failed to parse auth priv key: %v", err)
 	}
-	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
+	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false, false)
 	if err != nil {
 		log.Fatalf("Error initializing signature auth: %v", err)
 	}
