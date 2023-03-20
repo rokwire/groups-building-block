@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)
 
+## [1.12.4] - 2023-03-20
+### Fixed
+- Hotfix of [#360] internal API for creating an event (as v1.12.4) [#362](https://github.com/rokwire/groups-building-block/issues/362)
+
 ## [1.12.3] - 2023-01-23
 ### Security
 - Use admin token check for delete group membership admin API
