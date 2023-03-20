@@ -338,6 +338,13 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 
 	if len(recipients) > 0 {
 		topic := "group.events"
+		appID := app.config.AppID
+		orgID := app.config.OrgID
+		if current != nil {
+			appID = current.AppID
+			orgID = current.OrgID
+		}
+
 		go app.notifications.SendNotification(
 			recipients,
 			&topic,
@@ -351,8 +358,8 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 				"entity_name": group.Title,
 			},
 			nil,
-			current.AppID,
-			current.OrgID,
+			appID,
+			orgID,
 		)
 	}
 
