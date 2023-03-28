@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.16.3] - 2023-03-28
+### Fixed
+- Unable to store group web_url [#364](https://github.com/rokwire/groups-building-block/issues/364)
+
 ## [1.16.2] - 2023-03-15
 ### Fixed
 - Internal create event api crashes woth error 500 bug [#360](https://github.com/rokwire/groups-building-block/issues/357)
