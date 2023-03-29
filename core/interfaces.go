@@ -421,6 +421,7 @@ type Authman interface {
 type Core interface {
 	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
+	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string) ([]map[string]interface{}, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 

@@ -92,7 +92,13 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 
 	if group.ResearchGroup {
 		searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
-		//TODO: verify this verbage
+
+		list := []notifications.Recipient{}
+		account, _ := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID)
+
+		fmt.Print(account)
+		fmt.Print(list)
+
 		app.notifications.SendNotification(nil, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
 			map[string]string{
 				"type":        "group",
