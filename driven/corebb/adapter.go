@@ -189,7 +189,7 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 }
 
 // GetAccounts retrieves account count for provided params
-func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string) ([]map[string]interface{}, error) {
+func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit int, offset int, allAccess bool, approvedKeys []string) ([]map[string]interface{}, error) {
 	if a.serviceAccountManager == nil {
 		log.Println("GetAccounts: service account manager is nil")
 		return nil, errors.New("service account manager is nil")
@@ -247,7 +247,7 @@ func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string
 	}
 
 	var maping []map[string]interface{}
-	err = json.Unmarshal(data, maping)
+	err = json.Unmarshal(data, &maping)
 	if err != nil {
 		log.Printf("GetAccounts: unable to parse json: %s", err)
 		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)

@@ -94,12 +94,21 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 		searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
 
 		list := []notifications.Recipient{}
-		account, _ := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID)
+		account, err := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID, 0, 0, false, nil)
+		if err != nil {
+			return nil, nil
+		}
+		for _, v := range account {
+			for _, f := range v {
+				id := v["id"].(string)
+				mute := false
+				ne := notifications.Recipient{UserID: id, Mute: mute}
+				list = append(list, ne)
+				fmt.Println(f)
+			}
+		}
 
-		fmt.Print(account)
-		fmt.Print(list)
-
-		app.notifications.SendNotification(nil, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
+		app.notifications.SendNotification(list, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
 			map[string]string{
 				"type":        "group",
 				"operation":   "research_group",
