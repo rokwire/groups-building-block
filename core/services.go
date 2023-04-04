@@ -113,7 +113,6 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 				"entity_id":   group.ID,
 				"entity_name": group.Title,
 			},
-			searchParams,
 			current.AppID,
 			current.OrgID)
 
@@ -242,7 +241,6 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
-				nil,
 				current.AppID,
 				current.OrgID,
 			)
@@ -262,7 +260,6 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
-				nil,
 				current.AppID,
 				current.OrgID,
 			)
@@ -369,7 +366,6 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 				"entity_id":   group.ID,
 				"entity_name": group.Title,
 			},
-			nil,
 			appID,
 			orgID,
 		)
@@ -485,7 +481,6 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 					"post_subject": post.Subject,
 					"post_body":    post.Body,
 				},
-				nil,
 				current.AppID,
 				current.OrgID,
 			)
@@ -657,7 +652,6 @@ Reported comment: %s
 			"post_subject": post.Subject,
 			"post_body":    post.Body,
 		},
-			nil,
 			current.AppID,
 			current.OrgID)
 	}
@@ -1214,7 +1208,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
-	app.notifications.SendNotification(recipients, topic, title, text, data, nil, appID, orgID)
+	app.notifications.SendNotification(recipients, topic, title, text, data, appID, orgID)
 }
 
 func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
