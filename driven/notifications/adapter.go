@@ -55,7 +55,7 @@ func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title
 
 func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string) error {
 	if len(recipients) > 0 || len(accountCriteria) > 0 {
-		url := fmt.Sprintf("%s/api/bbs/message", na.baseURL)
+		url := fmt.Sprintf("%s/api/message", na.baseURL)
 
 		async := true
 		message := map[string]interface{}{
