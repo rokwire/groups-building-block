@@ -98,14 +98,11 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 		if err != nil {
 			return nil, nil
 		}
-		for _, v := range account {
-			for _, f := range v {
-				id := v["id"].(string)
-				mute := false
-				ne := notifications.Recipient{UserID: id, Mute: mute}
-				list = append(list, ne)
-				fmt.Println(f)
-			}
+		for _, u := range account {
+			id := u["id"].(string)
+			mute := false
+			ne := notifications.Recipient{UserID: id, Mute: mute}
+			list = append(list, ne)
 		}
 
 		app.notifications.SendNotification(list, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
