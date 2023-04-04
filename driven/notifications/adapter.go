@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -49,25 +50,24 @@ func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.
 }
 
 // SendNotification sends notification to a user
-func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string) {
-	na.sendNotification(recipients, topic, title, text, data, accountCriteria, appID, orgID)
+func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
+	na.sendNotification(recipients, topic, title, text, data, appID, orgID)
 }
 
-func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string) error {
-	if len(recipients) > 0 || len(accountCriteria) > 0 {
+func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) error {
+	if len(recipients) > 0 {
 		url := fmt.Sprintf("%s/api/bbs/message", na.baseURL)
 
 		async := true
 		message := map[string]interface{}{
-			"org_id":                     orgID,
-			"app_id":                     appID,
-			"priority":                   10,
-			"recipients":                 recipients,
-			"recipient_account_criteria": accountCriteria,
-			"topic":                      topic,
-			"subject":                    title,
-			"body":                       text,
-			"data":                       data,
+			"org_id":     orgID,
+			"app_id":     appID,
+			"priority":   10,
+			"recipients": recipients,
+			"topic":      topic,
+			"subject":    title,
+			"body":       text,
+			"data":       data,
 		}
 		bodyData := map[string]interface{}{
 			"async":   async,
@@ -93,8 +93,14 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 
 		defer resp.Body.Close()
 
+		responseData, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("SendNotification: unable to read response json: %s", err)
+			return fmt.Errorf("SendNotification: unable to parse response json: %s", err)
+		}
+
 		if resp.StatusCode != 200 {
-			log.Printf("SendNotification: error with response code - %d", resp.StatusCode)
+			log.Printf("SendNotification: error with response code - %d, Response: %s", resp.StatusCode, responseData)
 			return fmt.Errorf("SendNotification:error with response code != 200")
 		}
 	}

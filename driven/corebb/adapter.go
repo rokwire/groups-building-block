@@ -187,3 +187,71 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 
 	return count, nil
 }
+
+// GetAccounts retrieves account count for provided params
+func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit int, offset int, allAccess bool, approvedKeys []string) ([]map[string]interface{}, error) {
+	if a.serviceAccountManager == nil {
+		log.Println("GetAccounts: service account manager is nil")
+		return nil, errors.New("service account manager is nil")
+	}
+
+	url := fmt.Sprintf("%s/bbs/accounts", a.coreURL)
+	queryString := ""
+	if appID != nil {
+		queryString += "?app_id=" + *appID
+	}
+	if orgID != nil {
+		if queryString == "" {
+			queryString += "?"
+		} else {
+			queryString += "&"
+		}
+		queryString += "org_id=" + *orgID
+	}
+	bodyBytes, err := json.Marshal(searchParams)
+	if err != nil {
+		log.Printf("GetAccounts: error marshalling body - %s", err)
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url+queryString, bytes.NewReader(bodyBytes))
+	if err != nil {
+		log.Printf("GetAccounts: error creating request - %s", err)
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	appIDVal := "all"
+	if appID != nil {
+		appIDVal = *appID
+	}
+	orgIDVal := "all"
+	if orgID != nil {
+		appIDVal = *orgID
+	}
+	resp, err := a.serviceAccountManager.MakeRequest(req, appIDVal, orgIDVal)
+	if err != nil {
+		log.Printf("GetAccounts: error sending request - %s", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("GetAccounts: error with response code - %d", resp.StatusCode)
+		return nil, fmt.Errorf("GetAccounts: error with response code != 200")
+	}
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("GetAccounts: unable to read json: %s", err)
+		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)
+	}
+
+	var maping []map[string]interface{}
+	err = json.Unmarshal(data, &maping)
+	if err != nil {
+		log.Printf("GetAccounts: unable to parse json: %s", err)
+		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)
+	}
+
+	return maping, nil
+}

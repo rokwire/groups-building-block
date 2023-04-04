@@ -404,7 +404,7 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string)
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string)
 	SendMail(toEmail string, subject string, body string)
 }
 
@@ -421,6 +421,7 @@ type Authman interface {
 type Core interface {
 	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
+	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit int, offset int, allAccess bool, approvedKeys []string) ([]map[string]interface{}, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 
