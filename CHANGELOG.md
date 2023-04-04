@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [1.16.4] - 2023-04-04
+### Fixed
 - Fix sending notifications when creating new group [#366](https://github.com/rokwire/groups-building-block/issues/366)
 
 ## [1.16.3] - 2023-03-28
