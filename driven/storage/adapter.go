@@ -426,13 +426,6 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 	insertedID := uuid.NewString()
 	now := time.Now()
 
-	//
-	// [#301] Research Groups don't support automatic join feature!!!
-	//
-	if group.ResearchGroup && group.CanJoinAutomatically {
-		group.CanJoinAutomatically = false
-	}
-
 	err := sa.PerformTransaction(func(context TransactionContext) error {
 
 		//
@@ -524,16 +517,8 @@ func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.Use
 
 func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
 
-	//
-	// [#301] Research Groups don't support automatic join feature!!!
-	//
-
 	// transaction
 	err := sa.PerformTransaction(func(context TransactionContext) error {
-		if group.ResearchGroup && group.CanJoinAutomatically {
-			group.CanJoinAutomatically = false
-		}
-
 		setOperation := bson.D{
 			primitive.E{Key: "title", Value: group.Title},
 			primitive.E{Key: "privacy", Value: group.Privacy},
