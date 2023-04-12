@@ -225,6 +225,10 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	if err == nil && membership != nil {
 		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
+		groupStr := "Group"
+		if group.ResearchGroup {
+			groupStr = "Research Project"
+		}
 		if approve {
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
@@ -232,8 +236,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 						(membership.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)),
 				},
 				&topic,
-				fmt.Sprintf("Group - %s", group.Title),
-				fmt.Sprintf("Your membership in '%s' group has been approved", group.Title),
+				fmt.Sprintf("%s - %s", groupStr, group.Title),
+				fmt.Sprintf("Your membership in '%s' %s has been approved", group.Title, strings.ToLower(groupStr)),
 				map[string]string{
 					"type":        "group",
 					"operation":   "membership_approve",
@@ -251,8 +255,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 						(membership.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)),
 				},
 				&topic,
-				fmt.Sprintf("Group - %s", group.Title),
-				fmt.Sprintf("Your membership in '%s' group has been rejected with a reason: %s", group.Title, rejectReason),
+				fmt.Sprintf("%s - %s", groupStr, group.Title),
+				fmt.Sprintf("Your membership in '%s' %s has been rejected with a reason: %s", group.Title, strings.ToLower(groupStr), rejectReason),
 				map[string]string{
 					"type":        "group",
 					"operation":   "membership_reject",
@@ -353,12 +357,16 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 			appID = current.AppID
 			orgID = current.OrgID
 		}
+		groupStr := "Group"
+		if group.ResearchGroup {
+			groupStr = "Research Project"
+		}
 
 		go app.notifications.SendNotification(
 			recipients,
 			&topic,
-			fmt.Sprintf("Group - %s", group.Title),
-			fmt.Sprintf("New event has been published in '%s' group", group.Title),
+			fmt.Sprintf("%s - %s", groupStr, group.Title),
+			fmt.Sprintf("New event has been published in '%s' %s", group.Title, strings.ToLower(groupStr)),
 			map[string]string{
 				"type":        "group",
 				"operation":   "event_created",
@@ -458,8 +466,12 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 		})
 
 		if len(recipients) > 0 {
-			title := fmt.Sprintf("Group - %s", group.Title)
-			body := fmt.Sprintf("New post has been published in '%s' group", group.Title)
+			groupStr := "Group"
+			if group.ResearchGroup {
+				groupStr = "Research Project"
+			}
+			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
+			body := fmt.Sprintf("New post has been published in '%s' %s", group.Title, strings.ToLower(groupStr))
 			if post.UseAsNotification {
 				title = post.Subject
 				body = post.Body

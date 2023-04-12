@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"groups/core/model"
 	"log"
+	"strings"
 )
 
 func (app *Application) checkUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
@@ -89,16 +90,20 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 
 			if len(recipients) > 0 {
 				topic := "group.invitations"
+				groupStr := "Group"
+				if group.ResearchGroup {
+					groupStr = "Research Project"
+				}
 
-				message := fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+				message := fmt.Sprintf("New membership request for '%s' %s has been submitted", group.Title, strings.ToLower(groupStr))
 				if group.CanJoinAutomatically {
-					message = fmt.Sprintf("%s joined '%s' group", member.GetDisplayName(), group.Title)
+					message = fmt.Sprintf("%s joined '%s' %s", member.GetDisplayName(), group.Title, strings.ToLower(groupStr))
 				}
 
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
+					fmt.Sprintf("%s - %s", groupStr, group.Title),
 					message,
 					map[string]string{
 						"type":        "group",
@@ -160,11 +165,16 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 				(member.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)
 		})
 
+		groupStr := "Group"
+		if group.ResearchGroup {
+			groupStr = "Research Project"
+		}
+
 		var message string
 		if membership.Status == "membership" || membership.Status == "admin" {
-			message = fmt.Sprintf("New membership joined '%s' group", group.Title)
+			message = fmt.Sprintf("New membership joined '%s' %s", group.Title, strings.ToLower(groupStr))
 		} else {
-			message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+			message = fmt.Sprintf("New membership request for '%s' %s has been submitted", group.Title, strings.ToLower(groupStr))
 		}
 
 		if len(recipients) > 0 {
@@ -172,7 +182,7 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 			app.notifications.SendNotification(
 				recipients,
 				&topic,
-				fmt.Sprintf("Group - %s", group.Title),
+				fmt.Sprintf("%s - %s", groupStr, group.Title),
 				message,
 				map[string]string{
 					"type":        "group",

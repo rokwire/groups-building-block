@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.18.0] - 2023-04-12
+### Added
+- Improve FCM messages differenciate normal groups and research projects [#370](https://github.com/rokwire/groups-building-block/issues/370)
+
 ## [1.17.0] - 2023-04-11
 ### Changed
 - Enable support of can_join_automatically flag for research groups [#368](https://github.com/rokwire/groups-building-block/issues/368)
