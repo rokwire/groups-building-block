@@ -957,14 +957,19 @@ func (m *database) ApplyGroupsAttributesTransition(client *mongo.Client, groups 
 		}
 
 		filter := bson.D{
-			{Key: "attributes", Value: bson.M{"$exists": false}},
-		}
-		_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
-			{Key: "$set", Value: bson.D{
-				{Key: "attributes.category", Value: "$category"},
-				{Key: "attributes.tags", Value: "$tags"},
+			{Key: "$or", Value: []bson.M{
+				{"attributes": bson.M{"$exists": false}},
+				{"attributes.category": "$category"},
+				{"attributes.tags": "$tags"},
 			}},
-		}, nil)
+		}
+		_, err = groups.UpdateManyWithContext(sessionContext, filter,
+			[]bson.M{
+				{"$set": bson.M{
+					"attributes.category": "$category",
+					"attributes.tags":     "$tags",
+				}},
+			}, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err

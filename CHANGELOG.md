@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.18.1] - 2023-05-02
+- Fix bad attributes migration for category & tags [#374](https://github.com/rokwire/groups-building-block/issues/374)
+
 ## [1.18.0] - 2023-04-12
 ### Added
 - Improve FCM messages differenciate normal groups and research projects [#370](https://github.com/rokwire/groups-building-block/issues/370)
