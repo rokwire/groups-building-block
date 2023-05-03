@@ -300,15 +300,10 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 }
 
 type administrationImpl struct {
 	app *Application
-}
-
-func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getGroupsUnprotected(clientID, filter)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc

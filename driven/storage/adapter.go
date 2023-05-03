@@ -822,10 +822,12 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 			filter = append(filter, primitive.E{Key: "research_open", Value: primitive.M{"$ne": true}})
 		}
 	}
-	if groupsFilter.ResearchGroup {
-		filter = append(filter, primitive.E{Key: "research_group", Value: true})
-	} else {
-		filter = append(filter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
+	if groupsFilter.ResearchGroup != nil {
+		if *groupsFilter.ResearchGroup {
+			filter = append(filter, primitive.E{Key: "research_group", Value: true})
+		} else {
+			filter = append(filter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
+		}
 	}
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
@@ -975,11 +977,14 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 			mongoFilter["research_open"] = primitive.M{"$ne": true}
 		}
 	}
-	if groupsFilter.ResearchGroup {
-		mongoFilter["research_group"] = true
-	} else {
-		mongoFilter["research_group"] = bson.M{"$ne": true}
+	if groupsFilter.ResearchGroup != nil {
+		if *groupsFilter.ResearchGroup {
+			mongoFilter["research_group"] = true
+		} else {
+			mongoFilter["research_group"] = bson.M{"$ne": true}
+		}
 	}
+
 	if groupsFilter.ResearchAnswers != nil {
 		for outerKey, outerValue := range groupsFilter.ResearchAnswers {
 			for innerKey, innerValue := range outerValue {
