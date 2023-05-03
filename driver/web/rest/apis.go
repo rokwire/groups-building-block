@@ -81,6 +81,8 @@ type userGroupShortDetail struct {
 	Title            string `json:"title"`
 	Privacy          string `json:"privacy"`
 	MembershipStatus string `json:"membership_status"`
+	ResearchOpen     bool   `json:"research_open"`
+	ResearchGroup    bool   `json:"research_group"`
 }
 
 // CreateGroup creates a group
@@ -466,6 +468,11 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 		}
 	}
 
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
+	}
+
 	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetGroups() error getting groups - %s", err.Error())
@@ -606,6 +613,11 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 			// just log an error and proceed and assume an empty filter
 			log.Printf("apis.GetUserGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
+	}
+
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
 	}
 
 	groups, err := h.app.Services.GetUserGroups(clientID, current, groupsFilter)

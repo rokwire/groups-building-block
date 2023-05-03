@@ -97,6 +97,11 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		}
 	}
 
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
+	}
+
 	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
@@ -212,6 +217,11 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 			// just log an error and proceed and assume an empty filter
 			log.Printf("adminapis.GetAllGroups() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
 		}
+	}
+
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
 	}
 
 	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)

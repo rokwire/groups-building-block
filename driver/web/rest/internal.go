@@ -74,6 +74,8 @@ func (h *InternalApisHandler) IntGetUserGroupMemberships(clientID string, w http
 			Title:            group.Title,
 			Privacy:          group.Privacy,
 			MembershipStatus: status,
+			ResearchGroup:    group.ResearchGroup,
+			ResearchOpen:     group.ResearchOpen,
 		}
 
 		userGroups[i] = ugm
