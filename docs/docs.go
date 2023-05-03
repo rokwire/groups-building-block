@@ -4299,6 +4299,12 @@ const docTemplate = `{
                 "privacy": {
                     "type": "string"
                 },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
                 "title": {
                     "type": "string"
                 }
@@ -4485,7 +4491,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.12.3",
+	Version:          "1.18.1",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"http"},
