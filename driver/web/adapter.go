@@ -24,7 +24,10 @@ import (
 	"net/http"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/gorilla/mux"
 
@@ -39,7 +42,12 @@ type Adapter struct {
 	apisHandler         *rest.ApisHandler
 	adminApisHandler    *rest.AdminApisHandler
 	internalApisHandler *rest.InternalApisHandler
+	bbsAPIsHandler      *rest.BBsAPIsHandler
+
+	logger *logs.Logger
 }
+
+type handlerFunc = func(*logs.Log, *http.Request, *tokenauth.Claims) logs.HTTPResponse
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
@@ -67,7 +75,7 @@ func (we *Adapter) Start() {
 	subrouter := router.PathPrefix("/gr").Subrouter()
 	subrouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	subrouter.HandleFunc("/doc", we.serveDoc)
-	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
@@ -158,7 +166,50 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events/v2", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEventsV2)).Methods("GET")
 
+	// BB APIs
+	bbsRouter := restSubrouter.PathPrefix("/bbs").Subrouter()
+	bbsRouter.HandleFunc("/user/{identifier}/groups", we.internalKeyAuthFunc(we.bbsAPIsHandler.BBsGetUserGroupMemberships)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{identifier}", we.internalKeyAuthFunc(we.bbsAPIsHandler.BBsGetGroup)).Methods("GET")
+	bbsRouter.HandleFunc("/group/title/{title}/members", we.internalKeyAuthFunc(we.bbsAPIsHandler.BBsGetGroupMembersByGroupTitle)).Methods("GET")
+	bbsRouter.HandleFunc("/authman/synchronize", we.internalKeyAuthFunc(we.bbsAPIsHandler.SynchronizeAuthman)).Methods("POST")
+	bbsRouter.HandleFunc("/stats", we.internalKeyAuthFunc(we.bbsAPIsHandler.GroupStats)).Methods("GET")
+	bbsRouter.HandleFunc("/group/{group-id}/date_updated", we.internalKeyAuthFunc(we.bbsAPIsHandler.UpdateGroupDateUpdated)).Methods("POST")
+	bbsRouter.HandleFunc("/group/{group-id}/events", we.internalKeyAuthFunc(we.bbsAPIsHandler.CreateGroupEvent)).Methods("POST")
+	bbsRouter.HandleFunc("/group/{group-id}/events/{event-id}", we.internalKeyAuthFunc(we.bbsAPIsHandler.DeleteGroupEvent)).Methods("DELETE")
+	bbsRouter.HandleFunc("/group/{group-id}/notification", we.internalKeyAuthFunc(we.bbsAPIsHandler.SendGroupNotification)).Methods("POST")
+
+	//TP APIs
+	// tpsRouter := mainRouter.PathPrefix("/tps").Subrouter()
+
 	log.Fatal(http.ListenAndServe(":80", router))
+}
+
+func (we Adapter) wrapFunc(handler handlerFunc, authorization tokenauth.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		logObj := we.logger.NewRequestLog(req)
+
+		logObj.RequestReceived()
+
+		var response logs.HTTPResponse
+		if authorization != nil {
+			responseStatus, claims, err := authorization.Check(req)
+			if err != nil {
+				logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, responseStatus, true))
+				return
+			}
+
+			//do not crash the service if the deprecated internal auth type is used
+			if claims != nil {
+				logObj.SetContext("account_id", claims.Subject)
+			}
+			response = handler(logObj, req, claims)
+		} else {
+			response = handler(logObj, req, nil)
+		}
+
+		logObj.SendHTTPResponse(w, response)
+		logObj.RequestComplete()
+	}
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
@@ -171,13 +222,13 @@ func (we Adapter) serveDocUI() http.Handler {
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
-func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+// func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
+// 	return func(w http.ResponseWriter, req *http.Request) {
+// 		utils.LogRequest(req)
 
-		handler(w, req)
-	}
-}
+// 		handler(w, req)
+// 	}
+// }
 
 type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
@@ -302,11 +353,20 @@ func NewWebAdapter(app *core.Application, host string, supportedClientIDs []stri
 	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
+	auth, err := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
+	if err != nil {
+		log.Printf("error creating auth - %s", err.Error())
+	}
+
+	// auth, err := NewAuth(serviceRegManager, app)
+	// if err != nil {
+	//  logger.Fatalf("error creating auth - %s", err.Error())
+	// }
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
+	bbsApisHandler := rest.NewBBsAPIsHandler(app)
 
-	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
+	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler, bbsAPIsHandler: &bbsApisHandler}
 }

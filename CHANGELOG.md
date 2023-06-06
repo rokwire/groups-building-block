@@ -5,6 +5,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+- Support Core BB service tokens [#231](https://github.com/rokwire/groups-building-block/issues/231)
 
 ## [1.18.2] - 2023-05-03
 - Fix research groups handling for the internal APIs [#376](https://github.com/rokwire/groups-building-block/issues/376)

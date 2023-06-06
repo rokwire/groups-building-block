@@ -29,6 +29,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -39,13 +41,14 @@ type ApisHandler struct {
 
 // Version gives the service version
 // @Description Gives the service version.
+// @Tags Client
 // @ID Version
-// @Tags Client-V1
 // @Produce plain
-// @Success 200 {string} v1.4.9
+// @Success 200
+// @Security RokwireAuth
 // @Router /version [get]
-func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(h.app.Services.GetVersion()))
+func (h ApisHandler) Version(l *logs.Log, r *http.Request, claims *tokenauth.Claims) logs.HTTPResponse {
+	return l.HTTPResponseSuccessMessage(h.app.Services.GetVersion())
 }
 
 type createGroupRequest struct {
