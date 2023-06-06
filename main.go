@@ -27,10 +27,11 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang-jwt/jwt"
-
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/sigauth"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/envloader"
+	"github.com/rokwire/core-auth-library-go/v3/keys"
+	"github.com/rokwire/core-auth-library-go/v3/sigauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -44,6 +45,18 @@ func main() {
 	if len(Version) == 0 {
 		Version = "dev"
 	}
+
+	serviceID := "gr"
+	loggerOpts := logs.LoggerOpts{SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties(serviceID + "/version")}
+	logger := logs.NewLogger(serviceID, &loggerOpts)
+	envLoader := envloader.NewEnvLoader(Version, logger)
+
+	envPrefix := strings.ReplaceAll(strings.ToUpper(serviceID), "-", "_") + "_"
+	port := envLoader.GetAndLogEnvVar(envPrefix+"PORT", false, false)
+	if len(port) == 0 {
+		port = "80"
+	}
+
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 
@@ -60,6 +73,7 @@ func main() {
 	}
 
 	// Auth Service
+	baseURL := envLoader.GetAndLogEnvVar(envPrefix+"BASE_URL", true, false)
 	groupServiceURL := getEnvKey("GROUP_SERVICE_URL", false)
 
 	authService := authservice.AuthService{
@@ -74,31 +88,37 @@ func main() {
 		log.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
 
-	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader)
+	serviceRegManager, err := authservice.NewServiceRegManager(&authService, serviceRegLoader, !strings.HasPrefix(baseURL, "http://localhost"))
 	if err != nil {
 		log.Fatalf("Error initializing service registration manager: %v", err)
 	}
 
-	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
-	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
+	// Service account
+	var serviceAccountManager *authservice.ServiceAccountManager
+
+	serviceAccountID := envLoader.GetAndLogEnvVar(envPrefix+"SERVICE_ACCOUNT_ID", false, false)
+	privKeyRaw := envLoader.GetAndLogEnvVar(envPrefix+"PRIV_KEY", false, true)
 	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
-	privKey, err := jwt.ParseRSAPrivateKeyFromPEM([]byte(privKeyRaw))
+	privKey, err := keys.NewPrivKey(keys.PS256, privKeyRaw)
 	if err != nil {
-		log.Fatalf("Error parsing priv key: %v", err)
-	}
-	signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false)
-	if err != nil {
-		log.Fatalf("Error initializing signature auth: %v", err)
-	}
+		logger.Errorf("Error parsing priv key: %v", err)
+	} else if serviceAccountID == "" {
+		logger.Errorf("Missing service account id")
+	} else {
+		signatureAuth, err := sigauth.NewSignatureAuth(privKey, serviceRegManager, false, false)
+		if err != nil {
+			logger.Fatalf("Error initializing signature auth: %v", err)
+		}
 
-	serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
-	if err != nil {
-		log.Fatalf("Error initializing remote service account loader: %v", err)
-	}
+		serviceAccountLoader, err := authservice.NewRemoteServiceAccountLoader(&authService, serviceAccountID, signatureAuth)
+		if err != nil {
+			logger.Fatalf("Error initializing remote service account loader: %v", err)
+		}
 
-	serviceAccountManager, err := authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
-	if err != nil {
-		log.Fatalf("Error initializing service account manager: %v", err)
+		serviceAccountManager, err = authservice.NewServiceAccountManager(&authService, serviceAccountLoader)
+		if err != nil {
+			logger.Fatalf("Error initializing service account manager: %v", err)
+		}
 	}
 
 	// Notification adapter

@@ -16,7 +16,6 @@ package web
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"groups/core"
 	"groups/core/model"
@@ -30,10 +29,13 @@ import (
 	"golang.org/x/sync/syncmap"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/v2/authorization"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/authutils"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
+
+	"github.com/rokwire/core-auth-library-go/v3/authorization"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/authutils"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 )
 
 // Auth handler
@@ -42,6 +44,9 @@ type Auth struct {
 	idTokenAuth  *IDTokenAuth
 	internalAuth *InternalAuth
 	adminAuth    *AdminAuth
+
+	bbs tokenauth.Handlers
+	tps tokenauth.Handlers
 
 	supportedClients []string
 }
@@ -187,7 +192,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 // NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) (*Auth, error) {
 	var tokenAuth *tokenauth.TokenAuth
 	if serviceRegManager != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -206,8 +211,28 @@ func NewAuth(app *core.Application, host string, supportedClientIDs []string, ap
 	internalAuth := newInternalAuth(internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClientIDs}
-	return &auth
+	bbs, err := newBBsAuth(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs auth", nil, err)
+	}
+	bbsHandlers := tokenauth.NewHandlers(bbs)
+
+	tps, err := newTPSAuth(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "tps auth", nil, err)
+	}
+	tpsHandlers := tokenauth.NewHandlers(tps)
+
+	auth := Auth{
+		apiKeysAuth:      apiKeysAuth,
+		idTokenAuth:      idTokenAuth,
+		internalAuth:     internalAuth,
+		adminAuth:        adminAuth,
+		supportedClients: supportedClientIDs,
+		bbs:              bbsHandlers,
+		tps:              tpsHandlers,
+	}
+	return &auth, nil
 }
 
 /////////////////////////////////////
@@ -223,7 +248,7 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		if auth.coreTokenAuth != nil {
-			_, err := auth.coreTokenAuth.CheckRequestTokens(r)
+			_, err := auth.coreTokenAuth.CheckRequestToken(r)
 			if err == nil {
 				return true
 			}
@@ -321,7 +346,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
 			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
@@ -520,7 +545,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && !claims.Anonymous {
 			err := auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {
@@ -713,4 +738,50 @@ func newAdminAuth(app *core.Application, oidcProvider string, appClientID string
 		webAppVerifier: webAppVerifier, webAppClientID: webAppClientID, coreTokenAuth: coreTokenAuth,
 		cachedUsers: cacheUsers, cachedUsersLock: lock, authorization: authorization}
 	return &auth
+}
+
+func newBBsAuth(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
+	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/bbs_permission_policy.csv")
+	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionStart, "bbs token auth", nil, err)
+	}
+
+	check := func(claims *tokenauth.Claims, req *http.Request) (int, error) {
+		if !claims.Service {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+		}
+
+		if !claims.FirstParty {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+		}
+
+		return http.StatusOK, nil
+	}
+
+	auth := tokenauth.NewStandardHandler(bbsTokenAuth, check)
+	return auth, nil
+}
+
+func newTPSAuth(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
+	tpsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/tps_permission_policy.csv")
+	tpsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, tpsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionStart, "tps token auth", nil, err)
+	}
+
+	check := func(claims *tokenauth.Claims, req *http.Request) (int, error) {
+		if !claims.Service {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+		}
+
+		if claims.FirstParty {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+		}
+
+		return http.StatusOK, nil
+	}
+
+	auth := tokenauth.NewStandardHandler(tpsTokenAuth, check)
+	return auth, nil
 }
