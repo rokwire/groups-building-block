@@ -40,6 +40,7 @@ ROKWIRE_API_KEYS | < string (comma-separated) > | yes | List of API keys to be u
 AUTHMAN_ADMIN_UIN_LIST | < string (comma-separated) > | yes | List of UINs for admin users used when loading data from AuthMan
 GR_SERVICE_ACCOUNT_ID | < string > | yes | ID of Service Account for Groups BB
 GR_PRIV_KEY | < string > | yes | PEM encoded private key for Groups BB
+GR_SERVICE_ACCOUNT_ID | < string> | yes | Service account id groups building block
 
 ### Run Application
 
