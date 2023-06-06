@@ -1,0 +1,12 @@
+p, all_user_identifier_groups, /gr/api/user/*/groups, (GET), All user identifer actions for Groups BB
+p, all_identifier_groups, /gr/api/group/*, (GET), All identifer actions for Groups BB
+p, all_member_title_groups, /gr/api/group/title/*/members, (GET), All group member title actions for Groups BB
+p, all_authman_groups, /gr/api/authman/synchronize, (POST), All authman actions for Groups BB
+p, all_stats_groups, /gr/api/stats, (Get), All stats actions for Groups BB
+p, all_date_groups, /gr/api/group/*/date_updated, (POST), All date actions for Groups BB
+p, all_events_groups, /gr/api/group/*/events, (POST), All date actions for Groups BB
+p, all_events_groups, /gr/api/group/*/events/*, (DELETE), All date actions for Groups BB
+p, all_notifications_groups, /gr/api/group/*/notification, (POST), All notification actions for Groups BB
+
+
+
