@@ -1,0 +1,30 @@
+{
+    "app_secret": {
+        "GR_MONGO_AUTH": "<mongo auth url>",
+        "ROKWIRE_API_KEYS": "<smtp password>",
+        "INTERNAL_API_KEY": "<internal api key>",
+        "GR_PRIV_KEY": "<service account priv key>"
+    },
+    "app_config":{
+        "GR_PORT": "5000",
+        "GR_MONGO_DATABASE": "<mongo database>",
+        "GR_MONGO_TIMEOUT": "",
+        "GROUPS_APP_ID": "<default org id>",
+        "GROUPS_ORG_ID": "<default app id>",
+        "NOTIFICATIONS_REPORT_ABUSE_EMAIL": "<report abuse email>",
+        "NOTIFICATIONS_BASE_URL": "<notifications base url>",
+        "AUTHMAN_BASE_URL": "<authman url>",
+        "AUTHMAN_USERNAME": "<authman username>",
+        "AUTHMAN_PASSWORD": "<authman password>",
+        "GR_OIDC_PROVIDER": "<oidc provider>",
+        "GR_OIDC_CLIENT_ID": "<oidc client id>",
+        "GR_OIDC_EXTENDED_CLIENT_IDS": "",
+        "GR_OIDC_ADMIN_CLIENT_ID": "<oidc admin client id>",
+        "GR_OIDC_ADMIN_WEB_CLIENT_ID": "<oidc admin web client id>",
+        "AUTHMAN_ADMIN_UIN_LIST": "<admin uins>",
+        "GR_HOST": "<host>",
+        "CORE_BB_HOST": "<core bb host>",
+        "GROUP_SERVICE_URL": "<service url>",
+        "GR_SERVICE_ACCOUNT_ID": "<service account id>"
+    }
+}

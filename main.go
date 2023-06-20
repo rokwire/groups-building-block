@@ -31,6 +31,7 @@ import (
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 	"github.com/rokwire/core-auth-library-go/v2/sigauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -44,6 +45,14 @@ func main() {
 	if len(Version) == 0 {
 		Version = "dev"
 	}
+
+	serviceID := "gr"
+	loggerOpts := logs.LoggerOpts{
+		SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties(serviceID + "/version"),
+		SensitiveHeaders: []string{"Rokwire-Api-Key", "Rokwire_gs_api_key", "Internal-Api-Key"},
+	}
+	logger := logs.NewLogger(serviceID, &loggerOpts)
+
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
 
@@ -147,15 +156,19 @@ func main() {
 	//web adapter
 	apiKeys := getAPIKeys()
 	host := getEnvKey("GR_HOST", true)
+	port := getEnvKey("GR_PORT", true)
+	if len(port) == 0 {
+		port = "80"
+	}
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
 	oidcExtendedClientIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
 	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
 	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, supportedClientIDs, apiKeys, oidcProvider,
+	webAdapter := web.NewWebAdapter(application, host, port, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, serviceRegManager, groupServiceURL)
+		intrernalAPIKey, serviceRegManager, groupServiceURL, logger)
 	webAdapter.Start()
 }
 

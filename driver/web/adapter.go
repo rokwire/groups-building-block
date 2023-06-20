@@ -19,12 +19,12 @@ import (
 	"groups/core"
 	"groups/core/model"
 	"groups/driver/web/rest"
-	"groups/utils"
 	"log"
 	"net/http"
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/logging-library-go/v2/logs"
 
 	"github.com/gorilla/mux"
 
@@ -34,11 +34,14 @@ import (
 // Adapter entity
 type Adapter struct {
 	host string
+	port string
 	auth *Auth
 
 	apisHandler         *rest.ApisHandler
 	adminApisHandler    *rest.AdminApisHandler
 	internalApisHandler *rest.InternalApisHandler
+
+	logger *logs.Logger
 }
 
 // @title Rokwire Groups Building Block API
@@ -158,7 +161,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events/v2", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEventsV2)).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":80", router))
+	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
@@ -173,9 +176,10 @@ func (we Adapter) serveDocUI() http.Handler {
 
 func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 		handler(w, req)
+		logObj.RequestComplete()
 	}
 }
 
@@ -183,7 +187,8 @@ type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, authenticated := we.auth.apiKeyCheck(req)
 		if !authenticated {
@@ -193,6 +198,7 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		}
 
 		handler(clientID, w, req)
+		logObj.RequestComplete()
 	}
 }
 
@@ -200,7 +206,8 @@ type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Requ
 
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user := we.auth.idTokenCheck(w, req, false)
 		if user == nil {
@@ -210,12 +217,14 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user := we.auth.idTokenCheck(w, req, true)
 		if user == nil {
@@ -225,12 +234,14 @@ func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFun
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
 		if user == nil {
@@ -240,12 +251,14 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
@@ -255,12 +268,14 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		}
 
 		handler(clientID, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, authenticated, user := we.auth.mixedCheck(req)
 		if !authenticated {
@@ -271,6 +286,7 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 
 		//user can be nil
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
@@ -278,7 +294,8 @@ type adminAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Reques
 
 func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user, forbidden := we.auth.adminCheck(req)
 		if user == nil {
@@ -293,13 +310,14 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
+func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
+	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
@@ -308,5 +326,6 @@ func NewWebAdapter(app *core.Application, host string, supportedClientIDs []stri
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
 
-	return &Adapter{host: host, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
+	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
+		internalApisHandler: internalApisHandler, logger: logger}
 }
