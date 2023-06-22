@@ -31,6 +31,7 @@ AUTHMAN_USERNAME | < string > | yes | Username to use when logging into to AuthM
 AUTHMAN_PASSWORD | < string > | yes | Password to use when logging into to AuthMan
 GROUP_SERVICE_URL | < url > | yes | URL where this application is being hosted
 GR_HOST | < url > | yes | URL where this application is being hosted
+GR_PORT | < int > | yes | Port where this application is exposed
 GR_OIDC_PROVIDER | < url > | yes | URL of OIDC provider to be used when authenticating requests
 GR_OIDC_CLIENT_ID | < string > | yes | Client ID to validate with OIDC provider for standard client
 GR_OIDC_EXTENDED_CLIENT_IDS | < string > | no | Client ID to validate with OIDC provider for additional clients
