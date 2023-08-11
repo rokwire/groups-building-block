@@ -37,9 +37,10 @@ type Adapter struct {
 	port string
 	auth *Auth
 
-	apisHandler         *rest.ApisHandler
-	adminApisHandler    *rest.AdminApisHandler
-	internalApisHandler *rest.InternalApisHandler
+	apisHandler          *rest.ApisHandler
+	adminApisHandler     *rest.AdminApisHandler
+	internalApisHandler  *rest.InternalApisHandler
+	analyticsApisHandler *rest.AnalyticsApisHandler
 
 	logger *logs.Logger
 }
@@ -160,6 +161,10 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events/v2", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEventsV2)).Methods("GET")
+
+	// Analytics
+	analyticsSubrouter := restSubrouter.PathPrefix("/analytics").Subrouter()
+	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -325,7 +330,8 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
+	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
 
 	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
-		internalApisHandler: internalApisHandler, logger: logger}
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, logger: logger}
 }

@@ -2121,7 +2121,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	if post.ID == nil || postID != *post.ID {
+	if post.ID == "" || postID != post.ID {
 		log.Printf("unexpected post id query param (%s) and post json data", postID)
 		http.Error(w, fmt.Sprintf("inconsistent post id query param (%s) and post json data", postID), http.StatusBadRequest)
 		return
@@ -2434,17 +2434,22 @@ func (h *ApisHandler) GetResearchProfileUserCount(clientID string, current *mode
 	w.Write(data)
 }
 
-// NewApisHandler creates new rest Handler instance
+// NewApisHandler creates new rest Client APIs Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
 }
 
-// NewAdminApisHandler creates new rest Handler instance
+// NewAdminApisHandler creates new rest Asmin APIs Handler instance
 func NewAdminApisHandler(app *core.Application) *AdminApisHandler {
 	return &AdminApisHandler{app: app}
 }
 
-// NewInternalApisHandler creates new rest Handler instance
+// NewInternalApisHandler creates new rest Internal APIs Handler instance
 func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 	return &InternalApisHandler{app: app}
+}
+
+// NewAnalyticsApisHandler creates new rest Analytics Handler instance
+func NewAnalyticsApisHandler(app *core.Application) *AnalyticsApisHandler {
+	return &AnalyticsApisHandler{app: app}
 }

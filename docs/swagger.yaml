@@ -810,6 +810,21 @@ definitions:
       send_to_group_admins:
         type: boolean
     type: object
+  rest.analyticsGetPostsResponse:
+    properties:
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      member_user_id:
+        type: string
+    type: object
   rest.userGroupShortDetail:
     properties:
       id:
@@ -937,7 +952,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.18.1
+  version: 1.18.2
 paths:
   /admin/authman/synchronize:
     post:
@@ -1607,6 +1622,32 @@ paths:
       - APIKeyAuth: []
       tags:
       - Admin-V2
+  /api/analytics/posts:
+    get:
+      consumes:
+      - application/json
+      description: Gets posts
+      operationId: AnalyticsGetPosts
+      parameters:
+      - description: Start date string - RFC3339 encoded
+        in: query
+        name: start_date
+        type: string
+      - description: End date string - RFC3339 encoded
+        in: query
+        name: end_date
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.analyticsGetPostsResponse'
+            type: array
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Analytics
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
