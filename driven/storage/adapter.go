@@ -385,7 +385,7 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 		}
 		if len(posts) > 0 {
 			for _, post := range posts {
-				err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, *post.ID, true)
+				err = sa.DeletePost(sessionContext, clientID, userID, post.GroupID, post.ID, true)
 				if err != nil {
 					log.Printf("error on delete all posts for user (%s) - %s", userID, err.Error())
 					return err
@@ -1207,7 +1207,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	if paging && len(list) > 0 {
 		for _, post := range list {
-			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, *post.ID, true, order)
+			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, post.ID, true, order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
 					if childPost.UserCanSeePost(current.ID) {
@@ -1225,7 +1225,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 		for i := range list {
 			postID := list[i].ID
 			list[i].Replies = make([]*model.Post, 0)
-			postMapping[*postID] = list[i]
+			postMapping[postID] = list[i]
 		}
 		for _, post := range list {
 			if post != nil {
@@ -1357,7 +1357,7 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 	if recursive {
 		if len(posts) > 0 {
 			for _, post := range posts {
-				childPosts, err := sa.FindPostsByParentID(ctx, clientID, userID, groupID, *post.ID, true, filterByToMembers, recursive, order)
+				childPosts, err := sa.FindPostsByParentID(ctx, clientID, userID, groupID, post.ID, true, filterByToMembers, recursive, order)
 				if err == nil && childPosts != nil {
 					for _, childPost := range childPosts {
 						posts = append(posts, childPost)
@@ -1407,13 +1407,10 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
 
-		if post.ClientID == nil { // Always required
-			post.ClientID = &clientID
-		}
+		post.ClientID = clientID
 
-		if post.ID == nil { // Always required
-			id := uuid.New().String()
-			post.ID = &id
+		if post.ID == "" { // Always required
+			post.ID = uuid.New().String()
 		}
 
 		if post.Replies != nil { // This is constructed only for GET all for group
@@ -1423,13 +1420,12 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 		if post.ParentID != nil {
 			topPost, _ := sa.FindTopPostByParentID(clientID, current, post.GroupID, *post.ParentID, false)
 			if topPost != nil && topPost.ParentID == nil {
-				post.TopParentID = topPost.ID
+				post.TopParentID = &topPost.ID
 			}
 		}
 
 		now := time.Now()
-		post.DateCreated = &now
-		post.DateUpdated = &now
+		post.DateCreated = now
 		post.Creator = model.Creator{
 			UserID: current.ID,
 			Email:  current.Email,
@@ -1461,19 +1457,17 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 // UpdatePost Updates a post
 func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error) {
 	if post != nil {
-		originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, *post.ID, true, true)
+		originalPost, _ := sa.FindPost(nil, clientID, &userID, post.GroupID, post.ID, true, true)
 		if originalPost == nil {
-			return nil, fmt.Errorf("unable to find post with id (%s) ", *post.ID)
+			return nil, fmt.Errorf("unable to find post with id (%s) ", post.ID)
 		}
 		if originalPost.Creator.UserID != userID {
 			return nil, fmt.Errorf("only creator of the post can update it")
 		}
 
-		if post.ClientID == nil { // Always required
-			post.ClientID = &clientID
-		}
+		post.ClientID = clientID
 
-		if post.ID == nil { // Always required
+		if post.ID == "" { // Always required
 			return nil, fmt.Errorf("Missing id")
 		}
 
@@ -1581,7 +1575,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 		childPosts, err := sa.FindPostsByParentID(transactionContext, clientID, userID, groupID, postID, true, false, false, nil)
 		if len(childPosts) > 0 && err == nil {
 			for _, post := range childPosts {
-				sa.DeletePost(transactionContext, clientID, userID, groupID, *post.ID, true)
+				sa.DeletePost(transactionContext, clientID, userID, groupID, post.ID, true)
 			}
 		}
 

@@ -89,6 +89,9 @@ type Services interface {
 	// Group Notifications
 	SendGroupNotification(clientID string, notification model.GroupNotification) error
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
+
+	// Analytics
+	AnalyticsFindPosts(startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 }
 
 type servicesImpl struct {
@@ -298,6 +301,11 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 	return s.app.getResearchProfileUserCount(clientID, current, researchProfile)
 }
 
+// Analytics
+func (s *servicesImpl) AnalyticsFindPosts(startDate *time.Time, endDate *time.Time) ([]model.Post, error) {
+	return s.app.analyticsFindPosts(startDate, endDate)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 }
@@ -386,6 +394,9 @@ type Storage interface {
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
+
+	// Analytics
+	AnalyticsFindPosts(startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 }
 
 type storageListenerImpl struct {

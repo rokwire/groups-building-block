@@ -1033,6 +1033,48 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/analytics/posts": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gets posts",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "operationId": "AnalyticsGetPosts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date string - RFC3339 encoded",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date string - RFC3339 encoded",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.analyticsGetPostsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/authman/synchronize": {
             "post": {
                 "security": [
@@ -4287,6 +4329,29 @@ const docTemplate = `{
                 }
             }
         },
+        "rest.analyticsGetPostsResponse": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "member_user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "rest.userGroupShortDetail": {
             "type": "object",
             "properties": {
@@ -4491,7 +4556,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.18.1",
+	Version:          "1.18.2",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"http"},
