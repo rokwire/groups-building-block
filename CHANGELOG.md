@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.20.0] - 2023-08-14
+### Added
+- More Analytics APIs and improvements for getting groups, posts and members [#382](https://github.com/rokwire/groups-building-block/issues/382)
+
 ## [1.19.0] - 2023-08-03
 ### Added
 - Analytics API for getting posts [#382](https://github.com/rokwire/groups-building-block/issues/382)
