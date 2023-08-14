@@ -1033,6 +1033,96 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/analytics/groups": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gets groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "operationId": "AnalyticsGetGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date string - RFC3339 encoded",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date string - RFC3339 encoded",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.analyticsGetGroupsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analytics/members": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gets groups members",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "operationId": "AnalyticsGetGroupsMembers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date string - RFC3339 encoded",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date string - RFC3339 encoded",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.analyticsGetGroupsMembersResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/analytics/posts": {
             "get": {
                 "security": [
@@ -1049,6 +1139,12 @@ const docTemplate = `{
                 ],
                 "operationId": "AnalyticsGetPosts",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group_id",
+                        "in": "query"
+                    },
                     {
                         "type": "string",
                         "description": "Start date string - RFC3339 encoded",
@@ -4326,6 +4422,58 @@ const docTemplate = `{
                 },
                 "send_to_group_admins": {
                     "type": "boolean"
+                }
+            }
+        },
+        "rest.analyticsGetGroupsMembersResponse": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.analyticsGetGroupsResponse": {
+            "type": "object",
+            "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "privacy": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },

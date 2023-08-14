@@ -91,7 +91,9 @@ type Services interface {
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 
 	// Analytics
-	AnalyticsFindPosts(startDate *time.Time, endDate *time.Time) ([]model.Post, error)
+	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
+	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
+	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 }
 
 type servicesImpl struct {
@@ -302,8 +304,16 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 }
 
 // Analytics
-func (s *servicesImpl) AnalyticsFindPosts(startDate *time.Time, endDate *time.Time) ([]model.Post, error) {
-	return s.app.analyticsFindPosts(startDate, endDate)
+func (s *servicesImpl) AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error) {
+	return s.app.analyticsFindPosts(groupID, startDate, endDate)
+}
+
+func (s *servicesImpl) AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error) {
+	return s.app.analyticsFindGroups(startDate, endDate)
+}
+
+func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error) {
+	return s.app.analyticsFindMembers(groupID, startDate, endDate)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -396,7 +406,9 @@ type Storage interface {
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 
 	// Analytics
-	AnalyticsFindPosts(startDate *time.Time, endDate *time.Time) ([]model.Post, error)
+	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
+	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
+	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 }
 
 type storageListenerImpl struct {
