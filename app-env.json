@@ -3,7 +3,9 @@
         "GR_MONGO_AUTH": "<mongo auth url>",
         "ROKWIRE_API_KEYS": "<smtp password>",
         "INTERNAL_API_KEY": "<internal api key>",
-        "GR_PRIV_KEY": "<service account priv key>"
+        "GR_PRIV_KEY": "<service account priv key>",
+        "AUTHMAN_PASSWORD": "<authman password>",
+        "AUTHMAN_ADMIN_UIN_LIST": "<admin uins>"
     },
     "app_config":{
         "GR_PORT": "5000",
@@ -15,13 +17,11 @@
         "NOTIFICATIONS_BASE_URL": "<notifications base url>",
         "AUTHMAN_BASE_URL": "<authman url>",
         "AUTHMAN_USERNAME": "<authman username>",
-        "AUTHMAN_PASSWORD": "<authman password>",
         "GR_OIDC_PROVIDER": "<oidc provider>",
         "GR_OIDC_CLIENT_ID": "<oidc client id>",
         "GR_OIDC_EXTENDED_CLIENT_IDS": "",
         "GR_OIDC_ADMIN_CLIENT_ID": "<oidc admin client id>",
         "GR_OIDC_ADMIN_WEB_CLIENT_ID": "<oidc admin web client id>",
-        "AUTHMAN_ADMIN_UIN_LIST": "<admin uins>",
         "GR_HOST": "<host>",
         "CORE_BB_HOST": "<core bb host>",
         "GROUP_SERVICE_URL": "<service url>",
