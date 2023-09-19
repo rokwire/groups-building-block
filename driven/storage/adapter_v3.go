@@ -203,8 +203,8 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 
 	findOptions := options.FindOptions{
 		Sort: bson.D{
-			{Key: "members.status", Value: 1},
-			{Key: "members.name", Value: 1},
+			{Key: "status", Value: 1},
+			{Key: "name", Value: 1},
 		},
 	}
 	if filter.Offset != nil {

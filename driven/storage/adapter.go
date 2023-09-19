@@ -926,13 +926,13 @@ type findUserGroupsCountResult struct {
 func (sa *Adapter) FindUserGroupsCount(clientID string, userID string) (*int64, error) {
 	pipeline := []primitive.M{
 		{"$match": primitive.M{
-			"client_id":       clientID,
-			"members.user_id": userID,
+			"client_id": clientID,
+			"user_id":   userID,
 		}},
 		{"$count": "count"},
 	}
 	var result []findUserGroupsCountResult
-	err := sa.db.groups.Aggregate(pipeline, &result, &options.AggregateOptions{})
+	err := sa.db.groupMemberships.Aggregate(pipeline, &result, &options.AggregateOptions{})
 	if err != nil {
 		return nil, err
 	}
