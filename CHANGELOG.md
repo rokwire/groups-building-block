@@ -5,6 +5,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+## [1.21.0] - 2023-09-19
 ### Changed
 - Updated libraries and docker container due to vulnerabilities along with the original ticket[#386](https://github.com/rokwire/groups-building-block/issues/386)
 ### Fixed
