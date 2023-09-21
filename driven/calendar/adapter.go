@@ -36,3 +36,21 @@ func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.Servi
 
 	return &Adapter{baseURL: baseURL, serviceAccountManager: serviceAccountManager}, nil
 }
+
+// CreateCalendarEvent creates calendar event
+func (a *Adapter) CreateCalendarEvent(adminIdentifiers []string, event string, orgID string, appID string) (string, error) {
+
+	return "", nil
+}
+
+// UpdateCalendarEvent updates calendar event
+func (a *Adapter) UpdateCalendarEvent(adminIdentifiers []string, event string, orgID string, appID string) (string, error) {
+
+	return "", nil
+}
+
+// DeleteCalendarEvent deletes calendar event
+func (a *Adapter) DeleteCalendarEvent(eventID string, orgID string, appID string) error {
+
+	return nil
+}
