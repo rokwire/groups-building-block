@@ -10,6 +10,53 @@ import (
 	"net/http"
 )
 
+// GetGroupCalendarEventsV3 Gets the group calendar events
+// @Description Gets the group calendar events
+// @ID GetGroupCalendarEventsV3
+// @Tags Client-V1
+// @Accept json
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} string
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/group/{group-id}/events [get]
+func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	events, err := h.app.Services.GetGroupCalendarEvents(clientID, current, groupID)
+	if err != nil {
+		log.Printf("error getting group events - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err := json.Marshal(events)
+	if err != nil {
+		log.Println("Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 type createCalendarEventMultiGroupData struct {
 	Event    map[string]interface{} `json:"event"`
 	GroupIDs []string               `json:"group_ids"`
@@ -52,7 +99,7 @@ func (h *ApisHandler) CreateCalendarEventMultiGroup(clientID string, current *mo
 		return
 	}
 
-	event, groupIDs, err := h.app.Services.CreateCalendarEvent(requestData.Event, requestData.GroupIDs)
+	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(clientID, current, requestData.Event, requestData.GroupIDs)
 	if err != nil {
 		log.Printf("api.CreateCalendarEventMultiGroup() Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,7 +171,7 @@ func (h *ApisHandler) CreateCalendarEventSingleGroup(clientID string, current *m
 		return
 	}
 
-	event, err := h.app.Services.CreateCalendarEventSingleGroup(requestData.Event, groupID, requestData.ToMembers)
+	event, err := h.app.Services.CreateCalendarEventSingleGroup(clientID, current, requestData.Event, groupID, requestData.ToMembers)
 	if err != nil {
 		log.Printf("api.CreateCalendarEventSingleGroup() Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

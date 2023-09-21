@@ -1323,14 +1323,14 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Gives the group events.",
+                "description": "Gets the group calendar events",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "GetGroupEvents",
+                "operationId": "GetGroupCalendarEventsV3",
                 "parameters": [
                     {
                         "type": "string",

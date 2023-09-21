@@ -96,8 +96,9 @@ type Services interface {
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 
 	// Calendar BB
-	CreateCalendarEvent(event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
-	CreateCalendarEventSingleGroup(event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error)
+	CreateCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
+	CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error)
+	GetGroupCalendarEvents(clientID string, current *model.User, groupID string) ([]map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -321,12 +322,16 @@ func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Tim
 	return s.app.analyticsFindMembers(groupID, startDate, endDate)
 }
 
-func (s *servicesImpl) CreateCalendarEvent(event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
-	return s.app.createCalendarEvent(event, groupIDs)
+func (s *servicesImpl) CreateCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	return s.app.createCalendarEventForGroups(clientID, current, event, groupIDs)
 }
 
-func (s *servicesImpl) CreateCalendarEventSingleGroup(event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
-	return s.app.createCalendarEventSingleGroup(event, groupID, members)
+func (s *servicesImpl) CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
+	return s.app.createCalendarEventSingleGroup(clientID, current, event, groupID, members)
+}
+
+func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.User, groupID string) ([]map[string]interface{}, error) {
+	return s.app.getGroupCalendarEvents(clientID, current, groupID)
 }
 
 // Administration exposes administration APIs for the driver adapters
