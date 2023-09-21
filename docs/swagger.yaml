@@ -859,6 +859,26 @@ definitions:
       member_user_id:
         type: string
     type: object
+  rest.createCalendarEventMultiGroupData:
+    properties:
+      event:
+        additionalProperties: true
+        type: object
+      group_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  rest.createCalendarEventSingleGroupData:
+    properties:
+      event:
+        additionalProperties: true
+        type: object
+      to_members:
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    type: object
   rest.userGroupShortDetail:
     properties:
       id:
@@ -1923,6 +1943,45 @@ paths:
       - AppUserAuth: []
       tags:
       - Client-V1
+  /api/group/{group-id}/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to a single group id
+      operationId: CreateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
   /api/group/{group-id}/members:
     delete:
       consumes:
@@ -2283,6 +2342,40 @@ paths:
           description: OK
           schema:
             type: string
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
+  /api/group/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to multiple group ids
+      operationId: CreateCalendarEventMultiGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
       security:
       - AppUserAuth: []
       tags:

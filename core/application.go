@@ -144,6 +144,14 @@ func (app *Application) setupSyncManagedGroupTimer() {
 	app.scheduler.Start()
 }
 
+func (app *Application) createCalendarEvent(event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	return nil, nil, nil
+}
+
+func (app *Application) createCalendarEventSingleGroup(event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
+	return nil, nil
+}
+
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
 	rewards *rewards.Adapter, config *model.ApplicationConfig) *Application {

@@ -94,6 +94,10 @@ type Services interface {
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
 	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
+
+	// Calendar BB
+	CreateCalendarEvent(event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
+	CreateCalendarEventSingleGroup(event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -315,6 +319,14 @@ func (s *servicesImpl) AnalyticsFindPosts(groupID *string, startDate *time.Time,
 
 func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error) {
 	return s.app.analyticsFindMembers(groupID, startDate, endDate)
+}
+
+func (s *servicesImpl) CreateCalendarEvent(event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	return s.app.createCalendarEvent(event, groupIDs)
+}
+
+func (s *servicesImpl) CreateCalendarEventSingleGroup(event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
+	return s.app.createCalendarEventSingleGroup(event, groupID, members)
 }
 
 // Administration exposes administration APIs for the driver adapters
