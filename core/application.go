@@ -17,6 +17,7 @@ package core
 import (
 	"errors"
 	"groups/core/model"
+	"groups/driven/calendar"
 	"groups/driven/corebb"
 	"groups/driven/rewards"
 	"log"
@@ -45,6 +46,7 @@ type Application struct {
 	authman       Authman
 	corebb        Core
 	rewards       Rewards
+	calendar      Calendar
 
 	authmanSyncInProgress bool
 
@@ -146,12 +148,12 @@ func (app *Application) setupSyncManagedGroupTimer() {
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter, calendar *calendar.Adapter, config *model.ApplicationConfig) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
 	managedGroupTasks := map[string]scheduledTask{}
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
+		authman: authman, corebb: core, rewards: rewards, calendar: calendar, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

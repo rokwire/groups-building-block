@@ -18,6 +18,7 @@ import (
 	core "groups/core"
 	"groups/core/model"
 	"groups/driven/authman"
+	"groups/driven/calendar"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
 	"groups/driven/rewards"
@@ -120,6 +121,13 @@ func main() {
 		log.Fatalf("Error initializing notification adapter: %v", err)
 	}
 
+	// Calendar adapter
+	calendarBaseURL := getEnvKey("CALENDAR_BASE_URL", true)
+	calendarAdapter, err := calendar.NewCalendarAdapter(calendarBaseURL, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("Error initializing notification adapter: %v", err)
+	}
+
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
@@ -150,7 +158,7 @@ func main() {
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, config)
 	application.Start()
 
 	//web adapter

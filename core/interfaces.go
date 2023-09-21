@@ -448,3 +448,7 @@ type Core interface {
 type Rewards interface {
 	CreateUserReward(userID string, rewardType string, description string) error
 }
+
+// Calendar exposes Calendar BB APIs for the driver adapters
+type Calendar interface {
+}
