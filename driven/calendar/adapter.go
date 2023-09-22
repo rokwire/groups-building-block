@@ -138,6 +138,25 @@ func (a *Adapter) UpdateCalendarEvent(adminIdentifiers []string, eventID string,
 
 // DeleteCalendarEvent deletes calendar event
 func (a *Adapter) DeleteCalendarEvent(eventID string, orgID string, appID string) error {
+	url := fmt.Sprintf("%s/api/bbs/messages?id=%s", a.baseURL, eventID)
 
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		log.Printf("DeleteCalendarEvent:error creating load user data request - %s", err)
+		return err
+	}
+
+	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("DeleteCalendarEvent: error sending request - %s", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		log.Printf("DeleteCalendarEvent: error with response code - %d", resp.StatusCode)
+		return fmt.Errorf("DeleteCalendarEvent: error with response code != 200")
+	}
 	return nil
 }
