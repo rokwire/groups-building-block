@@ -70,7 +70,7 @@ func (a *Adapter) CreateCalendarEvent(adminIdentifiers []string, event string, o
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		log.Printf("CreateCalendarEvent: error with response code - %d", resp.StatusCode)
-		return nil, fmt.Errorf("GetAccounts: error with response code != 200")
+		return nil, fmt.Errorf("CreateCalendarEvent: error with response code != 200")
 	}
 
 	dataRes, err := ioutil.ReadAll(resp.Body)
@@ -87,53 +87,53 @@ func (a *Adapter) CreateCalendarEvent(adminIdentifiers []string, event string, o
 	}
 
 	return response, nil
-
-	/*
-
-
-
-		data, err := json.Marshal(body)
-		if err != nil {
-			return nil, nil, err
-		}
-		BodyReader := bytes.NewReader(data)
-
-		url := fmt.Sprintf("%s/api/bbs/appointments/", a.baseURL)
-		respBody, err := a.makeRequest("POST", externalAuth, url, BodyReader)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		type host struct {
-			FistName string `json:"first_name"`
-			LastName string `json:"last_name"`
-		}
-
-		type createResponse struct {
-			SourceID string `json:"source_id"`
-			Host     *host  `json:"host"`
-		}
-
-		var resp createResponse
-		err = json.Unmarshal(respBody, &resp)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		//prepare host
-		hostRes := model.Host{}
-		if resp.Host != nil {
-			hostRes.FirstName = resp.Host.FistName
-			hostRes.LastName = resp.Host.LastName
-		}
-		return &resp.SourceID, &hostRes, nil*/
-
 }
 
 // UpdateCalendarEvent updates calendar event
-func (a *Adapter) UpdateCalendarEvent(adminIdentifiers []string, event string, orgID string, appID string) (string, error) {
+func (a *Adapter) UpdateCalendarEvent(adminIdentifiers []string, eventID string, event string, orgID string, appID string) ([]map[string]interface{}, error) {
+	type calendarRequest struct {
+		event            string   `json:"event"`
+		adminIdentifiers []string `json:"admins_identifiers"`
+	}
 
-	return "", nil
+	body := calendarRequest{event: event, adminIdentifiers: adminIdentifiers}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/api/admin/event/%s", a.baseURL, eventID)
+	req, err := http.NewRequest("PUT", url, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("UpdateCalendarEvent:error updating event  request - %s", err)
+		return nil, err
+	}
+
+	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("UpdateCalendarEvent: error sending request - %s", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("UpdateCalendarEvent: error with response code - %d", resp.StatusCode)
+		return nil, fmt.Errorf("UpdateCalendarEvent: error with response code != 200")
+	}
+
+	dataRes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("UpdateCalendarEvent: unable to read json: %s", err)
+		return nil, fmt.Errorf("UpdateCalendarEvent: unable to parse json: %s", err)
+	}
+
+	var response []map[string]interface{}
+	err = json.Unmarshal(dataRes, &response)
+	if err != nil {
+		log.Printf("UpdateCalendarEvent: unable to parse json: %s", err)
+		return nil, fmt.Errorf("UpdateCalendarEvent: unable to parse json: %s", err)
+	}
+
+	return response, nil
 }
 
 // DeleteCalendarEvent deletes calendar event
