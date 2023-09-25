@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"groups/core/model"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -88,6 +89,74 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 	if err != nil {
 		log.Printf("CreateCalendarEvent: unable to parse json: %s", err)
 		return nil, fmt.Errorf("CreateCalendarEvent: unable to parse json: %s", err)
+	}
+
+	return response, nil
+}
+
+// GetGroupCalendarEvents gets calendar events for a group
+func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
+	type filterType struct {
+		Limit  *int64 `json:"limit,omitempty"`
+		Offset *int64 `json:"offset,omitempty"`
+
+		StartTimeAfter *int64 `json:"start_time_after,omitempty"`
+
+		StartTimeBefore *int64 `json:"start_time_before,omitempty"`
+	}
+	type calendarRequest struct {
+		Filter           filterType `json:"filter"`
+		CurrentAccountID string     `json:"current_account_id"`
+		AppID            string     `json:"app_id"`
+		OrgID            string     `json:"org_id"`
+	}
+
+	body := calendarRequest{
+		AppID:            appID,
+		OrgID:            orgID,
+		CurrentAccountID: currentAccountID,
+		Filter: filterType{
+			Limit:           filter.Limit,
+			Offset:          filter.Offset,
+			StartTimeBefore: filter.StartTimeBefore,
+			StartTimeAfter:  filter.StartTimeAfter,
+		},
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+
+	url := fmt.Sprintf("%s/api/bbs/events/load", a.baseURL)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("GetGroupCalendarEvents:error creating event  request - %s", err)
+		return nil, err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("GetGroupCalendarEvents: error sending request - %s", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("GetGroupCalendarEvents: error with response code - %d", resp.StatusCode)
+		return nil, fmt.Errorf("GetGroupCalendarEvents: error with response code != 200")
+	}
+
+	dataRes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("GetGroupCalendarEvents: unable to read json: %s", err)
+		return nil, fmt.Errorf("GetGroupCalendarEvents: unable to parse json: %s", err)
+	}
+
+	var response map[string]interface{}
+	err = json.Unmarshal(dataRes, &response)
+	if err != nil {
+		log.Printf("GetGroupCalendarEvents: unable to parse json: %s", err)
+		return nil, fmt.Errorf("GetGroupCalendarEvents: unable to parse json: %s", err)
 	}
 
 	return response, nil

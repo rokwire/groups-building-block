@@ -159,7 +159,7 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 	if len(memberships.Items) > 0 {
 		var newIDs []string
 		for _, membership := range memberships.Items {
-			newIDs = append(newIDs, membership.UserID)
+			newIDs = append(newIDs, membership.GroupID)
 		}
 
 		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
@@ -203,7 +203,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	if len(memberships.Items) > 0 {
 		var newIDs []string
 		for _, membership := range memberships.Items {
-			newIDs = append(newIDs, membership.UserID)
+			newIDs = append(newIDs, membership.GroupID)
 		}
 
 		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
@@ -234,7 +234,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	return nil, nil
 }
 
-func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string) ([]map[string]interface{}, error) {
+func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
 	mappings, err := app.storage.FindEvents(clientID, current, groupID, true)
 	if err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 		for _, eventMapping := range mappings {
 			eventIDs = append(eventIDs, eventMapping.EventID)
 		}
-		/// Retrieve Calendar events
+		return app.calendar.GetGroupCalendarEvents(current.ID, eventIDs, current.AppID, current.OrgID, filter)
 	}
 
 	return nil, err

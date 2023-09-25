@@ -21,7 +21,7 @@ import (
 // @Success 200 {array} string
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{group-id}/events [get]
+// @Router /api/group/{group-id}/events/load [post]
 func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -32,6 +32,22 @@ func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.U
 		return
 	}
 
+	var filter model.GroupEventFilter
+	requestData, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.GetGroupsV2() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &filter)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("adminapis.GetGroupsV2() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+		}
+	}
+
 	//check if allowed to see the events for this group
 	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
 	if group == nil || group.CurrentMember == nil || !hasPermission {
@@ -39,7 +55,7 @@ func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.U
 		return
 	}
 
-	events, err := h.app.Services.GetGroupCalendarEvents(clientID, current, groupID)
+	events, err := h.app.Services.GetGroupCalendarEvents(clientID, current, groupID, filter)
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -57,3 +57,13 @@ func (e Event) GetMembersAsNotificationRecipients(skipUserID *string) []notifica
 	}
 	return recipients
 }
+
+// GroupEventFilter event filter wrapper
+type GroupEventFilter struct {
+	Limit  *int64 `json:"limit,omitempty"`
+	Offset *int64 `json:"offset,omitempty"`
+
+	StartTimeAfter *int64 `json:"start_time_after,omitempty"`
+
+	StartTimeBefore *int64 `json:"start_time_before,omitempty"`
+} // @name GroupEventFilter
