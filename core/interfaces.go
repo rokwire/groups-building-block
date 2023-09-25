@@ -468,7 +468,7 @@ type Rewards interface {
 
 // Calendar exposes Calendar BB APIs for the driver adapters
 type Calendar interface {
-	CreateCalendarEvent(currentAccountID string, event string, orgID string, appID string) ([]map[string]interface{}, error)
+	CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) ([]map[string]interface{}, error)
 	UpdateCalendarEvent(adminIdentifiers []string, eventID string, event string, orgID string, appID string) ([]map[string]interface{}, error)
 	DeleteCalendarEvent(eventID string, orgID string, appID string) error
 }
