@@ -146,6 +146,117 @@ func (app *Application) setupSyncManagedGroupTimer() {
 	app.scheduler.Start()
 }
 
+func (app *Application) createCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: groupIDs,
+		UserID:   &current.ID,
+		Statuses: []string{"admin"},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(memberships.Items) > 0 {
+		var newIDs []string
+		for _, membership := range memberships.Items {
+			newIDs = append(newIDs, membership.UserID)
+		}
+
+		//
+		// Create the event placeholder
+		var err error
+		event := map[string]interface{}{}
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if event != nil {
+			var mappedGroupIDs []string
+			eventID := event["id"].(string)
+			for _, groupID := range newIDs {
+				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, nil, &model.Creator{
+					UserID: current.ID,
+					Name:   current.Name,
+					Email:  current.Email,
+				})
+				if err != nil {
+					log.Printf("Error create goup mapping: %s", err)
+				}
+				if mapping != nil {
+					mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
+				}
+			}
+			return event, mappedGroupIDs, nil
+		}
+	}
+
+	return event, nil, nil
+}
+
+func (app *Application) createCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
+	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{groupID},
+		UserID:   &current.ID,
+		Statuses: []string{"admin"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(memberships.Items) > 0 {
+		var newIDs []string
+		for _, membership := range memberships.Items {
+			newIDs = append(newIDs, membership.UserID)
+		}
+
+		//
+		// Create the event placeholder
+		var err error
+		event := map[string]interface{}{}
+		if err != nil {
+			return nil, err
+		}
+
+		if event != nil {
+			var mappedGroupIDs []string
+			eventID := event["id"].(string)
+			for _, groupID := range newIDs {
+				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, members, &model.Creator{
+					UserID: current.ID,
+					Name:   current.Name,
+					Email:  current.Email,
+				})
+				if err != nil {
+					log.Printf("Error create goup mapping: %s", err)
+				}
+				if mapping != nil {
+					mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
+				}
+			}
+			return event, nil
+		}
+	}
+
+	return event, nil
+}
+
+func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string) ([]map[string]interface{}, error) {
+	mappings, err := app.storage.FindEvents(clientID, current, groupID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(mappings) > 0 {
+		var eventIDs []string
+		for _, eventMapping := range mappings {
+			eventIDs = append(eventIDs, eventMapping.EventID)
+		}
+		/// Retrieve Calendar events
+	}
+
+	return nil, err
+}
+
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
 	rewards *rewards.Adapter, calendar *calendar.Adapter, config *model.ApplicationConfig) *Application {
