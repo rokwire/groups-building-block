@@ -164,15 +164,14 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 
 		//
 		// Create the event placeholder
-		var err error
-		event := map[string]interface{}{}
+		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
 
-		if event != nil {
+		if createdEvent != nil {
 			var mappedGroupIDs []string
-			eventID := event["id"].(string)
+			eventID := createdEvent["id"].(string)
 			for _, groupID := range newIDs {
 				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, nil, &model.Creator{
 					UserID: current.ID,

@@ -64,6 +64,7 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 		log.Printf("CreateCalendarEvent:error creating event  request - %s", err)
 		return nil, err
 	}
+	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
 	if err != nil {
@@ -82,7 +83,7 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 		return nil, fmt.Errorf("CreateCalendarEvent: unable to parse json: %s", err)
 	}
 
-	var response []map[string]interface{}
+	var response map[string]interface{}
 	err = json.Unmarshal(dataRes, &response)
 	if err != nil {
 		log.Printf("CreateCalendarEvent: unable to parse json: %s", err)
