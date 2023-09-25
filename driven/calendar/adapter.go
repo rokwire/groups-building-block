@@ -47,15 +47,17 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 	type calendarRequest struct {
 		event            map[string]interface{} `json:"event"`
 		currentAccountID string                 `json:"current_account_id"`
+		appID            string                 `json:"app_id"`
+		orgID            string                 `json:"org_id"`
 	}
 
-	body := calendarRequest{event: event, currentAccountID: currentAccountID}
+	body := calendarRequest{event: event, currentAccountID: currentAccountID, appID: appID, orgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("%s/api/admin/event", a.baseURL)
+	url := fmt.Sprintf("%s/api/bbs/events", a.baseURL)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
 		log.Printf("CreateCalendarEvent:error creating event  request - %s", err)
