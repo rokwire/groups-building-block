@@ -43,15 +43,15 @@ func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.Servi
 }
 
 // CreateCalendarEvent creates calendar event
-func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) ([]map[string]interface{}, error) {
+func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
 	type calendarRequest struct {
-		event            map[string]interface{} `json:"event"`
-		currentAccountID string                 `json:"current_account_id"`
-		appID            string                 `json:"app_id"`
-		orgID            string                 `json:"org_id"`
+		Event            map[string]interface{} `json:"event"`
+		CurrentAccountID string                 `json:"current_account_id"`
+		AppID            string                 `json:"app_id"`
+		OrgID            string                 `json:"org_id"`
 	}
 
-	body := calendarRequest{event: event, currentAccountID: currentAccountID, appID: appID, orgID: orgID}
+	body := calendarRequest{Event: event, CurrentAccountID: currentAccountID, AppID: appID, OrgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -63,6 +63,7 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 		log.Printf("CreateCalendarEvent:error creating event  request - %s", err)
 		return nil, err
 	}
+	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
 	if err != nil {
@@ -81,7 +82,7 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 		return nil, fmt.Errorf("CreateCalendarEvent: unable to parse json: %s", err)
 	}
 
-	var response []map[string]interface{}
+	var response map[string]interface{}
 	err = json.Unmarshal(dataRes, &response)
 	if err != nil {
 		log.Printf("CreateCalendarEvent: unable to parse json: %s", err)
