@@ -43,15 +43,16 @@ func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.Servi
 }
 
 // CreateCalendarEvent creates calendar event
-func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) ([]map[string]interface{}, error) {
+func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, appID string, orgID string) ([]map[string]interface{}, error) {
+
 	type calendarRequest struct {
-		event            map[string]interface{} `json:"event"`
-		currentAccountID string                 `json:"current_account_id"`
-		appID            string                 `json:"app_id"`
-		orgID            string                 `json:"org_id"`
+		Event            map[string]interface{} `json:"event"`
+		CurrentAccountID string                 `json:"current_account_id"`
+		AppID            string                 `json:"app_id"`
+		OrgID            string                 `json:"org_id"`
 	}
 
-	body := calendarRequest{event: event, currentAccountID: currentAccountID, appID: appID, orgID: orgID}
+	body := calendarRequest{Event: event, CurrentAccountID: currentAccountID, AppID: appID, OrgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -89,76 +90,4 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 	}
 
 	return response, nil
-}
-
-// UpdateCalendarEvent updates calendar event
-func (a *Adapter) UpdateCalendarEvent(adminIdentifiers []string, eventID string, event string, orgID string, appID string) ([]map[string]interface{}, error) {
-	type calendarRequest struct {
-		event            string   `json:"event"`
-		adminIdentifiers []string `json:"admins_identifiers"`
-	}
-
-	body := calendarRequest{event: event, adminIdentifiers: adminIdentifiers}
-	data, err := json.Marshal(body)
-	if err != nil {
-		return nil, err
-	}
-
-	url := fmt.Sprintf("%s/api/admin/event/%s", a.baseURL, eventID)
-	req, err := http.NewRequest("PUT", url, bytes.NewReader(data))
-	if err != nil {
-		log.Printf("UpdateCalendarEvent:error updating event  request - %s", err)
-		return nil, err
-	}
-
-	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
-	if err != nil {
-		log.Printf("UpdateCalendarEvent: error sending request - %s", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		log.Printf("UpdateCalendarEvent: error with response code - %d", resp.StatusCode)
-		return nil, fmt.Errorf("UpdateCalendarEvent: error with response code != 200")
-	}
-
-	dataRes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("UpdateCalendarEvent: unable to read json: %s", err)
-		return nil, fmt.Errorf("UpdateCalendarEvent: unable to parse json: %s", err)
-	}
-
-	var response []map[string]interface{}
-	err = json.Unmarshal(dataRes, &response)
-	if err != nil {
-		log.Printf("UpdateCalendarEvent: unable to parse json: %s", err)
-		return nil, fmt.Errorf("UpdateCalendarEvent: unable to parse json: %s", err)
-	}
-
-	return response, nil
-}
-
-// DeleteCalendarEvent deletes calendar event
-func (a *Adapter) DeleteCalendarEvent(eventID string, orgID string, appID string) error {
-	url := fmt.Sprintf("%s/api/bbs/messages?id=%s", a.baseURL, eventID)
-
-	req, err := http.NewRequest("DELETE", url, nil)
-	if err != nil {
-		log.Printf("DeleteCalendarEvent:error creating load user data request - %s", err)
-		return err
-	}
-
-	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
-	if err != nil {
-		log.Printf("DeleteCalendarEvent: error sending request - %s", err)
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		log.Printf("DeleteCalendarEvent: error with response code - %d", resp.StatusCode)
-		return fmt.Errorf("DeleteCalendarEvent: error with response code != 200")
-	}
-	return nil
 }

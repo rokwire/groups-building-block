@@ -2,12 +2,13 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core/model"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // GetGroupCalendarEventsV3 Gets the group calendar events
