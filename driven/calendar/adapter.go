@@ -161,3 +161,53 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 
 	return response, nil
 }
+
+// AddPeopleToCalendarEvent adds people calendar event
+func (a *Adapter) AddPeopleToCalendarEvent(currentAccountIDs []string, appID string, orgID string) error {
+
+	type addPeopleRequest struct {
+		CurrentAccountIDs []string `json:"current_account_id"`
+		AppID             string   `json:"app_id"`
+		OrgID             string   `json:"org_id"`
+	}
+
+	body := addPeopleRequest{CurrentAccountIDs: currentAccountIDs, AppID: appID, OrgID: orgID}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/bbs/events/people/add", a.baseURL)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("AddPeopleToCalendarEvent:error creating event  request - %s", err)
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("AddPeopleToCalendarEvent: error sending request - %s", err)
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("AddPeopleToCalendarEvent: error with response code - %d", resp.StatusCode)
+		return fmt.Errorf("AddPeopleToCalendarEvent: error with response code != 200")
+	}
+
+	dataRes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("AddPeopleToCalendarEvent: unable to read json: %s", err)
+		return fmt.Errorf("AddPeopleToCalendarEvent: unable to parse json: %s", err)
+	}
+
+	var response map[string]interface{}
+	err = json.Unmarshal(dataRes, &response)
+	if err != nil {
+		log.Printf("AddPeopleToCalendarEvent: unable to parse json: %s", err)
+		return fmt.Errorf("AddPeopleToCalendarEvent: unable to parse json: %s", err)
+	}
+
+	return nil
+}
