@@ -471,4 +471,5 @@ type Calendar interface {
 	CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
 	GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, filter model.GroupEventFilter) (map[string]interface{}, error)
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
+	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
 }

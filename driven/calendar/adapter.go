@@ -196,12 +196,56 @@ func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, appI
 	responseData, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("AddPeopleToCalendarEvent: unable to read response json: %s", err)
-		return fmt.Errorf("SendNotification: unable to parse response json: %s", err)
+		return fmt.Errorf("AddPeopleToCalendarEvent: unable to parse response json: %s", err)
 	}
 
 	if resp.StatusCode != 200 {
 		log.Printf("AddPeopleToCalendarEvent: error with response code - %d, Response: %s", resp.StatusCode, responseData)
 		return fmt.Errorf("AddPeopleToCalendarEvent:error with response code != 200")
+	}
+	return nil
+}
+
+// RemovePeopleFromCalendarEventt adds people calendar event
+func (a *Adapter) RemovePeopleFromCalendarEvent(people []string, eventID string, appID string, orgID string) error {
+
+	type removePeopleRequest struct {
+		People  []string `json:"people"`
+		AppID   string   `json:"app_id"`
+		OrgID   string   `json:"org_id"`
+		EventID string   `json:"event_id"`
+	}
+
+	body := removePeopleRequest{People: people, AppID: appID, OrgID: orgID, EventID: eventID}
+	data, err := json.Marshal(body)
+	if err != nil {
+		return err
+	}
+
+	url := fmt.Sprintf("%s/api/bbs/events/people/remove", a.baseURL)
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("RemovePeopleFromCalendarEvent:error creating event  request - %s", err)
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("RemovePeopleFromCalendarEvent: error sending request - %s", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	responseData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("RemovePeopleFromCalendarEventt: unable to read response json: %s", err)
+		return fmt.Errorf("RemovePeopleFromCalendarEvent: unable to parse response json: %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		log.Printf("RemovePeopleFromCalendarEvent: error with response code - %d, Response: %s", resp.StatusCode, responseData)
+		return fmt.Errorf("RemovePeopleFromCalendarEvent:error with response code != 200")
 	}
 	return nil
 }
