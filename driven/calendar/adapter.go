@@ -192,23 +192,16 @@ func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, appI
 		return err
 	}
 	defer resp.Body.Close()
+
+	responseData, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("AddPeopleToCalendarEvent: unable to read response json: %s", err)
+		return fmt.Errorf("SendNotification: unable to parse response json: %s", err)
+	}
+
 	if resp.StatusCode != 200 {
-		log.Printf("AddPeopleToCalendarEvent: error with response code - %d", resp.StatusCode)
-		return fmt.Errorf("AddPeopleToCalendarEvent: error with response code != 200")
+		log.Printf("AddPeopleToCalendarEvent: error with response code - %d, Response: %s", resp.StatusCode, responseData)
+		return fmt.Errorf("AddPeopleToCalendarEvent:error with response code != 200")
 	}
-
-	dataRes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("AddPeopleToCalendarEvent: unable to read json: %s", err)
-		return fmt.Errorf("AddPeopleToCalendarEvent: unable to parse json: %s", err)
-	}
-
-	var response map[string]interface{}
-	err = json.Unmarshal(dataRes, &response)
-	if err != nil {
-		log.Printf("AddPeopleToCalendarEvent: unable to parse json: %s", err)
-		return fmt.Errorf("AddPeopleToCalendarEvent: unable to parse json: %s", err)
-	}
-
 	return nil
 }
