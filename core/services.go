@@ -216,12 +216,10 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 }
 
 func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
-	err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
+	membership, err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
 	if err != nil {
 		return fmt.Errorf("error applying membership approval: %s", err)
 	}
-
-	membership, err := app.storage.FindGroupMembershipByID(clientID, membershipID)
 	if err == nil && membership != nil {
 		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
 		topic := "group.invitations"
@@ -230,6 +228,9 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 			groupStr = "Research Project"
 		}
 		if approve {
+			// Make a util handler for general purpose
+			app.linkMemberToCalendarEvents(clientID, current, membership)
+
 			app.notifications.SendNotification(
 				[]notifications.Recipient{
 					membership.ToNotificationRecipient(membership.NotificationsPreferences.OverridePreferences &&
@@ -281,6 +282,23 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	}
 
 	return nil
+}
+
+func (app *Application) linkMemberToCalendarEvents(clientID string, current *model.User, membership *model.GroupMembership) {
+	events, err := app.storage.FindEvents(clientID, current, membership.GroupID, false)
+	if err != nil {
+		log.Printf("app.applyMembershipApproval() error loading events: %s", err)
+	}
+	if len(events) > 0 {
+		for _, eventMapping := range events {
+			if !eventMapping.HasToMembersList() || eventMapping.HasToMemberUser(&membership.UserID, &membership.ExternalID) {
+				err := app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventMapping.EventID, []string{eventMapping.GroupID})
+				if err != nil {
+					log.Printf("app.applyMembershipApproval() error linking the new member to event user list: %s", err)
+				}
+			}
+		}
+	}
 }
 
 func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {

@@ -159,8 +159,11 @@ func (we *Adapter) Start() {
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/events/v3/load", we.mixedAuthWrapFunc(we.apisHandler.GetGroupCalendarEventsV3)).Methods("GET", "POST")
+	restSubrouter.HandleFunc("/group/events/v3", we.mixedAuthWrapFunc(we.apisHandler.CreateCalendarEventMultiGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events/v2", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEventsV2)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.apisHandler.CreateCalendarEventSingleGroup)).Methods("POST")
 
 	// Analytics
 	analyticsSubrouter := restSubrouter.PathPrefix("/analytics").Subrouter()

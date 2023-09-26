@@ -17,6 +17,7 @@ package core
 import (
 	"errors"
 	"groups/core/model"
+	"groups/driven/calendar"
 	"groups/driven/corebb"
 	"groups/driven/rewards"
 	"log"
@@ -45,6 +46,7 @@ type Application struct {
 	authman       Authman
 	corebb        Core
 	rewards       Rewards
+	calendar      Calendar
 
 	authmanSyncInProgress bool
 
@@ -144,14 +146,153 @@ func (app *Application) setupSyncManagedGroupTimer() {
 	app.scheduler.Start()
 }
 
+func (app *Application) createCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: groupIDs,
+		UserID:   &current.ID,
+		Statuses: []string{"admin"},
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if len(memberships.Items) > 0 {
+		var newIDs []string
+		for _, membership := range memberships.Items {
+			newIDs = append(newIDs, membership.GroupID)
+		}
+
+		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if createdEvent != nil {
+			var mappedGroupIDs []string
+			eventID := createdEvent["id"].(string)
+
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, newIDs)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			for _, groupID := range newIDs {
+				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, nil, &model.Creator{
+					UserID: current.ID,
+					Name:   current.Name,
+					Email:  current.Email,
+				})
+				if err != nil {
+					log.Printf("Error create goup mapping: %s", err)
+				}
+				if mapping != nil {
+					mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
+				}
+			}
+			return createdEvent, mappedGroupIDs, nil
+		}
+	}
+
+	return nil, nil, nil
+}
+
+func (app *Application) createCalendarEventForGroupsMembers(clientID string, orgID string, appID string, eventID string, groupIDs []string) error {
+	for _, groupID := range groupIDs {
+		var userIDs []string
+		memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{groupID},
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, membership := range memberships.Items {
+			userIDs = append(userIDs, membership.UserID)
+		}
+		err = app.calendar.AddPeopleToCalendarEvent(userIDs, eventID, orgID, appID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (app *Application) createCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
+	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+		GroupIDs: []string{groupID},
+		UserID:   &current.ID,
+		Statuses: []string{"admin"},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(memberships.Items) > 0 {
+		var groupIDs []string
+		for _, membership := range memberships.Items {
+			groupIDs = append(groupIDs, membership.GroupID)
+		}
+
+		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
+		if err != nil {
+			return nil, err
+		}
+
+		if createdEvent != nil {
+			var mappedGroupIDs []string
+			eventID := createdEvent["id"].(string)
+
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, groupID := range groupIDs {
+				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, members, &model.Creator{
+					UserID: current.ID,
+					Name:   current.Name,
+					Email:  current.Email,
+				})
+				if err != nil {
+					log.Printf("Error create goup mapping: %s", err)
+				}
+				if mapping != nil {
+					mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
+				}
+			}
+			return createdEvent, nil
+		}
+	}
+
+	return nil, nil
+}
+
+func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
+	mappings, err := app.storage.FindEvents(clientID, current, groupID, true)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(mappings) > 0 {
+		var eventIDs []string
+		for _, eventMapping := range mappings {
+			eventIDs = append(eventIDs, eventMapping.EventID)
+		}
+		return app.calendar.GetGroupCalendarEvents(current.ID, eventIDs, current.AppID, current.OrgID, filter)
+	}
+
+	return nil, err
+}
+
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter, calendar *calendar.Adapter, config *model.ApplicationConfig) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
 	managedGroupTasks := map[string]scheduledTask{}
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
+		authman: authman, corebb: core, rewards: rewards, calendar: calendar, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

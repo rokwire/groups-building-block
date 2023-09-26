@@ -94,6 +94,11 @@ type Services interface {
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
 	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
+
+	// Calendar BB
+	CreateCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
+	CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error)
+	GetGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -317,6 +322,18 @@ func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Tim
 	return s.app.analyticsFindMembers(groupID, startDate, endDate)
 }
 
+func (s *servicesImpl) CreateCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	return s.app.createCalendarEventForGroups(clientID, current, event, groupIDs)
+}
+
+func (s *servicesImpl) CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
+	return s.app.createCalendarEventSingleGroup(clientID, current, event, groupID, members)
+}
+
+func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
+	return s.app.getGroupCalendarEvents(clientID, current, groupID, filter)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 }
@@ -398,7 +415,7 @@ type Storage interface {
 
 	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
 	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
-	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
+	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
@@ -447,4 +464,12 @@ type Core interface {
 // Rewards exposes Rewards internal APIs for giving rewards to the users
 type Rewards interface {
 	CreateUserReward(userID string, rewardType string, description string) error
+}
+
+// Calendar exposes Calendar BB APIs for the driver adapters
+type Calendar interface {
+	CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
+	GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, filter model.GroupEventFilter) (map[string]interface{}, error)
+	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
+	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
 }

@@ -1171,6 +1171,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/events/v3": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create a calendar event and link it to multiple group ids",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "CreateCalendarEventMultiGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventMultiGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventMultiGroupData"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/authman/synchronize": {
             "post": {
                 "security": [
@@ -1409,6 +1462,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{group-id}/events/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gets the group calendar events",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetGroupCalendarEventsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/GroupEventFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/events/v2": {
             "get": {
                 "security": [
@@ -1448,6 +1553,66 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/Event"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/events/v3": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create a calendar event and link it to a single group id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "CreateCalendarEventSingleGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
                         }
                     }
                 }
@@ -3402,6 +3567,23 @@ const docTemplate = `{
                 }
             }
         },
+        "GroupEventFilter": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "start_time_after": {
+                    "type": "integer"
+                },
+                "start_time_before": {
+                    "type": "integer"
+                }
+            }
+        },
         "GroupMembership": {
             "type": "object",
             "properties": {
@@ -4497,6 +4679,36 @@ const docTemplate = `{
                 },
                 "member_user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "rest.createCalendarEventMultiGroupData": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "group_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "rest.createCalendarEventSingleGroupData": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "to_members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
                 }
             }
         },
