@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.22.0] - 2023-09-26
 ### Added
 - Integrate Calendar BB for group events [#392](https://github.com/rokwire/groups-building-block/issues/392)
 - Create an adaptor for requesting Calendar BB for dealing with group events [#391](https://github.com/rokwire/groups-building-block/issues/391)
