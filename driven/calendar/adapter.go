@@ -165,7 +165,7 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 }
 
 // AddPeopleToCalendarEvent adds people calendar event
-func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, appID string, orgID string) error {
+func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error {
 
 	type addPeopleRequest struct {
 		People  []string `json:"people"`
@@ -209,7 +209,7 @@ func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, appI
 }
 
 // RemovePeopleFromCalendarEventt adds people calendar event
-func (a *Adapter) RemovePeopleFromCalendarEvent(people []string, eventID string, appID string, orgID string) error {
+func (a *Adapter) RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error {
 
 	type removePeopleRequest struct {
 		People  []string `json:"people"`

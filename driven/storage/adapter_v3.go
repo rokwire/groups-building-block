@@ -475,14 +475,14 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 }
 
 // ApplyMembershipApproval applies a membership approval
-func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
-	return sa.PerformTransaction(func(context TransactionContext) error {
+func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error) {
+	var membership model.GroupMembership
+	err := sa.PerformTransaction(func(context TransactionContext) error {
 		status := "rejected"
 		if approve {
 			status = "member"
 		}
 
-		var membership model.GroupMembership
 		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -492,13 +492,17 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 			},
 			},
 		}
-		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
+		after := options.After
+		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, &options.FindOneAndUpdateOptions{ReturnDocument: &after})
 		if err != nil {
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+		sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+
+		return err
 	})
+	return &membership, err
 }
 
 // UpdateMembership updates a membership

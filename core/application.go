@@ -170,6 +170,12 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 		if createdEvent != nil {
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
+
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, newIDs)
+			if err != nil {
+				return nil, nil, err
+			}
+
 			for _, groupID := range newIDs {
 				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, nil, &model.Creator{
 					UserID: current.ID,
@@ -190,6 +196,28 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 	return nil, nil, nil
 }
 
+func (app *Application) createCalendarEventForGroupsMembers(clientID string, orgID string, appID string, eventID string, groupIDs []string) error {
+	for _, groupID := range groupIDs {
+		var userIDs []string
+		memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{groupID},
+		})
+		if err != nil {
+			return err
+		}
+
+		for _, membership := range memberships.Items {
+			userIDs = append(userIDs, membership.UserID)
+		}
+		err = app.calendar.AddPeopleToCalendarEvent(userIDs, eventID, orgID, appID)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (app *Application) createCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, error) {
 	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{groupID},
@@ -201,9 +229,9 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	}
 
 	if len(memberships.Items) > 0 {
-		var newIDs []string
+		var groupIDs []string
 		for _, membership := range memberships.Items {
-			newIDs = append(newIDs, membership.GroupID)
+			groupIDs = append(groupIDs, membership.GroupID)
 		}
 
 		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
@@ -214,7 +242,13 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 		if createdEvent != nil {
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
-			for _, groupID := range newIDs {
+
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, groupID := range groupIDs {
 				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, members, &model.Creator{
 					UserID: current.ID,
 					Name:   current.Name,

@@ -415,7 +415,7 @@ type Storage interface {
 
 	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
 	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
-	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
+	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error

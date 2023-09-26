@@ -77,6 +77,10 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 		return err
 	}
 
+	if member.Status == "member" {
+		app.linkMemberToCalendarEvents(clientID, current, member)
+	}
+
 	adminMemberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		Statuses: []string{"admin"},
