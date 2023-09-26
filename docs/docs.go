@@ -1323,14 +1323,14 @@ const docTemplate = `{
                         "APIKeyAuth": []
                     }
                 ],
-                "description": "Gets the group calendar events",
+                "description": "Gives the group events.",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "Client-V1"
                 ],
-                "operationId": "GetGroupCalendarEventsV3",
+                "operationId": "GetGroupEvents",
                 "parameters": [
                     {
                         "type": "string",
@@ -1450,6 +1450,58 @@ const docTemplate = `{
                         "name": "group-id",
                         "in": "path",
                         "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/events/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gets the group calendar events",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "GetGroupCalendarEventsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/GroupEventFilter"
+                        }
                     }
                 ],
                 "responses": {
@@ -3512,6 +3564,23 @@ const docTemplate = `{
                 },
                 "web_url": {
                     "type": "string"
+                }
+            }
+        },
+        "GroupEventFilter": {
+            "type": "object",
+            "properties": {
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "start_time_after": {
+                    "type": "integer"
+                },
+                "start_time_before": {
+                    "type": "integer"
                 }
             }
         },

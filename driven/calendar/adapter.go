@@ -208,7 +208,7 @@ func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, orgI
 	return nil
 }
 
-// RemovePeopleFromCalendarEventt adds people calendar event
+// RemovePeopleFromCalendarEvent adds people calendar event
 func (a *Adapter) RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error {
 
 	type removePeopleRequest struct {

@@ -18,7 +18,8 @@ import (
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
-// @Success 200 {array} string
+// @Param data body model.GroupEventFilter false "body data"
+// @Success 200 {object} string
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{group-id}/events/load [post]
