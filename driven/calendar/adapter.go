@@ -163,15 +163,15 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 }
 
 // AddPeopleToCalendarEvent adds people calendar event
-func (a *Adapter) AddPeopleToCalendarEvent(currentAccountIDs []string, appID string, orgID string) error {
+func (a *Adapter) AddPeopleToCalendarEvent(people []string, appID string, orgID string) error {
 
 	type addPeopleRequest struct {
-		CurrentAccountIDs []string `json:"current_account_id"`
-		AppID             string   `json:"app_id"`
-		OrgID             string   `json:"org_id"`
+		People []string `json:"people"`
+		AppID  string   `json:"app_id"`
+		OrgID  string   `json:"org_id"`
 	}
 
-	body := addPeopleRequest{CurrentAccountIDs: currentAccountIDs, AppID: appID, OrgID: orgID}
+	body := addPeopleRequest{People: people, AppID: appID, OrgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return err
