@@ -158,7 +158,7 @@ type createCalendarEventSingleGroupData struct {
 // @Router /api/group/{group-id}/events/v3 [post]
 func (h *ApisHandler) CreateCalendarEventSingleGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	groupID := params["id"]
+	groupID := params["group-id"]
 	if len(groupID) <= 0 {
 		log.Println("apis.CreateCalendarEventSingleGroup() id is required")
 		http.Error(w, "id is required", http.StatusBadRequest)

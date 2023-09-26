@@ -44,7 +44,7 @@ func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.Servi
 }
 
 // CreateCalendarEvent creates calendar event
-func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, appID string, orgID string) (map[string]interface{}, error) {
+func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
 
 	type calendarRequest struct {
 		Event            map[string]interface{} `json:"event"`
@@ -97,8 +97,9 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 // GetGroupCalendarEvents gets calendar events for a group
 func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
 	type filterType struct {
-		Limit  *int64 `json:"limit,omitempty"`
-		Offset *int64 `json:"offset,omitempty"`
+		IDs    []string `json:"ids"`
+		Limit  *int64   `json:"limit,omitempty"`
+		Offset *int64   `json:"offset,omitempty"`
 
 		StartTimeAfter *int64 `json:"start_time_after,omitempty"`
 
@@ -116,6 +117,7 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 		OrgID:            orgID,
 		CurrentAccountID: currentAccountID,
 		Filter: filterType{
+			IDs:             eventIDs,
 			Limit:           filter.Limit,
 			Offset:          filter.Offset,
 			StartTimeBefore: filter.StartTimeBefore,
