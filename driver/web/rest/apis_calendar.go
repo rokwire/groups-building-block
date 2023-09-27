@@ -189,7 +189,7 @@ func (h *ApisHandler) CreateCalendarEventSingleGroup(clientID string, current *m
 		return
 	}
 
-	event, err := h.app.Services.CreateCalendarEventSingleGroup(clientID, current, requestData.Event, groupID, requestData.ToMembers)
+	event, member, err := h.app.Services.CreateCalendarEventSingleGroup(clientID, current, requestData.Event, groupID, requestData.ToMembers)
 	if err != nil {
 		log.Printf("api.CreateCalendarEventSingleGroup() Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -198,10 +198,82 @@ func (h *ApisHandler) CreateCalendarEventSingleGroup(clientID string, current *m
 
 	data, err = json.Marshal(createCalendarEventSingleGroupData{
 		Event:     event,
-		ToMembers: requestData.ToMembers,
+		ToMembers: member,
 	})
 	if err != nil {
 		log.Printf("api.CreateCalendarEventSingleGroup() Error on marshaling response data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type updateCalendarEventSingleGroupData struct {
+	Event     map[string]interface{} `json:"event"`
+	ToMembers []model.ToMember       `json:"to_members"`
+}
+
+// UpdateCalendarEventSingleGroup Updates a calendar event for a single group id
+// @Description Updates a calendar event and for a single group id
+// @ID UpdateCalendarEventSingleGroup
+// @Tags Client-V1
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param id path string true "group id"
+// @Param data body updateCalendarEventSingleGroupData true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200 {object} updateCalendarEventSingleGroupData
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/events/v3 [put]
+func (h *ApisHandler) UpdateCalendarEventSingleGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("apis.UpdateCalendarEventSingleGroup() id is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("api.UpdateCalendarEventSingleGroup() Error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData updateCalendarEventSingleGroupData
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("api.UpdateCalendarEventSingleGroup() Error on unmarshal the create event request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("api.UpdateCalendarEventSingleGroup() Error on validating create event data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	event, member, err := h.app.Services.UpdateCalendarEventSingleGroup(clientID, current, requestData.Event, groupID, requestData.ToMembers)
+	if err != nil {
+		log.Printf("api.UpdateCalendarEventSingleGroup() Error on validating create event data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	data, err = json.Marshal(updateCalendarEventSingleGroupData{
+		Event:     event,
+		ToMembers: member,
+	})
+	if err != nil {
+		log.Printf("api.UpdateCalendarEventSingleGroup() Error on marshaling response data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

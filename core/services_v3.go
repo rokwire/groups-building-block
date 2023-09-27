@@ -248,7 +248,17 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
 
 	if membership != nil {
-		err := app.storage.DeleteMembershipByID(clientID, current, membership.ID)
+		evets, err := app.getEvents(clientID, current, membership.GroupID, false)
+		if err != nil {
+			log.Printf("err app.deleteMembershipByID() - error fetching events: %s", err)
+		}
+		if len(evets) > 0 {
+			for _, event := range evets {
+				app.unlinkMemberToCalendarEvents(clientID, current, membership.GroupID, event.EventID, membership.UserID)
+			}
+		}
+
+		err = app.storage.DeleteMembershipByID(clientID, current, membership.ID)
 		if err != nil {
 			return err
 		}
@@ -258,7 +268,7 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 			if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
 				err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
 				if err != nil {
-					log.Printf("err app.createPendingMembership() - error storing member in Authman: %s", err)
+					log.Printf("err app.deleteMembershipByID() - error storing member: %s", err)
 				}
 			}
 		}
@@ -267,6 +277,18 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 }
 
 func (app *Application) deleteMembership(clientID string, current *model.User, groupID string) error {
+	membership, _ := app.storage.FindGroupMembership(clientID, groupID, current.ID)
+	if membership != nil {
+		events, err := app.getEvents(clientID, current, membership.GroupID, false)
+		if err != nil {
+			log.Printf("err app.deleteMembership() - error fetching events: %s", err)
+		}
+		if len(events) > 0 {
+			for _, event := range events {
+				app.unlinkMemberToCalendarEvents(clientID, current, membership.GroupID, event.EventID, membership.UserID)
+			}
+		}
+	}
 	err := app.storage.DeleteMembership(clientID, groupID, current.ID)
 	if err != nil {
 		return err

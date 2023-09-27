@@ -287,14 +287,31 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 func (app *Application) linkMemberToCalendarEvents(clientID string, current *model.User, membership *model.GroupMembership) {
 	events, err := app.storage.FindEvents(clientID, current, membership.GroupID, false)
 	if err != nil {
-		log.Printf("app.applyMembershipApproval() error loading events: %s", err)
+		log.Printf("app.linkMemberToCalendarEvents() error loading events: %s", err)
 	}
 	if len(events) > 0 {
 		for _, eventMapping := range events {
 			if !eventMapping.HasToMembersList() || eventMapping.HasToMemberUser(&membership.UserID, &membership.ExternalID) {
-				err := app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventMapping.EventID, []string{eventMapping.GroupID})
+				err := app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventMapping.EventID, []string{eventMapping.GroupID}, nil)
 				if err != nil {
-					log.Printf("app.applyMembershipApproval() error linking the new member to event user list: %s", err)
+					log.Printf("app.linkMemberToCalendarEvents() error linking the new member to event user list: %s", err)
+				}
+			}
+		}
+	}
+}
+
+func (app *Application) unlinkMemberToCalendarEvents(clientID string, current *model.User, groupID string, eventID string, userID string) {
+	events, err := app.storage.FindEvents(clientID, current, groupID, false)
+	if err != nil {
+		log.Printf("app.unlinkMemberToCalendarEvents() error loading events: %s", err)
+	}
+	if len(events) > 0 {
+		for _, eventMapping := range events {
+			if !eventMapping.HasToMembersList() || eventMapping.HasToMemberUser(&userID, nil) {
+				err := app.calendar.RemovePeopleFromCalendarEvent([]string{userID}, eventID, current.OrgID, current.AppID)
+				if err != nil {
+					log.Printf("app.unlinkMemberToCalendarEvents() error linking the new member to event user list: %s", err)
 				}
 			}
 		}

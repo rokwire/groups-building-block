@@ -890,6 +890,16 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  rest.updateCalendarEventSingleGroupData:
+    properties:
+      event:
+        additionalProperties: true
+        type: object
+      to_members:
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    type: object
   rest.userGroupShortDetail:
     properties:
       id:
@@ -2021,6 +2031,44 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client-V1
+    put:
+      consumes:
+      - application/json
+      description: Updates a calendar event and for a single group id
+      operationId: UpdateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
       security:
       - AppUserAuth: []
       tags:
