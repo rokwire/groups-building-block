@@ -1559,6 +1559,64 @@ const docTemplate = `{
             }
         },
         "/api/group/{group-id}/events/v3": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a calendar event and for a single group id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client-V1"
+                ],
+                "operationId": "UpdateCalendarEventSingleGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.updateCalendarEventSingleGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.updateCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -4698,6 +4756,21 @@ const docTemplate = `{
             }
         },
         "rest.createCalendarEventSingleGroupData": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "to_members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
+        "rest.updateCalendarEventSingleGroupData": {
             "type": "object",
             "properties": {
                 "event": {
