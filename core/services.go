@@ -292,7 +292,7 @@ func (app *Application) linkMemberToCalendarEvents(clientID string, current *mod
 	if len(events) > 0 {
 		for _, eventMapping := range events {
 			if !eventMapping.HasToMembersList() || eventMapping.HasToMemberUser(&membership.UserID, &membership.ExternalID) {
-				err := app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventMapping.EventID, []string{eventMapping.GroupID})
+				err := app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventMapping.EventID, []string{eventMapping.GroupID}, nil)
 				if err != nil {
 					log.Printf("app.linkMemberToCalendarEvents() error linking the new member to event user list: %s", err)
 				}

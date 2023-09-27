@@ -171,7 +171,7 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, newIDs)
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, newIDs, nil)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -196,8 +196,9 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 	return nil, nil, nil
 }
 
-func (app *Application) createCalendarEventForGroupsMembers(clientID string, orgID string, appID string, eventID string, groupIDs []string) error {
+func (app *Application) createCalendarEventForGroupsMembers(clientID string, orgID string, appID string, eventID string, groupIDs []string, members []model.ToMember) error {
 	for _, groupID := range groupIDs {
+
 		var userIDs []string
 		memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 			GroupIDs: []string{groupID},
@@ -208,7 +209,16 @@ func (app *Application) createCalendarEventForGroupsMembers(clientID string, org
 		}
 
 		for _, membership := range memberships.Items {
-			userIDs = append(userIDs, membership.UserID)
+			if len(members) > 0 {
+				for _, toMember := range members {
+					if toMember.UserID == membership.UserID {
+						userIDs = append(userIDs, membership.UserID)
+						break
+					}
+				}
+			} else {
+				userIDs = append(userIDs, membership.UserID)
+			}
 		}
 		err = app.calendar.AddPeopleToCalendarEvent(userIDs, eventID, orgID, appID)
 		if err != nil {
@@ -244,7 +254,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs)
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs, members)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -300,7 +310,12 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 				return nil, nil, err
 			}
 
-			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs)
+			app.calendar.RemovePeopleFromCalendarEvent([]string{}, eventID, current.OrgID, current.AppID)
+			if err != nil {
+				log.Printf("app.updateCalendarEventSingleGroup() Error cleaning users: %s", err)
+			}
+
+			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs, members)
 			if err != nil {
 				return nil, nil, err
 			}
