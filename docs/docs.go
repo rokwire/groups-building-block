@@ -3628,6 +3628,12 @@ const docTemplate = `{
         "GroupEventFilter": {
             "type": "object",
             "properties": {
+                "end_time_after": {
+                    "type": "integer"
+                },
+                "end_time_before": {
+                    "type": "integer"
+                },
                 "limit": {
                     "type": "integer"
                 },

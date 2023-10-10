@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- V3 Load events does not respect time filter [#396](https://github.com/rokwire/groups-building-block/issues/396)
+
 ## [1.23.0] - 2023-09-27
 ### Added
 - Implement PUT api/group/{id}/events/v3 API for group calendar events [#394](https://github.com/rokwire/groups-building-block/issues/394)

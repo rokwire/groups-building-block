@@ -158,9 +158,10 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 		Limit  *int64   `json:"limit,omitempty"`
 		Offset *int64   `json:"offset,omitempty"`
 
-		StartTimeAfter *int64 `json:"start_time_after,omitempty"`
-
+		StartTimeAfter  *int64 `json:"start_time_after,omitempty"`
 		StartTimeBefore *int64 `json:"start_time_before,omitempty"`
+		EndTimeAfter    *int64 `json:"end_time_after,omitempty"`
+		EndTimeBefore   *int64 `json:"end_time_before,omitempty"`
 	}
 	type calendarRequest struct {
 		Filter           filterType `json:"filter"`
@@ -179,6 +180,8 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 			Offset:          filter.Offset,
 			StartTimeBefore: filter.StartTimeBefore,
 			StartTimeAfter:  filter.StartTimeAfter,
+			EndTimeBefore:   filter.EndTimeBefore,
+			EndTimeAfter:    filter.EndTimeAfter,
 		},
 	}
 	data, err := json.Marshal(body)
