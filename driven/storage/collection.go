@@ -300,8 +300,16 @@ func (collWrapper *collectionWrapper) FindOneAndUpdateWithContext(ctx context.Co
 }
 
 func (collWrapper *collectionWrapper) CountDocuments(filter interface{}) (int64, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
-	defer cancel()
+	return collWrapper.CountDocumentsWithContext(context.Background(), filter)
+}
+
+func (collWrapper *collectionWrapper) CountDocumentsWithContext(ctx context.Context, filter interface{}) (int64, error) {
+
+	var cancel context.CancelFunc
+	if ctx == nil {
+		ctx, cancel = context.WithTimeout(context.Background(), collWrapper.database.mongoTimeout)
+		defer cancel()
+	}
 
 	if filter == nil {
 		filter = bson.D{}

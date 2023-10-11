@@ -428,6 +428,11 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 
 	err := sa.PerformTransaction(func(context TransactionContext) error {
 
+		// Check the title is unique. Don't rely on the unique index.
+		if err := sa.checkUniqueGroupTitleWithContext(context, clientID, nil, group.Title); err != nil {
+			return err
+		}
+
 		//
 		// Handle category and tags backward compatibility and legacy clients [#355]
 		//
@@ -519,6 +524,12 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 
 	// transaction
 	err := sa.PerformTransaction(func(context TransactionContext) error {
+
+		// Check the title is unique. Don't rely on the unique index.
+		if err := sa.checkUniqueGroupTitleWithContext(context, clientID, &group.ID, group.Title); err != nil {
+			return err
+		}
+
 		setOperation := bson.D{
 			primitive.E{Key: "title", Value: group.Title},
 			primitive.E{Key: "privacy", Value: group.Privacy},
@@ -640,6 +651,25 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		return utils.NewServerError()
 	}
 
+	return nil
+}
+
+func (sa *Adapter) checkUniqueGroupTitleWithContext(context TransactionContext, clientID string, id *string, title string) error {
+	filter := bson.D{
+		primitive.E{Key: "client_id", Value: clientID},
+		primitive.E{Key: "title", Value: title},
+	}
+	if id != nil {
+		filter = append(filter, primitive.E{Key: "_id", Value: bson.M{"$ne": *id}})
+	}
+
+	count, err := sa.db.groups.CountDocumentsWithContext(context, filter)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		return fmt.Errorf("voilation of unique title constraint: title_unique")
+	}
 	return nil
 }
 

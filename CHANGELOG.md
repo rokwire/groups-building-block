@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix bad handling of the unique group title index [#399](https://github.com/rokwire/groups-building-block/issues/399)
+
 ## [1.24.0] - 2023-10-10
 ### Fixed
 - V3 Load events does not respect time filter [#396](https://github.com/rokwire/groups-building-block/issues/396)

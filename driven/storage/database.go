@@ -385,12 +385,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 
 	name := "title_unique"
 	unique := true
-	if indexMapping["title_unique"] != nil {
-		err := groups.DropIndex("title_unique")
-		if err != nil {
-			return err
-		}
-	}
 	if indexMapping["title_unique"] == nil {
 		err := groups.AddIndexWithOptions(
 			bson.D{
