@@ -422,11 +422,12 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 }
 
 // CreateGroup creates a group. Returns the id of the created group
-func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, *utils.GroupError) {
+func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, current *model.User, group *model.Group, defaultMemberships []model.GroupMembership) (*string, *utils.GroupError) {
 	insertedID := uuid.NewString()
 	now := time.Now()
 
-	err := sa.PerformTransaction(func(context TransactionContext) error {
+	var err error
+	wrapperFunc := func(context TransactionContext) error {
 
 		// Check the title is unique. Don't rely on the unique index.
 		if err := sa.checkUniqueGroupTitleWithContext(context, clientID, nil, group.Title); err != nil {
@@ -498,8 +499,13 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 		sa.UpdateGroupAttributeIndexes(group)
 
 		return nil
-	})
+	}
 
+	if context != nil {
+		err = wrapperFunc(context)
+	} else {
+		err = sa.PerformTransaction(wrapperFunc)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "title_unique") {
 			return nil, utils.NewGroupDuplicationError()
@@ -511,19 +517,19 @@ func (sa *Adapter) CreateGroup(clientID string, current *model.User, group *mode
 }
 
 // UpdateGroup updates a group except the members attribute
-func (sa *Adapter) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
-	return sa.updateGroup(clientID, current, group, nil)
+func (sa *Adapter) UpdateGroup(context TransactionContext, clientID string, current *model.User, group *model.Group) *utils.GroupError {
+	return sa.updateGroup(context, clientID, current, group, nil)
 }
 
 // UpdateGroupWithMembership updates a group along with the memberships
-func (sa *Adapter) UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
-	return sa.updateGroup(clientID, current, group, memberships)
+func (sa *Adapter) UpdateGroupWithMembership(context TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
+	return sa.updateGroup(context, clientID, current, group, memberships)
 }
 
-func (sa *Adapter) updateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
+func (sa *Adapter) updateGroup(context TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError {
 
-	// transaction
-	err := sa.PerformTransaction(func(context TransactionContext) error {
+	var err error
+	wrapperFunc := func(context TransactionContext) error {
 
 		// Check the title is unique. Don't rely on the unique index.
 		if err := sa.checkUniqueGroupTitleWithContext(context, clientID, &group.ID, group.Title); err != nil {
@@ -643,7 +649,14 @@ func (sa *Adapter) updateGroup(clientID string, current *model.User, group *mode
 		sa.UpdateGroupAttributeIndexes(group)
 
 		return nil
-	})
+	}
+
+	if context != nil {
+		err = wrapperFunc(context)
+	} else {
+		// transaction
+		err = sa.PerformTransaction(wrapperFunc)
+	}
 	if err != nil {
 		if strings.Contains(err.Error(), "title_unique") {
 			return utils.NewGroupDuplicationError()

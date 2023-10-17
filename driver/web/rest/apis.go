@@ -170,16 +170,20 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	data, err = json.Marshal(createResponse{InsertedID: *insertedID})
-	if err != nil {
-		log.Println("Error on marshal create group response")
-		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+	if insertedID != nil {
+		data, err = json.Marshal(createResponse{InsertedID: *insertedID})
+		if err != nil {
+			log.Println("Error on marshal create group response")
+			http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
 }
 
 type updateGroupRequest struct {
