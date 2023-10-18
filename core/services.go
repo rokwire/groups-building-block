@@ -90,11 +90,10 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	var groupID *string
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
 		var err error
-		groupID, groupError = app.storage.CreateGroup(nil, clientID, current, group, nil)
+		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, nil)
 		if err != nil {
 			return err
 		}
-
 		if group.ResearchGroup {
 			searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
 

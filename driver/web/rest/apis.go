@@ -97,14 +97,8 @@ type userGroupShortDetail struct {
 // @Security AppUserAuth
 // @Router /api/groups [post]
 func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	// NOTE: Permissions should be handled using the admin auth wrap function and the associated authorization policy
-	// if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
-	// 	log.Printf("%s is not allowed to create a group", current.Email)
-	// 	http.Error(w, corebb.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-	// 	return
-	// }
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a group - %s\n", err.Error())
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
@@ -234,7 +228,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the update group item - %s\n", err.Error())
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
