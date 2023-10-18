@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"groups/core/model"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -62,7 +62,7 @@ func (a *Adapter) RetrieveCoreUserAccount(token string) (*model.CoreAccount, err
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveCoreUserAccount: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
@@ -102,7 +102,7 @@ func (a *Adapter) RetrieveCoreServices(serviceIDs []string) ([]model.CoreService
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveCoreServices: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
@@ -172,7 +172,7 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 		return 0, fmt.Errorf("GetAccountsCount: error with response code != 200")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("GetAccountsCount: unable to read json: %s", err)
 		return 0, fmt.Errorf("GetAccountsCount: unable to parse json: %s", err)
@@ -240,7 +240,7 @@ func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string
 		return nil, fmt.Errorf("GetAccounts: error with response code != 200")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("GetAccounts: unable to read json: %s", err)
 		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)

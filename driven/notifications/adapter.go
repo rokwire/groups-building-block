@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -93,7 +93,7 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 
 		defer resp.Body.Close()
 
-		responseData, err := ioutil.ReadAll(resp.Body)
+		responseData, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("SendNotification: unable to read response json: %s", err)
 			return fmt.Errorf("SendNotification: unable to parse response json: %s", err)

@@ -85,38 +85,45 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 }
 
 func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
-	insertedID, err := app.storage.CreateGroup(clientID, current, group, nil)
-	if err != nil {
-		return nil, err
-	}
 
-	if group.ResearchGroup {
-		searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
-
-		list := []notifications.Recipient{}
-		account, err := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID, 0, 0, false, nil)
+	var groupError *utils.GroupError
+	var groupID *string
+	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		var err error
+		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, nil)
 		if err != nil {
-			return nil, nil
+			return err
 		}
-		for _, u := range account {
-			id := u["id"].(string)
-			mute := false
-			ne := notifications.Recipient{UserID: id, Mute: mute}
-			list = append(list, ne)
+		if group.ResearchGroup {
+			searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
+
+			list := []notifications.Recipient{}
+			account, err := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID, 0, 0, false, nil)
+			if err != nil {
+				return nil
+			}
+			for _, u := range account {
+				id := u["id"].(string)
+				mute := false
+				ne := notifications.Recipient{UserID: id, Mute: mute}
+				list = append(list, ne)
+			}
+
+			app.notifications.SendNotification(list, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
+				map[string]string{
+					"type":        "group",
+					"operation":   "research_group",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+				current.AppID,
+				current.OrgID)
+
 		}
 
-		app.notifications.SendNotification(list, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
-			map[string]string{
-				"type":        "group",
-				"operation":   "research_group",
-				"entity_type": "group",
-				"entity_id":   group.ID,
-				"entity_name": group.Title,
-			},
-			current.AppID,
-			current.OrgID)
-
-	}
+		return nil
+	})
 
 	handleRewardsAsync := func(clientID, userID string) {
 		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
@@ -130,12 +137,20 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	}
 	go handleRewardsAsync(clientID, current.ID)
 
-	return insertedID, nil
+	if groupError != nil {
+		return nil, groupError
+	}
+	if err != nil {
+		log.Printf("app.createGroup() error %s", err)
+		return nil, utils.NewServerError()
+	}
+
+	return groupID, nil
 }
 
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
-	err := app.storage.UpdateGroup(clientID, current, group)
+	err := app.storage.UpdateGroup(nil, clientID, current, group)
 	if err != nil {
 		return err
 	}
@@ -815,7 +830,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						emptyText := ""
-						_, err := app.storage.CreateGroup(clientID, nil, &model.Group{
+						_, err := app.storage.CreateGroup(nil, clientID, nil, &model.Group{
 							Title:                title,
 							Description:          &emptyText,
 							Category:             "Academic", // Hardcoded.
@@ -883,7 +898,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						if groupUpdated {
-							err := app.storage.UpdateGroupWithMembership(clientID, nil, storedStemGroup, membershipsForUpdate)
+							err := app.storage.UpdateGroupWithMembership(nil, clientID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
 								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}

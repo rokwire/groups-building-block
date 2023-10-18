@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"groups/core/model"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 
@@ -77,7 +77,7 @@ func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]
 		log.Printf("CreateCalendarEvent: error with response code - %d", resp.StatusCode)
 	}
 
-	dataRes, err := ioutil.ReadAll(resp.Body)
+	dataRes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("CreateCalendarEvent: unable to read json: %s", err)
 		return nil, fmt.Errorf("CreateCalendarEvent: unable to parse json: %s", err)
@@ -130,7 +130,7 @@ func (a *Adapter) UpdateCalendarEvent(currentAccountID string, eventID string, e
 	}
 	defer resp.Body.Close()
 
-	dataRes, err := ioutil.ReadAll(resp.Body)
+	dataRes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("UpdateCalendarEvent: unable to read json: %s", err)
 		return nil, fmt.Errorf("UpdateCalendarEvent: unable to parse json: %s", err)
@@ -204,7 +204,7 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 	}
 	defer resp.Body.Close()
 
-	dataRes, err := ioutil.ReadAll(resp.Body)
+	dataRes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("GetGroupCalendarEvents: unable to read json: %s", err)
 		return nil, fmt.Errorf("GetGroupCalendarEvents: unable to parse json: %s", err)
@@ -256,7 +256,7 @@ func (a *Adapter) AddPeopleToCalendarEvent(people []string, eventID string, orgI
 	}
 	defer resp.Body.Close()
 
-	responseData, err := ioutil.ReadAll(resp.Body)
+	responseData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("AddPeopleToCalendarEvent: unable to read response json: %s", err)
 		return fmt.Errorf("AddPeopleToCalendarEvent: unable to parse response json: %s", err)
@@ -300,7 +300,7 @@ func (a *Adapter) RemovePeopleFromCalendarEvent(people []string, eventID string,
 	}
 	defer resp.Body.Close()
 
-	responseData, err := ioutil.ReadAll(resp.Body)
+	responseData, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("RemovePeopleFromCalendarEventt: unable to read response json: %s", err)
 		return fmt.Errorf("RemovePeopleFromCalendarEvent: unable to parse response json: %s", err)

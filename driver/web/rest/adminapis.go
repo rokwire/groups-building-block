@@ -22,7 +22,6 @@ import (
 	"groups/core/model"
 	"groups/utils"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -327,7 +326,7 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 		return
 	}
 
-	requestData, err := ioutil.ReadAll(r.Body)
+	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("adminapis.GetGroupMembers() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -395,7 +394,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("adminapis.UpdateMembership() Error on marshal the membership update item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -747,7 +746,7 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
 func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -794,7 +793,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [put]
 func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -891,7 +890,7 @@ func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
 func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create sync config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
