@@ -6,7 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [1.26.0] - 2023-10-17
 ### Changed
 - Refactor create and update group logic and resolve the risk of single point of failure. [#401](https://github.com/rokwire/groups-building-block/issues/401)
 

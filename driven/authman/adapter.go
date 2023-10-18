@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"groups/core/model"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
@@ -63,7 +62,7 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveAuthmanGroupMembersError: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: unable to parse json: %s", err)
@@ -188,7 +187,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			errordata, err := ioutil.ReadAll(resp.Body)
+			errordata, err := io.ReadAll(resp.Body)
 			if err != nil {
 				log.Printf("RetrieveAuthmanUsers: unable to read error response: %s", errordata)
 				return nil, fmt.Errorf("RetrieveAuthmanUsers: unable to  error response: %s", errordata)
@@ -197,7 +196,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 			return nil, fmt.Errorf("RetrieveAuthmanUsers: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveAuthmanUsers: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveAuthmanUsers: unable to  read json: %s", err)
@@ -250,7 +249,7 @@ func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGro
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		errordata, err := ioutil.ReadAll(resp.Body)
+		errordata, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveAuthmanStemGroups: unable to read error response: %s", errordata)
 			return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to  error response: %s", errordata)
@@ -259,7 +258,7 @@ func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGro
 		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: error with response code - %d: Response: %s", resp.StatusCode, string(errordata))
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("RetrieveAuthmanStemGroups: unable to read json: %s", err)
 		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: unable to  read json: %s", err)

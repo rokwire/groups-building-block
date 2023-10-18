@@ -21,7 +21,6 @@ import (
 	"groups/core/model"
 	"groups/utils"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -885,7 +884,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1006,7 +1005,7 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 		return
 	}
 
-	requestData, err := ioutil.ReadAll(r.Body)
+	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1084,7 +1083,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1219,7 +1218,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the membership item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1378,7 +1377,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the membership update item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1630,7 +1629,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1713,7 +1712,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the update group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1943,7 +1942,7 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2104,7 +2103,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2195,7 +2194,7 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on read reactToGroupPostRequestBody - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2280,7 +2279,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on read reportAbuseGroupPostRequestBody - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)

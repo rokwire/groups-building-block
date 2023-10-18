@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"groups/core"
 	"groups/core/model"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -354,7 +353,7 @@ func (h *InternalApisHandler) CreateGroupEvent(clientID string, w http.ResponseW
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group event - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -479,7 +478,7 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on read the sendGroupNotificationRequestBody - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
