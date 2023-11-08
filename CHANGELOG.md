@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - New V3 admin API for linking event to set of groups [#403](https://github.com/rokwire/groups-building-block/issues/403)
 
+## [1.27.0] - 2023-11-08
+### Added
+- New V3 admin API for linking event to set of groups [#403](https://github.com/rokwire/groups-building-block/issues/403)
+
 ## [1.26.0] - 2023-10-18
 ### Changed
 - Refactor create and update group logic and resolve the risk of single point of failure. [#401](https://github.com/rokwire/groups-building-block/issues/401)
