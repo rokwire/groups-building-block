@@ -49,7 +49,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminCreateCalendarEventMultiGroup",
                 "parameters": [
@@ -102,7 +102,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroupEvent",
                 "parameters": [
@@ -150,7 +150,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupEvents",
                 "parameters": [
@@ -197,7 +197,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupCalendarEventsV3",
                 "parameters": [
@@ -249,7 +249,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminUpdateCalendarEventSingleGroup",
                 "parameters": [
@@ -307,7 +307,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminCreateCalendarEventSingleGroup",
                 "parameters": [
@@ -364,7 +364,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupMembers",
                 "parameters": [
@@ -417,7 +417,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupStats",
                 "parameters": [
@@ -458,7 +458,7 @@
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupPosts",
                 "parameters": [
@@ -498,7 +498,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroupPost",
                 "parameters": [
@@ -532,7 +532,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroup",
                 "parameters": [
@@ -576,7 +576,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetAllGroups",
                 "parameters": [
@@ -819,7 +819,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminUpdateMembership",
                 "parameters": [
@@ -867,7 +867,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteMembership",
                 "parameters": [
@@ -983,7 +983,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetUserGroups",
                 "parameters": [
@@ -1056,7 +1056,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupsV2",
                 "parameters": [
@@ -1138,7 +1138,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroup",
                 "parameters": [
@@ -1182,7 +1182,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetUserGroupsV2",
                 "parameters": [
@@ -1405,7 +1405,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateCalendarEventMultiGroup",
                 "parameters": [
@@ -1455,7 +1455,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "SynchAuthmanGroup",
                 "parameters": [
@@ -1496,7 +1496,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroupEvent",
                 "parameters": [
@@ -1547,7 +1547,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupEvents",
                 "parameters": [
@@ -1592,7 +1592,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroupEvent",
                 "parameters": [
@@ -1643,7 +1643,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [
@@ -1696,7 +1696,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupCalendarEventsV3",
                 "parameters": [
@@ -1745,7 +1745,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupEventsV2",
                 "parameters": [
@@ -1792,7 +1792,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateCalendarEventSingleGroup",
                 "parameters": [
@@ -1850,7 +1850,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateCalendarEventSingleGroup",
                 "parameters": [
@@ -1907,7 +1907,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -1958,7 +1958,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -2003,7 +2003,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteMember",
                 "parameters": [
@@ -2047,7 +2047,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreatePendingMember",
                 "parameters": [
@@ -2101,7 +2101,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeletePendingMember",
                 "parameters": [
@@ -2142,7 +2142,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupStats",
                 "parameters": [
@@ -2186,7 +2186,7 @@
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupPosts",
                 "parameters": [
@@ -2229,7 +2229,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroupPost",
                 "parameters": [
@@ -2266,7 +2266,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupPost",
                 "parameters": [
@@ -2301,7 +2301,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroupPost",
                 "parameters": [
@@ -2336,7 +2336,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroupPost",
                 "parameters": [
@@ -2370,7 +2370,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "ReactToGroupPost",
                 "parameters": [
@@ -2404,7 +2404,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "ReportAbuseGroupPost",
                 "parameters": [
@@ -2447,7 +2447,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroup",
                 "parameters": [
@@ -2491,7 +2491,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroups",
                 "parameters": [
@@ -2574,7 +2574,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroup",
                 "parameters": [
@@ -2620,7 +2620,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroup",
                 "parameters": [
@@ -2662,7 +2662,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroup",
                 "parameters": [
@@ -3012,7 +3012,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateMembership",
                 "parameters": [
@@ -3063,7 +3063,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteMembership",
                 "parameters": [
@@ -3107,7 +3107,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "MembershipApproval",
                 "parameters": [
@@ -3157,7 +3157,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetResearchProfileUserCount",
                 "parameters": [
@@ -3209,7 +3209,7 @@
                 ],
                 "description": "Deletes a user with all the involved information from the Notifications BB (this includes - group membership \u0026 posts (and child posts - no matter of the creator))",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteUser",
                 "responses": {
@@ -3231,7 +3231,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserGroupMemberships",
                 "parameters": [
@@ -3268,7 +3268,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserGroups",
                 "parameters": [
@@ -3350,7 +3350,7 @@
                 ],
                 "description": "Logs in the user and refactor the user record and linked data if need",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "LoginUser",
                 "responses": {
@@ -3369,7 +3369,7 @@
                 ],
                 "description": "Gets user stat information. Responds with {\"posts_count\": xxx}",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserStats",
                 "parameters": [
@@ -3403,7 +3403,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetGroupsV2",
                 "parameters": [
@@ -3485,7 +3485,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetGroupV2",
                 "parameters": [
@@ -3529,7 +3529,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetUserGroupsV2",
                 "parameters": [
@@ -3653,7 +3653,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "Version",
                 "responses": {

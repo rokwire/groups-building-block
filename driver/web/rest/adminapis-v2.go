@@ -14,7 +14,7 @@ import (
 // GetGroupsV2 gets groups. It can be filtered by category, title and privacy. V2
 // @Description Gives the groups list. It can be filtered by category, title and privacy. V2
 // @ID AdminGetGroupsV2
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
@@ -120,7 +120,7 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 // GetUserGroupsV2 gets the user groups. It can be filtered by category, title and privacy. V2.
 // @Description Gives the user groups. It can be filtered by category, title and privacy. V2.
 // @ID AdminGetUserGroupsV2
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
@@ -227,7 +227,7 @@ func (h *AdminApisHandler) GetUserGroupsV2(clientID string, current *model.User,
 // GetGroupV2 gets a group. V2
 // @Description Gives a group. V2
 // @ID AdminGetGroup
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
 // @Param id path string true "ID"

@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+Restructure api doc - client & admin grouping [#405](https://github.com/rokwire/groups-building-block/issues/405)
+
 ## [1.27.0] - 2023-11-08
 ### Added
 - New V3 admin API for linking event to set of groups [#403](https://github.com/rokwire/groups-building-block/issues/403)

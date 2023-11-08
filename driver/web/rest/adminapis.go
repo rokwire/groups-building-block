@@ -36,7 +36,7 @@ type AdminApisHandler struct {
 // GetUserGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID AdminGetUserGroups
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Filtering by group's title (case-insensitive)"
@@ -142,7 +142,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // GetAllGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID AdminGetAllGroups
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
@@ -264,7 +264,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 // GetGroupStats Retrieves stats for a group by id
 // @Description Retrieves stats for a group by id
 // @ID AdminGetGroupStats
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -309,7 +309,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 // GetGroupMembers Gets the list of group members.
 // @Description Gets the list of group members.
 // @ID AdminGetGroupMembers
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
@@ -375,7 +375,7 @@ type adminUpdateMembershipRequest struct {
 // UpdateMembership updates a membership. Only the status can be changed.
 // @Description Updates a membership. Only the status can be changed.
 // @ID AdminUpdateMembership
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -441,7 +441,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 // DeleteMembership deletes membership
 // @Description Deletes a membership
 // @ID AdminDeleteMembership
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -483,7 +483,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 // GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
-// @Tags Admin-V1
+// @Tags Admin
 // @Param APP header string true "APP"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
@@ -543,7 +543,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 // GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID AdminGetGroupEvents
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -587,7 +587,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 // DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID AdminDeleteGroup
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -632,7 +632,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 // DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
 // @ID AdminDeleteGroupEvent
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -672,7 +672,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 // DeleteGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID AdminDeleteGroupPost
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200

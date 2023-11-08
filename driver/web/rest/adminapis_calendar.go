@@ -13,7 +13,7 @@ import (
 // GetGroupCalendarEventsV3 Gets the group calendar events
 // @Description Gets the group calendar events
 // @ID AdminGetGroupCalendarEventsV3
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -77,7 +77,7 @@ func (h *AdminApisHandler) GetGroupCalendarEventsV3(clientID string, current *mo
 // CreateCalendarEventMultiGroup Create a calendar event and link it to multiple group ids
 // @Description Create a calendar event and link it to multiple group ids
 // @ID AdminCreateCalendarEventMultiGroup
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -136,7 +136,7 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 // CreateCalendarEventSingleGroup Create a calendar event and link it to a single group id
 // @Description Create a calendar event and link it to a single group id
 // @ID AdminCreateCalendarEventSingleGroup
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -216,7 +216,7 @@ func (h *AdminApisHandler) CreateCalendarEventSingleGroup(clientID string, curre
 // UpdateCalendarEventSingleGroup Updates a calendar event for a single group id
 // @Description Updates a calendar event and for a single group id
 // @ID AdminUpdateCalendarEventSingleGroup
-// @Tags Admin-V2
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
