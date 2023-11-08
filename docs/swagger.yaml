@@ -1031,7 +1031,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.20.0
+  version: 1.27.2
 paths:
   /admin/authman/synchronize:
     post:
