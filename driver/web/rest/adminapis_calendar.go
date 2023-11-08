@@ -21,7 +21,7 @@ import (
 // @Success 200 {object} string
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/admin/group/{group-id}/events/load [post]
+// @Router /api/admin/group/{group-id}/events/v3/load [post]
 func (h *AdminApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
