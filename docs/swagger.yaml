@@ -1107,6 +1107,115 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin-V1
+  /api/admin/group/{group-id}/events/load:
+    post:
+      consumes:
+      - application/json
+      description: Gets the group calendar events
+      operationId: AdminGetGroupCalendarEventsV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/GroupEventFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin-V2
+  /api/admin/group/{group-id}/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to a single group id
+      operationId: AdminCreateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V2
+    put:
+      consumes:
+      - application/json
+      description: Updates a calendar event and for a single group id
+      operationId: AdminUpdateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V2
   /api/admin/group/{group-id}/members:
     get:
       consumes:
@@ -1238,6 +1347,40 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin-V1
+  /api/admin/group/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to multiple group ids
+      operationId: AdminCreateCalendarEventMultiGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin-V2
   /api/admin/groups:
     get:
       consumes:
