@@ -53,7 +53,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminCreateCalendarEventMultiGroup",
                 "parameters": [
@@ -106,7 +106,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroupEvent",
                 "parameters": [
@@ -154,7 +154,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupEvents",
                 "parameters": [
@@ -201,7 +201,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupCalendarEventsV3",
                 "parameters": [
@@ -253,7 +253,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminUpdateCalendarEventSingleGroup",
                 "parameters": [
@@ -311,7 +311,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminCreateCalendarEventSingleGroup",
                 "parameters": [
@@ -368,7 +368,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupMembers",
                 "parameters": [
@@ -421,7 +421,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupStats",
                 "parameters": [
@@ -462,7 +462,7 @@ const docTemplate = `{
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupPosts",
                 "parameters": [
@@ -502,7 +502,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroupPost",
                 "parameters": [
@@ -536,7 +536,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroup",
                 "parameters": [
@@ -580,7 +580,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetAllGroups",
                 "parameters": [
@@ -823,7 +823,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminUpdateMembership",
                 "parameters": [
@@ -871,7 +871,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteMembership",
                 "parameters": [
@@ -987,7 +987,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetUserGroups",
                 "parameters": [
@@ -1060,7 +1060,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupsV2",
                 "parameters": [
@@ -1142,7 +1142,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroup",
                 "parameters": [
@@ -1186,7 +1186,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetUserGroupsV2",
                 "parameters": [
@@ -1409,7 +1409,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateCalendarEventMultiGroup",
                 "parameters": [
@@ -1459,7 +1459,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "SynchAuthmanGroup",
                 "parameters": [
@@ -1500,7 +1500,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroupEvent",
                 "parameters": [
@@ -1551,7 +1551,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupEvents",
                 "parameters": [
@@ -1596,7 +1596,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroupEvent",
                 "parameters": [
@@ -1647,7 +1647,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [
@@ -1700,7 +1700,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupCalendarEventsV3",
                 "parameters": [
@@ -1749,7 +1749,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupEventsV2",
                 "parameters": [
@@ -1796,7 +1796,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateCalendarEventSingleGroup",
                 "parameters": [
@@ -1854,7 +1854,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateCalendarEventSingleGroup",
                 "parameters": [
@@ -1911,7 +1911,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -1962,7 +1962,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -2007,7 +2007,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteMember",
                 "parameters": [
@@ -2051,7 +2051,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreatePendingMember",
                 "parameters": [
@@ -2105,7 +2105,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeletePendingMember",
                 "parameters": [
@@ -2146,7 +2146,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupStats",
                 "parameters": [
@@ -2190,7 +2190,7 @@ const docTemplate = `{
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupPosts",
                 "parameters": [
@@ -2233,7 +2233,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroupPost",
                 "parameters": [
@@ -2270,7 +2270,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupPost",
                 "parameters": [
@@ -2305,7 +2305,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroupPost",
                 "parameters": [
@@ -2340,7 +2340,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroupPost",
                 "parameters": [
@@ -2374,7 +2374,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "ReactToGroupPost",
                 "parameters": [
@@ -2408,7 +2408,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "ReportAbuseGroupPost",
                 "parameters": [
@@ -2451,7 +2451,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroup",
                 "parameters": [
@@ -2495,7 +2495,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroups",
                 "parameters": [
@@ -2578,7 +2578,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroup",
                 "parameters": [
@@ -2624,7 +2624,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroup",
                 "parameters": [
@@ -2666,7 +2666,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroup",
                 "parameters": [
@@ -3016,7 +3016,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateMembership",
                 "parameters": [
@@ -3067,7 +3067,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteMembership",
                 "parameters": [
@@ -3111,7 +3111,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "MembershipApproval",
                 "parameters": [
@@ -3161,7 +3161,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetResearchProfileUserCount",
                 "parameters": [
@@ -3213,7 +3213,7 @@ const docTemplate = `{
                 ],
                 "description": "Deletes a user with all the involved information from the Notifications BB (this includes - group membership \u0026 posts (and child posts - no matter of the creator))",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteUser",
                 "responses": {
@@ -3235,7 +3235,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserGroupMemberships",
                 "parameters": [
@@ -3272,7 +3272,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserGroups",
                 "parameters": [
@@ -3354,7 +3354,7 @@ const docTemplate = `{
                 ],
                 "description": "Logs in the user and refactor the user record and linked data if need",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "LoginUser",
                 "responses": {
@@ -3373,7 +3373,7 @@ const docTemplate = `{
                 ],
                 "description": "Gets user stat information. Responds with {\"posts_count\": xxx}",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserStats",
                 "parameters": [
@@ -3407,7 +3407,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetGroupsV2",
                 "parameters": [
@@ -3489,7 +3489,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetGroupV2",
                 "parameters": [
@@ -3533,7 +3533,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetUserGroupsV2",
                 "parameters": [
@@ -3657,7 +3657,7 @@ const docTemplate = `{
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "Version",
                 "responses": {

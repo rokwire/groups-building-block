@@ -14,7 +14,7 @@ import (
 // GetGroupCalendarEventsV3 Gets the group calendar events
 // @Description Gets the group calendar events
 // @ID GetGroupCalendarEventsV3
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -83,7 +83,7 @@ type createCalendarEventMultiGroupData struct {
 // CreateCalendarEventMultiGroup Create a calendar event and link it to multiple group ids
 // @Description Create a calendar event and link it to multiple group ids
 // @ID CreateCalendarEventMultiGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -147,7 +147,7 @@ type createCalendarEventSingleGroupData struct {
 // CreateCalendarEventSingleGroup Create a calendar event and link it to a single group id
 // @Description Create a calendar event and link it to a single group id
 // @ID CreateCalendarEventSingleGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -232,7 +232,7 @@ type updateCalendarEventSingleGroupData struct {
 // UpdateCalendarEventSingleGroup Updates a calendar event for a single group id
 // @Description Updates a calendar event and for a single group id
 // @ID UpdateCalendarEventSingleGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
