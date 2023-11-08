@@ -186,58 +186,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/admin/group/{group-id}/events/load": {
-            "post": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Gets the group calendar events",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Admin"
-                ],
-                "operationId": "AdminGetGroupCalendarEventsV3",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "group-id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/GroupEventFilter"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/api/admin/group/{group-id}/events/v3": {
             "put": {
                 "security": [
@@ -351,6 +299,58 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/group/{group-id}/events/v3/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gets the group calendar events",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetGroupCalendarEventsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/GroupEventFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -1685,58 +1685,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/group/{group-id}/events/load": {
-            "post": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Gets the group calendar events",
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Client"
-                ],
-                "operationId": "GetGroupCalendarEventsV3",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Group ID",
-                        "name": "group-id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "schema": {
-                            "$ref": "#/definitions/GroupEventFilter"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/api/group/{group-id}/events/v2": {
             "get": {
                 "security": [
@@ -1894,6 +1842,58 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/events/v3/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gets the group calendar events",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetGroupCalendarEventsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/GroupEventFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }

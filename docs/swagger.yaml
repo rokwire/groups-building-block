@@ -1107,38 +1107,6 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
-  /api/admin/group/{group-id}/events/load:
-    post:
-      consumes:
-      - application/json
-      description: Gets the group calendar events
-      operationId: AdminGetGroupCalendarEventsV3
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      - description: Group ID
-        in: path
-        name: group-id
-        required: true
-        type: string
-      - description: body data
-        in: body
-        name: data
-        schema:
-          $ref: '#/definitions/GroupEventFilter'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - AppUserAuth: []
-      - APIKeyAuth: []
-      tags:
-      - Admin
   /api/admin/group/{group-id}/events/v3:
     post:
       consumes:
@@ -1214,6 +1182,38 @@ paths:
             $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
       security:
       - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/group/{group-id}/events/v3/load:
+    post:
+      consumes:
+      - application/json
+      description: Gets the group calendar events
+      operationId: AdminGetGroupCalendarEventsV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/GroupEventFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
       tags:
       - Admin
   /api/admin/group/{group-id}/members:
@@ -2083,38 +2083,6 @@ paths:
       - AppUserAuth: []
       tags:
       - Client
-  /api/group/{group-id}/events/load:
-    post:
-      consumes:
-      - application/json
-      description: Gets the group calendar events
-      operationId: GetGroupCalendarEventsV3
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      - description: Group ID
-        in: path
-        name: group-id
-        required: true
-        type: string
-      - description: body data
-        in: body
-        name: data
-        schema:
-          $ref: '#/definitions/GroupEventFilter'
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      security:
-      - AppUserAuth: []
-      - APIKeyAuth: []
-      tags:
-      - Client
   /api/group/{group-id}/events/v2:
     get:
       consumes:
@@ -2218,6 +2186,38 @@ paths:
             $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
       security:
       - AppUserAuth: []
+      tags:
+      - Client
+  /api/group/{group-id}/events/v3/load:
+    post:
+      consumes:
+      - application/json
+      description: Gets the group calendar events
+      operationId: GetGroupCalendarEventsV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/GroupEventFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
       tags:
       - Client
   /api/group/{group-id}/members:
