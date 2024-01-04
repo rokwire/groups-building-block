@@ -146,7 +146,7 @@ func (app *Application) setupSyncManagedGroupTimer() {
 	app.scheduler.Start()
 }
 
-func (app *Application) createCalendarEventForGroups(clientID string, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifier []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
 	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 		UserID:   &current.ID,
@@ -162,7 +162,7 @@ func (app *Application) createCalendarEventForGroups(clientID string, current *m
 			newIDs = append(newIDs, membership.GroupID)
 		}
 
-		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
+		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifier, current.ID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -245,7 +245,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 			groupIDs = append(groupIDs, membership.GroupID)
 		}
 
-		createdEvent, err := app.calendar.CreateCalendarEvent(current.ID, event, current.OrgID, current.AppID)
+		createdEvent, err := app.calendar.CreateCalendarEvent(nil, current.ID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}

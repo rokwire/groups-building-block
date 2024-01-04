@@ -29,6 +29,12 @@ type Event struct {
 	ToMembersList []ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name Event
 
+// AdminsIdentifiers represents extended identfier which handles external id in addtion of the account id.
+type AdminsIdentifiers struct {
+	AccountID  string  `bson:"account_id"`
+	ExternalID *string `bson:"external_id"`
+}
+
 // HasToMembersList Checks if the ToMembersList is not empty
 func (e Event) HasToMembersList() bool {
 	return len(e.ToMembersList) > 0

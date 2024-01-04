@@ -2,12 +2,13 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core/model"
 	"io"
 	"log"
 	"net/http"
+
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // GetGroupCalendarEventsV3 Gets the group calendar events
@@ -110,8 +111,39 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if requestData.AdminsIdentifiers == nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(clientID, current, requestData.Event, requestData.GroupIDs)
+	// admins accounts
+	var adminIdentifier []model.AdminsIdentifiers
+	if requestData.AdminsIdentifiers != nil {
+		for _, s := range *&requestData.AdminsIdentifiers {
+			accountID := ""
+			var externalID *string
+
+			//get account id if available
+			if s.AccountID != "" && len(*&s.AccountID) > 0 {
+				value := s.AccountID
+				accountID = value
+			}
+
+			//get external id if available
+			if s.ExternalID != nil && len(*s.ExternalID) > 0 {
+				value := s.ExternalID
+				externalID = value
+			}
+			// validate that we have at least one
+			if len(accountID) == 0 && externalID == nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			adminIdentifier = append(adminIdentifier, model.AdminsIdentifiers{AccountID: accountID, ExternalID: externalID})
+		}
+	}
+
+	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(clientID, adminIdentifier, current, requestData.Event, requestData.GroupIDs)
 	if err != nil {
 		log.Printf("adminapis.CreateCalendarEventMultiGroup() - Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

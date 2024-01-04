@@ -44,16 +44,17 @@ func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.Servi
 }
 
 // CreateCalendarEvent creates calendar event
-func (a *Adapter) CreateCalendarEvent(currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
+func (a *Adapter) CreateCalendarEvent(adminIdentifier []model.AdminsIdentifiers, currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
 
 	type calendarRequest struct {
-		Event            map[string]interface{} `json:"event"`
-		CurrentAccountID string                 `json:"current_account_id"`
-		AppID            string                 `json:"app_id"`
-		OrgID            string                 `json:"org_id"`
+		AdminsIdentifiers []model.AdminsIdentifiers `json:"admins_identifiers"`
+		Event             map[string]interface{}    `json:"event"`
+		CurrentAccountID  string                    `json:"current_account_id"`
+		AppID             string                    `json:"app_id"`
+		OrgID             string                    `json:"org_id"`
 	}
 
-	body := calendarRequest{Event: event, CurrentAccountID: currentAccountID, AppID: appID, OrgID: orgID}
+	body := calendarRequest{AdminsIdentifiers: adminIdentifier, Event: event, CurrentAccountID: currentAccountID, AppID: appID, OrgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err

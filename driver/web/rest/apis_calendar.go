@@ -76,8 +76,9 @@ func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.U
 }
 
 type createCalendarEventMultiGroupData struct {
-	Event    map[string]interface{} `json:"event"`
-	GroupIDs []string               `json:"group_ids"`
+	AdminsIdentifiers []model.AdminsIdentifiers `json:"admins_identifiers"`
+	Event             map[string]interface{}    `json:"event"`
+	GroupIDs          []string                  `json:"group_ids"`
 }
 
 // CreateCalendarEventMultiGroup Create a calendar event and link it to multiple group ids
@@ -117,7 +118,7 @@ func (h *ApisHandler) CreateCalendarEventMultiGroup(clientID string, current *mo
 		return
 	}
 
-	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(clientID, current, requestData.Event, requestData.GroupIDs)
+	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(clientID, nil, current, requestData.Event, requestData.GroupIDs)
 	if err != nil {
 		log.Printf("api.CreateCalendarEventMultiGroup() Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
