@@ -124,9 +124,9 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 			var externalID *string
 
 			//get account id if available
-			if s.AccountID != "" && len(*&s.AccountID) > 0 {
+			if s.AccountID != nil && len(*s.AccountID) > 0 {
 				value := s.AccountID
-				accountID = value
+				accountID = *value
 			}
 
 			//get external id if available
@@ -139,7 +139,7 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			adminIdentifier = append(adminIdentifier, model.AdminsIdentifiers{AccountID: accountID, ExternalID: externalID})
+			adminIdentifier = append(adminIdentifier, model.AdminsIdentifiers{AccountID: &accountID, ExternalID: externalID})
 		}
 	}
 
@@ -151,8 +151,9 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 	}
 
 	data, err = json.Marshal(createCalendarEventMultiGroupData{
-		Event:    event,
-		GroupIDs: groupIDs,
+		AdminsIdentifiers: adminIdentifier,
+		Event:             event,
+		GroupIDs:          groupIDs,
 	})
 	if err != nil {
 		log.Printf("adminapis.CreateCalendarEventMultiGroup() - Error on marshaling response data - %s\n", err.Error())

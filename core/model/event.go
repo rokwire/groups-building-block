@@ -31,8 +31,8 @@ type Event struct {
 
 // AdminsIdentifiers represents extended identfier which handles external id in addtion of the account id.
 type AdminsIdentifiers struct {
-	AccountID  string  `bson:"account_id"`
-	ExternalID *string `bson:"external_id"`
+	AccountID  *string `json:"account_id"`
+	ExternalID *string `json:"external_id"`
 }
 
 // HasToMembersList Checks if the ToMembersList is not empty
