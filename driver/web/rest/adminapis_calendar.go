@@ -111,10 +111,6 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if requestData.AdminsIdentifiers == nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
 
 	// admins accounts
 	var adminIdentifier []model.AdminsIdentifiers
