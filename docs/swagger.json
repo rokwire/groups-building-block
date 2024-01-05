@@ -4968,6 +4968,12 @@
         "rest.createCalendarEventMultiGroupData": {
             "type": "object",
             "properties": {
+                "admins_identifiers": [
+                    {
+                      "account_id": "string",
+                      "external_id": "string"
+                    }
+                  ],
                 "event": {
                     "type": "object",
                     "additionalProperties": true
