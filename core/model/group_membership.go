@@ -17,6 +17,19 @@ func (c *MembershipCollection) ApplyGroupSettings(settings *GroupSettings) {
 	}
 }
 
+// GetMembershipByAccountID Finds a membership by account ID
+func (c *MembershipCollection) GetMembershipByAccountID(accountID string) *GroupMembership {
+	if len(c.Items) > 0 {
+		for _, membership := range c.Items {
+			if accountID == membership.UserID {
+				return &membership
+			}
+		}
+	}
+
+	return nil
+}
+
 // GetMembershipBy Finds a membership by
 func (c *MembershipCollection) GetMembershipBy(checker func(membership GroupMembership) bool) *GroupMembership {
 	if len(c.Items) > 0 {
