@@ -171,10 +171,10 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, newIDs, nil)
+			/*err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, newIDs, nil)
 			if err != nil {
 				return nil, nil, err
-			}
+			} */
 
 			for _, groupID := range newIDs {
 				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, nil, &model.Creator{
@@ -254,10 +254,10 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs, members)
+			/*err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs, members)
 			if err != nil {
 				return nil, nil, err
-			}
+			}*/
 
 			for _, groupID := range groupIDs {
 				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, members, &model.Creator{
@@ -310,7 +310,7 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 				return nil, nil, err
 			}
 
-			app.calendar.RemovePeopleFromCalendarEvent([]string{}, eventID, current.OrgID, current.AppID)
+			/*app.calendar.RemovePeopleFromCalendarEvent([]string{}, eventID, current.OrgID, current.AppID)
 			if err != nil {
 				log.Printf("app.updateCalendarEventSingleGroup() Error cleaning users: %s", err)
 			}
@@ -318,7 +318,7 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 			err = app.createCalendarEventForGroupsMembers(clientID, current.OrgID, current.AppID, eventID, groupIDs, members)
 			if err != nil {
 				return nil, nil, err
-			}
+			}*/
 
 			for _, groupID := range groupIDs {
 				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, members, &model.Creator{

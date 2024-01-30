@@ -77,10 +77,6 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 		return err
 	}
 
-	if member.Status == "member" {
-		app.linkMemberToCalendarEvents(clientID, current, member)
-	}
-
 	adminMemberships, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		Statuses: []string{"admin"},
@@ -248,17 +244,8 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
 
 	if membership != nil {
-		evets, err := app.getEvents(clientID, current, membership.GroupID, false)
-		if err != nil {
-			log.Printf("err app.deleteMembershipByID() - error fetching events: %s", err)
-		}
-		if len(evets) > 0 {
-			for _, event := range evets {
-				app.unlinkMemberToCalendarEvents(clientID, current, membership.GroupID, event.EventID, membership.UserID)
-			}
-		}
 
-		err = app.storage.DeleteMembershipByID(clientID, current, membership.ID)
+		err := app.storage.DeleteMembershipByID(clientID, current, membership.ID)
 		if err != nil {
 			return err
 		}
@@ -277,18 +264,6 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 }
 
 func (app *Application) deleteMembership(clientID string, current *model.User, groupID string) error {
-	membership, _ := app.storage.FindGroupMembership(clientID, groupID, current.ID)
-	if membership != nil {
-		events, err := app.getEvents(clientID, current, membership.GroupID, false)
-		if err != nil {
-			log.Printf("err app.deleteMembership() - error fetching events: %s", err)
-		}
-		if len(events) > 0 {
-			for _, event := range events {
-				app.unlinkMemberToCalendarEvents(clientID, current, membership.GroupID, event.EventID, membership.UserID)
-			}
-		}
-	}
 	err := app.storage.DeleteMembership(clientID, groupID, current.ID)
 	if err != nil {
 		return err
