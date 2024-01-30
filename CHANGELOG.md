@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.28.0] - 2024-01-30
 ### Changed
 - Disable automatic event memership provision for group events [#411](https://github.com/rokwire/groups-building-block/issues/411)
 
