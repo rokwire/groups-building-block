@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Disable automatic event memership provision for group events [#411](https://github.com/rokwire/groups-building-block/issues/411)
+
 ## [1.27.3] - 2024-01-05
 ### Added
 - Ability to select event admins when creating event linked to multiple [#408](https://github.com/rokwire/groups-building-block/issues/408)
