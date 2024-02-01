@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.28.1] - 2024-02-01
 ### Added
 - Provision all group admins as Event admins [#411](https://github.com/rokwire/groups-building-block/issues/411)
 
