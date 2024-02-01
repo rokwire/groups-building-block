@@ -284,7 +284,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-		adminIdentifiers, newGroupIDs := app.buildAdminIDs(nil, memberships, nil)
+		adminIdentifiers, newGroupIDs := app.buildAdminIDs(current, memberships, nil)
 
 		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, current.ID, event, current.OrgID, current.AppID)
 		if err != nil {
