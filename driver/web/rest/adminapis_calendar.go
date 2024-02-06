@@ -56,7 +56,7 @@ func (h *AdminApisHandler) GetGroupCalendarEventsV3(clientID string, current *mo
 		return
 	}
 
-	events, err := h.app.Services.GetGroupCalendarEvents(clientID, current, groupID, filter)
+	events, err := h.app.Services.GetGroupCalendarEvents(clientID, current, groupID, nil, filter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupCalendarEventsV3() - error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

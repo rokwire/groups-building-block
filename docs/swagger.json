@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.27.2"
+        "version": "1.29.0"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -4780,6 +4780,17 @@
                 }
             }
         },
+        "model.AdminsIdentifiers": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -4968,12 +4979,12 @@
         "rest.createCalendarEventMultiGroupData": {
             "type": "object",
             "properties": {
-                "admins_identifiers": [
-                    {
-                      "account_id": "string",
-                      "external_id": "string"
+                "admins_identifiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AdminsIdentifiers"
                     }
-                  ],
+                },
                 "event": {
                     "type": "object",
                     "additionalProperties": true

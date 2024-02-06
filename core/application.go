@@ -366,7 +366,7 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 	return nil, nil, nil
 }
 
-func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
+func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
 	mappings, err := app.storage.FindEvents(clientID, current, groupID, true)
 	if err != nil {
 		return nil, err
@@ -377,7 +377,7 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 		for _, eventMapping := range mappings {
 			eventIDs = append(eventIDs, eventMapping.EventID)
 		}
-		return app.calendar.GetGroupCalendarEvents(current.ID, eventIDs, current.AppID, current.OrgID, filter)
+		return app.calendar.GetGroupCalendarEvents(current.ID, eventIDs, current.AppID, current.OrgID, published, filter)
 	}
 
 	return nil, err

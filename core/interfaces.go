@@ -99,7 +99,7 @@ type Services interface {
 	CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
 	CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
 	UpdateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
-	GetGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error)
+	GetGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -335,8 +335,8 @@ func (s *servicesImpl) UpdateCalendarEventSingleGroup(clientID string, current *
 	return s.app.updateCalendarEventSingleGroup(clientID, current, event, groupID, members)
 }
 
-func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.User, groupID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
-	return s.app.getGroupCalendarEvents(clientID, current, groupID, filter)
+func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
+	return s.app.getGroupCalendarEvents(clientID, current, groupID, published, filter)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -475,7 +475,7 @@ type Rewards interface {
 type Calendar interface {
 	CreateCalendarEvent(adminIdentifier []model.AdminsIdentifiers, currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
 	UpdateCalendarEvent(currentAccountID string, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
-	GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, filter model.GroupEventFilter) (map[string]interface{}, error)
+	GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
 	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
 }
