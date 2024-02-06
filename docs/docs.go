@@ -4784,6 +4784,17 @@ const docTemplate = `{
                 }
             }
         },
+        "model.AdminsIdentifiers": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -4972,6 +4983,12 @@ const docTemplate = `{
         "rest.createCalendarEventMultiGroupData": {
             "type": "object",
             "properties": {
+                "admins_identifiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AdminsIdentifiers"
+                    }
+                },
                 "event": {
                     "type": "object",
                     "additionalProperties": true
@@ -5218,7 +5235,7 @@ const docTemplate = `{
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "1.27.2",
+	Version:          "1.29.0",
 	Host:             "localhost",
 	BasePath:         "/gr",
 	Schemes:          []string{"http"},

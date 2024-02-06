@@ -153,11 +153,12 @@ func (a *Adapter) UpdateCalendarEvent(currentAccountID string, eventID string, e
 }
 
 // GetGroupCalendarEvents gets calendar events for a group
-func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, filter model.GroupEventFilter) (map[string]interface{}, error) {
+func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
 	type filterType struct {
-		IDs    []string `json:"ids"`
-		Limit  *int64   `json:"limit,omitempty"`
-		Offset *int64   `json:"offset,omitempty"`
+		IDs       []string `json:"ids"`
+		Limit     *int64   `json:"limit,omitempty"`
+		Offset    *int64   `json:"offset,omitempty"`
+		Published *bool    `json:"published"`
 
 		StartTimeAfter  *int64 `json:"start_time_after,omitempty"`
 		StartTimeBefore *int64 `json:"start_time_before,omitempty"`
@@ -177,6 +178,7 @@ func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []str
 		CurrentAccountID: currentAccountID,
 		Filter: filterType{
 			IDs:             eventIDs,
+			Published:       published,
 			Limit:           filter.Limit,
 			Offset:          filter.Offset,
 			StartTimeBefore: filter.StartTimeBefore,

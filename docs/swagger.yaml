@@ -749,6 +749,13 @@ definitions:
     required:
     - approve
     type: object
+  model.AdminsIdentifiers:
+    properties:
+      account_id:
+        type: string
+      external_id:
+        type: string
+    type: object
   model.Post:
     properties:
       body:
@@ -876,6 +883,10 @@ definitions:
     type: object
   rest.createCalendarEventMultiGroupData:
     properties:
+      admins_identifiers:
+        items:
+          $ref: '#/definitions/model.AdminsIdentifiers'
+        type: array
       event:
         additionalProperties: true
         type: object
@@ -1031,7 +1042,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.27.2
+  version: 1.29.0
 paths:
   /admin/authman/synchronize:
     post:
