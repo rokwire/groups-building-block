@@ -648,6 +648,13 @@ definitions:
       web_url:
         type: string
     type: object
+  getPutAdminGroupIDsForEventIDRequestAndResponse:
+    properties:
+      group_ids:
+        items:
+          type: string
+        type: array
+    type: object
   getUserGroupsResponse:
     properties:
       category:
@@ -1653,6 +1660,54 @@ paths:
       responses:
         "200":
           description: ""
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/user/event/{event-id}/groups:
+    get:
+      description: Updates the group mappings for an event with id
+      operationId: UpdateGroupMappingsEventID
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/admin/user/event/{event_id}/groups:
+    get:
+      description: Get all group IDs where the current user is an admin
+      operationId: AdminGetAdminGroupIDsForEventID
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
       security:
       - AppUserAuth: []
       tags:

@@ -802,6 +802,9 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	}
 
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	if groupsFilter.GroupIDs != nil {
+		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupsFilter.GroupIDs}})
+	}
 	if userID != nil {
 		innerOrFilter := []bson.M{}
 

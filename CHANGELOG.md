@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Retrieve group ids by event Id [#416](https://github.com/rokwire/groups-building-block/issues/416)
+- Update the set of groups that event is published to [#417](https://github.com/rokwire/groups-building-block/issues/417)
+
 ## [1.29.0] - 2024-02-06
 ### Changed
 - Do not load "unpublished" events [#414](https://github.com/rokwire/groups-building-block/issues/414)

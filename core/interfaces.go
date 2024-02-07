@@ -90,6 +90,10 @@ type Services interface {
 	SendGroupNotification(clientID string, notification model.GroupNotification) error
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 
+	// Group Events
+	FindAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error)
+	UpdateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
+
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
 	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
@@ -309,6 +313,16 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 	return s.app.getResearchProfileUserCount(clientID, current, researchProfile)
 }
 
+// Group Events
+
+func (s *servicesImpl) FindAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error) {
+	return s.app.findAdminGroupsForEvent(clientID, current, eventID)
+}
+
+func (s *servicesImpl) UpdateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
+	return s.app.updateGroupMappingsForEvent(clientID, current, eventID, groupIDs)
+}
+
 // Analytics
 
 func (s *servicesImpl) AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error) {
@@ -427,6 +441,10 @@ type Storage interface {
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
+
+	// Group Events
+	FindAdminGroupsForEvent(context storage.TransactionContext, clientID string, current *model.User, eventID string) ([]string, error)
+	UpdateGroupMappingsForEvent(context storage.TransactionContext, clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)

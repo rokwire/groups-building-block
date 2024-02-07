@@ -310,3 +310,108 @@ func (h *ApisHandler) UpdateCalendarEventSingleGroup(clientID string, current *m
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
+
+// getPutAdminGroupIDsForEventIDRequestAndResponse
+type getPutAdminGroupIDsForEventIDRequestAndResponse struct {
+	GroupIDs []string `json:"group_ids"`
+} // @name getPutAdminGroupIDsForEventIDRequestAndResponse
+
+// GetAdminGroupIDsForEventID Get all group IDs where the current user is an admin
+// @Description Get all group IDs where the current user is an admin
+// @ID GetAdminGroupIDsForEventID
+// @Tags Client
+// @Param APP header string true "APP"
+// @Param event-id path string true "Event ID"
+// @Param data body getPutAdminGroupIDsForEventIDRequestAndResponse true "body data"
+// @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
+// @Security AppUserAuth
+// @Router /api/admin/user/event/{event-id}/groups [get]
+func (h *ApisHandler) GetAdminGroupIDsForEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	eventID := params["event-id"]
+	if len(eventID) <= 0 {
+		log.Println("Event ID is required")
+		http.Error(w, "Event ID is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	groupIDs, err := h.app.Services.FindAdminGroupsForEvent(clientID, current, eventID)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	data, err := json.Marshal(getPutAdminGroupIDsForEventIDRequestAndResponse{GroupIDs: groupIDs})
+	if err != nil {
+		log.Println("adminapis.GetAdminGroupIDsForEventID() - Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// UpdateGroupMappingsEventID Updates the group mappings for an event with id
+// @Description Updates the group mappings for an event with id
+// @ID UpdateGroupMappingsEventID
+// @Tags Client
+// @Param APP header string true "APP"
+// @Param event-id path string true "Event ID"
+// @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
+// @Security AppUserAuth
+// @Router /api/admin/user/event/{event-id}/groups [get]
+func (h *ApisHandler) UpdateGroupMappingsEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	eventID := params["event-id"]
+	if len(eventID) <= 0 {
+		log.Println("Event ID is required")
+		http.Error(w, "Event ID is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("api.UpdateGroupMappingsEventID() Error on marshal the create group item - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData getPutAdminGroupIDsForEventIDRequestAndResponse
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("api.UpdateGroupMappingsEventID() Error on unmarshal the create event request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	groupIDs, err := h.app.Services.UpdateGroupMappingsForEvent(clientID, current, eventID, requestData.GroupIDs)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	data, err = json.Marshal(getPutAdminGroupIDsForEventIDRequestAndResponse{GroupIDs: groupIDs})
+	if err != nil {
+		log.Println("apis.UpdateGroupMappingsEventID() - Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
