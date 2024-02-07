@@ -975,11 +975,11 @@
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Get all group IDs where the current user is an admin",
+                "description": "Updates the group mappings for an event with id",
                 "tags": [
-                    "Admin"
+                    "Client"
                 ],
-                "operationId": "GetAdminGroupIDsForEventID",
+                "operationId": "UpdateGroupMappingsEventID",
                 "parameters": [
                     {
                         "type": "string",
@@ -1000,7 +1000,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getAdminGroupIDsForEventIDResponse"
+                            "$ref": "#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse"
                         }
                     }
                 }
@@ -1038,7 +1038,7 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getAdminGroupIDsForEventIDResponse"
+                            "$ref": "#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse"
                         }
                     }
                 }
@@ -4615,17 +4615,6 @@
                 }
             }
         },
-        "getAdminGroupIDsForEventIDResponse": {
-            "type": "object",
-            "properties": {
-                "group_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "getGroupResponse": {
             "type": "object",
             "properties": {
@@ -4713,6 +4702,17 @@
                 },
                 "web_url": {
                     "type": "string"
+                }
+            }
+        },
+        "getPutAdminGroupIDsForEventIDRequestAndResponse": {
+            "type": "object",
+            "properties": {
+                "group_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

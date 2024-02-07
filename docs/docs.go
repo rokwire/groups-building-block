@@ -979,11 +979,11 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Get all group IDs where the current user is an admin",
+                "description": "Updates the group mappings for an event with id",
                 "tags": [
-                    "Admin"
+                    "Client"
                 ],
-                "operationId": "GetAdminGroupIDsForEventID",
+                "operationId": "UpdateGroupMappingsEventID",
                 "parameters": [
                     {
                         "type": "string",
@@ -1004,7 +1004,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getAdminGroupIDsForEventIDResponse"
+                            "$ref": "#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse"
                         }
                     }
                 }
@@ -1042,7 +1042,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getAdminGroupIDsForEventIDResponse"
+                            "$ref": "#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse"
                         }
                     }
                 }
@@ -4619,17 +4619,6 @@ const docTemplate = `{
                 }
             }
         },
-        "getAdminGroupIDsForEventIDResponse": {
-            "type": "object",
-            "properties": {
-                "group_ids": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
         "getGroupResponse": {
             "type": "object",
             "properties": {
@@ -4717,6 +4706,17 @@ const docTemplate = `{
                 },
                 "web_url": {
                     "type": "string"
+                }
+            }
+        },
+        "getPutAdminGroupIDsForEventIDRequestAndResponse": {
+            "type": "object",
+            "properties": {
+                "group_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },

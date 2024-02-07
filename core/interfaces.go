@@ -92,6 +92,7 @@ type Services interface {
 
 	// Group Events
 	FindAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error)
+	UpdateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
@@ -318,6 +319,10 @@ func (s *servicesImpl) FindAdminGroupsForEvent(clientID string, current *model.U
 	return s.app.findAdminGroupsForEvent(clientID, current, eventID)
 }
 
+func (s *servicesImpl) UpdateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
+	return s.app.updateGroupMappingsForEvent(clientID, current, eventID, groupIDs)
+}
+
 // Analytics
 
 func (s *servicesImpl) AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error) {
@@ -439,6 +444,7 @@ type Storage interface {
 
 	// Group Events
 	FindAdminGroupsForEvent(context storage.TransactionContext, clientID string, current *model.User, eventID string) ([]string, error)
+	UpdateGroupMappingsForEvent(context storage.TransactionContext, clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
