@@ -120,10 +120,16 @@ func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clien
 			newGroupIDsMapping[groupID] = true
 		}
 
+		for _, groupID := range groupIDs {
+			if adminIDMappings[groupID] {
+				result = append(result, groupID)
+			}
+		}
+
 		// 2. Construct mappings for remove
 		var groupIDsForRemove []string
-		for _, groupID := range groupIDs {
-			if !currentAdminIDMappings[groupID] && adminIDMappings[groupID] {
+		for _, groupID := range currentAdminGroupIDs {
+			if currentAdminIDMappings[groupID] && !newGroupIDsMapping[groupID] {
 				groupIDsForRemove = append(groupIDsForRemove, groupID)
 			}
 		}
@@ -135,12 +141,6 @@ func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clien
 			}, nil)
 			if err != nil {
 				return err
-			}
-		}
-
-		for _, groupID := range groupIDs {
-			if adminIDMappings[groupID] {
-				result = append(result, groupID)
 			}
 		}
 
