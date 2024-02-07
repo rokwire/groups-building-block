@@ -321,3 +321,50 @@ func (h *AdminApisHandler) UpdateCalendarEventSingleGroup(clientID string, curre
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
 }
+
+// getAdminGroupIDsForEventIDResponse
+type getAdminGroupIDsForEventIDResponse struct {
+	GroupIDs []string `json:"group_ids"`
+} // @name getAdminGroupIDsForEventIDResponse
+
+// GetAdminGroupIDsForEventID Get all group IDs where the current user is an admin
+// @Description Get all group IDs where the current user is an admin
+// @ID AdminGetAdminGroupIDsForEventID
+// @Tags Admin
+// @Param APP header string true "APP"
+// @Param event-id path string true "Event ID"
+// @Success 200 {object} getAdminGroupIDsForEventIDResponse
+// @Security AppUserAuth
+// @Router /api/admin/user/event/{event_id}/groups [get]
+func (h *AdminApisHandler) GetAdminGroupIDsForEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	eventID := params["event-id"]
+	if len(eventID) <= 0 {
+		log.Println("Event ID is required")
+		http.Error(w, "Event ID is required", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to see the events for this group
+	groupIDs, err := h.app.Services.FindAdminGroupsForEvent(clientID, current, eventID)
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if groupIDs == nil {
+		groupIDs = []string{}
+	}
+
+	data, err := json.Marshal(getAdminGroupIDsForEventIDResponse{GroupIDs: groupIDs})
+	if err != nil {
+		log.Println("adminapis.GetAdminGroupIDsForEventID() - Error on marshal the group events")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}

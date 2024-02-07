@@ -972,6 +972,82 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/user/event/{event-id}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Get all group IDs where the current user is an admin",
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "GetAdminGroupIDsForEventID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/getAdminGroupIDsForEventIDResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/user/event/{event_id}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Get all group IDs where the current user is an admin",
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetAdminGroupIDsForEventID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/getAdminGroupIDsForEventIDResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/user/groups": {
             "get": {
                 "security": [
@@ -4540,6 +4616,17 @@ const docTemplate = `{
             "properties": {
                 "inserted_id": {
                     "type": "string"
+                }
+            }
+        },
+        "getAdminGroupIDsForEventIDResponse": {
+            "type": "object",
+            "properties": {
+                "group_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 }
             }
         },
