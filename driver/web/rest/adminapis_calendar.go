@@ -367,9 +367,10 @@ func (h *AdminApisHandler) GetAdminGroupIDsForEventID(clientID string, current *
 // UpdateGroupMappingsEventID Updates the group mappings for an event with id
 // @Description Updates the group mappings for an event with id
 // @ID AdminUpdateGroupMappingsEventID
-// @Tags Client
+// @Tags Admin
 // @Param APP header string true "APP"
 // @Param event-id path string true "Event ID"
+// @Param data body getPutAdminGroupIDsForEventIDRequestAndResponse true "body data"
 // @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
 // @Security AppUserAuth
 // @Router /api/admin/user/event/{event-id}/groups [get]

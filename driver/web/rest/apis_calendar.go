@@ -322,6 +322,7 @@ type getPutAdminGroupIDsForEventIDRequestAndResponse struct {
 // @Tags Client
 // @Param APP header string true "APP"
 // @Param event-id path string true "Event ID"
+// @Param data body getPutAdminGroupIDsForEventIDRequestAndResponse true "body data"
 // @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
 // @Security AppUserAuth
 // @Router /api/admin/user/event/{event-id}/groups [get]
