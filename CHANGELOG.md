@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Group Admin and Event Admin roles should be treated separately [#423](https://github.com/rokwire/groups-building-block/issues/423)
+
 ## [1.30.1] - 2024-02-07
 ### Fixed
 - Additional fix for delete event mappings[#417](https://github.com/rokwire/groups-building-block/issues/417)

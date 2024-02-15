@@ -149,6 +149,7 @@ func (app *Application) setupSyncManagedGroupTimer() {
 func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifiers []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
 	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
+		UserID:   &current.ID,
 		Statuses: []string{"admin"},
 	})
 	if err != nil {
@@ -156,9 +157,7 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-		mergedAdminIdentifiers, newGroupIDs := app.buildAdminIDs(current, memberships, adminIdentifiers)
-
-		createdEvent, err := app.calendar.CreateCalendarEvent(mergedAdminIdentifiers, current.ID, event, current.OrgID, current.AppID)
+		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, current.ID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -167,8 +166,8 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			for _, groupID := range newGroupIDs {
-				mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, nil, &model.Creator{
+			for _, membership := range memberships.Items {
+				mapping, err := app.storage.CreateEvent(clientID, eventID, membership.GroupID, nil, &model.Creator{
 					UserID: current.ID,
 					Name:   current.Name,
 					Email:  current.Email,
@@ -185,60 +184,6 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 	}
 
 	return nil, nil, nil
-}
-
-func (app *Application) buildAdminIDs(current *model.User, collection model.MembershipCollection, admins []model.AdminsIdentifiers) ([]model.AdminsIdentifiers, []string) {
-	var newGroupIDs []string
-	var newGroupIDsMapping = map[string]bool{}
-	var newAdminIDsBulMapping = map[string]bool{}
-	var newAdminIDsValMapping = map[string]model.AdminsIdentifiers{}
-
-	// Reconstruct admins list
-	for _, admin := range admins {
-		userID := admin.AccountID
-		newAdminIDsBulMapping[*userID] = true
-		newAdminIDsValMapping[*userID] = admin
-	}
-
-	// Current user as default admin
-	newAdminIDsBulMapping[current.ID] = true
-	currentUserID := current.ID
-	currentExternalID := current.ExternalID
-	newAdminIDsValMapping[current.ID] = model.AdminsIdentifiers{
-		AccountID:  &currentUserID,
-		ExternalID: &currentExternalID,
-	}
-
-	// Construct new admin mappings and resolve duplications
-	for _, membership := range collection.Items {
-		if membership.ExternalID != "" || membership.UserID != "" {
-			newGroupIDsMapping[membership.GroupID] = true
-			userID := membership.UserID
-			var externalID *string
-			if membership.ExternalID != "" {
-				externalID = &membership.ExternalID
-			}
-			if !newAdminIDsBulMapping[userID] {
-				newAdminIDsBulMapping[userID] = true
-				newAdminIDsValMapping[userID] = model.AdminsIdentifiers{
-					AccountID:  &userID,
-					ExternalID: externalID,
-				}
-			}
-		}
-	}
-
-	// Construct group IDs
-	for groupID := range newGroupIDsMapping {
-		newGroupIDs = append(newGroupIDs, groupID)
-	}
-
-	// Construct admin IDs
-	for adminID := range newAdminIDsValMapping {
-		admins = append(admins, newAdminIDsValMapping[adminID])
-	}
-
-	return admins, newGroupIDs
 }
 
 func (app *Application) createCalendarEventForGroupsMembers(clientID string, orgID string, appID string, eventID string, groupIDs []string, members []model.ToMember) error {
@@ -277,6 +222,7 @@ func (app *Application) createCalendarEventForGroupsMembers(clientID string, org
 func (app *Application) createCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
 	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: []string{groupID},
+		UserID:   &current.ID,
 		Statuses: []string{"admin"},
 	})
 	if err != nil {
@@ -284,9 +230,8 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-		adminIdentifiers, newGroupIDs := app.buildAdminIDs(current, memberships, nil)
 
-		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, current.ID, event, current.OrgID, current.AppID)
+		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AdminsIdentifiers{}, current.ID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -295,19 +240,18 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			for _, constructedGroupID := range newGroupIDs {
-				mapping, err := app.storage.CreateEvent(clientID, eventID, constructedGroupID, members, &model.Creator{
-					UserID: current.ID,
-					Name:   current.Name,
-					Email:  current.Email,
-				})
-				if err != nil {
-					log.Printf("Error create goup mapping: %s", err)
-				}
-				if mapping != nil {
-					mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
-				}
+			mapping, err := app.storage.CreateEvent(clientID, eventID, groupID, members, &model.Creator{
+				UserID: current.ID,
+				Name:   current.Name,
+				Email:  current.Email,
+			})
+			if err != nil {
+				log.Printf("Error create goup mapping: %s", err)
 			}
+			if mapping != nil {
+				mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
+			}
+
 			return createdEvent, members, nil
 		}
 	}
