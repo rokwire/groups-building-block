@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+### Fixed
+- Additional fix related to membership & whole group deletion if the user is the only admin [#425](https://github.com/rokwire/groups-building-block/issues/425)
+
 ## [1.32.0] - 2024-02-28
 ### Fixed
 - DELETE api/user API does not remove all user activity in groups [#425](https://github.com/rokwire/groups-building-block/issues/425)
