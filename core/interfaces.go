@@ -388,7 +388,7 @@ type Storage interface {
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
 	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
 	UpdateGroupDateUpdated(clientID string, groupID string) error
-	DeleteGroup(clientID string, id string) error
+	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
