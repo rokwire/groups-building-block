@@ -263,7 +263,7 @@ func (sa *Adapter) FindUserGroupMembershipsWithContext(ctx TransactionContext, c
 	filter := bson.M{"client_id": clientID, "user_id": userID}
 
 	var result []model.GroupMembership
-	err := sa.db.groupMemberships.Find(filter, &result, nil)
+	err := sa.db.groupMemberships.FindWithContext(ctx, filter, &result, nil)
 
 	return model.MembershipCollection{Items: result}, err
 }

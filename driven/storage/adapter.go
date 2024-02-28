@@ -399,10 +399,31 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 			return err
 		}
 		for _, membership := range memberships.Items {
-			err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
+
+			admins, err := sa.FindGroupMembershipsWithContext(sessionContext, clientID, model.MembershipFilter{
+				GroupIDs: []string{membership.GroupID},
+				Statuses: []string{"admin"},
+			})
 			if err != nil {
 				log.Printf("error deleting user membership - %s", err.Error())
 				return err
+			}
+			if len(admins.Items) > 1 {
+				err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
+				if err != nil {
+					log.Printf("error deleting user membership - %s", err.Error())
+					// Check the count of admins
+					return err
+				}
+			} else if len(admins.Items) == 1 {
+				if admins.Items[0].UserID == userID {
+					log.Printf("delete group %s, because, user %s is the only admin", admins.Items[0].GroupID, userID)
+					err := sa.DeleteGroup(sessionContext, clientID, membership.GroupID)
+					if err != nil {
+						log.Printf("error deleting user membership and the whole group - %s", err.Error())
+						return err
+					}
+				}
 			}
 		}
 
@@ -687,8 +708,9 @@ func (sa *Adapter) checkUniqueGroupTitleWithContext(context TransactionContext, 
 }
 
 // DeleteGroup deletes a group.
-func (sa *Adapter) DeleteGroup(clientID string, id string) error {
-	err := sa.PerformTransaction(func(context TransactionContext) error {
+func (sa *Adapter) DeleteGroup(ctx TransactionContext, clientID string, id string) error {
+
+	wrapper := func(context TransactionContext) error {
 
 		// 1. delete mapped group events
 		_, err := sa.db.events.DeleteManyWithContext(context, bson.D{
@@ -727,12 +749,12 @@ func (sa *Adapter) DeleteGroup(clientID string, id string) error {
 		}
 
 		return nil
-	})
-	if err != nil {
-		return err
 	}
 
-	return nil
+	if ctx != nil {
+		return wrapper(ctx)
+	}
+	return sa.PerformTransaction(wrapper)
 }
 
 // FindGroup finds group by id and client id
