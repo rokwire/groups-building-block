@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Update the schema for Rokwire analytics api for Splunk ingest [#429](https://github.com/rokwire/groups-building-block/issues/429)
+
 ## [1.32.1] - 2024-02-28
 ### Fixed
 - Additional fix related to membership & whole group deletion if the user is the only admin [#425](https://github.com/rokwire/groups-building-block/issues/425)
