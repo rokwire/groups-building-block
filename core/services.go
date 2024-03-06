@@ -98,12 +98,12 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 			searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
 
 			list := []notifications.Recipient{}
-			account, err := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID, 0, 0, false, nil)
+			account, err := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID, nil, nil)
 			if err != nil {
 				return nil
 			}
 			for _, u := range account {
-				id := u["id"].(string)
+				id := u.ID
 				mute := false
 				ne := notifications.Recipient{UserID: id, Mute: mute}
 				list = append(list, ne)
