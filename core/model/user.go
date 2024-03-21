@@ -14,7 +14,10 @@
 
 package model
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 // User represents user entity
 type User struct {
@@ -114,4 +117,19 @@ type CoreAccount struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"roles"`
+}
+
+// GetExternalID Gets the external id
+func (c *CoreAccount) GetExternalID() *string {
+	for _, auth := range c.AuthTypes {
+		if auth.Active && len(auth.Identifier) > 0 {
+			return &auth.Identifier
+		}
+	}
+	return nil
+}
+
+// GetFullName Builds the fullname
+func (c *CoreAccount) GetFullName() string {
+	return fmt.Sprintf("%s %s", c.Profile.FirstName, c.Profile.LastName)
 }

@@ -891,11 +891,14 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 
 func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.GroupMembership {
 	if len(externalIDs) > 0 {
-		users, _ := app.storage.FindUsers(clientID, externalIDs, true)
+		users, _ := app.corebb.GetAllCoreAccountsWithExternalIDs(externalIDs, nil, nil)
 		members := []model.GroupMembership{}
-		userExternalIDmapping := map[string]model.User{}
+		userExternalIDmapping := map[string]model.CoreAccount{}
 		for _, user := range users {
-			userExternalIDmapping[user.ExternalID] = user
+			identifier := user.GetExternalID()
+			if identifier != nil {
+				userExternalIDmapping[*identifier] = user
+			}
 		}
 
 		for _, externalID := range externalIDs {
@@ -904,8 +907,8 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 					ID:          uuid.NewString(),
 					UserID:      value.ID,
 					ExternalID:  externalID,
-					Name:        value.Name,
-					Email:       value.Email,
+					Name:        value.GetFullName(),
+					Email:       value.Profile.Email,
 					Status:      memberStatus,
 					DateCreated: time.Now(),
 				})
@@ -1040,21 +1043,24 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		}
 	}
 
-	// Load user records for all members
-	localUsersMapping := map[string]model.User{}
-	localUsers, err := app.storage.FindUsers(clientID, allExternalIDs, true)
+	localUsersMapping := map[string]model.CoreAccount{}
+	localUsers, err := app.corebb.GetAllCoreAccountsWithExternalIDs(allExternalIDs, nil, nil)
 	if err != nil {
 		return fmt.Errorf("error on getting %d users for Authman %s: %s", len(allExternalIDs), *authmanGroup.AuthmanGroup, err)
 	}
 
 	for _, user := range localUsers {
-		localUsersMapping[user.ExternalID] = user
+		identifier := user.GetExternalID()
+		if identifier != nil {
+			localUsersMapping[*identifier] = user
+		}
 	}
 
 	missingInfoMembers := []model.GroupMembership{}
 	updateOperations := []storage.SingleMembershipOperation{}
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
 	for _, externalID := range authmanExternalIDs {
+
 		status := "member"
 		if _, ok := adminExternalIDsMap[externalID]; ok {
 			status = "admin"
@@ -1066,11 +1072,10 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			if user.ID != "" {
 				userID = &user.ID
 			}
-			if user.Name != "" {
-				name = &user.Name
-			}
-			if user.Email != "" {
-				email = &user.Email
+			fullName := fmt.Sprintf("%s %s", user.Profile.FirstName, user.Profile.LastName)
+			name = &fullName
+			if user.Profile.Email != "" {
+				email = &user.Profile.Email
 			}
 		}
 
@@ -1085,6 +1090,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			SyncID:     &syncID,
 			Answers:    authmanGroup.CreateMembershipEmptyAnswers(),
 		})
+
 	}
 	if len(updateOperations) > 0 {
 		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
@@ -1114,12 +1120,13 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 				userID = &mappedUser.ID
 				updatedInfo = true
 			}
-			if mappedUser.Name != "" && mappedUser.Name != adminMember.Name {
-				name = &mappedUser.Name
+			fullName := fmt.Sprintf("%s %s", mappedUser.Profile.FirstName, mappedUser.Profile.LastName)
+			if fullName != "" && fullName != adminMember.Name {
+				name = &fullName
 				updatedInfo = true
 			}
-			if mappedUser.Email != "" && mappedUser.Email != adminMember.Email {
-				email = &mappedUser.Email
+			if mappedUser.Profile.Email != "" && mappedUser.Profile.Email != adminMember.Email {
+				email = &mappedUser.Profile.Email
 				updatedInfo = true
 			}
 		}

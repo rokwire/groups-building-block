@@ -482,7 +482,7 @@ type Core interface {
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
 	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
 	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
-	GetAllCoreAccountsWithExternalIDMappings(externalIDs []string, appID *string, orgID *string) (map[string]model.CoreAccount, error)
+	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 

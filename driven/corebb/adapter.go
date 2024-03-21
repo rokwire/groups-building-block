@@ -188,15 +188,15 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 	return count, nil
 }
 
-func (a *Adapter) GetAllCoreAccountsWithExternalIDMappings(externalIDs []string, appID *string, orgID *string) (map[string]model.CoreAccount, error) {
+// GetAllCoreAccountsWithExternalIDs Gets all Core accounts with external IDs
+func (a *Adapter) GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error) {
 	var list []model.CoreAccount
-	//var mapping map[string]model.CoreAccount
 	var limit int = 100
 	var offset int = 0
 
 	for {
 		buffer, err := a.GetAccounts(map[string]interface{}{
-			"auth_types.params.user.identifier": externalIDs,
+			"auth_types.identifier": externalIDs,
 		}, appID, orgID, &limit, &offset)
 		if err != nil {
 			return nil, err
@@ -211,12 +211,10 @@ func (a *Adapter) GetAllCoreAccountsWithExternalIDMappings(externalIDs []string,
 		}
 	}
 
-	//for _, account := range list{
-
-	//}
-	return nil, nil
+	return list, nil
 }
 
+// GetAccountsWithIDs Gets all core accaunts with IDs
 func (a *Adapter) GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error) {
 	return a.GetAccounts(map[string]interface{}{
 		"id": ids,
