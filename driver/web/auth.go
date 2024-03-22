@@ -26,7 +26,6 @@ import (
 	"sync"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/google/uuid"
 	"golang.org/x/sync/syncmap"
 
 	"github.com/casbin/casbin"
@@ -395,33 +394,11 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 		return nil
 	}
 
-	// 4. Use corebb user id or legacy user id
-	// NOTE: In general we assume the corebb user is already refactored e.g the login API has been invoked at least once.
-	// The difference would be only the user ID.
-	var userID string
-	if isCoreUser {
+	// 4. Construct user struct
+	var userID, name, externalID, email, netID, appID, orgID string
+	if data.Sub != nil {
 		userID = *data.Sub
-	} else {
-		persistedUser, err := auth.app.FindUser(clientID, data.UIuceduUIN, true)
-		if err != nil {
-			log.Printf("error retriving user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
-		}
-		if persistedUser != nil {
-			isCoreUser = persistedUser.IsCoreUser
-			userID = persistedUser.ID
-		} else {
-			legacyUser, err := auth.app.CreateUser(clientID, uuid.NewString(), data.UIuceduUIN, data.Email, data.Name)
-			if err != nil {
-				log.Printf("error creating legacy user (UIuceduUIN: %s): %s", *data.UIuceduUIN, err)
-			}
-			if legacyUser != nil {
-				userID = legacyUser.ID
-			}
-		}
 	}
-
-	//5. Get the user for the provided external id.
-	var name, externalID, email, netID, appID, orgID string
 	if data.Name != nil {
 		name = *data.Name
 	}

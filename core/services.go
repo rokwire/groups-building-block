@@ -207,10 +207,6 @@ func (app *Application) getUserGroups(clientID string, current *model.User, filt
 	return groups, nil
 }
 
-func (app *Application) loginUser(clientID string, current *model.User) error {
-	return app.storage.LoginUser(clientID, current)
-}
-
 func (app *Application) deleteUser(clientID string, current *model.User) error {
 	return app.storage.DeleteUser(clientID, current.ID)
 }

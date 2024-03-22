@@ -29,7 +29,7 @@
                 "operationId": "AdminSynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -512,7 +512,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -723,7 +723,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             },
@@ -799,7 +799,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -849,7 +849,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             },
@@ -888,7 +888,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -963,7 +963,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -1552,7 +1552,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2064,7 +2064,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             },
@@ -2426,7 +2426,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2503,7 +2503,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2861,7 +2861,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2911,7 +2911,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2953,7 +2953,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3000,7 +3000,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3290,7 +3290,7 @@
                 "operationId": "DeleteUser",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3410,28 +3410,6 @@
                                 "$ref": "#/definitions/getUserGroupsResponse"
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/user/login": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
-                    }
-                ],
-                "description": "Logs in the user and refactor the user record and linked data if need",
-                "tags": [
-                    "Client"
-                ],
-                "operationId": "LoginUser",
-                "responses": {
-                    "200": {
-                        "description": ""
                     }
                 }
             }
@@ -3692,7 +3670,7 @@
                 "operationId": "SynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3821,7 +3799,11 @@
                 },
                 "current_member": {
                     "description": "this is indicative and it's not required for update APIs",
-                    "$ref": "#/definitions/GroupMembership"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/GroupMembership"
+                        }
+                    ]
                 },
                 "date_created": {
                     "type": "string"
@@ -3895,7 +3877,11 @@
                 },
                 "settings": {
                     "description": "TODO: Remove the pointer once the backward support is not needed any more!",
-                    "$ref": "#/definitions/GroupSettings"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/GroupSettings"
+                        }
+                    ]
                 },
                 "stats": {
                     "$ref": "#/definitions/GroupStats"
@@ -5281,17 +5267,13 @@
                 "status"
             ],
             "properties": {
-                "date_attended": {
-                    "type": "string"
-                },
-                "notifications_preferences": {
-                    "$ref": "#/definitions/NotificationsPreferences"
-                },
                 "status": {
                     "type": "string",
                     "enum": [
+                        "pending",
                         "member",
-                        "admin"
+                        "admin",
+                        "rejected"
                     ]
                 }
             }

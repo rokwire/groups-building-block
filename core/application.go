@@ -15,7 +15,6 @@
 package core
 
 import (
-	"errors"
 	"groups/core/model"
 	"groups/driven/calendar"
 	"groups/driven/corebb"
@@ -62,52 +61,6 @@ func (app *Application) Start() {
 	app.storage.RegisterStorageListener(&storageListener)
 
 	app.setupSyncManagedGroupTimer()
-}
-
-// FindUser finds an user for the provided external id
-func (app *Application) FindUser(clientID string, id *string, external bool) (*model.User, error) {
-	if clientID == "" {
-		return nil, errors.New("clientID cannot be empty")
-	}
-
-	if id == nil || *id == "" {
-		return nil, errors.New("id cannot be empty")
-	}
-
-	user, err := app.storage.FindUser(clientID, *id, external)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
-// LoginUser refactors the user using the new id
-func (app *Application) LoginUser(clientID string, current *model.User, newID string) error {
-	return app.storage.LoginUser(clientID, current)
-}
-
-// CreateUser creates an user
-func (app *Application) CreateUser(clientID string, id string, externalID *string, email *string, name *string) (*model.User, error) {
-	externalIDVal := ""
-	if externalID != nil {
-		externalIDVal = *externalID
-	}
-
-	emailVal := ""
-	if email != nil {
-		emailVal = *email
-	}
-
-	nameVal := ""
-	if name != nil {
-		nameVal = *name
-	}
-
-	user, err := app.storage.CreateUser(clientID, id, externalIDVal, emailVal, nameVal)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
 }
 
 func (app *Application) setupSyncManagedGroupTimer() {
