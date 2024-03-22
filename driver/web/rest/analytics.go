@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"groups/core"
+	"groups/core/model"
 	"log"
 	"net/http"
 	"time"
@@ -14,15 +15,19 @@ type AnalyticsApisHandler struct {
 }
 
 type analyticsGetGroupsResponse struct {
-	ID             string  `json:"id"`
-	ClientID       string  `json:"client_id"`
-	Title          string  `json:"title"`
-	Privacy        string  `json:"privacy"`
-	Category       string  `json:"category"`
-	AuthmanEnabled bool    `json:"authman_enabled"`
-	AuthmanGroup   *string `json:"authman_group"`
-	DateCreated    string  `json:"date_created"`
-	DateUpdated    *string `json:"date_updated"`
+	ID              string           `json:"id"`
+	ClientID        string           `json:"client_id"`
+	Title           string           `json:"title"`
+	Privacy         string           `json:"privacy"`
+	Category        string           `json:"category"`
+	HiddenForSearch bool             `json:"hidden_for_search"`
+	AuthmanEnabled  bool             `json:"authman_enabled"`
+	AuthmanGroup    *string          `json:"authman_group"`
+	DateCreated     string           `json:"date_created"`
+	DateUpdated     *string          `json:"date_updated"`
+	ResearchOpen    bool             `json:"research_open"`
+	ResearchGroup   bool             `json:"research_group"`
+	Stats           model.GroupStats `json:"stats"`
 }
 
 // AnalyticsGetGroups Gets groups
@@ -80,15 +85,19 @@ func (h *AnalyticsApisHandler) AnalyticsGetGroups(clientID string, w http.Respon
 			category = *val
 		}
 		reponse[i] = analyticsGetGroupsResponse{
-			ID:             group.ID,
-			ClientID:       group.ClientID,
-			Title:          group.Title,
-			Privacy:        group.Privacy,
-			Category:       category,
-			AuthmanEnabled: group.AuthmanEnabled,
-			AuthmanGroup:   group.AuthmanGroup,
-			DateCreated:    group.DateCreated.Format(time.RFC3339),
-			DateUpdated:    dateUpdated,
+			ID:              group.ID,
+			ClientID:        group.ClientID,
+			Title:           group.Title,
+			Privacy:         group.Privacy,
+			Category:        category,
+			HiddenForSearch: group.HiddenForSearch,
+			AuthmanEnabled:  group.AuthmanEnabled,
+			AuthmanGroup:    group.AuthmanGroup,
+			ResearchGroup:   group.ResearchGroup,
+			ResearchOpen:    group.ResearchOpen,
+			Stats:           group.Stats,
+			DateCreated:     group.DateCreated.Format(time.RFC3339),
+			DateUpdated:     dateUpdated,
 		}
 	}
 

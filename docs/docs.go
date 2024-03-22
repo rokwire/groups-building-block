@@ -5040,11 +5040,23 @@ const docTemplate = `{
                 "date_updated": {
                     "type": "string"
                 },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
                 "id": {
                     "type": "string"
                 },
                 "privacy": {
                     "type": "string"
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
+                "stats": {
+                    "$ref": "#/definitions/GroupStats"
                 },
                 "title": {
                     "type": "string"
