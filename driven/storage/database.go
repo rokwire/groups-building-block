@@ -37,7 +37,6 @@ type database struct {
 
 	configs             *collectionWrapper
 	syncTimes           *collectionWrapper
-	users               *collectionWrapper
 	enums               *collectionWrapper
 	groups              *collectionWrapper
 	groupMemberships    *collectionWrapper
@@ -154,7 +153,6 @@ func (m *database) start() error {
 
 	m.configs = configs
 	m.syncTimes = syncTimes
-	m.users = users
 	m.enums = enums
 	m.groups = groups
 	m.groupMemberships = groupMemberships

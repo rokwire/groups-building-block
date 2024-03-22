@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Refactor Authman automatic sync task [#428](https://github.com/rokwire/groups-building-block/issues/428)
+
 ## [1.33.0] - 2024-03-06
 ### Added
 - Update the schema for Rokwire analytics api for Splunk ingest [#429](https://github.com/rokwire/groups-building-block/issues/429)

@@ -188,37 +188,73 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 	return count, nil
 }
 
+// GetAllCoreAccountsWithExternalIDs Gets all Core accounts with external IDs
+func (a *Adapter) GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error) {
+	var list []model.CoreAccount
+	var limit int = 100
+	var offset int = 0
+
+	for {
+		buffer, err := a.GetAccounts(map[string]interface{}{
+			"auth_types.identifier": externalIDs,
+		}, appID, orgID, &limit, &offset)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, buffer...)
+
+		if len(buffer) < limit {
+			break
+		} else {
+			offset += limit
+		}
+	}
+
+	return list, nil
+}
+
+// GetAccountsWithIDs Gets all core accaunts with IDs
+func (a *Adapter) GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error) {
+	return a.GetAccounts(map[string]interface{}{
+		"id": ids,
+	}, appID, orgID, limit, offset)
+}
+
 // GetAccounts retrieves account count for provided params
-func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit int, offset int, allAccess bool, approvedKeys []string) ([]map[string]interface{}, error) {
+func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error) {
 	if a.serviceAccountManager == nil {
 		log.Println("GetAccounts: service account manager is nil")
 		return nil, errors.New("service account manager is nil")
 	}
 
 	url := fmt.Sprintf("%s/bbs/accounts", a.coreURL)
-	queryString := ""
-	if appID != nil {
-		queryString += "?app_id=" + *appID
-	}
-	if orgID != nil {
-		if queryString == "" {
-			queryString += "?"
-		} else {
-			queryString += "&"
-		}
-		queryString += "org_id=" + *orgID
-	}
+
 	bodyBytes, err := json.Marshal(searchParams)
 	if err != nil {
 		log.Printf("GetAccounts: error marshalling body - %s", err)
 		return nil, err
 	}
 
-	req, err := http.NewRequest("POST", url+queryString, bytes.NewReader(bodyBytes))
+	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
 	if err != nil {
 		log.Printf("GetAccounts: error creating request - %s", err)
 		return nil, err
 	}
+
+	if appID != nil {
+		req.URL.Query().Add("app_id", *appID)
+	}
+	if orgID != nil {
+		req.URL.Query().Add("org_id", *orgID)
+	}
+	if limit != nil {
+		req.URL.Query().Add("limit", fmt.Sprintf("%d", *limit))
+	}
+	if offset != nil {
+		req.URL.Query().Add("limit", fmt.Sprintf("%d", *offset))
+	}
+
 	req.Header.Add("Content-Type", "application/json")
 
 	appIDVal := "all"
@@ -246,7 +282,7 @@ func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string
 		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)
 	}
 
-	var maping []map[string]interface{}
+	var maping []model.CoreAccount
 	err = json.Unmarshal(data, &maping)
 	if err != nil {
 		log.Printf("GetAccounts: unable to parse json: %s", err)

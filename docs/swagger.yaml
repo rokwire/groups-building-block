@@ -53,7 +53,8 @@ definitions:
       client_id:
         type: string
       current_member:
-        $ref: '#/definitions/GroupMembership'
+        allOf:
+        - $ref: '#/definitions/GroupMembership'
         description: this is indicative and it's not required for update APIs
       date_created:
         type: string
@@ -103,7 +104,8 @@ definitions:
           type: object
         type: object
       settings:
-        $ref: '#/definitions/GroupSettings'
+        allOf:
+        - $ref: '#/definitions/GroupSettings'
         description: 'TODO: Remove the pointer once the backward support is not needed
           any more!'
       stats:
@@ -1067,7 +1069,7 @@ paths:
       operationId: AdminSynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1339,7 +1341,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1541,7 +1543,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1563,7 +1565,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1589,7 +1591,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1620,7 +1622,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1667,7 +1669,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -2024,7 +2026,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -2379,7 +2381,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -2535,7 +2537,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -2625,7 +2627,7 @@ paths:
           $ref: '#/definitions/reportAbuseGroupPostRequestBody'
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -2864,7 +2866,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2896,7 +2898,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2923,7 +2925,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2953,7 +2955,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -3169,7 +3171,7 @@ paths:
       operationId: DeleteUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -3264,7 +3266,7 @@ paths:
       operationId: LoginUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -3446,7 +3448,7 @@ paths:
       operationId: SynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:

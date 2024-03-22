@@ -26,8 +26,6 @@ import (
 type Services interface {
 	GetVersion() string
 
-	LoginUser(clientID string, currentGetUserGroups *model.User) error
-
 	// TODO: Deprecate this method due to missed CurrentMember!
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
@@ -153,10 +151,6 @@ func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
 
 func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
 	return s.app.getUserGroups(clientID, current, filter)
-}
-
-func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
-	return s.app.loginUser(clientID, current)
 }
 
 func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
@@ -375,11 +369,7 @@ type Storage interface {
 	FindSyncTimes(context storage.TransactionContext, clientID string) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	FindUser(clientID string, id string, external bool) (*model.User, error)
-	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
-	LoginUser(clientID string, current *model.User) error
-	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
 
 	CreateGroup(context storage.TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
@@ -480,7 +470,9 @@ type Authman interface {
 type Core interface {
 	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
-	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit int, offset int, allAccess bool, approvedKeys []string) ([]map[string]interface{}, error)
+	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
+	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
+	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 
