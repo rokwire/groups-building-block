@@ -655,6 +655,18 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 	w.Write(data)
 }
 
+// LoginUser Logs in the user and refactor the user record and linked data if need
+// @Description Logs in the user and refactor the user record and linked data if need
+// @ID LoginUser
+// @Tags Client
+// @Success 200
+// @Security AppUserAuth
+// @Security APIKeyAuth
+// @Router /api/user/login [get]
+func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
 type getUserStatsResponse struct {
 	Count int64 `json:"posts_count" bson:"posts_count"`
 } // @name getUserStatsResponse

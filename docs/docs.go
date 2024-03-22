@@ -3417,6 +3417,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/user/login": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Logs in the user and refactor the user record and linked data if need",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "LoginUser",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/user/stats": {
             "get": {
                 "security": [
@@ -5270,13 +5292,17 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "pending",
                         "member",
-                        "admin",
-                        "rejected"
+                        "admin"
                     ]
                 }
             }

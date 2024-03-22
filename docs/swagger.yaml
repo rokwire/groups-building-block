@@ -1034,12 +1034,14 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
+      date_attended:
+        type: string
+      notifications_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
-        - pending
         - member
         - admin
-        - rejected
         type: string
     required:
     - status
@@ -3244,6 +3246,19 @@ paths:
             items:
               $ref: '#/definitions/getUserGroupsResponse'
             type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Client
+  /api/user/login:
+    get:
+      description: Logs in the user and refactor the user record and linked data if
+        need
+      operationId: LoginUser
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []

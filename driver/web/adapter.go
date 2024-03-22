@@ -129,6 +129,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
+	restSubrouter.HandleFunc("/user/login", we.idTokenAuthWrapFunc(we.apisHandler.LoginUser)).Methods("GET")
 	restSubrouter.HandleFunc("/user/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetUserStats)).Methods("GET")
 	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
 	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
