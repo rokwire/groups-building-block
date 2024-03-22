@@ -149,6 +149,26 @@ func (m *GroupMembership) ApplyFromUserIfEmpty(user *User) {
 	}
 }
 
+// ApplyFromCoreAccountIfEmpty Copy info from the core account
+func (m *GroupMembership) ApplyFromCoreAccountIfEmpty(user CoreAccount) {
+	if m.UserID == "" && user.ID != "" {
+		m.UserID = user.ID
+	}
+	if m.ExternalID == "" && user.GetExternalID() != nil {
+		m.ExternalID = *user.GetExternalID()
+	}
+	if m.Email == "" && user.Profile.Email != "" {
+		m.Email = user.Profile.Email
+	}
+	if m.Name == "" && (user.Profile.FirstName != "" || user.Profile.LastName != "") {
+		m.Name = user.Profile.FirstName
+		if len(m.Name) > 0 && user.Profile.LastName != "" {
+			m.Name += " "
+		}
+		m.Name += user.Profile.LastName
+	}
+}
+
 // IsAdmin says if the user is admin of the group
 func (m *GroupMembership) IsAdmin() bool {
 	return m.Status == "admin"

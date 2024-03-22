@@ -135,18 +135,18 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 func (app *Application) createMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
 
 	if membership.UserID != "" {
-		user, err := app.storage.FindUser(clientID, membership.UserID, false)
-		if err == nil && user != nil {
-			membership.ApplyFromUserIfEmpty(user)
+		coreAccounts, err := app.corebb.GetAccountsWithIDs([]string{membership.UserID}, nil, nil, nil, nil)
+		if err == nil && len(coreAccounts) > 0 {
+			membership.ApplyFromCoreAccountIfEmpty(coreAccounts[0])
 		} else {
-			log.Printf("error app.createMembership() - unable to find user: %s", err)
+			log.Printf("error app.createMembership() - unable to find core user by id: %s", err)
 		}
 	} else if membership.ExternalID != "" {
-		user, err := app.storage.FindUser(clientID, membership.ExternalID, true)
-		if err == nil && user != nil {
-			membership.ApplyFromUserIfEmpty(user)
+		coreAccounts, err := app.corebb.GetAllCoreAccountsWithExternalIDs([]string{membership.ExternalID}, nil, nil)
+		if err == nil && len(coreAccounts) > 0 {
+			membership.ApplyFromCoreAccountIfEmpty(coreAccounts[0])
 		} else {
-			log.Printf("error app.createMembership() - unable to find user: %s", err)
+			log.Printf("error app.createMembership() - unable to find core user by external id: %s", err)
 		}
 	}
 

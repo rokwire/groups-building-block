@@ -610,15 +610,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 		sendToDean = true
 	}
 
-	var creatorExternalID string
-	creator, err := app.storage.FindUser(clientID, post.Creator.UserID, false)
-	if err != nil {
-		log.Printf("error retrieving user: %s", err)
-	} else if creator != nil {
-		creatorExternalID = creator.ExternalID
-	}
-
-	err = app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
+	err := app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
 	if err != nil {
 		log.Printf("error while reporting an abuse post: %s", err)
 		return fmt.Errorf("error while reporting an abuse post: %s", err)
@@ -643,7 +635,7 @@ func (app *Application) reportPostAsAbuse(clientID string, current *model.User, 
 <div>Post Body: %s\n</div>
 <div>Reported by: %s %s\n</div>
 <div>Reported comment: %s\n</div>
-	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
+	`, current.ExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 		body = strings.ReplaceAll(body, `\n`, "\n")
 		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
@@ -664,7 +656,7 @@ Post Title: %s
 Post Body: %s
 Reported by: %s %s
 Reported comment: %s
-	`, creatorExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
+	`, current.ExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 
 		app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
