@@ -344,7 +344,6 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
-	//TODO: These operations should ideally use a transaction, but the transaction may get too large
 
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
@@ -392,9 +391,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
 		if err != nil {
-			log.Printf("Error on bulk saving of 1000 memberships in Authman %s: %s\n", *authmanGroup.AuthmanGroup, err)
+			log.Printf("Error on bulk saving of %d memberships in Authman %s: %s\n", len(updateOperations), *authmanGroup.AuthmanGroup, err)
 		} else {
-			log.Printf("Successful bulk saving 1000 memberships in Authman '%s'", *authmanGroup.AuthmanGroup)
+			log.Printf("Successful bulk saving %d memberships in Authman '%s'", len(updateOperations), *authmanGroup.AuthmanGroup)
 		}
 	}
 
@@ -421,7 +420,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			Answers:    authmanGroup.CreateMembershipEmptyAnswers(),
 		})
 
-		if len(updateOperations) > 1000 {
+		if len(updateOperations) >= 1000 {
 			batchUpdate(updateExternalIDs, updateOperations)
 			updateExternalIDs = []string{}
 			updateOperations = []storage.SingleMembershipOperation{}
