@@ -16,8 +16,6 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
@@ -26,6 +24,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // AdminApisHandler handles the rest Admin APIs implementation
@@ -485,6 +486,11 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 // @ID AdminGetGroupPosts
 // @Tags Admin
 // @Param APP header string true "APP"
+// @Param groupID query string true "groupID"
+// @Param type query string false "Values: message|post"
+// @Param offset query string false "offset"
+// @Param limit query integer false "limit"
+// @Param order query string false "asc|desc"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Router /api/admin/group/{groupID}/posts [get]
@@ -495,6 +501,16 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 		log.Println("groupID is required")
 		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
+	}
+
+	var postType *string
+	if val, ok := params["type"]; ok {
+		if val != "message" && val != "post" {
+			log.Println("the 'type' query param can be 'message' or 'post'")
+			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+			return
+		}
+		postType = &val
 	}
 
 	var offset *int64
@@ -521,7 +537,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 		order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, postType, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

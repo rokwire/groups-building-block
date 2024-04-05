@@ -51,7 +51,7 @@ type Services interface {
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
-	GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
@@ -189,8 +189,8 @@ func (s *servicesImpl) DeleteEvent(clientID string, current *model.User, eventID
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
-func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return s.app.getPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return s.app.getPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, postType, offset, limit, order)
 }
 
 func (s *servicesImpl) GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
@@ -391,7 +391,7 @@ type Storage interface {
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
-	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error)
 	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
