@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool) error {
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
@@ -249,7 +248,6 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 	return nil
 }
 
-// TODO this logic needs to be refactored because it's over complicated!
 func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string) error {
 	if groupID == "" {
 		return errors.New("Missing group ID")
@@ -344,7 +342,6 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
-
 	// Get list of all member external IDs (Authman members + admins)
 	allExternalIDs := append([]string{}, authmanExternalIDs...)
 
@@ -365,6 +362,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		}
 	}
 
+	step := 0
 	updateExternalIDs := []string{}
 	updateOperations := []storage.SingleMembershipOperation{}
 	batchUpdate := func(externalIDs []string, operations []storage.SingleMembershipOperation) {
@@ -391,10 +389,11 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
 		if err != nil {
-			log.Printf("Error on bulk saving of %d memberships in Authman %s: %s\n", len(updateOperations), *authmanGroup.AuthmanGroup, err)
+			log.Printf("Error on bulk saving step: %d, items: %d memberships in Authman %s: %s\n", step, len(updateOperations), *authmanGroup.AuthmanGroup, err)
 		} else {
-			log.Printf("Successful bulk saving %d memberships in Authman '%s'", len(updateOperations), *authmanGroup.AuthmanGroup)
+			log.Printf("Successful bulk saving step: %d, items: %d memberships in Authman '%s'", step, len(updateOperations), *authmanGroup.AuthmanGroup)
 		}
+		step++
 	}
 
 	log.Printf("Processing %d current members for Authman %s...\n", len(authmanExternalIDs), *authmanGroup.AuthmanGroup)
