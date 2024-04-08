@@ -1848,13 +1848,13 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	var postType *string
-	if val, ok := params["type"]; ok {
-		if val != "message" && val != "post" {
-			log.Println("the 'type' query param can be 'message' or 'post'")
-			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
-			return
-		}
-		postType = &val
+	postTypesQuery, ok := r.URL.Query()["type"]
+	if !ok || len(postTypesQuery) == 0 || (postTypesQuery[0] != "message" && postTypesQuery[0] != "post") {
+		log.Println("the 'type' query param can be 'message' or 'post'")
+		http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+		return
+	} else {
+		postType = &postTypesQuery[0]
 	}
 
 	var offset *int64

@@ -1084,20 +1084,20 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 
 	if postType != nil {
 		if *postType == "message" {
-			filter = append(filter, bson.E{Key: "$or", Value: bson.M{
-				"$and": []bson.M{
-					{
-						"to_members": bson.M{"$ne": primitive.Null{}},
-					},
-				},
+			filter = append(filter, bson.E{Key: "$or", Value: []bson.M{
+				{"$and": []bson.M{
+					{"to_members": bson.M{"$ne": primitive.Null{}}},
+					{"parent_id": primitive.Null{}},
+				}},
+				{"parent_id": bson.M{"$ne": primitive.Null{}}},
 			}})
 		} else if *postType == "post" {
-			filter = append(filter, bson.E{Key: "$or", Value: bson.M{
-				"$and": []bson.M{
-					{
-						"to_members": primitive.Null{},
-					},
-				},
+			filter = append(filter, bson.E{Key: "$or", Value: []bson.M{
+				{"$and": []bson.M{
+					{"to_members": primitive.Null{}},
+					{"parent_id": primitive.Null{}},
+				}},
+				{"parent_id": bson.M{"$ne": primitive.Null{}}},
 			}})
 		}
 		// TBD in progress
