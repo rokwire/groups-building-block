@@ -6,9 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Split posts and direct messages within the group [#434](https://github.com/rokwire/groups-building-block/issues/434)
+
 ## [1.35.0] - 2024-04-05
 ### Changed
-- Split posts and direct messages within the group [#434](https://github.com/rokwire/groups-building-block/issues/434)
 - Additional refactor authman automatic sync task[#428](https://github.com/rokwire/groups-building-block/issues/428)
 
 ## [1.34.0] - 2024-03-22
