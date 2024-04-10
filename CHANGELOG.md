@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.35.0] - 2024-04-05
 ### Changed
 - Additional refactor authman automatic sync task[#428](https://github.com/rokwire/groups-building-block/issues/428)
 
