@@ -371,6 +371,8 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		localUsers, err := app.corebb.GetAllCoreAccountsWithExternalIDs(externalIDs, nil, nil)
 		if err != nil {
 			log.Printf("Error on bulk loading %d core accounts in Authman %s: %s\n", len(externalIDs), *authmanGroup.AuthmanGroup, err)
+		} else {
+			log.Printf("Bulk load %d external IDs -> Loaded %d accounts in Authman %s: %s\n", len(externalIDs), len(localUsers), *authmanGroup.AuthmanGroup, err)
 		}
 
 		if len(localUsers) > 0 {
@@ -389,9 +391,9 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
 		if err != nil {
-			log.Printf("Error on bulk saving step: %d, items: %d memberships in Authman %s: %s\n", step, len(updateOperations), *authmanGroup.AuthmanGroup, err)
+			log.Printf("Error on bulk saving step: %d, items: %d memberships, core accounts: %d in Authman %s: %s\n", step, len(updateOperations), len(localUsers), *authmanGroup.AuthmanGroup, err)
 		} else {
-			log.Printf("Successful bulk saving step: %d, items: %d memberships in Authman '%s'", step, len(updateOperations), *authmanGroup.AuthmanGroup)
+			log.Printf("Successful bulk saving step: %d, items: %d memberships, core accounts: %d in Authman '%s'", step, len(updateOperations), len(localUsers), *authmanGroup.AuthmanGroup)
 		}
 		step++
 	}

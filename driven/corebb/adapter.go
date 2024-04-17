@@ -202,11 +202,10 @@ func (a *Adapter) GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID 
 			return nil, err
 		}
 
-		list = append(list, buffer...)
-
-		if len(buffer) < limit {
+		if len(buffer) == 0 {
 			break
 		} else {
+			list = append(list, buffer...)
 			offset += limit
 		}
 	}
@@ -242,18 +241,20 @@ func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string
 		return nil, err
 	}
 
+	params := req.URL.Query()
 	if appID != nil {
-		req.URL.Query().Add("app_id", *appID)
+		params.Add("app_id", *appID)
 	}
 	if orgID != nil {
-		req.URL.Query().Add("org_id", *orgID)
+		params.Add("org_id", *orgID)
 	}
 	if limit != nil {
-		req.URL.Query().Add("limit", fmt.Sprintf("%d", *limit))
+		params.Add("limit", fmt.Sprintf("%d", *limit))
 	}
 	if offset != nil {
-		req.URL.Query().Add("limit", fmt.Sprintf("%d", *offset))
+		params.Add("offset", fmt.Sprintf("%d", *offset))
 	}
+	req.URL.RawQuery = params.Encode()
 
 	req.Header.Add("Content-Type", "application/json")
 
