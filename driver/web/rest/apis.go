@@ -1853,9 +1853,8 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		log.Println("the 'type' query param can be 'message' or 'post'")
 		http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
 		return
-	} else {
-		postType = &postTypesQuery[0]
 	}
+	postType = &postTypesQuery[0]
 
 	var offset *int64
 	offsets, ok := r.URL.Query()["offset"]
