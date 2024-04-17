@@ -402,8 +402,8 @@ func (app *Application) deleteEvent(clientID string, _ *model.User, eventID stri
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, postType, offset, limit, order)
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {

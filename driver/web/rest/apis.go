@@ -1829,6 +1829,11 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 // @ID GetGroupPosts
 // @Tags Client
 // @Param APP header string true "APP"
+// @Param groupID query string true "groupID"
+// @Param type query string false "Values: message|post"
+// @Param offset query string false "offset"
+// @Param limit query integer false "limit"
+// @Param order query string false "asc|desc"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -1840,6 +1845,16 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		log.Println("groupID is required")
 		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
+	}
+
+	var postType *string
+	postTypesQuery, ok := r.URL.Query()["type"]
+	if !ok || len(postTypesQuery) == 0 || (postTypesQuery[0] != "message" && postTypesQuery[0] != "post") {
+		log.Println("the 'type' query param can be 'message' or 'post'")
+		http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+		return
+	} else {
+		postType = &postTypesQuery[0]
 	}
 
 	var offset *int64
@@ -1897,7 +1912,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	filterByToMembers := true
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, postType, offset, limit, order)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

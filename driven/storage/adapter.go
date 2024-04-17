@@ -1060,7 +1060,7 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 }
 
 // FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
 
 	var userID *string
 	if current != nil {
@@ -1080,6 +1080,27 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "group_id", Value: groupID},
+	}
+
+	if postType != nil {
+		if *postType == "message" {
+			filter = append(filter, bson.E{Key: "$or", Value: []bson.M{
+				{"$and": []bson.M{
+					{"to_members": bson.M{"$ne": primitive.Null{}}},
+					{"parent_id": primitive.Null{}},
+				}},
+				{"parent_id": bson.M{"$ne": primitive.Null{}}},
+			}})
+		} else if *postType == "post" {
+			filter = append(filter, bson.E{Key: "$or", Value: []bson.M{
+				{"$and": []bson.M{
+					{"to_members": primitive.Null{}},
+					{"parent_id": primitive.Null{}},
+				}},
+				{"parent_id": bson.M{"$ne": primitive.Null{}}},
+			}})
+		}
+		// TBD in progress
 	}
 
 	if filterByToMembers {

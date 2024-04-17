@@ -2487,6 +2487,27 @@ paths:
         name: APP
         required: true
         type: string
+      - description: groupID
+        in: query
+        name: groupID
+        required: true
+        type: string
+      - description: 'Values: message|post'
+        in: query
+        name: type
+        type: string
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      - description: limit
+        in: query
+        name: order
+        type: integer
       responses:
         "200":
           description: OK
