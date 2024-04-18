@@ -117,7 +117,9 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 					"entity_name": group.Title,
 				},
 				current.AppID,
-				current.OrgID)
+				current.OrgID,
+				nil,
+			)
 
 		}
 
@@ -255,6 +257,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 				},
 				current.AppID,
 				current.OrgID,
+				nil,
 			)
 		} else {
 			app.notifications.SendNotification(
@@ -274,6 +277,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 				},
 				current.AppID,
 				current.OrgID,
+				nil,
 			)
 		}
 
@@ -384,6 +388,7 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 			},
 			appID,
 			orgID,
+			nil,
 		)
 	}
 
@@ -402,8 +407,8 @@ func (app *Application) deleteEvent(clientID string, _ *model.User, eventID stri
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return app.storage.FindPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, postType, offset, limit, order)
+func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error) {
+	return app.storage.FindPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
@@ -503,6 +508,7 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 				},
 				current.AppID,
 				current.OrgID,
+				post.DateScheduled,
 			)
 		}
 	}
@@ -665,7 +671,9 @@ Reported comment: %s
 			"post_body":    post.Body,
 		},
 			current.AppID,
-			current.OrgID)
+			current.OrgID,
+			nil,
+		)
 	}
 
 	return nil
@@ -699,7 +707,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 }
 
 func (app *Application) sendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
-	app.notifications.SendNotification(recipients, topic, title, text, data, appID, orgID)
+	app.notifications.SendNotification(recipients, topic, title, text, data, appID, orgID, nil)
 }
 
 func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {

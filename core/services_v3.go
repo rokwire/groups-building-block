@@ -114,6 +114,7 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 					},
 					current.AppID,
 					current.OrgID,
+					nil,
 				)
 			}
 		}
@@ -193,6 +194,7 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 				},
 				current.AppID,
 				current.OrgID,
+				nil,
 			)
 
 		}

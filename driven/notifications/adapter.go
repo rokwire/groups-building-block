@@ -22,6 +22,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 )
@@ -50,11 +51,11 @@ func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.
 }
 
 // SendNotification sends notification to a user
-func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
-	na.sendNotification(recipients, topic, title, text, data, appID, orgID)
+func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) {
+	na.sendNotification(recipients, topic, title, text, data, appID, orgID, dateScheduled)
 }
 
-func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) error {
+func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error {
 	if len(recipients) > 0 {
 		url := fmt.Sprintf("%s/api/bbs/message", na.baseURL)
 
@@ -68,6 +69,7 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 			"subject":    title,
 			"body":       text,
 			"data":       data,
+			"time":       dateScheduled,
 		}
 		bodyData := map[string]interface{}{
 			"async":   async,
