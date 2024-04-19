@@ -455,6 +455,9 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 type Notifications interface {
 	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time)
 	SendMail(toEmail string, subject string, body string)
+	DeleteNotifications(appID string, orgID string, ids string) error
+	AddNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error
+	RemoveNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error
 }
 
 // Authman exposes Authman APIs for the driver adapters
