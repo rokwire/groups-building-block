@@ -179,8 +179,16 @@ func (sa *Adapter) SaveSyncConfig(context TransactionContext, config model.SyncC
 }
 
 // FindSyncTimes finds the sync times for the specified clientID
-func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*model.SyncTimes, error) {
-	filter := bson.M{"client_id": clientID}
+func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error) {
+
+	// TBD remove client_id
+
+	filter := bson.M{}
+	if legacy {
+		filter["client_id"] = clientID
+	} else {
+		filter["key"] = key
+	}
 
 	var configs []model.SyncTimes
 	err := sa.db.syncTimes.FindWithContext(context, filter, &configs, nil)
@@ -196,7 +204,7 @@ func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*
 
 // SaveSyncTimes saves the provided sync times fields
 func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTimes) error {
-	filter := bson.M{"client_id": times.ClientID}
+	filter := bson.M{"client_id": times.ClientID, "key": times.Key}
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
@@ -1542,6 +1550,19 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 		return deleteWrapper(transactionContext)
 	})
 }
+
+func (sa *Adapter) FindScheduledPosts(context TransactionContext) ([]model.Post, error) {
+	var posts []model.Post
+	err := sa.db.posts.FindWithContext(context, bson.D{
+		{Key: ""},
+	}, &posts, nil)
+	if err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+func (sa *Adapter) UpdateScheduledPostsWithIDs(context TransactionContext, ids []string, dateNotified time.Time) ([]*model.Post, error)
 
 // UpdateGroupStats set the updated date to the current date time (now)
 func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate, resetMembershipUpdateDate, resetManagedMembershipUpdateDate, resetStats bool) error {

@@ -41,6 +41,7 @@ type Post struct {
 	DateCreated   time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated   *time.Time `json:"date_updated" bson:"date_updated"`
 	DateScheduled *time.Time `json:"date_scheduled" bson:"date_scheduled"`
+	DateNotified  *time.Time `json:"date_notified" bson:"date_notified"`
 }
 
 // UserCanSeePost checks if the user can see the current post or not

@@ -366,7 +366,7 @@ type Storage interface {
 	FindSyncConfig(clientID string) (*model.SyncConfig, error)
 	SaveSyncConfig(context storage.TransactionContext, config model.SyncConfig) error
 
-	FindSyncTimes(context storage.TransactionContext, clientID string) (*model.SyncTimes, error)
+	FindSyncTimes(context storage.TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
 	GetUserPostCount(clientID string, userID string) (*int64, error)
@@ -394,11 +394,15 @@ type Storage interface {
 	FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error)
 	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
+
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
+
+	FindScheduledPosts(context storage.TransactionContext) ([]*model.Post, error)
+	UpdateScheduledPostsWithIDs(context storage.TransactionContext, ids []string, dateSent time.Time) ([]*model.Post, error)
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
@@ -448,7 +452,7 @@ type storageListenerImpl struct {
 }
 
 func (a *storageListenerImpl) OnConfigsChanged() {
-	a.app.setupSyncManagedGroupTimer()
+	a.app.setupCronTimer()
 }
 
 // Notifications exposes Notifications BB APIs for the driver adapters

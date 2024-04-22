@@ -1,3 +1,17 @@
+// Copyright 2022 Board of Trustees of the University of Illinois.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package core
 
 import (
@@ -13,8 +27,9 @@ import (
 
 func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool) error {
 	startTime := time.Now()
+	syncKey := "authman"
 	transaction := func(context storage.TransactionContext) error {
-		times, err := app.storage.FindSyncTimes(context, clientID)
+		times, err := app.storage.FindSyncTimes(context, clientID, "authman", true)
 		if err != nil {
 			return err
 		}
@@ -47,7 +62,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			}
 		}
 
-		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID})
+		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID, Key: syncKey})
 	}
 
 	err := app.storage.PerformTransaction(transaction)
@@ -60,7 +75,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
 		endTime := time.Now()
-		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID})
+		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID, Key: syncKey})
 		if err != nil {
 			log.Printf("Error saving sync configs to end sync: %s\n", err)
 			return
