@@ -51,8 +51,8 @@ func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.
 }
 
 // SendNotification sends notification to a user
-func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) {
-	na.sendNotification(recipients, topic, title, text, data, appID, orgID, dateScheduled)
+func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error {
+	return na.sendNotification(recipients, topic, title, text, data, appID, orgID, dateScheduled)
 }
 
 func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error {
@@ -69,8 +69,11 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 			"subject":    title,
 			"body":       text,
 			"data":       data,
-			"time":       dateScheduled,
 		}
+		if dateScheduled != nil {
+			message["time"] = dateScheduled.Unix()
+		}
+
 		bodyData := map[string]interface{}{
 			"async":   async,
 			"message": message,

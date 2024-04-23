@@ -49,6 +49,38 @@ func (app Application) processScheduledPosts() error {
 			return err
 		}
 
+		posts, err := app.storage.FindScheduledPosts(context)
+		if err != nil {
+			return err
+		}
+
+		log.Printf("processScheduledPosts: Found %d scheduled posts for current the current time", len(posts))
+		var postIds []string
+		if len(posts) > 0 {
+			for _, post := range posts {
+				group, err := app.storage.FindGroup(context, post.ClientID, post.GroupID, nil)
+				if err != nil {
+					return err
+				}
+				if group != nil {
+					err = app.sendGroupNotificationForNewPost(post.ClientID, &post.Creator.UserID, group, &post)
+					if err != nil {
+						return nil
+					}
+
+					postIds = append(postIds, post.ID)
+				}
+			}
+		}
+		log.Printf("processScheduledPosts: Successful send of %d notifications for scheduled posts", len(posts))
+
+		if len(postIds) > 0 {
+			err = app.storage.UpdateDateNotifiedForPostIDs(context, postIds, time.Now())
+			if err != nil {
+				return nil
+			}
+		}
+
 		// Finish task
 		endTime := time.Now()
 		err = app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, Key: syncKey})
@@ -65,11 +97,5 @@ func (app Application) processScheduledPosts() error {
 		return err
 	}
 
-	log.Printf("processScheduledPosts started")
-
 	return nil
-}
-
-func (app Application) processScheduledPostsWithStartTime(startTime time.Time) error {
-
 }

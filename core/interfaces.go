@@ -401,8 +401,8 @@ type Storage interface {
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
 
-	FindScheduledPosts(context storage.TransactionContext) ([]*model.Post, error)
-	UpdateScheduledPostsWithIDs(context storage.TransactionContext, ids []string, dateSent time.Time) ([]*model.Post, error)
+	FindScheduledPosts(context storage.TransactionContext) ([]model.Post, error)
+	UpdateDateNotifiedForPostIDs(context storage.TransactionContext, ids []string, dateNotified time.Time) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
@@ -457,7 +457,7 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time)
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error
 	SendMail(toEmail string, subject string, body string)
 	DeleteNotifications(appID string, orgID string, ids string) error
 	AddNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error

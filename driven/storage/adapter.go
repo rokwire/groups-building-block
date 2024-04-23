@@ -1112,6 +1112,11 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.
 
 	if filter.ScheduledOnly != nil && *filter.ScheduledOnly {
 		mongoFilter = append(mongoFilter, bson.E{Key: "date_scheduled", Value: bson.M{"$gt": time.Now()}})
+	} else {
+		mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
+			{"date_scheduled": nil},
+			{"date_scheduled": bson.M{"$lt": time.Now()}},
+		}})
 	}
 
 	if filterByToMembers {
@@ -1554,7 +1559,8 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 func (sa *Adapter) FindScheduledPosts(context TransactionContext) ([]model.Post, error) {
 	var posts []model.Post
 	err := sa.db.posts.FindWithContext(context, bson.D{
-		{Key: ""},
+		{Key: "date_scheduled", Value: bson.M{"$lt": time.Now()}},
+		{Key: "date_notified", Value: nil},
 	}, &posts, nil)
 	if err != nil {
 		return nil, err
@@ -1562,7 +1568,14 @@ func (sa *Adapter) FindScheduledPosts(context TransactionContext) ([]model.Post,
 	return posts, nil
 }
 
-func (sa *Adapter) UpdateScheduledPostsWithIDs(context TransactionContext, ids []string, dateNotified time.Time) ([]*model.Post, error)
+func (sa *Adapter) UpdateDateNotifiedForPostIDs(context TransactionContext, ids []string, dateNotified time.Time) error {
+	_, err := sa.db.posts.UpdateManyWithContext(context,
+		bson.D{{Key: "_id", Value: bson.M{"$in": ids}}},
+		bson.D{{Key: "$set", Value: bson.D{{Key: "date_notified", Value: dateNotified}}}},
+		nil)
+
+	return err
+}
 
 // UpdateGroupStats set the updated date to the current date time (now)
 func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate, resetMembershipUpdateDate, resetManagedMembershipUpdateDate, resetStats bool) error {
