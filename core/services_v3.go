@@ -1,9 +1,24 @@
+// Copyright 2022 Board of Trustees of the University of Illinois.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package core
 
 import (
 	"fmt"
 	"groups/core/model"
 	"log"
+	"strings"
 )
 
 func (app *Application) checkUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
@@ -89,16 +104,20 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 
 			if len(recipients) > 0 {
 				topic := "group.invitations"
+				groupStr := "Group"
+				if group.ResearchGroup {
+					groupStr = "Research Project"
+				}
 
-				message := fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+				message := fmt.Sprintf("New membership request for '%s' %s has been submitted", group.Title, strings.ToLower(groupStr))
 				if group.CanJoinAutomatically {
-					message = fmt.Sprintf("%s joined '%s' group", member.GetDisplayName(), group.Title)
+					message = fmt.Sprintf("%s joined '%s' %s", member.GetDisplayName(), group.Title, strings.ToLower(groupStr))
 				}
 
 				app.notifications.SendNotification(
 					recipients,
 					&topic,
-					fmt.Sprintf("Group - %s", group.Title),
+					fmt.Sprintf("%s - %s", groupStr, group.Title),
 					message,
 					map[string]string{
 						"type":        "group",
@@ -107,9 +126,9 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 						"entity_id":   group.ID,
 						"entity_name": group.Title,
 					},
-					nil,
 					current.AppID,
 					current.OrgID,
+					nil,
 				)
 			}
 		}
@@ -131,18 +150,18 @@ func (app *Application) createPendingMembership(clientID string, current *model.
 func (app *Application) createMembership(clientID string, current *model.User, group *model.Group, membership *model.GroupMembership) error {
 
 	if membership.UserID != "" {
-		user, err := app.storage.FindUser(clientID, membership.UserID, false)
-		if err == nil && user != nil {
-			membership.ApplyFromUserIfEmpty(user)
+		coreAccounts, err := app.corebb.GetAccountsWithIDs([]string{membership.UserID}, nil, nil, nil, nil)
+		if err == nil && len(coreAccounts) > 0 {
+			membership.ApplyFromCoreAccountIfEmpty(coreAccounts[0])
 		} else {
-			log.Printf("error app.createMembership() - unable to find user: %s", err)
+			log.Printf("error app.createMembership() - unable to find core user by id: %s", err)
 		}
 	} else if membership.ExternalID != "" {
-		user, err := app.storage.FindUser(clientID, membership.ExternalID, true)
-		if err == nil && user != nil {
-			membership.ApplyFromUserIfEmpty(user)
+		coreAccounts, err := app.corebb.GetAllCoreAccountsWithExternalIDs([]string{membership.ExternalID}, nil, nil)
+		if err == nil && len(coreAccounts) > 0 {
+			membership.ApplyFromCoreAccountIfEmpty(coreAccounts[0])
 		} else {
-			log.Printf("error app.createMembership() - unable to find user: %s", err)
+			log.Printf("error app.createMembership() - unable to find core user by external id: %s", err)
 		}
 	}
 
@@ -161,11 +180,16 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 				(member.NotificationsPreferences.InvitationsMuted || membership.NotificationsPreferences.AllMute)
 		})
 
+		groupStr := "Group"
+		if group.ResearchGroup {
+			groupStr = "Research Project"
+		}
+
 		var message string
 		if membership.Status == "membership" || membership.Status == "admin" {
-			message = fmt.Sprintf("New membership joined '%s' group", group.Title)
+			message = fmt.Sprintf("New membership joined '%s' %s", group.Title, strings.ToLower(groupStr))
 		} else {
-			message = fmt.Sprintf("New membership request for '%s' group has been submitted", group.Title)
+			message = fmt.Sprintf("New membership request for '%s' %s has been submitted", group.Title, strings.ToLower(groupStr))
 		}
 
 		if len(recipients) > 0 {
@@ -173,7 +197,7 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 			app.notifications.SendNotification(
 				recipients,
 				&topic,
-				fmt.Sprintf("Group - %s", group.Title),
+				fmt.Sprintf("%s - %s", groupStr, group.Title),
 				message,
 				map[string]string{
 					"type":        "group",
@@ -182,9 +206,9 @@ func (app *Application) createMembership(clientID string, current *model.User, g
 					"entity_id":   group.ID,
 					"entity_name": group.Title,
 				},
-				nil,
 				current.AppID,
 				current.OrgID,
+				nil,
 			)
 
 		}
@@ -236,6 +260,7 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
 
 	if membership != nil {
+
 		err := app.storage.DeleteMembershipByID(clientID, current, membership.ID)
 		if err != nil {
 			return err
@@ -246,7 +271,7 @@ func (app *Application) deleteMembershipByID(clientID string, current *model.Use
 			if group.CanJoinAutomatically && group.AuthmanEnabled && membership.ExternalID != "" {
 				err := app.authman.RemoveAuthmanMemberFromGroup(*group.AuthmanGroup, membership.ExternalID)
 				if err != nil {
-					log.Printf("err app.createPendingMembership() - error storing member in Authman: %s", err)
+					log.Printf("err app.deleteMembershipByID() - error storing member: %s", err)
 				}
 			}
 		}

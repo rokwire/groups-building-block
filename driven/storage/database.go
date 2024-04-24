@@ -37,7 +37,6 @@ type database struct {
 
 	configs             *collectionWrapper
 	syncTimes           *collectionWrapper
-	users               *collectionWrapper
 	enums               *collectionWrapper
 	groups              *collectionWrapper
 	groupMemberships    *collectionWrapper
@@ -154,7 +153,6 @@ func (m *database) start() error {
 
 	m.configs = configs
 	m.syncTimes = syncTimes
-	m.users = users
 	m.enums = enums
 	m.groups = groups
 	m.groupMemberships = groupMemberships
@@ -385,12 +383,6 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 
 	name := "title_unique"
 	unique := true
-	if indexMapping["title_unique"] != nil {
-		err := groups.DropIndex("title_unique")
-		if err != nil {
-			return err
-		}
-	}
 	if indexMapping["title_unique"] == nil {
 		err := groups.AddIndexWithOptions(
 			bson.D{
@@ -682,6 +674,26 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["date_scheduled_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_scheduled", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_notified_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_notified", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("posts checks passed")
 	return nil
 }
@@ -957,14 +969,19 @@ func (m *database) ApplyGroupsAttributesTransition(client *mongo.Client, groups 
 		}
 
 		filter := bson.D{
-			{Key: "attributes", Value: bson.M{"$exists": false}},
-		}
-		_, err = groups.UpdateManyWithContext(sessionContext, filter, bson.D{
-			{Key: "$set", Value: bson.D{
-				{Key: "attributes.category", Value: "$category"},
-				{Key: "attributes.tags", Value: "$tags"},
+			{Key: "$or", Value: []bson.M{
+				{"attributes": bson.M{"$exists": false}},
+				{"attributes.category": "$category"},
+				{"attributes.tags": "$tags"},
 			}},
-		}, nil)
+		}
+		_, err = groups.UpdateManyWithContext(sessionContext, filter,
+			[]bson.M{
+				{"$set": bson.M{
+					"attributes.category": "$category",
+					"attributes.tags":     "$tags",
+				}},
+			}, nil)
 		if err != nil {
 			abortTransaction(sessionContext)
 			return err

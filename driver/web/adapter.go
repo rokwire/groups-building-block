@@ -19,12 +19,12 @@ import (
 	"groups/core"
 	"groups/core/model"
 	"groups/driver/web/rest"
-	"groups/utils"
 	"log"
 	"net/http"
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/logging-library-go/v2/logs"
 
 	"github.com/gorilla/mux"
 
@@ -37,14 +37,17 @@ type Adapter struct {
 	port string
 	auth *Auth
 
-	apisHandler         *rest.ApisHandler
-	adminApisHandler    *rest.AdminApisHandler
-	internalApisHandler *rest.InternalApisHandler
+	apisHandler          *rest.ApisHandler
+	adminApisHandler     *rest.AdminApisHandler
+	internalApisHandler  *rest.InternalApisHandler
+	analyticsApisHandler *rest.AnalyticsApisHandler
+
+	logger *logs.Logger
 }
 
 // @title Rokwire Groups Building Block API
 // @description Rokwire Groups Building Block API Documentation.
-// @version 1.12.3
+// @version 1.29.0
 // @host localhost
 // @BasePath /gr
 // @schemes http
@@ -82,6 +85,8 @@ func (we *Adapter) Start() {
 	// Admin V1 APIs
 	adminSubrouter.HandleFunc("/authman/synchronize", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
+	adminSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembers)).Methods("GET")
@@ -90,6 +95,10 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts/{postID}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{group-id}/events/v3/load", we.mixedAuthWrapFunc(we.adminApisHandler.GetGroupCalendarEventsV3)).Methods("GET", "POST")
+	adminSubrouter.HandleFunc("/group/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.CreateCalendarEventMultiGroup)).Methods("POST")
+	adminSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.CreateCalendarEventSingleGroup)).Methods("POST")
+	adminSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.UpdateCalendarEventSingleGroup)).Methods("PUT")
 	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMembership)).Methods("PUT")
 	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMembership)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetManagedGroupConfigs)).Methods("GET")
@@ -118,10 +127,12 @@ func (we *Adapter) Start() {
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
-	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
+	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/user/login", we.idTokenAuthWrapFunc(we.apisHandler.LoginUser)).Methods("GET")
 	restSubrouter.HandleFunc("/user/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetUserStats)).Methods("GET")
+	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
+	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 
@@ -156,8 +167,18 @@ func (we *Adapter) Start() {
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/events/v3/load", we.mixedAuthWrapFunc(we.apisHandler.GetGroupCalendarEventsV3)).Methods("GET", "POST")
+	restSubrouter.HandleFunc("/group/events/v3", we.mixedAuthWrapFunc(we.apisHandler.CreateCalendarEventMultiGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/events/v2", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEventsV2)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.apisHandler.CreateCalendarEventSingleGroup)).Methods("POST")
+	restSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.apisHandler.UpdateCalendarEventSingleGroup)).Methods("PUT")
+
+	// Analytics
+	analyticsSubrouter := restSubrouter.PathPrefix("/analytics").Subrouter()
+	analyticsSubrouter.HandleFunc("/groups", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroups)).Methods("GET")
+	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
+	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -174,9 +195,10 @@ func (we Adapter) serveDocUI() http.Handler {
 
 func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
-
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 		handler(w, req)
+		logObj.RequestComplete()
 	}
 }
 
@@ -184,7 +206,8 @@ type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
 func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, authenticated := we.auth.apiKeyCheck(req)
 		if !authenticated {
@@ -194,6 +217,7 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		}
 
 		handler(clientID, w, req)
+		logObj.RequestComplete()
 	}
 }
 
@@ -201,7 +225,8 @@ type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Requ
 
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user := we.auth.idTokenCheck(w, req, false)
 		if user == nil {
@@ -211,12 +236,14 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user := we.auth.idTokenCheck(w, req, true)
 		if user == nil {
@@ -226,12 +253,14 @@ func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFun
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
 		if user == nil {
@@ -241,12 +270,14 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
@@ -256,12 +287,14 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		}
 
 		handler(clientID, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, authenticated, user := we.auth.mixedCheck(req)
 		if !authenticated {
@@ -272,6 +305,7 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 
 		//user can be nil
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
@@ -279,7 +313,8 @@ type adminAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Reques
 
 func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		utils.LogRequest(req)
+		logObj := we.logger.NewRequestLog(req)
+		logObj.RequestReceived()
 
 		clientID, user, forbidden := we.auth.adminCheck(req)
 		if user == nil {
@@ -294,13 +329,14 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 		}
 
 		handler(clientID, user, w, req)
+		logObj.RequestComplete()
 	}
 }
 
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string) *Adapter {
+	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
@@ -308,6 +344,8 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
+	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
 
-	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler, internalApisHandler: internalApisHandler}
+	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, logger: logger}
 }

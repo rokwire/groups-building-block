@@ -17,6 +17,19 @@ func (c *MembershipCollection) ApplyGroupSettings(settings *GroupSettings) {
 	}
 }
 
+// GetMembershipByAccountID Finds a membership by account ID
+func (c *MembershipCollection) GetMembershipByAccountID(accountID string) *GroupMembership {
+	if len(c.Items) > 0 {
+		for _, membership := range c.Items {
+			if accountID == membership.UserID {
+				return &membership
+			}
+		}
+	}
+
+	return nil
+}
+
 // GetMembershipBy Finds a membership by
 func (c *MembershipCollection) GetMembershipBy(checker func(membership GroupMembership) bool) *GroupMembership {
 	if len(c.Items) > 0 {
@@ -133,6 +146,26 @@ func (m *GroupMembership) ApplyFromUserIfEmpty(user *User) {
 	}
 	if m.Name == "" && user.Name != "" {
 		m.Name = user.Name
+	}
+}
+
+// ApplyFromCoreAccountIfEmpty Copy info from the core account
+func (m *GroupMembership) ApplyFromCoreAccountIfEmpty(user CoreAccount) {
+	if m.UserID == "" && user.ID != "" {
+		m.UserID = user.ID
+	}
+	if m.ExternalID == "" && user.GetExternalID() != nil {
+		m.ExternalID = *user.GetExternalID()
+	}
+	if m.Email == "" && user.Profile.Email != "" {
+		m.Email = user.Profile.Email
+	}
+	if m.Name == "" && (user.Profile.FirstName != "" || user.Profile.LastName != "") {
+		m.Name = user.Profile.FirstName
+		if len(m.Name) > 0 && user.Profile.LastName != "" {
+			m.Name += " "
+		}
+		m.Name += user.Profile.LastName
 	}
 }
 

@@ -20,7 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"groups/core/model"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -62,7 +62,7 @@ func (a *Adapter) RetrieveCoreUserAccount(token string) (*model.CoreAccount, err
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveCoreUserAccount: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
@@ -102,7 +102,7 @@ func (a *Adapter) RetrieveCoreServices(serviceIDs []string) ([]model.CoreService
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
 		}
 
-		data, err := ioutil.ReadAll(resp.Body)
+		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveCoreServices: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
@@ -172,7 +172,7 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 		return 0, fmt.Errorf("GetAccountsCount: error with response code != 200")
 	}
 
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("GetAccountsCount: unable to read json: %s", err)
 		return 0, fmt.Errorf("GetAccountsCount: unable to parse json: %s", err)
@@ -186,4 +186,109 @@ func (a *Adapter) GetAccountsCount(searchParams map[string]interface{}, appID *s
 	}
 
 	return count, nil
+}
+
+// GetAllCoreAccountsWithExternalIDs Gets all Core accounts with external IDs
+func (a *Adapter) GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error) {
+	var list []model.CoreAccount
+	var limit int = 100
+	var offset int = 0
+
+	for {
+		buffer, err := a.GetAccounts(map[string]interface{}{
+			"auth_types.identifier": externalIDs,
+		}, appID, orgID, &limit, &offset)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(buffer) == 0 {
+			break
+		} else {
+			list = append(list, buffer...)
+			offset += limit
+		}
+	}
+
+	return list, nil
+}
+
+// GetAccountsWithIDs Gets all core accaunts with IDs
+func (a *Adapter) GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error) {
+	return a.GetAccounts(map[string]interface{}{
+		"id": ids,
+	}, appID, orgID, limit, offset)
+}
+
+// GetAccounts retrieves account count for provided params
+func (a *Adapter) GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error) {
+	if a.serviceAccountManager == nil {
+		log.Println("GetAccounts: service account manager is nil")
+		return nil, errors.New("service account manager is nil")
+	}
+
+	url := fmt.Sprintf("%s/bbs/accounts", a.coreURL)
+
+	bodyBytes, err := json.Marshal(searchParams)
+	if err != nil {
+		log.Printf("GetAccounts: error marshalling body - %s", err)
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+		log.Printf("GetAccounts: error creating request - %s", err)
+		return nil, err
+	}
+
+	params := req.URL.Query()
+	if appID != nil {
+		params.Add("app_id", *appID)
+	}
+	if orgID != nil {
+		params.Add("org_id", *orgID)
+	}
+	if limit != nil {
+		params.Add("limit", fmt.Sprintf("%d", *limit))
+	}
+	if offset != nil {
+		params.Add("offset", fmt.Sprintf("%d", *offset))
+	}
+	req.URL.RawQuery = params.Encode()
+
+	req.Header.Add("Content-Type", "application/json")
+
+	appIDVal := "all"
+	if appID != nil {
+		appIDVal = *appID
+	}
+	orgIDVal := "all"
+	if orgID != nil {
+		appIDVal = *orgID
+	}
+	resp, err := a.serviceAccountManager.MakeRequest(req, appIDVal, orgIDVal)
+	if err != nil {
+		log.Printf("GetAccounts: error sending request - %s", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		log.Printf("GetAccounts: error with response code - %d", resp.StatusCode)
+		return nil, fmt.Errorf("GetAccounts: error with response code != 200")
+	}
+
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("GetAccounts: unable to read json: %s", err)
+		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)
+	}
+
+	var maping []model.CoreAccount
+	err = json.Unmarshal(data, &maping)
+	if err != nil {
+		log.Printf("GetAccounts: unable to parse json: %s", err)
+		return nil, fmt.Errorf("GetAccounts: unable to parse json: %s", err)
+	}
+
+	return maping, nil
 }

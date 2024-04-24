@@ -16,17 +16,17 @@ package rest
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
-	"gopkg.in/go-playground/validator.v9"
 	"groups/core"
 	"groups/core/model"
 	"groups/utils"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // AdminApisHandler handles the rest Admin APIs implementation
@@ -37,7 +37,7 @@ type AdminApisHandler struct {
 // GetUserGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID AdminGetUserGroups
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Filtering by group's title (case-insensitive)"
@@ -97,6 +97,11 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		}
 	}
 
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
+	}
+
 	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
@@ -138,7 +143,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // GetAllGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID AdminGetAllGroups
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
@@ -214,6 +219,11 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		}
 	}
 
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
+	}
+
 	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
@@ -255,7 +265,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 // GetGroupStats Retrieves stats for a group by id
 // @Description Retrieves stats for a group by id
 // @ID AdminGetGroupStats
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -300,7 +310,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 // GetGroupMembers Gets the list of group members.
 // @Description Gets the list of group members.
 // @ID AdminGetGroupMembers
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
@@ -317,7 +327,7 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 		return
 	}
 
-	requestData, err := ioutil.ReadAll(r.Body)
+	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("adminapis.GetGroupMembers() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -366,7 +376,7 @@ type adminUpdateMembershipRequest struct {
 // UpdateMembership updates a membership. Only the status can be changed.
 // @Description Updates a membership. Only the status can be changed.
 // @ID AdminUpdateMembership
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -385,7 +395,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("adminapis.UpdateMembership() Error on marshal the membership update item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -432,7 +442,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 // DeleteMembership deletes membership
 // @Description Deletes a membership
 // @ID AdminDeleteMembership
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -474,45 +484,76 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 // GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID AdminGetGroupPosts
-// @Tags Admin-V1
+// @Tags Admin
 // @Param APP header string true "APP"
+// @Param groupID query string true "groupID"
+// @Param type query string false "Values: message|post"
+// @Param offset query string false "offset"
+// @Param limit query integer false "limit"
+// @Param order query string false "asc|desc"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Router /api/admin/group/{groupID}/posts [get]
 func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
+	var filter model.PostsFilter
 	id := params["group-id"]
 	if len(id) <= 0 {
 		log.Println("groupID is required")
 		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
+	filter.GroupID = id
 
-	var offset *int64
+	postTypesQuery, ok := r.URL.Query()["type"]
+	if ok && len(postTypesQuery) > 0 {
+		if postTypesQuery[0] != "message" && postTypesQuery[0] != "post" {
+			log.Println("the 'type' query param can be 'message' or 'post'")
+			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+			return
+		}
+		filter.PostType = &postTypesQuery[0]
+	}
+
+	scheduleOnlyQuery, ok := r.URL.Query()["scheduled_only"]
+	if ok && len(scheduleOnlyQuery) > 0 {
+		if scheduleOnlyQuery[0] != "true" && scheduleOnlyQuery[0] != "false" {
+			log.Println("the 'scheduled_only' query param can be 'true', 'false', or missing")
+			http.Error(w, "the 'scheduled_only' query param can be 'true', 'false', or missing", http.StatusBadRequest)
+			return
+		}
+		if scheduleOnlyQuery[0] == "true" {
+			val := true
+			filter.ScheduledOnly = &val
+		}
+		if scheduleOnlyQuery[0] == "false" {
+			val := false
+			filter.ScheduledOnly = &val
+		}
+	}
+
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			filter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			filter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		filter.Order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, filter, nil, false)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -534,7 +575,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 // GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID AdminGetGroupEvents
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -578,7 +619,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 // DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID AdminDeleteGroup
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -623,7 +664,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 // DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
 // @ID AdminDeleteGroupEvent
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -663,7 +704,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 // DeleteGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID AdminDeleteGroupPost
-// @Tags Admin-V1
+// @Tags Admin
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200
@@ -737,7 +778,7 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
 func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -784,7 +825,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [put]
 func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -881,7 +922,7 @@ func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
 func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create sync config - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
