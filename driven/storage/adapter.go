@@ -1569,6 +1569,7 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 	})
 }
 
+// FindScheduledPosts Finds scheduled posts whithout sent notifications
 func (sa *Adapter) FindScheduledPosts(context TransactionContext) ([]model.Post, error) {
 	var posts []model.Post
 	err := sa.db.posts.FindWithContext(context, bson.D{
@@ -1581,6 +1582,7 @@ func (sa *Adapter) FindScheduledPosts(context TransactionContext) ([]model.Post,
 	return posts, nil
 }
 
+// UpdateDateNotifiedForPostIDs Updates the notification time for the desired posts
 func (sa *Adapter) UpdateDateNotifiedForPostIDs(context TransactionContext, ids []string, dateNotified time.Time) error {
 	_, err := sa.db.posts.UpdateManyWithContext(context,
 		bson.D{{Key: "_id", Value: bson.M{"$in": ids}}},
