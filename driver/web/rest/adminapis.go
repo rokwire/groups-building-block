@@ -497,7 +497,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var filter model.PostsFilter
-	id := params["groupID"]
+	id := params["group-id"]
 	if len(id) <= 0 {
 		log.Println("groupID is required")
 		http.Error(w, "groupID is required", http.StatusBadRequest)
