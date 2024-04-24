@@ -773,6 +773,10 @@ definitions:
         type: string
       date_created:
         type: string
+      date_notified:
+        type: string
+      date_scheduled:
+        type: string
       date_updated:
         type: string
       group_id:
@@ -1042,14 +1046,12 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
-      date_attended:
-        type: string
-      notifications_preferences:
-        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
+        - pending
         - member
         - admin
+        - rejected
         type: string
     required:
     - status
@@ -1315,6 +1317,27 @@ paths:
         in: header
         name: APP
         required: true
+        type: string
+      - description: groupID
+        in: query
+        name: groupID
+        required: true
+        type: string
+      - description: 'Values: message|post'
+        in: query
+        name: type
+        type: string
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      - description: asc|desc
+        in: query
+        name: order
         type: string
       responses:
         "200":
@@ -2504,10 +2527,10 @@ paths:
         in: query
         name: limit
         type: integer
-      - description: limit
+      - description: asc|desc
         in: query
         name: order
-        type: integer
+        type: string
       responses:
         "200":
           description: OK
