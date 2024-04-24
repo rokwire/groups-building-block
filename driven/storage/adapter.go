@@ -1456,7 +1456,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 				primitive.E{Key: "is_abuse", Value: post.IsAbuse},
 				primitive.E{Key: "image_url", Value: post.ImageURL},
 				primitive.E{Key: "date_updated", Value: post.DateUpdated},
-				primitive.E{Key: "to_members", Value: post.DateScheduled},
+				primitive.E{Key: "date_scheduled", Value: post.DateScheduled},
 				primitive.E{Key: "to_members", Value: post.ToMembersList},
 			},
 			},

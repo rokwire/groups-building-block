@@ -1850,12 +1850,14 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	filter.GroupID = id
 
 	postTypesQuery, ok := r.URL.Query()["type"]
-	if !ok || len(postTypesQuery) == 0 || (postTypesQuery[0] != "message" && postTypesQuery[0] != "post") {
-		log.Println("the 'type' query param can be 'message' or 'post'")
-		http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
-		return
+	if ok && len(postTypesQuery) > 0 {
+		if postTypesQuery[0] != "message" && postTypesQuery[0] != "post" {
+			log.Println("the 'type' query param can be 'message' or 'post'")
+			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+			return
+		}
+		filter.PostType = &postTypesQuery[0]
 	}
-	filter.PostType = &postTypesQuery[0]
 
 	scheduleOnlyQuery, ok := r.URL.Query()["scheduled_only"]
 	if ok && len(scheduleOnlyQuery) > 0 {
