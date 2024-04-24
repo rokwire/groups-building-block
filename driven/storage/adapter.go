@@ -1383,7 +1383,14 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 		}
 
 		now := time.Now()
-		post.DateCreated = now
+
+		// Otherwise it will brake the order
+		if post.DateScheduled != nil {
+			post.DateCreated = *post.DateScheduled
+		} else {
+			post.DateCreated = now
+		}
+
 		post.Creator = model.Creator{
 			UserID: current.ID,
 			Email:  current.Email,
@@ -1431,6 +1438,12 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 
 		now := time.Now()
 		post.DateUpdated = &now
+
+		// Sync date created until the notification is sent
+		if post.DateScheduled != nil && originalPost.DateNotified == nil &&
+			(originalPost.DateScheduled == nil || *originalPost.DateScheduled != *post.DateScheduled) {
+			post.DateCreated = *post.DateScheduled
+		}
 
 		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
 
