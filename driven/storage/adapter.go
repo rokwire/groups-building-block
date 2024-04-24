@@ -179,8 +179,16 @@ func (sa *Adapter) SaveSyncConfig(context TransactionContext, config model.SyncC
 }
 
 // FindSyncTimes finds the sync times for the specified clientID
-func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*model.SyncTimes, error) {
-	filter := bson.M{"client_id": clientID}
+func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error) {
+
+	// TBD remove client_id
+
+	filter := bson.M{}
+	if legacy {
+		filter["client_id"] = clientID
+	} else {
+		filter["key"] = key
+	}
 
 	var configs []model.SyncTimes
 	err := sa.db.syncTimes.FindWithContext(context, filter, &configs, nil)
@@ -196,7 +204,7 @@ func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string) (*
 
 // SaveSyncTimes saves the provided sync times fields
 func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTimes) error {
-	filter := bson.M{"client_id": times.ClientID}
+	filter := bson.M{"client_id": times.ClientID, "key": times.Key}
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
@@ -1060,39 +1068,39 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 }
 
 // FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, postType *string, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
+func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error) {
 
 	var userID *string
 	if current != nil {
 		userID = &current.ID
 	}
 
-	group, errGr := sa.FindGroup(nil, clientID, groupID, userID)
+	group, errGr := sa.FindGroup(nil, clientID, filter.GroupID, userID)
 	if group == nil {
 		if errGr != nil {
-			log.Printf("unable to find group with id %s: %s", groupID, errGr)
+			log.Printf("unable to find group with id %s: %s", filter.GroupID, errGr)
 		} else {
-			log.Printf("group does not exists %s", groupID)
+			log.Printf("group does not exists %s", filter.GroupID)
 		}
 		return nil, errGr
 	}
 
-	filter := bson.D{
+	mongoFilter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "group_id", Value: groupID},
+		primitive.E{Key: "group_id", Value: filter.GroupID},
 	}
 
-	if postType != nil {
-		if *postType == "message" {
-			filter = append(filter, bson.E{Key: "$or", Value: []bson.M{
+	if filter.PostType != nil {
+		if *filter.PostType == "message" {
+			mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
 				{"$and": []bson.M{
 					{"to_members": bson.M{"$ne": primitive.Null{}}},
 					{"parent_id": primitive.Null{}},
 				}},
 				{"parent_id": bson.M{"$ne": primitive.Null{}}},
 			}})
-		} else if *postType == "post" {
-			filter = append(filter, bson.E{Key: "$or", Value: []bson.M{
+		} else if *filter.PostType == "post" {
+			mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
 				{"$and": []bson.M{
 					{"to_members": primitive.Null{}},
 					{"parent_id": primitive.Null{}},
@@ -1100,7 +1108,15 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 				{"parent_id": bson.M{"$ne": primitive.Null{}}},
 			}})
 		}
-		// TBD in progress
+	}
+
+	if filter.ScheduledOnly != nil && *filter.ScheduledOnly {
+		mongoFilter = append(mongoFilter, bson.E{Key: "date_scheduled", Value: bson.M{"$gt": time.Now()}})
+	} else {
+		mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
+			{"date_scheduled": nil},
+			{"date_scheduled": bson.M{"$lt": time.Now()}},
+		}})
 	}
 
 	if filterByToMembers {
@@ -1114,42 +1130,42 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, groupID strin
 				{"member.user_id": current.ID},
 			}...)
 		}
-		filter = append(filter, primitive.E{Key: "$or", Value: innerFilter})
+		mongoFilter = append(mongoFilter, primitive.E{Key: "$or", Value: innerFilter})
 	}
 
 	if filterPrivatePostsValue != nil {
-		filter = append(filter, primitive.E{Key: "private", Value: *filterPrivatePostsValue})
+		mongoFilter = append(mongoFilter, primitive.E{Key: "private", Value: *filterPrivatePostsValue})
 	}
 
 	paging := false
 	findOptions := options.Find()
-	if order != nil && "desc" == *order {
+	if filter.Order != nil && "desc" == *filter.Order {
 		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
 	} else {
 		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
-	if limit != nil {
-		findOptions.SetLimit(*limit)
+	if filter.Limit != nil {
+		findOptions.SetLimit(*filter.Limit)
 		paging = true
 	}
-	if offset != nil {
-		findOptions.SetSkip(*offset)
+	if filter.Offset != nil {
+		findOptions.SetSkip(*filter.Offset)
 		paging = true
 	}
 
 	if paging {
-		filter = append(filter, primitive.E{Key: "parent_id", Value: nil})
+		mongoFilter = append(mongoFilter, primitive.E{Key: "parent_id", Value: nil})
 	}
 
 	var list []*model.Post
-	err := sa.db.posts.Find(filter, &list, findOptions)
+	err := sa.db.posts.Find(mongoFilter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
 
 	if paging && len(list) > 0 {
 		for _, post := range list {
-			childPosts, err := sa.FindPostsByTopParentID(clientID, current, groupID, post.ID, true, order)
+			childPosts, err := sa.FindPostsByTopParentID(clientID, current, filter.GroupID, post.ID, true, filter.Order)
 			if err == nil && childPosts != nil {
 				for _, childPost := range childPosts {
 					if childPost.UserCanSeePost(current.ID) {
@@ -1367,7 +1383,14 @@ func (sa *Adapter) CreatePost(clientID string, current *model.User, post *model.
 		}
 
 		now := time.Now()
-		post.DateCreated = now
+
+		// Otherwise it will brake the order
+		if post.DateScheduled != nil {
+			post.DateCreated = *post.DateScheduled
+		} else {
+			post.DateCreated = now
+		}
+
 		post.Creator = model.Creator{
 			UserID: current.ID,
 			Email:  current.Email,
@@ -1416,6 +1439,12 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 		now := time.Now()
 		post.DateUpdated = &now
 
+		// Sync date created until the notification is sent
+		if post.DateScheduled != nil && originalPost.DateNotified == nil &&
+			(originalPost.DateScheduled == nil || *originalPost.DateScheduled != *post.DateScheduled) {
+			post.DateCreated = *post.DateScheduled
+		}
+
 		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: post.ID}}
 
 		update := bson.D{
@@ -1427,6 +1456,7 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 				primitive.E{Key: "is_abuse", Value: post.IsAbuse},
 				primitive.E{Key: "image_url", Value: post.ImageURL},
 				primitive.E{Key: "date_updated", Value: post.DateUpdated},
+				primitive.E{Key: "date_scheduled", Value: post.DateScheduled},
 				primitive.E{Key: "to_members", Value: post.ToMembersList},
 			},
 			},
@@ -1537,6 +1567,29 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 	return sa.PerformTransaction(func(transactionContext TransactionContext) error {
 		return deleteWrapper(transactionContext)
 	})
+}
+
+// FindScheduledPosts Finds scheduled posts whithout sent notifications
+func (sa *Adapter) FindScheduledPosts(context TransactionContext) ([]model.Post, error) {
+	var posts []model.Post
+	err := sa.db.posts.FindWithContext(context, bson.D{
+		{Key: "date_scheduled", Value: bson.M{"$lt": time.Now()}},
+		{Key: "date_notified", Value: nil},
+	}, &posts, nil)
+	if err != nil {
+		return nil, err
+	}
+	return posts, nil
+}
+
+// UpdateDateNotifiedForPostIDs Updates the notification time for the desired posts
+func (sa *Adapter) UpdateDateNotifiedForPostIDs(context TransactionContext, ids []string, dateNotified time.Time) error {
+	_, err := sa.db.posts.UpdateManyWithContext(context,
+		bson.D{{Key: "_id", Value: bson.M{"$in": ids}}},
+		bson.D{{Key: "$set", Value: bson.D{{Key: "date_notified", Value: dateNotified}}}},
+		nil)
+
+	return err
 }
 
 // UpdateGroupStats set the updated date to the current date time (now)

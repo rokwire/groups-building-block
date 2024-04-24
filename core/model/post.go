@@ -37,8 +37,11 @@ type Post struct {
 	ImageURL          *string             `json:"image_url" bson:"image_url"`
 
 	ToMembersList []ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
+
 	DateCreated   time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated   *time.Time `json:"date_updated" bson:"date_updated"`
+	DateScheduled *time.Time `json:"date_scheduled" bson:"date_scheduled"`
+	DateNotified  *time.Time `json:"date_notified" bson:"date_notified"`
 }
 
 // UserCanSeePost checks if the user can see the current post or not

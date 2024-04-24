@@ -496,48 +496,64 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 // @Router /api/admin/group/{groupID}/posts [get]
 func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["group-id"]
+	var filter model.PostsFilter
+	id := params["groupID"]
 	if len(id) <= 0 {
 		log.Println("groupID is required")
 		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
+	filter.GroupID = id
 
-	var postType *string
-	if val, ok := params["type"]; ok {
-		if val != "message" && val != "post" {
+	postTypesQuery, ok := r.URL.Query()["type"]
+	if ok && len(postTypesQuery) > 0 {
+		if postTypesQuery[0] != "message" && postTypesQuery[0] != "post" {
 			log.Println("the 'type' query param can be 'message' or 'post'")
 			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
 			return
 		}
-		postType = &val
+		filter.PostType = &postTypesQuery[0]
 	}
 
-	var offset *int64
+	scheduleOnlyQuery, ok := r.URL.Query()["scheduled_only"]
+	if ok && len(scheduleOnlyQuery) > 0 {
+		if scheduleOnlyQuery[0] != "true" && scheduleOnlyQuery[0] != "false" {
+			log.Println("the 'scheduled_only' query param can be 'true', 'false', or missing")
+			http.Error(w, "the 'scheduled_only' query param can be 'true', 'false', or missing", http.StatusBadRequest)
+			return
+		}
+		if scheduleOnlyQuery[0] == "true" {
+			val := true
+			filter.ScheduledOnly = &val
+		}
+		if scheduleOnlyQuery[0] == "false" {
+			val := false
+			filter.ScheduledOnly = &val
+		}
+	}
+
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			filter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			filter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		filter.Order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, id, nil, false, postType, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, filter, nil, false)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

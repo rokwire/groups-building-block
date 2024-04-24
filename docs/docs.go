@@ -471,6 +471,37 @@ const docTemplate = `{
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "groupID",
+                        "name": "groupID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Values: message|post",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "asc|desc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -2302,8 +2333,8 @@ const docTemplate = `{
                         "in": "query"
                     },
                     {
-                        "type": "integer",
-                        "description": "limit",
+                        "type": "string",
+                        "description": "asc|desc",
                         "name": "order",
                         "in": "query"
                     }
@@ -4932,6 +4963,12 @@ const docTemplate = `{
                 "date_created": {
                     "type": "string"
                 },
+                "date_notified": {
+                    "type": "string"
+                },
+                "date_scheduled": {
+                    "type": "string"
+                },
                 "date_updated": {
                     "type": "string"
                 },
@@ -5335,17 +5372,13 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
-                "date_attended": {
-                    "type": "string"
-                },
-                "notifications_preferences": {
-                    "$ref": "#/definitions/NotificationsPreferences"
-                },
                 "status": {
                     "type": "string",
                     "enum": [
+                        "pending",
                         "member",
-                        "admin"
+                        "admin",
+                        "rejected"
                     ]
                 }
             }

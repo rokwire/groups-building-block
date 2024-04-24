@@ -674,6 +674,26 @@ func (m *database) applyPostsChecks(posts *collectionWrapper) error {
 		}
 	}
 
+	if indexMapping["date_scheduled_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_scheduled", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	if indexMapping["date_notified_1"] == nil {
+		err := posts.AddIndex(
+			bson.D{
+				primitive.E{Key: "date_notified", Value: 1},
+			}, false)
+		if err != nil {
+			return err
+		}
+	}
+
 	log.Println("posts checks passed")
 	return nil
 }

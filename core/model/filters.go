@@ -35,3 +35,13 @@ type GroupsFilter struct {
 	Offset           *int64                         `json:"offset"` // result offset
 	Limit            *int64                         `json:"limit"`  // result limit
 } // @name GroupsFilter
+
+// PostsFilter Wraps all possible filters for getting group post call
+type PostsFilter struct {
+	GroupID       string  `json:"group_id"`
+	PostType      *string `json:"type"`
+	ScheduledOnly *bool   `json:"scheduled_only"`
+	Offset        *int64  `json:"offset"`
+	Limit         *int64  `json:"limit"`
+	Order         *string `json:"order"`
+} // @name PostsFilter

@@ -50,8 +50,7 @@ type Application struct {
 	authmanSyncInProgress bool
 
 	//synchronize managed groups timer
-	scheduler         *cron.Cron
-	managedGroupTasks map[string]scheduledTask
+	scheduler *cron.Cron
 }
 
 // Start starts the corebb part of the application
@@ -60,27 +59,21 @@ func (app *Application) Start() {
 	storageListener := storageListenerImpl{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
 
-	app.setupSyncManagedGroupTimer()
+	app.setupCronTimer()
 }
 
-func (app *Application) setupSyncManagedGroupTimer() {
-	log.Println("setupSyncManagedGroupTimer")
+func (app *Application) setupCronTimer() {
+	log.Println("setupCronTimer")
 
 	configs, err := app.storage.FindSyncConfigs()
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}
 
+	// TBD refactor this!
 	for _, config := range configs {
-		task, ok := app.managedGroupTasks[config.ClientID]
 
-		//cancel if active
-		if ok && task.cron != config.CRON && task.taskID != nil {
-			app.scheduler.Remove(*task.taskID)
-			delete(app.managedGroupTasks, config.ClientID)
-		}
-
-		if (!ok || task.cron != config.CRON) && config.CRON != "" {
+		if config.CRON != "" {
 			sync := func() {
 				log.Println("syncManagedGroups for clientID " + config.ClientID)
 				err := app.synchronizeAuthman(config.ClientID, true)
@@ -88,14 +81,26 @@ func (app *Application) setupSyncManagedGroupTimer() {
 					log.Printf("error syncing Authman groups for clientID %s: %s\n", config.ClientID, err.Error())
 				}
 			}
-			taskID, err := app.scheduler.AddFunc(config.CRON, sync)
+			_, err := app.scheduler.AddFunc(config.CRON, sync)
 			if err != nil {
 				log.Printf("error scheduling managed group sync for clientID %s: %s\n", config.ClientID, err)
 			}
-			app.managedGroupTasks[config.ClientID] = scheduledTask{taskID: &taskID, cron: config.CRON}
 			log.Printf("sync managed group task scheduled for clientID=%s at %s\n", config.ClientID, config.CRON)
 		}
 	}
+
+	_, err = app.scheduler.AddFunc("* * * * *", func() {
+		log.Println("run scheduled post tick")
+		err := app.processScheduledPosts()
+		if err != nil {
+			log.Printf("error processing scheduled prosts: %s", err)
+		}
+	})
+	if err != nil {
+		log.Printf("error on running post scheduling task: %s", err)
+	}
+	log.Printf("successful running of post scheduling task")
+
 	app.scheduler.Start()
 }
 
@@ -285,9 +290,8 @@ func NewApplication(version string, build string, storage Storage, notifications
 	rewards *rewards.Adapter, calendar *calendar.Adapter, config *model.ApplicationConfig) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
-	managedGroupTasks := map[string]scheduledTask{}
 	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, calendar: calendar, config: config, scheduler: scheduler, managedGroupTasks: managedGroupTasks}
+		authman: authman, corebb: core, rewards: rewards, calendar: calendar, config: config, scheduler: scheduler}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}

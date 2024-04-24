@@ -22,6 +22,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 )
@@ -50,11 +51,11 @@ func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.
 }
 
 // SendNotification sends notification to a user
-func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) {
-	na.sendNotification(recipients, topic, title, text, data, appID, orgID)
+func (na *Adapter) SendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error {
+	return na.sendNotification(recipients, topic, title, text, data, appID, orgID, dateScheduled)
 }
 
-func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string) error {
+func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error {
 	if len(recipients) > 0 {
 		url := fmt.Sprintf("%s/api/bbs/message", na.baseURL)
 
@@ -69,6 +70,10 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 			"body":       text,
 			"data":       data,
 		}
+		if dateScheduled != nil {
+			message["time"] = dateScheduled.Unix()
+		}
+
 		bodyData := map[string]interface{}{
 			"async":   async,
 			"message": message,
@@ -145,6 +150,123 @@ func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
 			log.Printf("error with response code - %d", resp.StatusCode)
 			return fmt.Errorf("error with response code != 200")
 		}
+	}
+	return nil
+}
+
+// DeleteNotifications deletes notification
+func (na *Adapter) DeleteNotifications(appID string, orgID string, ids string) error {
+
+	url := fmt.Sprintf("%s/api/bbs/messages?ids=%s", na.baseURL, ids)
+
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+
+		log.Printf("DeleteNotification:error creating load user data request - %s", err)
+		return err
+	}
+
+	resp, err := na.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("DeleteNotification: error sending request - %s", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		log.Printf("SendNotification: error with response code - %d", resp.StatusCode)
+		return fmt.Errorf("DeleteNotification: error with response code != 200")
+	}
+	return nil
+}
+
+// AddNotificationRecipients Adds a new recipients in the notification
+func (na *Adapter) AddNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error {
+
+	url := fmt.Sprintf("%s/api/bbs/messages/%s/recipients", na.baseURL, notificationID)
+
+	type recipientType struct {
+		Mute   bool   `json:"mute"`
+		UserID string `json:"user_id"`
+	}
+	var recipients []recipientType
+	for _, userID := range userIDs {
+		recipients = append(recipients, recipientType{
+			Mute:   false,
+			UserID: userID,
+		})
+	}
+
+	bodyBytes, err := json.Marshal(recipients)
+	if err != nil {
+		log.Printf("AddNotificationRecipient::error creating notification request - %s", err)
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+
+		log.Printf("AddNotificationRecipient:error creating load user data request - %s", err)
+		return err
+	}
+
+	resp, err := na.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("AddNotificationRecipient: error sending request - %s", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		log.Printf("AddNotificationRecipient: error with response code - %d", resp.StatusCode)
+		return fmt.Errorf("AddNotificationRecipient: error with response code != 200")
+	}
+	return nil
+}
+
+// RemoveNotificationRecipients Remove recipients from the notification
+func (na *Adapter) RemoveNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error {
+
+	url := fmt.Sprintf("%s/api/bbs/messages/%s/recipients", na.baseURL, notificationID)
+
+	type recipientType struct {
+		Mute   bool   `json:"mute"`
+		UserID string `json:"user_id"`
+	}
+	var recipients []recipientType
+	for _, userID := range userIDs {
+		recipients = append(recipients, recipientType{
+			Mute:   false,
+			UserID: userID,
+		})
+	}
+
+	bodyBytes, err := json.Marshal(recipients)
+	if err != nil {
+		log.Printf("AddNotificationRecipient::error creating notification request - %s", err)
+		return err
+	}
+
+	req, err := http.NewRequest("DELETE", url, bytes.NewReader(bodyBytes))
+	if err != nil {
+
+		log.Printf("AddNotificationRecipient:error creating load user data request - %s", err)
+		return err
+	}
+
+	resp, err := na.serviceAccountManager.MakeRequest(req, appID, orgID)
+	if err != nil {
+		log.Printf("AddNotificationRecipient: error sending request - %s", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		log.Printf("AddNotificationRecipient: error with response code - %d", resp.StatusCode)
+		return fmt.Errorf("AddNotificationRecipient: error with response code != 200")
 	}
 	return nil
 }

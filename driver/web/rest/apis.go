@@ -1839,6 +1839,7 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 // @Security APIKeyAuth
 // @Router /api/group/{groupID}/posts [get]
 func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	var filter model.PostsFilter
 	params := mux.Vars(r)
 	id := params["groupID"]
 	if len(id) <= 0 {
@@ -1846,38 +1847,54 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
+	filter.GroupID = id
 
-	var postType *string
 	postTypesQuery, ok := r.URL.Query()["type"]
-	if !ok || len(postTypesQuery) == 0 || (postTypesQuery[0] != "message" && postTypesQuery[0] != "post") {
-		log.Println("the 'type' query param can be 'message' or 'post'")
-		http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
-		return
+	if ok && len(postTypesQuery) > 0 {
+		if postTypesQuery[0] != "message" && postTypesQuery[0] != "post" {
+			log.Println("the 'type' query param can be 'message' or 'post'")
+			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+			return
+		}
+		filter.PostType = &postTypesQuery[0]
 	}
-	postType = &postTypesQuery[0]
 
-	var offset *int64
+	scheduleOnlyQuery, ok := r.URL.Query()["scheduled_only"]
+	if ok && len(scheduleOnlyQuery) > 0 {
+		if scheduleOnlyQuery[0] != "true" && scheduleOnlyQuery[0] != "false" {
+			log.Println("the 'scheduled_only' query param can be 'true', 'false', or missing")
+			http.Error(w, "the 'scheduled_only' query param can be 'true', 'false', or missing", http.StatusBadRequest)
+			return
+		}
+		if scheduleOnlyQuery[0] == "true" {
+			val := true
+			filter.ScheduledOnly = &val
+		}
+		if scheduleOnlyQuery[0] == "false" {
+			val := false
+			filter.ScheduledOnly = &val
+		}
+	}
+
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			filter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			filter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		filter.Order = &orders[0]
 	}
 
 	//check if allowed to delete
@@ -1911,7 +1928,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	filterByToMembers := true
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, postType, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
