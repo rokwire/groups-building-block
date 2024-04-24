@@ -25,6 +25,7 @@
         "GR_HOST": "<host>",
         "CORE_BB_HOST": "<core bb host>",
         "GROUP_SERVICE_URL": "<service url>",
+        "CALENDAR_BASE_URL": "<service url>",
         "GR_SERVICE_ACCOUNT_ID": "<service account id>"
     }
 }

@@ -19,6 +19,7 @@ The following Environment variables are supported. The service will not start un
 Name|Format|Required|Description
 ---|---|---|---
 CORE_BB_HOST | < url > | yes | Core BB host URL
+CALENDAR_BASE_URL | < url > | yes | Calendar BB host URL
 INTERNAL_API_KEY | < string > | yes | Internal API key for invocation by other BBs
 GR_MONGO_AUTH | <mongodb://USER:PASSWORD@HOST:PORT/DATABASE NAME> | yes | MongoDB authentication string. The user must have read/write privileges.
 GR_MONGO_DATABASE | < string > | yes | MongoDB database name
