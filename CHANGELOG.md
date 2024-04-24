@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Schedule post in the future [#437](https://github.com/rokwire/groups-building-block/issues/437)
+
 ## [1.36.0] - 2024-04-17
 ### Added
 - Split posts and direct messages within the group [#434](https://github.com/rokwire/groups-building-block/issues/434)
