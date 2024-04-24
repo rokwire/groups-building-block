@@ -1866,11 +1866,11 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 			http.Error(w, "the 'scheduled_only' query param can be 'true', 'false', or missing", http.StatusBadRequest)
 			return
 		}
-		if scheduleOnlyQuery[0] != "true" {
+		if scheduleOnlyQuery[0] == "true" {
 			val := true
 			filter.ScheduledOnly = &val
 		}
-		if scheduleOnlyQuery[0] != "false" {
+		if scheduleOnlyQuery[0] == "false" {
 			val := false
 			filter.ScheduledOnly = &val
 		}
