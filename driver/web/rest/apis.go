@@ -21,7 +21,6 @@ import (
 	"groups/core/model"
 	"groups/utils"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
@@ -40,7 +39,7 @@ type ApisHandler struct {
 // Version gives the service version
 // @Description Gives the service version.
 // @ID Version
-// @Tags Client-V1
+// @Tags Client
 // @Produce plain
 // @Success 200 {string} v1.4.9
 // @Router /version [get]
@@ -81,12 +80,14 @@ type userGroupShortDetail struct {
 	Title            string `json:"title"`
 	Privacy          string `json:"privacy"`
 	MembershipStatus string `json:"membership_status"`
+	ResearchOpen     bool   `json:"research_open"`
+	ResearchGroup    bool   `json:"research_group"`
 }
 
 // CreateGroup creates a group
 // @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
 // @ID CreateGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -95,14 +96,8 @@ type userGroupShortDetail struct {
 // @Security AppUserAuth
 // @Router /api/groups [post]
 func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	// NOTE: Permissions should be handled using the admin auth wrap function and the associated authorization policy
-	// if !current.IsMemberOfGroup("urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access") {
-	// 	log.Printf("%s is not allowed to create a group", current.Email)
-	// 	http.Error(w, corebb.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-	// 	return
-	// }
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a group - %s\n", err.Error())
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
@@ -146,6 +141,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		Privacy:                  requestData.Privacy,
 		HiddenForSearch:          requestData.Hidden,
 		ImageURL:                 requestData.ImageURL,
+		WebURL:                   requestData.WebURL,
 		MembershipQuestions:      requestData.MembershipQuestions,
 		AuthmanGroup:             requestData.AuthmanGroup,
 		AuthmanEnabled:           requestData.AuthmanEnabled,
@@ -167,16 +163,20 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	data, err = json.Marshal(createResponse{InsertedID: *insertedID})
-	if err != nil {
-		log.Println("Error on marshal create group response")
-		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+	if insertedID != nil {
+		data, err = json.Marshal(createResponse{InsertedID: *insertedID})
+		if err != nil {
+			log.Println("Error on marshal create group response")
+			http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
 }
 
 type updateGroupRequest struct {
@@ -208,7 +208,7 @@ type updateGroupRequest struct {
 // UpdateGroup updates a group
 // @Description Updates a group.
 // @ID UpdateGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -227,7 +227,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the update group item - %s\n", err.Error())
 		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
@@ -277,6 +277,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 		Privacy:                  requestData.Privacy,
 		HiddenForSearch:          requestData.Hidden,
 		ImageURL:                 requestData.ImageURL,
+		WebURL:                   requestData.WebURL,
 		MembershipQuestions:      requestData.MembershipQuestions,
 		AuthmanGroup:             requestData.AuthmanGroup,
 		AuthmanEnabled:           requestData.AuthmanEnabled,
@@ -307,7 +308,7 @@ func (h *ApisHandler) UpdateGroup(clientID string, current *model.User, w http.R
 // GetGroupStats Retrieves stats for a group by id
 // @Description Retrieves stats for a group by id
 // @ID GetGroupStats
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -352,7 +353,7 @@ func (h *ApisHandler) GetGroupStats(clientID string, current *model.User, w http
 // DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID DeleteGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -403,7 +404,7 @@ func (h *ApisHandler) DeleteGroup(clientID string, current *model.User, w http.R
 // GetGroups gets groups. It can be filtered by category
 // @Description Gives the groups list. It can be filtered by category
 // @ID GetGroups
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
@@ -462,6 +463,11 @@ func (h *ApisHandler) GetGroups(clientID string, current *model.User, w http.Res
 			val := true
 			groupsFilter.IncludeHidden = &val
 		}
+	}
+
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
 	}
 
 	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
@@ -537,7 +543,7 @@ type getUserGroupsResponse struct {
 // GetUserGroups gets the user groups.
 // @Description Gives the user groups.
 // @ID GetUserGroups
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param title query string false "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)"
@@ -606,6 +612,11 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 		}
 	}
 
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
+	}
+
 	groups, err := h.app.Services.GetUserGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetUserGroups() error getting user groups - %s", err.Error())
@@ -647,18 +658,12 @@ func (h *ApisHandler) GetUserGroups(clientID string, current *model.User, w http
 // LoginUser Logs in the user and refactor the user record and linked data if need
 // @Description Logs in the user and refactor the user record and linked data if need
 // @ID LoginUser
-// @Tags Client-V1
+// @Tags Client
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/user/login [get]
 func (h *ApisHandler) LoginUser(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.LoginUser(clientID, current)
-	if err != nil {
-		log.Printf("error login user - %s", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -669,7 +674,7 @@ type getUserStatsResponse struct {
 // GetUserStats Gets user stat information. Responds with {"posts_count": xxx}
 // @Description Gets user stat information. Responds with {"posts_count": xxx}
 // @ID GetUserStats
-// @Tags Client-V1
+// @Tags Client
 // @Param APP header string true "APP"
 // @Success 200 {object} getUserStatsResponse
 // @Security AppUserAuth
@@ -704,7 +709,7 @@ func (h *ApisHandler) GetUserStats(clientID string, current *model.User, w http.
 // DeleteUser Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
 // @Description Deletes a user with all the involved information from the Notifications BB (this includes - group membership & posts (and child posts - no matter of the creator))
 // @ID DeleteUser
-// @Tags Client-V1
+// @Tags Client
 // @Success 200
 // @Security AppUserAuth
 // @Security APIKeyAuth
@@ -722,7 +727,7 @@ func (h *ApisHandler) DeleteUser(clientID string, current *model.User, w http.Re
 // GetUserGroupMemberships gets the user groups memberships
 // @Description Gives the user groups memberships
 // @ID GetUserGroupMemberships
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param identifier path string true "Identifier"
 // @Success 200 {object} userGroupShortDetail
@@ -796,7 +801,7 @@ type getGroupResponse struct {
 // GetGroup gets a group
 // @Description Gives a group
 // @ID GetGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param APP header string true "APP"
 // @Param id path string true "ID"
@@ -854,7 +859,7 @@ type createPendingMemberRequest struct {
 // CreatePendingMember creates a group pending member
 // @Description Creates a group pending member
 // @ID CreatePendingMember
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -873,7 +878,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -946,7 +951,7 @@ func (h *ApisHandler) CreatePendingMember(clientID string, current *model.User, 
 // DeletePendingMember deletes a group pending member
 // @Description Deletes a group pending member
 // @ID DeletePendingMember
-// @Tags Client-V1
+// @Tags Client
 // @Accept plain
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -977,7 +982,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 // GetGroupMembers Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
 // @Description Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
 // @ID CreateMember
-// @Tags Client-V1
+// @Tags Client
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
 // @Param APP header string true "APP"
@@ -994,7 +999,7 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 		return
 	}
 
-	requestData, err := ioutil.ReadAll(r.Body)
+	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1055,7 +1060,7 @@ type createMemberRequest struct {
 // CreateMember Adds a member to a group. The current user is required to be an admin of the group
 // @Description Adds a member to a group. The current user is required to be an admin of the group
 // @ID CreateMember
-// @Tags Client-V1
+// @Tags Client
 // @Accept plain
 // @Param data body createMemberRequest true "body data"
 // @Param APP header string true "APP"
@@ -1072,7 +1077,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal create a pending member - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1152,7 +1157,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 // DeleteMember deletes a member membership from a group
 // @Description Deletes a member membership from a group
 // @ID DeleteMember
-// @Tags Client-V1
+// @Tags Client
 // @Accept plain
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1188,7 +1193,7 @@ type membershipApprovalRequest struct {
 // MembershipApproval approve/deny a membership
 // @Description Аpprove/Deny a membership
 // @ID MembershipApproval
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1207,7 +1212,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the membership item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1277,7 +1282,7 @@ func (h *ApisHandler) MembershipApproval(clientID string, current *model.User, w
 // DeleteMembership deletes membership
 // @Description Deletes a membership
 // @ID DeleteMembership
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1347,7 +1352,7 @@ type updateMembershipRequest struct {
 // UpdateMembership updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.
 // @Description Updates a membership. Only admin can update the status and date_attended fields of a membership record. Member is allowed to update only his/her notification preferences.
 // @ID UpdateMembership
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1366,7 +1371,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the membership update item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1443,7 +1448,7 @@ func (h *ApisHandler) UpdateMembership(clientID string, current *model.User, w h
 // SynchAuthmanGroup Synchronizes Authman group. Only admin of the group could initiate the operation
 // @Description Synchronizes Authman group. Only admin of the group could initiate the operation
 // @ID SynchAuthmanGroup
-// @Tags Client-V1
+// @Tags Client
 // @Accept plain
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1488,7 +1493,7 @@ func (h *ApisHandler) SynchAuthmanGroup(clientID string, current *model.User, w 
 // GetGroupEvents gives the group events
 // @Description Gives the group events.
 // @ID GetGroupEvents
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1540,7 +1545,7 @@ func (h *ApisHandler) GetGroupEvents(clientID string, current *model.User, w htt
 // GetGroupEventsV2 gives the group events V2
 // @Description Gives the group events.
 // @ID GetGroupEventsV2
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
@@ -1599,7 +1604,7 @@ type groupEventRequest struct {
 // CreateGroupEvent creates a group event
 // @Description Creates a group event
 // @ID CreateGroupEvent
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1618,7 +1623,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1682,7 +1687,7 @@ func (h *ApisHandler) CreateGroupEvent(clientID string, current *model.User, w h
 // UpdateGroupEvent updates a group event
 // @Description Updates a group event
 // @ID UpdateGroupEvent
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1701,7 +1706,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the update group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -1760,7 +1765,7 @@ func (h *ApisHandler) UpdateGroupEvent(clientID string, current *model.User, w h
 // DeleteGroupEvent deletes a group event
 // @Description Deletes a group event
 // @ID DeleteGroupEvent
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1822,13 +1827,19 @@ func (h *ApisHandler) DeleteGroupEvent(clientID string, current *model.User, w h
 // GetGroupPosts gets all posts for the desired group.
 // @Description gets all posts for the desired group.
 // @ID GetGroupPosts
-// @Tags Client-V1
+// @Tags Client
 // @Param APP header string true "APP"
+// @Param groupID query string true "groupID"
+// @Param type query string false "Values: message|post"
+// @Param offset query string false "offset"
+// @Param limit query integer false "limit"
+// @Param order query string false "asc|desc"
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/group/{groupID}/posts [get]
 func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	var filter model.PostsFilter
 	params := mux.Vars(r)
 	id := params["groupID"]
 	if len(id) <= 0 {
@@ -1836,29 +1847,54 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 		http.Error(w, "groupID is required", http.StatusBadRequest)
 		return
 	}
+	filter.GroupID = id
 
-	var offset *int64
+	postTypesQuery, ok := r.URL.Query()["type"]
+	if ok && len(postTypesQuery) > 0 {
+		if postTypesQuery[0] != "message" && postTypesQuery[0] != "post" {
+			log.Println("the 'type' query param can be 'message' or 'post'")
+			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
+			return
+		}
+		filter.PostType = &postTypesQuery[0]
+	}
+
+	scheduleOnlyQuery, ok := r.URL.Query()["scheduled_only"]
+	if ok && len(scheduleOnlyQuery) > 0 {
+		if scheduleOnlyQuery[0] != "true" && scheduleOnlyQuery[0] != "false" {
+			log.Println("the 'scheduled_only' query param can be 'true', 'false', or missing")
+			http.Error(w, "the 'scheduled_only' query param can be 'true', 'false', or missing", http.StatusBadRequest)
+			return
+		}
+		if scheduleOnlyQuery[0] == "true" {
+			val := true
+			filter.ScheduledOnly = &val
+		}
+		if scheduleOnlyQuery[0] == "false" {
+			val := false
+			filter.ScheduledOnly = &val
+		}
+	}
+
 	offsets, ok := r.URL.Query()["offset"]
 	if ok && len(offsets[0]) > 0 {
 		val, err := strconv.ParseInt(offsets[0], 0, 64)
 		if err == nil {
-			offset = &val
+			filter.Offset = &val
 		}
 	}
 
-	var limit *int64
 	limits, ok := r.URL.Query()["limit"]
 	if ok && len(limits[0]) > 0 {
 		val, err := strconv.ParseInt(limits[0], 0, 64)
 		if err == nil {
-			limit = &val
+			filter.Limit = &val
 		}
 	}
 
-	var order *string
 	orders, ok := r.URL.Query()["order"]
 	if ok && len(orders[0]) > 0 {
-		order = &orders[0]
+		filter.Order = &orders[0]
 	}
 
 	//check if allowed to delete
@@ -1892,7 +1928,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 	}
 
 	filterByToMembers := true
-	posts, err := h.app.Services.GetPosts(clientID, current, id, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+	posts, err := h.app.Services.GetPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1914,7 +1950,7 @@ func (h *ApisHandler) GetGroupPosts(clientID string, current *model.User, w http
 // CreateGroupPost creates a post within the desired group.
 // @Description creates a post within the desired group.
 // @ID CreateGroupPost
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Produce json
 // @Param APP header string true "APP"
@@ -1931,7 +1967,7 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2003,7 +2039,7 @@ func (h *ApisHandler) CreateGroupPost(clientID string, current *model.User, w ht
 // GetGroupPost Gets a post within the desired group.
 // @Description Gets a post within the desired group.
 // @ID GetGroupPost
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200 {object} model.Post
@@ -2069,7 +2105,7 @@ func (h *ApisHandler) GetGroupPost(clientID string, current *model.User, w http.
 // UpdateGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID UpdateGroupPost
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200 {object} model.Post
@@ -2092,7 +2128,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on marshal the create group item - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2107,7 +2143,7 @@ func (h *ApisHandler) UpdateGroupPost(clientID string, current *model.User, w ht
 		return
 	}
 
-	if post.ID == nil || postID != *post.ID {
+	if post.ID == "" || postID != post.ID {
 		log.Printf("unexpected post id query param (%s) and post json data", postID)
 		http.Error(w, fmt.Sprintf("inconsistent post id query param (%s) and post json data", postID), http.StatusBadRequest)
 		return
@@ -2160,7 +2196,7 @@ type reactToGroupPostRequestBody struct {
 // ReactToGroupPost Reacts to a post within the desired group.
 // @Description Reacts to a post within the desired group.
 // @ID ReactToGroupPost
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200 {string} Success
@@ -2183,7 +2219,7 @@ func (h *ApisHandler) ReactToGroupPost(clientID string, current *model.User, w h
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on read reactToGroupPostRequestBody - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2245,7 +2281,7 @@ type reportAbuseGroupPostRequestBody struct {
 // ReportAbuseGroupPost Reports an abusive group post
 // @Description Reports an abusive group post
 // @ID ReportAbuseGroupPost
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Param data body reportAbuseGroupPostRequestBody true "body data"
@@ -2268,7 +2304,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	data, err := ioutil.ReadAll(r.Body)
+	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error on read reportAbuseGroupPostRequestBody - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -2326,7 +2362,7 @@ func (h *ApisHandler) ReportAbuseGroupPost(clientID string, current *model.User,
 // DeleteGroupPost Updates a post within the desired group.
 // @Description Updates a post within the desired group.
 // @ID DeleteGroupPost
-// @Tags Client-V1
+// @Tags Client
 // @Accept  json
 // @Param APP header string true "APP"
 // @Success 200
@@ -2385,7 +2421,7 @@ func (h *ApisHandler) DeleteGroupPost(clientID string, current *model.User, w ht
 // GetResearchProfileUserCount Retrieves the user count matching the provided research profile
 // @Description Retrieves the user count matching the provided research profile
 // @ID GetResearchProfileUserCount
-// @Tags Client-V1
+// @Tags Client
 // @Accept json
 // @Param APP header string true "APP"
 // @Param data body map[string]map[string][]string true "Research profile"
@@ -2420,17 +2456,22 @@ func (h *ApisHandler) GetResearchProfileUserCount(clientID string, current *mode
 	w.Write(data)
 }
 
-// NewApisHandler creates new rest Handler instance
+// NewApisHandler creates new rest Client APIs Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
 }
 
-// NewAdminApisHandler creates new rest Handler instance
+// NewAdminApisHandler creates new rest Asmin APIs Handler instance
 func NewAdminApisHandler(app *core.Application) *AdminApisHandler {
 	return &AdminApisHandler{app: app}
 }
 
-// NewInternalApisHandler creates new rest Handler instance
+// NewInternalApisHandler creates new rest Internal APIs Handler instance
 func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 	return &InternalApisHandler{app: app}
+}
+
+// NewAnalyticsApisHandler creates new rest Analytics Handler instance
+func NewAnalyticsApisHandler(app *core.Application) *AnalyticsApisHandler {
+	return &AnalyticsApisHandler{app: app}
 }

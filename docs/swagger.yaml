@@ -53,7 +53,8 @@ definitions:
       client_id:
         type: string
       current_member:
-        $ref: '#/definitions/GroupMembership'
+        allOf:
+        - $ref: '#/definitions/GroupMembership'
         description: this is indicative and it's not required for update APIs
       date_created:
         type: string
@@ -103,7 +104,8 @@ definitions:
           type: object
         type: object
       settings:
-        $ref: '#/definitions/GroupSettings'
+        allOf:
+        - $ref: '#/definitions/GroupSettings'
         description: 'TODO: Remove the pointer once the backward support is not needed
           any more!'
       stats:
@@ -120,6 +122,21 @@ definitions:
         type: string
       web_url:
         type: string
+    type: object
+  GroupEventFilter:
+    properties:
+      end_time_after:
+        type: integer
+      end_time_before:
+        type: integer
+      limit:
+        type: integer
+      offset:
+        type: integer
+      start_time_after:
+        type: integer
+      start_time_before:
+        type: integer
     type: object
   GroupMembership:
     properties:
@@ -633,6 +650,13 @@ definitions:
       web_url:
         type: string
     type: object
+  getPutAdminGroupIDsForEventIDRequestAndResponse:
+    properties:
+      group_ids:
+        items:
+          type: string
+        type: array
+    type: object
   getUserGroupsResponse:
     properties:
       category:
@@ -734,6 +758,13 @@ definitions:
     required:
     - approve
     type: object
+  model.AdminsIdentifiers:
+    properties:
+      account_id:
+        type: string
+      external_id:
+        type: string
+    type: object
   model.Post:
     properties:
       body:
@@ -741,6 +772,10 @@ definitions:
       client_id:
         type: string
       date_created:
+        type: string
+      date_notified:
+        type: string
+      date_scheduled:
         type: string
       date_updated:
         type: string
@@ -810,6 +845,97 @@ definitions:
       send_to_group_admins:
         type: boolean
     type: object
+  rest.analyticsGetGroupsMembersResponse:
+    properties:
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+    type: object
+  rest.analyticsGetGroupsResponse:
+    properties:
+      authman_enabled:
+        type: boolean
+      authman_group:
+        type: string
+      category:
+        type: string
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      hidden_for_search:
+        type: boolean
+      id:
+        type: string
+      privacy:
+        type: string
+      research_group:
+        type: boolean
+      research_open:
+        type: boolean
+      stats:
+        $ref: '#/definitions/GroupStats'
+      title:
+        type: string
+    type: object
+  rest.analyticsGetPostsResponse:
+    properties:
+      client_id:
+        type: string
+      date_created:
+        type: string
+      date_updated:
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      member_user_id:
+        type: string
+    type: object
+  rest.createCalendarEventMultiGroupData:
+    properties:
+      admins_identifiers:
+        items:
+          $ref: '#/definitions/model.AdminsIdentifiers'
+        type: array
+      event:
+        additionalProperties: true
+        type: object
+      group_ids:
+        items:
+          type: string
+        type: array
+    type: object
+  rest.createCalendarEventSingleGroupData:
+    properties:
+      event:
+        additionalProperties: true
+        type: object
+      to_members:
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    type: object
+  rest.updateCalendarEventSingleGroupData:
+    properties:
+      event:
+        additionalProperties: true
+        type: object
+      to_members:
+        items:
+          $ref: '#/definitions/ToMember'
+        type: array
+    type: object
   rest.userGroupShortDetail:
     properties:
       id:
@@ -818,6 +944,10 @@ definitions:
         type: string
       privacy:
         type: string
+      research_group:
+        type: boolean
+      research_open:
+        type: boolean
       title:
         type: string
     type: object
@@ -916,14 +1046,12 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
-      date_attended:
-        type: string
-      notifications_preferences:
-        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
+        - pending
         - member
         - admin
+        - rejected
         type: string
     required:
     - status
@@ -933,7 +1061,7 @@ info:
   contact: {}
   description: Rokwire Groups Building Block API Documentation.
   title: Rokwire Groups Building Block API
-  version: 1.12.3
+  version: 1.29.0
 paths:
   /admin/authman/synchronize:
     post:
@@ -943,7 +1071,7 @@ paths:
       operationId: AdminSynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -980,7 +1108,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/group/{group-id}/events:
     get:
       consumes:
@@ -1008,7 +1136,116 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
+  /api/admin/group/{group-id}/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to a single group id
+      operationId: AdminCreateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - application/json
+      description: Updates a calendar event and for a single group id
+      operationId: AdminUpdateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/group/{group-id}/events/v3/load:
+    post:
+      consumes:
+      - application/json
+      description: Gets the group calendar events
+      operationId: AdminGetGroupCalendarEventsV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/GroupEventFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin
   /api/admin/group/{group-id}/members:
     get:
       consumes:
@@ -1042,7 +1279,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/group/{group-id}/stats:
     get:
       consumes:
@@ -1070,7 +1307,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -1080,6 +1317,27 @@ paths:
         in: header
         name: APP
         required: true
+        type: string
+      - description: groupID
+        in: query
+        name: groupID
+        required: true
+        type: string
+      - description: 'Values: message|post'
+        in: query
+        name: type
+        type: string
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      - description: asc|desc
+        in: query
+        name: order
         type: string
       responses:
         "200":
@@ -1091,7 +1349,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/group/{groupId}/posts/{postId}:
     delete:
       consumes:
@@ -1106,12 +1364,12 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/group/{id}:
     delete:
       consumes:
@@ -1139,7 +1397,41 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
+  /api/admin/group/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to multiple group ids
+      operationId: AdminCreateCalendarEventMultiGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /api/admin/groups:
     get:
       consumes:
@@ -1200,7 +1492,7 @@ paths:
       - APIKeyAuth: []
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/managed-group-configs:
     get:
       consumes:
@@ -1274,7 +1566,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1296,7 +1588,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -1322,11 +1614,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
     put:
       consumes:
       - application/json
@@ -1353,11 +1645,11 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/sync-configs:
     get:
       consumes:
@@ -1400,7 +1692,55 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/user/event/{event-id}/groups:
+    get:
+      description: Updates the group mappings for an event with id
+      operationId: UpdateGroupMappingsEventID
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/admin/user/event/{event_id}/groups:
+    get:
+      description: Get all group IDs where the current user is an admin
+      operationId: AdminGetAdminGroupIDsForEventID
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
       security:
       - AppUserAuth: []
       tags:
@@ -1453,7 +1793,7 @@ paths:
       - APIKeyAuth: []
       - AppUserAuth: []
       tags:
-      - Admin-V1
+      - Admin
   /api/admin/v2/groups:
     get:
       consumes:
@@ -1514,7 +1854,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V2
+      - Admin
   /api/admin/v2/groups/{id}:
     get:
       consumes:
@@ -1540,7 +1880,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Admin-V2
+      - Admin
   /api/admin/v2/user/groups:
     get:
       consumes:
@@ -1602,7 +1942,93 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Admin-V2
+      - Admin
+  /api/analytics/groups:
+    get:
+      consumes:
+      - application/json
+      description: Gets groups
+      operationId: AnalyticsGetGroups
+      parameters:
+      - description: Start date string - RFC3339 encoded
+        in: query
+        name: start_date
+        type: string
+      - description: End date string - RFC3339 encoded
+        in: query
+        name: end_date
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.analyticsGetGroupsResponse'
+            type: array
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Analytics
+  /api/analytics/members:
+    get:
+      consumes:
+      - application/json
+      description: Gets groups members
+      operationId: AnalyticsGetGroupsMembers
+      parameters:
+      - description: Group ID
+        in: query
+        name: group_id
+        type: string
+      - description: Start date string - RFC3339 encoded
+        in: query
+        name: start_date
+        type: string
+      - description: End date string - RFC3339 encoded
+        in: query
+        name: end_date
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.analyticsGetGroupsMembersResponse'
+            type: array
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Analytics
+  /api/analytics/posts:
+    get:
+      consumes:
+      - application/json
+      description: Gets posts
+      operationId: AnalyticsGetPosts
+      parameters:
+      - description: Group ID
+        in: query
+        name: group_id
+        type: string
+      - description: Start date string - RFC3339 encoded
+        in: query
+        name: start_date
+        type: string
+      - description: End date string - RFC3339 encoded
+        in: query
+        name: end_date
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.analyticsGetPostsResponse'
+            type: array
+      security:
+      - IntAPIKeyAuth: []
+      tags:
+      - Analytics
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
@@ -1623,11 +2049,11 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{group-id}/event/{event-id}:
     delete:
       consumes:
@@ -1660,7 +2086,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{group-id}/events:
     get:
       consumes:
@@ -1689,7 +2115,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
     post:
       consumes:
       - application/json
@@ -1722,7 +2148,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
     put:
       consumes:
       - application/json
@@ -1755,7 +2181,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{group-id}/events/v2:
     get:
       consumes:
@@ -1783,7 +2209,116 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
+  /api/group/{group-id}/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to a single group id
+      operationId: CreateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+    put:
+      consumes:
+      - application/json
+      description: Updates a calendar event and for a single group id
+      operationId: UpdateCalendarEventSingleGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: group id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.updateCalendarEventSingleGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/group/{group-id}/events/v3/load:
+    post:
+      consumes:
+      - application/json
+      description: Gets the group calendar events
+      operationId: GetGroupCalendarEventsV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        schema:
+          $ref: '#/definitions/GroupEventFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Client
   /api/group/{group-id}/members:
     delete:
       consumes:
@@ -1809,7 +2344,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
     get:
       consumes:
       - text/plain
@@ -1843,7 +2378,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
     post:
       consumes:
       - text/plain
@@ -1869,11 +2404,11 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{group-id}/pending-members:
     delete:
       consumes:
@@ -1899,7 +2434,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
     post:
       consumes:
       - application/json
@@ -1936,7 +2471,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{group-id}/stats:
     get:
       consumes:
@@ -1964,7 +2499,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{groupID}/posts:
     get:
       description: gets all posts for the desired group.
@@ -1974,6 +2509,27 @@ paths:
         in: header
         name: APP
         required: true
+        type: string
+      - description: groupID
+        in: query
+        name: groupID
+        required: true
+        type: string
+      - description: 'Values: message|post'
+        in: query
+        name: type
+        type: string
+      - description: offset
+        in: query
+        name: offset
+        type: string
+      - description: limit
+        in: query
+        name: limit
+        type: integer
+      - description: asc|desc
+        in: query
+        name: order
         type: string
       responses:
         "200":
@@ -1986,7 +2542,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{groupId}/posts:
     post:
       consumes:
@@ -2010,7 +2566,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{groupId}/posts/{postId}:
     delete:
       consumes:
@@ -2025,12 +2581,12 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
     get:
       consumes:
       - application/json
@@ -2051,7 +2607,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
     put:
       consumes:
       - application/json
@@ -2072,7 +2628,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{groupId}/posts/{postId}/reactions:
     put:
       consumes:
@@ -2094,7 +2650,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{groupId}/posts/{postId}/report/abuse:
     put:
       consumes:
@@ -2115,11 +2671,11 @@ paths:
           $ref: '#/definitions/reportAbuseGroupPostRequestBody'
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/group/{id}:
     delete:
       consumes:
@@ -2147,7 +2703,41 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
+  /api/group/events/v3:
+    post:
+      consumes:
+      - application/json
+      description: Create a calendar event and link it to multiple group ids
+      operationId: CreateCalendarEventMultiGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
   /api/groups:
     get:
       consumes:
@@ -2208,7 +2798,7 @@ paths:
       - APIKeyAuth: []
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
     post:
       consumes:
       - application/json
@@ -2238,7 +2828,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/groups/{id}:
     get:
       consumes:
@@ -2265,7 +2855,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
     put:
       consumes:
       - application/json
@@ -2298,7 +2888,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/int/group/{group-id}/date_updated:
     post:
       consumes:
@@ -2320,7 +2910,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2352,7 +2942,7 @@ paths:
       - application/json
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2379,7 +2969,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2409,7 +2999,7 @@ paths:
         type: string
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2514,7 +3104,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
     put:
       consumes:
       - application/json
@@ -2549,7 +3139,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/memberships/{membership-id}/approval:
     put:
       consumes:
@@ -2583,7 +3173,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/research-profile/user-count:
     post:
       consumes:
@@ -2616,7 +3206,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/user:
     delete:
       description: Deletes a user with all the involved information from the Notifications
@@ -2625,12 +3215,12 @@ paths:
       operationId: DeleteUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/user/group-memberships:
     get:
       consumes:
@@ -2651,7 +3241,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/user/groups:
     get:
       consumes:
@@ -2712,7 +3302,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/user/login:
     get:
       description: Logs in the user and refactor the user record and linked data if
@@ -2720,12 +3310,12 @@ paths:
       operationId: LoginUser
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/user/stats:
     get:
       description: 'Gets user stat information. Responds with {"posts_count": xxx}'
@@ -2744,7 +3334,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V1
+      - Client
   /api/v2/groups:
     get:
       consumes:
@@ -2805,7 +3395,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V2
+      - Client
   /api/v2/groups/{id}:
     get:
       consumes:
@@ -2831,7 +3421,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client-V2
+      - Client
   /api/v2/user/groups:
     get:
       consumes:
@@ -2893,7 +3483,7 @@ paths:
       - AppUserAuth: []
       - APIKeyAuth: []
       tags:
-      - Client-V2
+      - Client
   /int/authman/synchronize:
     post:
       consumes:
@@ -2902,7 +3492,7 @@ paths:
       operationId: SynchronizeAuthman
       responses:
         "200":
-          description: ""
+          description: OK
       security:
       - IntAPIKeyAuth: []
       tags:
@@ -2934,7 +3524,7 @@ paths:
           schema:
             type: string
       tags:
-      - Client-V1
+      - Client
 schemes:
 - http
 securityDefinitions:

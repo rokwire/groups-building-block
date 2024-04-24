@@ -78,10 +78,13 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 			groupFilter = append(groupFilter, primitive.E{Key: "research_open", Value: primitive.M{"$ne": true}})
 		}
 	}
-	if filter.ResearchGroup {
-		groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: true})
-	} else {
-		groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
+
+	if filter.ResearchGroup != nil {
+		if *filter.ResearchGroup {
+			groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: true})
+		} else {
+			groupFilter = append(groupFilter, primitive.E{Key: "research_group", Value: primitive.M{"$ne": true}})
+		}
 	}
 	if filter.ResearchAnswers != nil {
 		for outerKey, outerValue := range filter.ResearchAnswers {
@@ -200,8 +203,8 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 
 	findOptions := options.FindOptions{
 		Sort: bson.D{
-			{Key: "members.status", Value: 1},
-			{Key: "members.name", Value: 1},
+			{Key: "status", Value: 1},
+			{Key: "name", Value: 1},
 		},
 	}
 	if filter.Offset != nil {
@@ -260,7 +263,7 @@ func (sa *Adapter) FindUserGroupMembershipsWithContext(ctx TransactionContext, c
 	filter := bson.M{"client_id": clientID, "user_id": userID}
 
 	var result []model.GroupMembership
-	err := sa.db.groupMemberships.Find(filter, &result, nil)
+	err := sa.db.groupMemberships.FindWithContext(ctx, filter, &result, nil)
 
 	return model.MembershipCollection{Items: result}, err
 }
@@ -472,14 +475,14 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 }
 
 // ApplyMembershipApproval applies a membership approval
-func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error {
-	return sa.PerformTransaction(func(context TransactionContext) error {
+func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error) {
+	var membership model.GroupMembership
+	err := sa.PerformTransaction(func(context TransactionContext) error {
 		status := "rejected"
 		if approve {
 			status = "member"
 		}
 
-		var membership model.GroupMembership
 		filter := bson.D{primitive.E{Key: "_id", Value: membershipID}, primitive.E{Key: "client_id", Value: clientID}}
 		update := bson.D{
 			primitive.E{Key: "$set", Value: bson.D{
@@ -489,13 +492,17 @@ func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string,
 			},
 			},
 		}
-		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, nil)
+		after := options.After
+		err := sa.db.groupMemberships.FindOneAndUpdateWithContext(context, filter, update, &membership, &options.FindOneAndUpdateOptions{ReturnDocument: &after})
 		if err != nil {
 			return err
 		}
 
-		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+		sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
+
+		return err
 	})
+	return &membership, err
 }
 
 // UpdateMembership updates a membership

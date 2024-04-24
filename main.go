@@ -18,6 +18,7 @@ import (
 	core "groups/core"
 	"groups/core/model"
 	"groups/driven/authman"
+	"groups/driven/calendar"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
 	"groups/driven/rewards"
@@ -31,6 +32,7 @@ import (
 
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
 	"github.com/rokwire/core-auth-library-go/v2/sigauth"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 var (
@@ -44,13 +46,16 @@ func main() {
 	if len(Version) == 0 {
 		Version = "dev"
 	}
+
+	serviceID := "gr"
+	loggerOpts := logs.LoggerOpts{
+		SuppressRequests: logs.NewStandardHealthCheckHTTPRequestProperties(serviceID + "/version"),
+		SensitiveHeaders: []string{"Rokwire-Api-Key", "Rokwire_gs_api_key", "Internal-Api-Key"},
+	}
+	logger := logs.NewLogger(serviceID, &loggerOpts)
+
 	// core bb host
 	coreBBHost := getEnvKey("CORE_BB_HOST", false)
-	port := getEnvKey("PORT", false)
-	//Default port of 5000
-	if port == "" {
-		port = "5000"
-	}
 
 	intrernalAPIKey := getEnvKey("INTERNAL_API_KEY", true)
 
@@ -116,6 +121,13 @@ func main() {
 		log.Fatalf("Error initializing notification adapter: %v", err)
 	}
 
+	// Calendar adapter
+	calendarBaseURL := getEnvKey("CALENDAR_BASE_URL", true)
+	calendarAdapter, err := calendar.NewCalendarAdapter(calendarBaseURL, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("Error initializing notification adapter: %v", err)
+	}
+
 	authmanBaseURL := getEnvKey("AUTHMAN_BASE_URL", true)
 	authmanUsername := getEnvKey("AUTHMAN_USERNAME", true)
 	authmanPassword := getEnvKey("AUTHMAN_PASSWORD", true)
@@ -146,12 +158,16 @@ func main() {
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, config)
 	application.Start()
 
 	//web adapter
 	apiKeys := getAPIKeys()
 	host := getEnvKey("GR_HOST", true)
+	port := getEnvKey("GR_PORT", true)
+	if len(port) == 0 {
+		port = "80"
+	}
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
 	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
 	oidcExtendedClientIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
@@ -160,7 +176,7 @@ func main() {
 
 	webAdapter := web.NewWebAdapter(application, host, port, supportedClientIDs, apiKeys, oidcProvider,
 		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
-		intrernalAPIKey, serviceRegManager, groupServiceURL)
+		intrernalAPIKey, serviceRegManager, groupServiceURL, logger)
 	webAdapter.Start()
 }
 

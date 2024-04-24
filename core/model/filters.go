@@ -28,10 +28,20 @@ type GroupsFilter struct {
 	Hidden           *bool                          `json:"hidden"`             // Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.
 	ExcludeMyGroups  *bool                          `json:"exclude_my_groups"`  // Exclude My groups
 	ResearchOpen     *bool                          `json:"research_open"`
-	ResearchGroup    bool                           `json:"research_group"`
+	ResearchGroup    *bool                          `json:"research_group"`
 	ResearchAnswers  map[string]map[string][]string `json:"research_answers"`
 	Attributes       map[string]interface{}         `json:"attributes"`
 	Order            *string                        `json:"order"`  // order by category & name (asc desc)
 	Offset           *int64                         `json:"offset"` // result offset
 	Limit            *int64                         `json:"limit"`  // result limit
 } // @name GroupsFilter
+
+// PostsFilter Wraps all possible filters for getting group post call
+type PostsFilter struct {
+	GroupID       string  `json:"group_id"`
+	PostType      *string `json:"type"`
+	ScheduledOnly *bool   `json:"scheduled_only"`
+	Offset        *int64  `json:"offset"`
+	Limit         *int64  `json:"limit"`
+	Order         *string `json:"order"`
+} // @name PostsFilter

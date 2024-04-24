@@ -6,6 +6,149 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.37.1] - 2024-04-24
+### Fixed
+- Additional fix for scheduled posts[#437](https://github.com/rokwire/groups-building-block/issues/437)
+
+## [1.37.0] - 2024-04-24
+### Added
+- Schedule post in the future [#437](https://github.com/rokwire/groups-building-block/issues/437)
+
+## [1.36.0] - 2024-04-17
+### Added
+- Split posts and direct messages within the group [#434](https://github.com/rokwire/groups-building-block/issues/434)
+
+## [1.35.1] - 2024-04-10
+### Changed
+- Additional fix dead loop & memory leak in the Authman sync task [#428](https://github.com/rokwire/groups-building-block/issues/428)
+
+## [1.35.0] - 2024-04-05
+### Changed
+- Additional refactor authman automatic sync task[#428](https://github.com/rokwire/groups-building-block/issues/428)
+
+## [1.34.0] - 2024-03-22
+### Changed
+- Refactor Authman automatic sync task [#428](https://github.com/rokwire/groups-building-block/issues/428)
+
+## [1.33.0] - 2024-03-06
+### Added
+- Update the schema for Rokwire analytics api for Splunk ingest [#429](https://github.com/rokwire/groups-building-block/issues/429)
+
+## [1.32.1] - 2024-02-28
+### Fixed
+- Additional fix related to membership & whole group deletion if the user is the only admin [#425](https://github.com/rokwire/groups-building-block/issues/425)
+
+## [1.32.0] - 2024-02-28
+### Fixed
+- DELETE api/user API does not remove all user activity in groups [#425](https://github.com/rokwire/groups-building-block/issues/425)
+
+## [1.31.0] - 2024-02-15
+### Changed
+- Group Admin and Event Admin roles should be treated separately [#423](https://github.com/rokwire/groups-building-block/issues/423)
+
+## [1.30.1] - 2024-02-07
+### Fixed
+- Additional fix for delete event mappings[#417](https://github.com/rokwire/groups-building-block/issues/417)
+
+## [1.30.0] - 2024-02-07
+### Added
+- Retrieve group ids by event Id [#416](https://github.com/rokwire/groups-building-block/issues/416)
+- Update the set of groups that event is published to [#417](https://github.com/rokwire/groups-building-block/issues/417)
+
+## [1.29.0] - 2024-02-06
+### Changed
+- Do not load "unpublished" events [#414](https://github.com/rokwire/groups-building-block/issues/414)
+
+## [1.28.2] - 2024-02-01
+### Fixed
+- Additional NPE fix [#411](https://github.com/rokwire/groups-building-block/issues/411)
+
+## [1.28.1] - 2024-02-01
+### Added
+- Provision all group admins as Event admins [#411](https://github.com/rokwire/groups-building-block/issues/411)
+
+## [1.28.0] - 2024-01-30
+### Changed
+- Disable automatic event memership provision for group events [#411](https://github.com/rokwire/groups-building-block/issues/411)
+
+## [1.27.3] - 2024-01-05
+### Added
+- Ability to select event admins when creating event linked to multiple [#408](https://github.com/rokwire/groups-building-block/issues/408)
+
+## [1.27.2] - 2023-11-08
+### Changed
+- Additional fix of api docs [#405](https://github.com/rokwire/groups-building-block/issues/405)
+
+## [1.27.1] - 2023-11-08
+### Changed
+- Restructure api doc - client & admin grouping [#405](https://github.com/rokwire/groups-building-block/issues/405)
+
+## [1.27.0] - 2023-11-08
+### Added
+- New V3 admin API for linking event to set of groups [#403](https://github.com/rokwire/groups-building-block/issues/403)
+
+## [1.26.0] - 2023-10-18
+### Changed
+- Refactor create and update group logic and resolve the risk of single point of failure. [#401](https://github.com/rokwire/groups-building-block/issues/401)
+
+## [1.25.0] - 2023-10-11
+### Fixed
+- Fix bad handling of the unique group title index [#399](https://github.com/rokwire/groups-building-block/issues/399)
+
+## [1.24.0] - 2023-10-10
+### Fixed
+- V3 Load events does not respect time filter [#396](https://github.com/rokwire/groups-building-block/issues/396)
+
+## [1.23.0] - 2023-09-27
+### Added
+- Implement PUT api/group/{id}/events/v3 API for group calendar events [#394](https://github.com/rokwire/groups-building-block/issues/394)
+
+## [1.22.0] - 2023-09-26
+### Added
+- Integrate Calendar BB for group events [#392](https://github.com/rokwire/groups-building-block/issues/392)
+- Create an adaptor for requesting Calendar BB for dealing with group events [#391](https://github.com/rokwire/groups-building-block/issues/391)
+
+## [1.21.0] - 2023-09-19
+### Changed
+- Updated libraries and docker container due to vulnerabilities along with the original ticket[#386](https://github.com/rokwire/groups-building-block/issues/386)
+### Fixed
+- Groups member sorting should be sorting by name [#386](https://github.com/rokwire/groups-building-block/issues/386)
+
+## [1.20.0] - 2023-08-14
+### Added
+- More Analytics APIs and improvements for getting groups, posts and members [#382](https://github.com/rokwire/groups-building-block/issues/382)
+
+## [1.19.0] - 2023-08-03
+### Added
+- Analytics API for getting posts [#382](https://github.com/rokwire/groups-building-block/issues/382)
+- Prepare for deployment in OpenShift [#379](https://github.com/rokwire/groups-building-block/issues/379)
+
+## [1.18.2] - 2023-05-03
+- Fix research groups handling for the internal APIs [#376](https://github.com/rokwire/groups-building-block/issues/376)
+
+## [1.18.1] - 2023-05-02
+- Fix bad attributes migration for category & tags [#374](https://github.com/rokwire/groups-building-block/issues/374)
+
+## [1.18.0] - 2023-04-12
+### Added
+- Improve FCM messages differenciate normal groups and research projects [#370](https://github.com/rokwire/groups-building-block/issues/370)
+
+## [1.17.0] - 2023-04-11
+### Changed
+- Enable support of can_join_automatically flag for research groups [#368](https://github.com/rokwire/groups-building-block/issues/368)
+
+## [1.16.4] - 2023-04-04
+### Fixed
+- Fix sending notifications when creating new group [#366](https://github.com/rokwire/groups-building-block/issues/366)
+
+## [1.16.3] - 2023-03-28
+### Fixed
+- Unable to store group web_url [#364](https://github.com/rokwire/groups-building-block/issues/364)
+
+## [1.16.2] - 2023-03-15
+### Fixed
+- Internal create event api crashes woth error 500 bug [#360](https://github.com/rokwire/groups-building-block/issues/357)
+
 ## [1.16.1] - 2023-02-14
 ### Fixed
 - Fix cast error within Tags backward compatibility handling [#357](https://github.com/rokwire/groups-building-block/issues/357)
@@ -29,6 +172,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.13.0] - 2023-01-26
 ### Added
 - Implement content filters [#344](https://github.com/rokwire/groups-building-block/issues/344)
+
+## [1.12.4] - 2023-03-20
+### Fixed
+- Hotfix of [#360] internal API for creating an event (as v1.12.4) [#362](https://github.com/rokwire/groups-building-block/issues/362)
 
 ## [1.12.3] - 2023-01-23
 ### Security

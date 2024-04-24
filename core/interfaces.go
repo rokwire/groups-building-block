@@ -26,8 +26,6 @@ import (
 type Services interface {
 	GetVersion() string
 
-	LoginUser(clientID string, currentGetUserGroups *model.User) error
-
 	// TODO: Deprecate this method due to missed CurrentMember!
 	GetGroupEntity(clientID string, id string) (*model.Group, error)
 	GetGroupEntityByTitle(clientID string, title string) (*model.Group, error)
@@ -53,7 +51,7 @@ type Services interface {
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 
-	GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
@@ -89,6 +87,21 @@ type Services interface {
 	// Group Notifications
 	SendGroupNotification(clientID string, notification model.GroupNotification) error
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
+
+	// Group Events
+	FindAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error)
+	UpdateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
+
+	// Analytics
+	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
+	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
+	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
+
+	// Calendar BB
+	CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
+	CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
+	UpdateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
+	GetGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 }
 
 type servicesImpl struct {
@@ -140,10 +153,6 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filte
 	return s.app.getUserGroups(clientID, current, filter)
 }
 
-func (s *servicesImpl) LoginUser(clientID string, current *model.User) error {
-	return s.app.loginUser(clientID, current)
-}
-
 func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
 	return s.app.deleteUser(clientID, current)
 }
@@ -180,8 +189,8 @@ func (s *servicesImpl) DeleteEvent(clientID string, current *model.User, eventID
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
 }
 
-func (s *servicesImpl) GetPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error) {
-	return s.app.getPosts(clientID, current, groupID, filterPrivatePostsValue, filterByToMembers, offset, limit, order)
+func (s *servicesImpl) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error) {
+	return s.app.getPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 }
 
 func (s *servicesImpl) GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
@@ -298,17 +307,52 @@ func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *mod
 	return s.app.getResearchProfileUserCount(clientID, current, researchProfile)
 }
 
+// Group Events
+
+func (s *servicesImpl) FindAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error) {
+	return s.app.findAdminGroupsForEvent(clientID, current, eventID)
+}
+
+func (s *servicesImpl) UpdateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
+	return s.app.updateGroupMappingsForEvent(clientID, current, eventID, groupIDs)
+}
+
+// Analytics
+
+func (s *servicesImpl) AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error) {
+	return s.app.analyticsFindGroups(startDate, endDate)
+}
+
+func (s *servicesImpl) AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error) {
+	return s.app.analyticsFindPosts(groupID, startDate, endDate)
+}
+
+func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error) {
+	return s.app.analyticsFindMembers(groupID, startDate, endDate)
+}
+
+func (s *servicesImpl) CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+	return s.app.createCalendarEventForGroups(clientID, adminIdentifier, current, event, groupIDs)
+}
+
+func (s *servicesImpl) CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
+	return s.app.createCalendarEventSingleGroup(clientID, current, event, groupID, members)
+}
+
+func (s *servicesImpl) UpdateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
+	return s.app.updateCalendarEventSingleGroup(clientID, current, event, groupID, members)
+}
+
+func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
+	return s.app.getGroupCalendarEvents(clientID, current, groupID, published, filter)
+}
+
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error)
 }
 
 type administrationImpl struct {
 	app *Application
-}
-
-func (s *administrationImpl) GetGroups(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getGroupsUnprotected(clientID, filter)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
@@ -322,23 +366,19 @@ type Storage interface {
 	FindSyncConfig(clientID string) (*model.SyncConfig, error)
 	SaveSyncConfig(context storage.TransactionContext, config model.SyncConfig) error
 
-	FindSyncTimes(context storage.TransactionContext, clientID string) (*model.SyncTimes, error)
+	FindSyncTimes(context storage.TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	FindUser(clientID string, id string, external bool) (*model.User, error)
-	FindUsers(clientID string, ids []string, external bool) ([]model.User, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
-	LoginUser(clientID string, current *model.User) error
-	CreateUser(clientID string, id string, externalID string, email string, name string) (*model.User, error)
 	DeleteUser(clientID string, userID string) error
 
-	CreateGroup(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
-	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupWithMembership(clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
+	CreateGroup(context storage.TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
+	UpdateGroup(context storage.TransactionContext, clientID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupWithMembership(context storage.TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
 	UpdateGroupSyncTimes(context storage.TransactionContext, clientID string, group *model.Group) error
 	UpdateGroupStats(context storage.TransactionContext, clientID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
 	UpdateGroupDateUpdated(clientID string, groupID string) error
-	DeleteGroup(clientID string, id string) error
+	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
@@ -351,14 +391,18 @@ type Storage interface {
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
-	FindPosts(clientID string, current *model.User, groupID string, filterPrivatePostsValue *bool, filterByToMembers bool, offset *int64, limit *int64, order *string) ([]*model.Post, error)
+	FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error)
 	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
+
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
+
+	FindScheduledPosts(context storage.TransactionContext) ([]model.Post, error)
+	UpdateDateNotifiedForPostIDs(context storage.TransactionContext, ids []string, dateNotified time.Time) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
@@ -384,13 +428,22 @@ type Storage interface {
 
 	CreateMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
 	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
-	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) error
+	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
+
+	// Group Events
+	FindAdminGroupsForEvent(context storage.TransactionContext, clientID string, current *model.User, eventID string) ([]string, error)
+	UpdateGroupMappingsForEvent(context storage.TransactionContext, clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
+
+	// Analytics
+	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
+	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
+	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 }
 
 type storageListenerImpl struct {
@@ -399,13 +452,16 @@ type storageListenerImpl struct {
 }
 
 func (a *storageListenerImpl) OnConfigsChanged() {
-	a.app.setupSyncManagedGroupTimer()
+	a.app.setupCronTimer()
 }
 
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
-	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, accountCriteria map[string]interface{}, appID string, orgID string)
+	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error
 	SendMail(toEmail string, subject string, body string)
+	DeleteNotifications(appID string, orgID string, ids string) error
+	AddNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error
+	RemoveNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error
 }
 
 // Authman exposes Authman APIs for the driver adapters
@@ -421,10 +477,22 @@ type Authman interface {
 type Core interface {
 	RetrieveCoreUserAccount(token string) (*model.CoreAccount, error)
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
+	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
+	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
+	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users
 type Rewards interface {
 	CreateUserReward(userID string, rewardType string, description string) error
+}
+
+// Calendar exposes Calendar BB APIs for the driver adapters
+type Calendar interface {
+	CreateCalendarEvent(adminIdentifier []model.AdminsIdentifiers, currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
+	UpdateCalendarEvent(currentAccountID string, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
+	GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
+	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
+	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
 }

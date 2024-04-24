@@ -7,7 +7,7 @@
         "description": "Rokwire Groups Building Block API Documentation.",
         "title": "Rokwire Groups Building Block API",
         "contact": {},
-        "version": "1.12.3"
+        "version": "1.29.0"
     },
     "host": "localhost",
     "basePath": "/gr",
@@ -29,7 +29,60 @@
                 "operationId": "AdminSynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/admin/group/events/v3": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create a calendar event and link it to multiple group ids",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminCreateCalendarEventMultiGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventMultiGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventMultiGroupData"
+                        }
                     }
                 }
             }
@@ -49,7 +102,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroupEvent",
                 "parameters": [
@@ -97,7 +150,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupEvents",
                 "parameters": [
@@ -129,6 +182,176 @@
                 }
             }
         },
+        "/api/admin/group/{group-id}/events/v3": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a calendar event and for a single group id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminUpdateCalendarEventSingleGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.updateCalendarEventSingleGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.updateCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create a calendar event and link it to a single group id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminCreateCalendarEventSingleGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/group/{group-id}/events/v3/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gets the group calendar events",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetGroupCalendarEventsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/GroupEventFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/group/{group-id}/members": {
             "get": {
                 "security": [
@@ -141,7 +364,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupMembers",
                 "parameters": [
@@ -194,7 +417,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupStats",
                 "parameters": [
@@ -235,7 +458,7 @@
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupPosts",
                 "parameters": [
@@ -245,6 +468,37 @@
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "groupID",
+                        "name": "groupID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Values: message|post",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "asc|desc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -275,7 +529,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroupPost",
                 "parameters": [
@@ -289,7 +543,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -309,7 +563,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteGroup",
                 "parameters": [
@@ -353,7 +607,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetAllGroups",
                 "parameters": [
@@ -500,7 +754,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             },
@@ -576,7 +830,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -596,7 +850,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminUpdateMembership",
                 "parameters": [
@@ -626,7 +880,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             },
@@ -644,7 +898,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminDeleteMembership",
                 "parameters": [
@@ -665,7 +919,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -740,7 +994,83 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/admin/user/event/{event-id}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates the group mappings for an event with id",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "UpdateGroupMappingsEventID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/user/event/{event_id}/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Get all group IDs where the current user is an admin",
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetAdminGroupIDsForEventID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse"
+                        }
                     }
                 }
             }
@@ -760,7 +1090,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V1"
+                    "Admin"
                 ],
                 "operationId": "AdminGetUserGroups",
                 "parameters": [
@@ -833,7 +1163,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroupsV2",
                 "parameters": [
@@ -915,7 +1245,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetGroup",
                 "parameters": [
@@ -959,7 +1289,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Admin-V2"
+                    "Admin"
                 ],
                 "operationId": "AdminGetUserGroupsV2",
                 "parameters": [
@@ -1029,6 +1359,197 @@
                 }
             }
         },
+        "/api/analytics/groups": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gets groups",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "operationId": "AnalyticsGetGroups",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Start date string - RFC3339 encoded",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date string - RFC3339 encoded",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.analyticsGetGroupsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analytics/members": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gets groups members",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "operationId": "AnalyticsGetGroupsMembers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date string - RFC3339 encoded",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date string - RFC3339 encoded",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.analyticsGetGroupsMembersResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/analytics/posts": {
+            "get": {
+                "security": [
+                    {
+                        "IntAPIKeyAuth": []
+                    }
+                ],
+                "description": "Gets posts",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Analytics"
+                ],
+                "operationId": "AnalyticsGetPosts",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group_id",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date string - RFC3339 encoded",
+                        "name": "start_date",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date string - RFC3339 encoded",
+                        "name": "end_date",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.analyticsGetPostsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/events/v3": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create a calendar event and link it to multiple group ids",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "CreateCalendarEventMultiGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventMultiGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventMultiGroupData"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/authman/synchronize": {
             "post": {
                 "security": [
@@ -1041,7 +1562,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "SynchAuthmanGroup",
                 "parameters": [
@@ -1062,7 +1583,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -1082,7 +1603,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroupEvent",
                 "parameters": [
@@ -1133,7 +1654,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupEvents",
                 "parameters": [
@@ -1178,7 +1699,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroupEvent",
                 "parameters": [
@@ -1229,7 +1750,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroupEvent",
                 "parameters": [
@@ -1279,7 +1800,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupEventsV2",
                 "parameters": [
@@ -1311,6 +1832,176 @@
                 }
             }
         },
+        "/api/group/{group-id}/events/v3": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a calendar event and for a single group id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "UpdateCalendarEventSingleGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.updateCalendarEventSingleGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.updateCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create a calendar event and link it to a single group id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "CreateCalendarEventSingleGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.createCalendarEventSingleGroupData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/events/v3/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    },
+                    {
+                        "APIKeyAuth": []
+                    }
+                ],
+                "description": "Gets the group calendar events",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetGroupCalendarEventsV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "schema": {
+                            "$ref": "#/definitions/GroupEventFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/members": {
             "get": {
                 "security": [
@@ -1323,7 +2014,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -1374,7 +2065,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateMember",
                 "parameters": [
@@ -1404,7 +2095,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             },
@@ -1419,7 +2110,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteMember",
                 "parameters": [
@@ -1463,7 +2154,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreatePendingMember",
                 "parameters": [
@@ -1517,7 +2208,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeletePendingMember",
                 "parameters": [
@@ -1558,7 +2249,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupStats",
                 "parameters": [
@@ -1602,7 +2293,7 @@
                 ],
                 "description": "gets all posts for the desired group.",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupPosts",
                 "parameters": [
@@ -1612,6 +2303,37 @@
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "groupID",
+                        "name": "groupID",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Values: message|post",
+                        "name": "type",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "offset",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "limit",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "asc|desc",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1645,7 +2367,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroupPost",
                 "parameters": [
@@ -1682,7 +2404,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroupPost",
                 "parameters": [
@@ -1717,7 +2439,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroupPost",
                 "parameters": [
@@ -1752,7 +2474,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroupPost",
                 "parameters": [
@@ -1766,7 +2488,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -1786,7 +2508,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "ReactToGroupPost",
                 "parameters": [
@@ -1820,7 +2542,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "ReportAbuseGroupPost",
                 "parameters": [
@@ -1843,7 +2565,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -1863,7 +2585,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteGroup",
                 "parameters": [
@@ -1907,7 +2629,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroups",
                 "parameters": [
@@ -1990,7 +2712,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "CreateGroup",
                 "parameters": [
@@ -2036,7 +2758,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetGroup",
                 "parameters": [
@@ -2078,7 +2800,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateGroup",
                 "parameters": [
@@ -2201,7 +2923,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2251,7 +2973,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2293,7 +3015,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2340,7 +3062,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2428,7 +3150,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "UpdateMembership",
                 "parameters": [
@@ -2479,7 +3201,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteMembership",
                 "parameters": [
@@ -2523,7 +3245,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "MembershipApproval",
                 "parameters": [
@@ -2573,7 +3295,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetResearchProfileUserCount",
                 "parameters": [
@@ -2625,12 +3347,12 @@
                 ],
                 "description": "Deletes a user with all the involved information from the Notifications BB (this includes - group membership \u0026 posts (and child posts - no matter of the creator))",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "DeleteUser",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2647,7 +3369,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserGroupMemberships",
                 "parameters": [
@@ -2684,7 +3406,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserGroups",
                 "parameters": [
@@ -2766,12 +3488,12 @@
                 ],
                 "description": "Logs in the user and refactor the user record and linked data if need",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "LoginUser",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -2785,7 +3507,7 @@
                 ],
                 "description": "Gets user stat information. Responds with {\"posts_count\": xxx}",
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "GetUserStats",
                 "parameters": [
@@ -2819,7 +3541,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetGroupsV2",
                 "parameters": [
@@ -2901,7 +3623,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetGroupV2",
                 "parameters": [
@@ -2945,7 +3667,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "Client-V2"
+                    "Client"
                 ],
                 "operationId": "GetUserGroupsV2",
                 "parameters": [
@@ -3032,7 +3754,7 @@
                 "operationId": "SynchronizeAuthman",
                 "responses": {
                     "200": {
-                        "description": ""
+                        "description": "OK"
                     }
                 }
             }
@@ -3069,7 +3791,7 @@
                     "text/plain"
                 ],
                 "tags": [
-                    "Client-V1"
+                    "Client"
                 ],
                 "operationId": "Version",
                 "responses": {
@@ -3161,7 +3883,11 @@
                 },
                 "current_member": {
                     "description": "this is indicative and it's not required for update APIs",
-                    "$ref": "#/definitions/GroupMembership"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/GroupMembership"
+                        }
+                    ]
                 },
                 "date_created": {
                     "type": "string"
@@ -3235,7 +3961,11 @@
                 },
                 "settings": {
                     "description": "TODO: Remove the pointer once the backward support is not needed any more!",
-                    "$ref": "#/definitions/GroupSettings"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/GroupSettings"
+                        }
+                    ]
                 },
                 "stats": {
                     "$ref": "#/definitions/GroupStats"
@@ -3257,6 +3987,29 @@
                 },
                 "web_url": {
                     "type": "string"
+                }
+            }
+        },
+        "GroupEventFilter": {
+            "type": "object",
+            "properties": {
+                "end_time_after": {
+                    "type": "integer"
+                },
+                "end_time_before": {
+                    "type": "integer"
+                },
+                "limit": {
+                    "type": "integer"
+                },
+                "offset": {
+                    "type": "integer"
+                },
+                "start_time_after": {
+                    "type": "integer"
+                },
+                "start_time_before": {
+                    "type": "integer"
                 }
             }
         },
@@ -4022,6 +4775,17 @@
                 }
             }
         },
+        "getPutAdminGroupIDsForEventIDRequestAndResponse": {
+            "type": "object",
+            "properties": {
+                "group_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "getUserGroupsResponse": {
             "type": "object",
             "properties": {
@@ -4173,6 +4937,17 @@
                 }
             }
         },
+        "model.AdminsIdentifiers": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -4183,6 +4958,12 @@
                     "type": "string"
                 },
                 "date_created": {
+                    "type": "string"
+                },
+                "date_notified": {
+                    "type": "string"
+                },
+                "date_scheduled": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -4283,6 +5064,144 @@
                 }
             }
         },
+        "rest.analyticsGetGroupsMembersResponse": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.analyticsGetGroupsResponse": {
+            "type": "object",
+            "properties": {
+                "authman_enabled": {
+                    "type": "boolean"
+                },
+                "authman_group": {
+                    "type": "string"
+                },
+                "category": {
+                    "type": "string"
+                },
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "hidden_for_search": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "privacy": {
+                    "type": "string"
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
+                },
+                "stats": {
+                    "$ref": "#/definitions/GroupStats"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.analyticsGetPostsResponse": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string"
+                },
+                "date_created": {
+                    "type": "string"
+                },
+                "date_updated": {
+                    "type": "string"
+                },
+                "group_id": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "member_user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.createCalendarEventMultiGroupData": {
+            "type": "object",
+            "properties": {
+                "admins_identifiers": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.AdminsIdentifiers"
+                    }
+                },
+                "event": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "group_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "rest.createCalendarEventSingleGroupData": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "to_members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
+        "rest.updateCalendarEventSingleGroupData": {
+            "type": "object",
+            "properties": {
+                "event": {
+                    "type": "object",
+                    "additionalProperties": true
+                },
+                "to_members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
         "rest.userGroupShortDetail": {
             "type": "object",
             "properties": {
@@ -4294,6 +5213,12 @@
                 },
                 "privacy": {
                     "type": "string"
+                },
+                "research_group": {
+                    "type": "boolean"
+                },
+                "research_open": {
+                    "type": "boolean"
                 },
                 "title": {
                     "type": "string"
@@ -4444,17 +5369,13 @@
                 "status"
             ],
             "properties": {
-                "date_attended": {
-                    "type": "string"
-                },
-                "notifications_preferences": {
-                    "$ref": "#/definitions/NotificationsPreferences"
-                },
                 "status": {
                     "type": "string",
                     "enum": [
+                        "pending",
                         "member",
-                        "admin"
+                        "admin",
+                        "rejected"
                     ]
                 }
             }

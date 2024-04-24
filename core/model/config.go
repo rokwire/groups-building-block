@@ -38,6 +38,7 @@ type SyncConfig struct {
 // SyncTimes defines the times used to prevent concurrent syncs
 type SyncTimes struct {
 	ClientID  string     `json:"client_id" bson:"client_id"`
+	Key       string     `json:"key" bson:"key"`
 	StartTime *time.Time `json:"start_time" bson:"start_time"`
 	EndTime   *time.Time `json:"end_time" bson:"end_time"`
 }
