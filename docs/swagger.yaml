@@ -218,6 +218,8 @@ definitions:
       attributes:
         additionalProperties: true
         type: object
+      authman_enabled:
+        type: boolean
       category:
         description: group category
         type: string

@@ -4136,6 +4136,9 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": true
                 },
+                "authman_enabled": {
+                    "type": "boolean"
+                },
                 "category": {
                     "description": "group category",
                     "type": "string"
