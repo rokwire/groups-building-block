@@ -565,7 +565,7 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 
 type adminUpdateMembershipRequest struct {
 	Status *string `json:"status" validate:"required,oneof=pending member admin rejected"`
-} // @name updateMembershipRequest
+} // @name adminUpdateMembershipRequest
 
 // UpdateMembership updates a membership. Only the status can be changed.
 // @Description Updates a membership. Only the status can be changed.
