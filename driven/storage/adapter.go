@@ -732,6 +732,9 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 	}
 
+	if groupsFilter.AuthmanEnabled != nil {
+		filter = append(filter, primitive.E{Key: "authman_enabled", Value: groupsFilter.AuthmanEnabled})
+	}
 	if groupsFilter.Category != nil {
 		filter = append(filter, primitive.E{Key: "category", Value: groupsFilter.Category})
 	}
