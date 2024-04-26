@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.38.0] - 2024-04-26
 ### Added
 - Groups rapid fixes and improvements [#447](https://github.com/rokwire/groups-building-block/issues/447)
 - Group Create Post adds members by default [#442](https://github.com/rokwire/groups-building-block/issues/442)
