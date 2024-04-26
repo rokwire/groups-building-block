@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Groups rapid fixes and improvements [#447](https://github.com/rokwire/groups-building-block/issues/447)
+- Group Create Post adds members by default [#442](https://github.com/rokwire/groups-building-block/issues/442)
 - Implement create and update post admin APIs [#448](https://github.com/rokwire/groups-building-block/issues/448)
 - API for creating Group for the Admin app [#445](https://github.com/rokwire/groups-building-block/issues/445)
 - API for updating group for the Admin app [#446](https://github.com/rokwire/groups-building-block/issues/446)
