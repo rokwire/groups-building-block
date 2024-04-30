@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Improve group events APIs [#450](https://github.com/rokwire/groups-building-block/issues/450)
+
 ## [1.38.0] - 2024-04-26
 ### Added
 - Groups rapid fixes and improvements [#447](https://github.com/rokwire/groups-building-block/issues/447)

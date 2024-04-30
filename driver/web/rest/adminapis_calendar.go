@@ -127,7 +127,7 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 	}
 
 	// admins accounts
-	var adminIdentifier []model.AdminsIdentifiers
+	var adminIdentifier []model.AccountIdentifiers
 	if requestData.AdminsIdentifiers != nil {
 		for _, s := range *&requestData.AdminsIdentifiers {
 			accountID := ""
@@ -149,7 +149,7 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
-			adminIdentifier = append(adminIdentifier, model.AdminsIdentifiers{AccountID: &accountID, ExternalID: externalID})
+			adminIdentifier = append(adminIdentifier, model.AccountIdentifiers{AccountID: &accountID, ExternalID: externalID})
 		}
 	}
 

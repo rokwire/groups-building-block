@@ -135,7 +135,11 @@ definitions:
         type: integer
       start_time_after:
         type: integer
+      start_time_after_null_end_time:
+        type: integer
       start_time_before:
+        type: integer
+      start_time_before_null_end_time:
         type: integer
     type: object
   GroupMembership:
@@ -760,7 +764,7 @@ definitions:
     required:
     - approve
     type: object
-  model.AdminsIdentifiers:
+  model.AccountIdentifiers:
     properties:
       account_id:
         type: string
@@ -908,7 +912,7 @@ definitions:
     properties:
       admins_identifiers:
         items:
-          $ref: '#/definitions/model.AdminsIdentifiers'
+          $ref: '#/definitions/model.AccountIdentifiers'
         type: array
       event:
         additionalProperties: true
@@ -1048,12 +1052,14 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
+      date_attended:
+        type: string
+      notifications_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
-        - pending
         - member
         - admin
-        - rejected
         type: string
     required:
     - status

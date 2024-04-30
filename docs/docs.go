@@ -4011,7 +4011,13 @@ const docTemplate = `{
                 "start_time_after": {
                     "type": "integer"
                 },
+                "start_time_after_null_end_time": {
+                    "type": "integer"
+                },
                 "start_time_before": {
+                    "type": "integer"
+                },
+                "start_time_before_null_end_time": {
                     "type": "integer"
                 }
             }
@@ -4943,7 +4949,7 @@ const docTemplate = `{
                 }
             }
         },
-        "model.AdminsIdentifiers": {
+        "model.AccountIdentifiers": {
             "type": "object",
             "properties": {
                 "account_id": {
@@ -5163,7 +5169,7 @@ const docTemplate = `{
                 "admins_identifiers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.AdminsIdentifiers"
+                        "$ref": "#/definitions/model.AccountIdentifiers"
                     }
                 },
                 "event": {
@@ -5375,13 +5381,17 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "pending",
                         "member",
-                        "admin",
-                        "rejected"
+                        "admin"
                     ]
                 }
             }

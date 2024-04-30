@@ -98,7 +98,7 @@ type Services interface {
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 
 	// Calendar BB
-	CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
+	CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
 	CreateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
 	UpdateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
 	GetGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
@@ -331,7 +331,7 @@ func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Tim
 	return s.app.analyticsFindMembers(groupID, startDate, endDate)
 }
 
-func (s *servicesImpl) CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+func (s *servicesImpl) CreateCalendarEventForGroups(clientID string, adminIdentifier []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
 	return s.app.createCalendarEventForGroups(clientID, adminIdentifier, current, event, groupIDs)
 }
 
@@ -490,9 +490,9 @@ type Rewards interface {
 
 // Calendar exposes Calendar BB APIs for the driver adapters
 type Calendar interface {
-	CreateCalendarEvent(adminIdentifier []model.AdminsIdentifiers, currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
-	UpdateCalendarEvent(currentAccountID string, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
-	GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
+	CreateCalendarEvent(adminIdentifier []model.AccountIdentifiers, currentAccountIdentifier model.AccountIdentifiers, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
+	UpdateCalendarEvent(currentAccountIdentifier model.AccountIdentifiers, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
+	GetGroupCalendarEvents(currentAccountIdentifier model.AccountIdentifiers, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
 	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
 }
