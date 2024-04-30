@@ -3806,6 +3806,17 @@
         }
     },
     "definitions": {
+        "AccountIdentifiers": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                }
+            }
+        },
         "Creator": {
             "type": "object",
             "required": [
@@ -4946,17 +4957,6 @@
                 }
             }
         },
-        "model.AccountIdentifiers": {
-            "type": "object",
-            "properties": {
-                "account_id": {
-                    "type": "string"
-                },
-                "external_id": {
-                    "type": "string"
-                }
-            }
-        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -5166,7 +5166,7 @@
                 "admins_identifiers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.AccountIdentifiers"
+                        "$ref": "#/definitions/AccountIdentifiers"
                     }
                 },
                 "event": {

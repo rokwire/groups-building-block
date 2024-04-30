@@ -1,5 +1,12 @@
 basePath: /gr
 definitions:
+  AccountIdentifiers:
+    properties:
+      account_id:
+        type: string
+      external_id:
+        type: string
+    type: object
   Creator:
     properties:
       email:
@@ -764,13 +771,6 @@ definitions:
     required:
     - approve
     type: object
-  model.AccountIdentifiers:
-    properties:
-      account_id:
-        type: string
-      external_id:
-        type: string
-    type: object
   model.Post:
     properties:
       body:
@@ -912,7 +912,7 @@ definitions:
     properties:
       admins_identifiers:
         items:
-          $ref: '#/definitions/model.AccountIdentifiers'
+          $ref: '#/definitions/AccountIdentifiers'
         type: array
       event:
         additionalProperties: true
