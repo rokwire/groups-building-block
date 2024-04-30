@@ -3809,6 +3809,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "AccountIdentifiers": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                }
+            }
+        },
         "Creator": {
             "type": "object",
             "required": [
@@ -4011,7 +4022,13 @@ const docTemplate = `{
                 "start_time_after": {
                     "type": "integer"
                 },
+                "start_time_after_null_end_time": {
+                    "type": "integer"
+                },
                 "start_time_before": {
+                    "type": "integer"
+                },
+                "start_time_before_null_end_time": {
                     "type": "integer"
                 }
             }
@@ -4943,17 +4960,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.AdminsIdentifiers": {
-            "type": "object",
-            "properties": {
-                "account_id": {
-                    "type": "string"
-                },
-                "external_id": {
-                    "type": "string"
-                }
-            }
-        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -5163,7 +5169,7 @@ const docTemplate = `{
                 "admins_identifiers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.AdminsIdentifiers"
+                        "$ref": "#/definitions/AccountIdentifiers"
                     }
                 },
                 "event": {
@@ -5375,13 +5381,17 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "pending",
                         "member",
-                        "admin",
-                        "rejected"
+                        "admin"
                     ]
                 }
             }

@@ -91,9 +91,9 @@ func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.U
 }
 
 type createCalendarEventMultiGroupData struct {
-	AdminsIdentifiers []model.AdminsIdentifiers `json:"admins_identifiers"`
-	Event             map[string]interface{}    `json:"event"`
-	GroupIDs          []string                  `json:"group_ids"`
+	AdminsIdentifiers []model.AccountIdentifiers `json:"admins_identifiers"`
+	Event             map[string]interface{}     `json:"event"`
+	GroupIDs          []string                   `json:"group_ids"`
 }
 
 // CreateCalendarEventMultiGroup Create a calendar event and link it to multiple group ids

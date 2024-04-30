@@ -44,17 +44,17 @@ func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.Servi
 }
 
 // CreateCalendarEvent creates calendar event
-func (a *Adapter) CreateCalendarEvent(adminIdentifier []model.AdminsIdentifiers, currentAccountID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
+func (a *Adapter) CreateCalendarEvent(adminIdentifier []model.AccountIdentifiers, currentAccountIdentifier model.AccountIdentifiers, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
 
 	type calendarRequest struct {
-		AdminsIdentifiers []model.AdminsIdentifiers `json:"admins_identifiers"`
-		Event             map[string]interface{}    `json:"event"`
-		CurrentAccountID  string                    `json:"current_account_id"`
-		AppID             string                    `json:"app_id"`
-		OrgID             string                    `json:"org_id"`
+		AdminsIdentifiers         []model.AccountIdentifiers `json:"admins_identifiers"`
+		Event                     map[string]interface{}     `json:"event"`
+		CurrentAccountIdentifiers model.AccountIdentifiers   `json:"current_account_identifiers"`
+		AppID                     string                     `json:"app_id"`
+		OrgID                     string                     `json:"org_id"`
 	}
 
-	body := calendarRequest{AdminsIdentifiers: adminIdentifier, Event: event, CurrentAccountID: currentAccountID, AppID: appID, OrgID: orgID}
+	body := calendarRequest{AdminsIdentifiers: adminIdentifier, Event: event, CurrentAccountIdentifiers: currentAccountIdentifier, AppID: appID, OrgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -100,17 +100,17 @@ func (a *Adapter) CreateCalendarEvent(adminIdentifier []model.AdminsIdentifiers,
 }
 
 // UpdateCalendarEvent updates calendar event
-func (a *Adapter) UpdateCalendarEvent(currentAccountID string, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
+func (a *Adapter) UpdateCalendarEvent(currentAccountIdentifier model.AccountIdentifiers, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error) {
 
 	type calendarRequest struct {
-		EventID          string                 `json:"event_id"`
-		Event            map[string]interface{} `json:"event"`
-		CurrentAccountID string                 `json:"current_account_id"`
-		AppID            string                 `json:"app_id"`
-		OrgID            string                 `json:"org_id"`
+		EventID                   string                   `json:"event_id"`
+		Event                     map[string]interface{}   `json:"event"`
+		CurrentAccountIdentifiers model.AccountIdentifiers `json:"current_account_identifiers"`
+		AppID                     string                   `json:"app_id"`
+		OrgID                     string                   `json:"org_id"`
 	}
 
-	body := calendarRequest{EventID: eventID, Event: event, CurrentAccountID: currentAccountID, AppID: appID, OrgID: orgID}
+	body := calendarRequest{EventID: eventID, Event: event, CurrentAccountIdentifiers: currentAccountIdentifier, AppID: appID, OrgID: orgID}
 	data, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -153,38 +153,42 @@ func (a *Adapter) UpdateCalendarEvent(currentAccountID string, eventID string, e
 }
 
 // GetGroupCalendarEvents gets calendar events for a group
-func (a *Adapter) GetGroupCalendarEvents(currentAccountID string, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
+func (a *Adapter) GetGroupCalendarEvents(currentAccountIdentifier model.AccountIdentifiers, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
 	type filterType struct {
 		IDs       []string `json:"ids"`
 		Limit     *int64   `json:"limit,omitempty"`
 		Offset    *int64   `json:"offset,omitempty"`
 		Published *bool    `json:"published"`
 
-		StartTimeAfter  *int64 `json:"start_time_after,omitempty"`
-		StartTimeBefore *int64 `json:"start_time_before,omitempty"`
-		EndTimeAfter    *int64 `json:"end_time_after,omitempty"`
-		EndTimeBefore   *int64 `json:"end_time_before,omitempty"`
+		StartTimeAfter             *int64 `json:"start_time_after,omitempty"`
+		StartTimeAfterNullEndTime  *int64 `json:"start_time_after_null_end_time,omitempty"`
+		StartTimeBefore            *int64 `json:"start_time_before,omitempty"`
+		StartTimeBeforeNullEndTime *int64 `json:"start_time_before_null_end_time,omitempty"`
+		EndTimeAfter               *int64 `json:"end_time_after,omitempty"`
+		EndTimeBefore              *int64 `json:"end_time_before,omitempty"`
 	}
 	type calendarRequest struct {
-		Filter           filterType `json:"filter"`
-		CurrentAccountID string     `json:"current_account_id"`
-		AppID            string     `json:"app_id"`
-		OrgID            string     `json:"org_id"`
+		Filter                    filterType               `json:"filter"`
+		CurrentAccountIdentifiers model.AccountIdentifiers `json:"current_account_identifiers"`
+		AppID                     string                   `json:"app_id"`
+		OrgID                     string                   `json:"org_id"`
 	}
 
 	body := calendarRequest{
-		AppID:            appID,
-		OrgID:            orgID,
-		CurrentAccountID: currentAccountID,
+		AppID:                     appID,
+		OrgID:                     orgID,
+		CurrentAccountIdentifiers: currentAccountIdentifier,
 		Filter: filterType{
-			IDs:             eventIDs,
-			Published:       published,
-			Limit:           filter.Limit,
-			Offset:          filter.Offset,
-			StartTimeBefore: filter.StartTimeBefore,
-			StartTimeAfter:  filter.StartTimeAfter,
-			EndTimeBefore:   filter.EndTimeBefore,
-			EndTimeAfter:    filter.EndTimeAfter,
+			IDs:                        eventIDs,
+			Published:                  published,
+			Limit:                      filter.Limit,
+			Offset:                     filter.Offset,
+			StartTimeBefore:            filter.StartTimeBefore,
+			StartTimeBeforeNullEndTime: filter.StartTimeBeforeNullEndTime,
+			StartTimeAfter:             filter.StartTimeAfter,
+			StartTimeAfterNullEndTime:  filter.StartTimeAfterNullEndTime,
+			EndTimeBefore:              filter.EndTimeBefore,
+			EndTimeAfter:               filter.EndTimeAfter,
 		},
 	}
 	data, err := json.Marshal(body)

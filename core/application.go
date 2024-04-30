@@ -104,7 +104,7 @@ func (app *Application) setupCronTimer() {
 	app.scheduler.Start()
 }
 
-func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifiers []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifiers []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
 	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 		UserID:   &current.ID,
@@ -115,7 +115,8 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, current.ID, event, current.OrgID, current.AppID)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
+		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, currentAccount, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -188,8 +189,8 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-
-		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AdminsIdentifiers{}, current.ID, event, current.OrgID, current.AppID)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.ExternalID}
+		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AccountIdentifiers{}, currentAccount, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -234,7 +235,8 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 		}
 
 		eventID := event["id"].(string)
-		createdEvent, err := app.calendar.UpdateCalendarEvent(current.ID, eventID, event, current.OrgID, current.AppID)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
+		createdEvent, err := app.calendar.UpdateCalendarEvent(currentAccount, eventID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -279,7 +281,8 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 		for _, eventMapping := range mappings {
 			eventIDs = append(eventIDs, eventMapping.EventID)
 		}
-		return app.calendar.GetGroupCalendarEvents(current.ID, eventIDs, current.AppID, current.OrgID, published, filter)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
+		return app.calendar.GetGroupCalendarEvents(currentAccount, eventIDs, current.AppID, current.OrgID, published, filter)
 	}
 
 	return nil, err
