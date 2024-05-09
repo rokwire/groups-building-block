@@ -168,3 +168,9 @@ type ShortMemberRecord struct {
 	Email      string `json:"email" bson:"email"`
 	Status     string `json:"status" bson:"status"` //pending, member, admin, rejected
 } //@name ShortMemberRecord
+
+// DefaultMembershipConfig the initial members and their status while creatinng a new group
+type DefaultMembershipConfig struct {
+	NetIDs []string `json:"net_ids"`
+	Status string   `json:"status" validate:"required,oneof=admin member pending rejected"`
+} // @nane DefaultMembershipConfig

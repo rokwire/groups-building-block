@@ -83,16 +83,46 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
+func (app *Application) createGroup(clientID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError) {
 
 	var groupError *utils.GroupError
 	var groupID *string
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
 		var err error
-		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, nil)
+
+		// Create intitial members if need
+		var members []model.GroupMembership
+		if membersConfig != nil && len(membersConfig.NetIDs) > 0 {
+			accounts, err := app.corebb.GetAccounts(map[string]interface{}{
+				"external_ids.net_id": membersConfig.NetIDs,
+			}, &current.AppID, &current.OrgID, nil, nil)
+			if err != nil {
+				return nil
+			}
+
+			for _, account := range accounts {
+				externalID := account.GetExternalID()
+				fullName := account.GetFullName()
+				netID := account.GetNetID()
+				if externalID != nil && fullName != "" && netID != nil && *netID != current.NetID {
+					members = append(members, model.GroupMembership{
+						GroupID:    group.ID,
+						UserID:     account.ID,
+						ExternalID: *externalID,
+						NetID:      *netID,
+						Name:       fullName,
+						Email:      account.Profile.Email,
+						Status:     membersConfig.Status,
+					})
+				}
+			}
+		}
+
+		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, members)
 		if err != nil {
 			return err
 		}
+
 		if group.ResearchGroup {
 			searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
 

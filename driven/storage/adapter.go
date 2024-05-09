@@ -344,14 +344,19 @@ func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, curr
 		}
 
 		castedMemberships := []interface{}{}
+		contaignCurrentUser := false
 		if len(defaultMemberships) > 0 {
 			for _, membership := range defaultMemberships {
+				if membership.ExternalID == current.ExternalID || membership.UserID == current.ID {
+					contaignCurrentUser = true
+				}
 				membership.ID = uuid.NewString()
 				membership.GroupID = insertedID
 				membership.DateCreated = now
 				castedMemberships = append(castedMemberships, membership)
 			}
-		} else if current != nil {
+		}
+		if current != nil && !contaignCurrentUser {
 			castedMemberships = append(castedMemberships, model.GroupMembership{
 				ID:          uuid.NewString(),
 				GroupID:     insertedID,
