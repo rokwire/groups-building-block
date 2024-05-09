@@ -307,6 +307,35 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 	w.Write(data)
 }
 
+type adminCreateGroupRequest struct {
+	Title                    string                         `json:"title" validate:"required"`
+	Description              *string                        `json:"description"`
+	Category                 string                         `json:"category"`
+	Tags                     []string                       `json:"tags"`
+	Privacy                  string                         `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool                           `json:"hidden_for_search"`
+	CreatorName              string                         `json:"creator_name"`
+	CreatorEmail             string                         `json:"creator_email"`
+	CreatorPhotoURL          string                         `json:"creator_photo_url"`
+	ImageURL                 *string                        `json:"image_url"`
+	WebURL                   *string                        `json:"web_url"`
+	MembershipQuestions      []string                       `json:"membership_questions"`
+	AuthmanEnabled           bool                           `json:"authman_enabled"`
+	AuthmanGroup             *string                        `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool                           `json:"only_admins_can_create_polls" `
+	CanJoinAutomatically     bool                           `json:"can_join_automatically"`
+	AttendanceGroup          bool                           `json:"attendance_group" `
+	ResearchOpen             bool                           `json:"research_open"`
+	ResearchGroup            bool                           `json:"research_group"`
+	ResearchConsentStatement string                         `json:"research_consent_statement"`
+	ResearchConsentDetails   string                         `json:"research_consent_details"`
+	ResearchDescription      string                         `json:"research_description"`
+	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
+	Settings                 *model.GroupSettings           `json:"settings"`
+	Attributes               map[string]interface{}         `json:"attributes"`
+	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
+} //@name adminCreateGroupRequest
+
 // CreateGroup creates a group
 // @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
 // @ID AdminCreateGroup
@@ -327,7 +356,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	var requestData createGroupRequest
+	var requestData adminCreateGroupRequest
 	err = json.Unmarshal(data, &requestData)
 	if err != nil {
 		log.Printf("Error on unmarshal the create group data - %s\n", err.Error())
@@ -356,7 +385,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, &model.Group{
+	groupData := &model.Group{
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
 		Category:                 requestData.Category,
@@ -379,7 +408,9 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
-	})
+	}
+
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, groupData, requestData.MembersConfig)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)

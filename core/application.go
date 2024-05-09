@@ -37,8 +37,7 @@ type Application struct {
 
 	config *model.ApplicationConfig
 
-	Services       Services       //expose to the drivers adapters
-	Administration Administration //expose to the drivrs adapters
+	Services Services //expose to the drivers adapters
 
 	storage       Storage
 	notifications Notifications
@@ -298,7 +297,6 @@ func NewApplication(version string, build string, storage Storage, notifications
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
-	application.Administration = &administrationImpl{app: &application}
 
 	return &application
 }

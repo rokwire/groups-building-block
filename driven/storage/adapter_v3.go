@@ -474,6 +474,42 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 	return nil
 }
 
+// CreateMemberships Created multiple members to a group
+func (sa *Adapter) CreateMemberships(context TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) error {
+	now := time.Now()
+	wrapper := func(context TransactionContext) error {
+
+		existingMembership, err := sa.FindGroupMembershipWithContext(context, clientID, group.ID, current.ID)
+		if err != nil || existingMembership == nil || !existingMembership.IsAdmin() {
+			log.Printf("error: storage.CreateMemberships() - current user is not admin of the group")
+			return fmt.Errorf("current user is not admin of the group")
+		}
+
+		var objects []interface{}
+		for index := range memberships {
+			memberships[index].ID = uuid.NewString()
+			memberships[index].ClientID = clientID
+			memberships[index].DateCreated = now
+			if memberships[index].UserID != "" && memberships[index].ExternalID != "" && memberships[index].Email != "" && memberships[index].Status != "" {
+				objects = append(objects, memberships[index])
+			}
+		}
+
+		if len(objects) > 0 {
+			_, err := sa.db.groupMemberships.InsertManyWithContext(context, objects, nil)
+			return err
+		}
+
+		return nil
+	}
+
+	if context != nil {
+		return wrapper(context)
+	}
+	return sa.PerformTransaction(wrapper)
+
+}
+
 // ApplyMembershipApproval applies a membership approval
 func (sa *Adapter) ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error) {
 	var membership model.GroupMembership

@@ -156,7 +156,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
-	})
+	}, nil)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)

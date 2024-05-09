@@ -129,6 +129,16 @@ func (c *CoreAccount) GetExternalID() *string {
 	return nil
 }
 
+// GetNetID Gets the external id
+func (c *CoreAccount) GetNetID() *string {
+	for _, auth := range c.AuthTypes {
+		if auth.Active && len(auth.Identifier) > 0 {
+			return &auth.Params.User.SystemSpecific.PreferredUsername
+		}
+	}
+	return nil
+}
+
 // GetFullName Builds the fullname
 func (c *CoreAccount) GetFullName() string {
 	return fmt.Sprintf("%s %s", c.Profile.FirstName, c.Profile.LastName)
