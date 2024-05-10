@@ -353,6 +353,7 @@ func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, curr
 				membership.ID = uuid.NewString()
 				membership.GroupID = insertedID
 				membership.DateCreated = now
+				membership.ClientID = clientID
 				castedMemberships = append(castedMemberships, membership)
 			}
 		}

@@ -106,6 +106,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 				netID := account.GetNetID()
 				if externalID != nil && fullName != "" && netID != nil && *netID != current.NetID {
 					members = append(members, model.GroupMembership{
+						ClientID:   clientID,
 						GroupID:    group.ID,
 						UserID:     account.ID,
 						ExternalID: *externalID,
@@ -119,7 +120,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 		}
 
 		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, members)
-		if err != nil {
+		if groupError != nil {
 			return err
 		}
 
