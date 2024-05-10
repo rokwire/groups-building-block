@@ -242,6 +242,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 			if value, ok := userExternalIDmapping[externalID]; ok {
 				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
+					ClientID:    clientID,
 					UserID:      value.ID,
 					ExternalID:  externalID,
 					Name:        value.GetFullName(),
@@ -252,6 +253,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 			} else {
 				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
+					ClientID:    clientID,
 					ExternalID:  externalID,
 					Status:      memberStatus,
 					DateCreated: time.Now(),
