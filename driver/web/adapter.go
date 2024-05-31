@@ -41,6 +41,7 @@ type Adapter struct {
 	adminApisHandler     *rest.AdminApisHandler
 	internalApisHandler  *rest.InternalApisHandler
 	analyticsApisHandler *rest.AnalyticsApisHandler
+	bbsApiHandler        *rest.BBSApisHandler
 
 	logger *logs.Logger
 }
@@ -184,6 +185,10 @@ func (we *Adapter) Start() {
 	analyticsSubrouter.HandleFunc("/groups", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroups)).Methods("GET")
 	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
 	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
+
+	// BB Apis
+	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
+	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.internalKeyAuthFunc(we.bbsApiHandler.GetEventUserIDs)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -350,7 +355,8 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
 	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
+	bbApisHandler := rest.NewBBApisHandler(app)
 
 	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
-		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, logger: logger}
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, bbsApiHandler: bbApisHandler, logger: logger}
 }

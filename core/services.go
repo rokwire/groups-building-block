@@ -718,7 +718,7 @@ func (app *Application) deleteManagedGroupConfig(id string, clientID string) err
 }
 
 func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return app.storage.FindSyncConfig(clientID)
+	return app.storage.FindSyncConfig(nil, clientID)
 }
 
 func (app *Application) updateSyncConfig(config model.SyncConfig) error {

@@ -153,12 +153,12 @@ func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConf
 }
 
 // FindSyncConfig finds the sync config for the specified clientID
-func (sa *Adapter) FindSyncConfig(clientID string) (*model.SyncConfig, error) {
+func (sa *Adapter) FindSyncConfig(context TransactionContext, clientID string) (*model.SyncConfig, error) {
 	return sa.getCachedSyncConfig(clientID)
 }
 
 // FindSyncConfigs finds all sync configs
-func (sa *Adapter) FindSyncConfigs() ([]model.SyncConfig, error) {
+func (sa *Adapter) FindSyncConfigs(context TransactionContext) ([]model.SyncConfig, error) {
 	return sa.getCachedSyncConfigs()
 }
 
@@ -208,7 +208,7 @@ func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTim
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
-	err := sa.db.syncTimes.ReplaceOne(filter, times, &opts)
+	err := sa.db.syncTimes.ReplaceOneWithContext(context, filter, times, &opts)
 	if err != nil {
 		return err
 	}

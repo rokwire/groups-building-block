@@ -2475,3 +2475,8 @@ func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 func NewAnalyticsApisHandler(app *core.Application) *AnalyticsApisHandler {
 	return &AnalyticsApisHandler{app: app}
 }
+
+// NewBBApisHandler creates new rest BB Api Handler instance
+func NewBBApisHandler(app *core.Application) *BBSApisHandler {
+	return &BBSApisHandler{app: app}
+}

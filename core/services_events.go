@@ -25,3 +25,7 @@ func (app *Application) findAdminGroupsForEvent(clientID string, current *model.
 func (app *Application) updateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
 	return app.storage.UpdateGroupMappingsForEvent(nil, clientID, current, eventID, groupIDs)
 }
+
+func (app *Application) findEventUserIDs(eventID string) ([]string, error) {
+	return app.storage.FindEventUserIDs(nil, eventID)
+}

@@ -64,7 +64,7 @@ func (app *Application) Start() {
 func (app *Application) setupCronTimer() {
 	log.Println("setupCronTimer")
 
-	configs, err := app.storage.FindSyncConfigs()
+	configs, err := app.storage.FindSyncConfigs(nil)
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}
