@@ -1488,6 +1488,28 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 	return nil, nil
 }
 
+// ReportGroupAsAbuse Report group as abuse
+func (sa *Adapter) ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error {
+	if group != nil {
+		filter := bson.D{
+			primitive.E{Key: "client_id", Value: clientID},
+			primitive.E{Key: "_id", Value: group.ID},
+		}
+
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "is_abuse", Value: true},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			},
+			},
+		}
+		_, err := sa.db.groups.UpdateOne(filter, update, nil)
+
+		return err
+	}
+	return nil
+}
+
 // ReportPostAsAbuse Report post as abuse
 func (sa *Adapter) ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error {
 	if post != nil {
