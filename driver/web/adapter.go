@@ -23,8 +23,12 @@ import (
 	"net/http"
 
 	"github.com/casbin/casbin"
+	"github.com/rokwire/core-auth-library-go/v2/authorization"
 	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/logging-library-go/v2/errors"
 	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/gorilla/mux"
 
@@ -342,6 +346,33 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 		logObj.RequestComplete()
 	}
 }
+
+// BBs auth ///////////
+
+func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
+	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/authorization_bbs_permission_policy.csv")
+	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs token auth", nil, err)
+	}
+
+	check := func(claims *tokenauth.Claims, req *http.Request) (int, error) {
+		if !claims.Service {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+		}
+
+		if !claims.FirstParty {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+		}
+
+		return http.StatusOK, nil
+	}
+
+	auth := tokenauth.NewStandardHandler(*bbsTokenAuth, check)
+	return &auth, nil
+}
+
+// END BBs auth //////////
 
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
