@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.40.2] - 2024-06-03
 ### Fixed
 - Fix missing member name and email for a managed group auto sync task [#460](https://github.com/rokwire/groups-building-block/issues/460)
 
