@@ -384,6 +384,15 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	updateOperations := []storage.SingleMembershipOperation{}
 	batchUpdate := func(externalIDs []string, operations []storage.SingleMembershipOperation) {
 
+		authmanUsersMapping := map[string]model.AuthmanSubject{}
+		authmanMembers, err := app.authman.RetrieveAuthmanUsers(externalIDs)
+		if err != nil {
+			log.Printf("Error on bulk loading %d Authman users %s: %s\n", len(externalIDs), *authmanGroup.AuthmanGroup, err)
+		}
+		for _, authmanauthmanMember := range authmanMembers {
+			authmanUsersMapping[authmanauthmanMember.ID] = authmanauthmanMember
+		}
+
 		localUsersMapping := map[string]model.CoreAccount{}
 		localUsers, err := app.corebb.GetAllCoreAccountsWithExternalIDs(externalIDs, nil, nil)
 		if err != nil {
@@ -403,6 +412,23 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		for index := range operations {
 			if localUser, ok := localUsersMapping[operations[index].ExternalID]; ok {
 				operations[index].UserID = &localUser.ID
+				coreName := localUser.GetFullName()
+				if operations[index].Name == nil && coreName != "" {
+					operations[index].Name = &coreName
+				}
+				if operations[index].Email == nil && localUser.Profile.Email != "" {
+					val := localUser.Profile.Email
+					operations[index].Email = &val
+				}
+			}
+			// Assume - there is no core account yet
+			if operations[index].Name == nil {
+				if authmanMember, ok := authmanUsersMapping[operations[index].ExternalID]; ok {
+					if operations[index].Name == nil && authmanMember.Name != "" {
+						val := authmanMember.Name
+						operations[index].Name = &val
+					}
+				}
 			}
 		}
 

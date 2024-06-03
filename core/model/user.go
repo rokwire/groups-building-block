@@ -15,7 +15,6 @@
 package model
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -141,5 +140,15 @@ func (c *CoreAccount) GetNetID() *string {
 
 // GetFullName Builds the fullname
 func (c *CoreAccount) GetFullName() string {
-	return fmt.Sprintf("%s %s", c.Profile.FirstName, c.Profile.LastName)
+	var name string
+	if len(c.Profile.FirstName) > 0 {
+		name += c.Profile.FirstName
+	}
+	if len(c.Profile.LastName) > 0 {
+		if len(name) > 0 {
+			name += " "
+		}
+		name += c.Profile.LastName
+	}
+	return name
 }
