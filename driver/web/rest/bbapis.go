@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"groups/core"
+	"groups/core/model"
 	"log"
 	"net/http"
 
@@ -27,7 +28,7 @@ type getEventUserIDsResponse struct {
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
 // @Router /api/v2/user/groups [get]
-func (h *BBSApisHandler) GetEventUserIDs(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *BBSApisHandler) GetEventUserIDs(user *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	eventID := params["event_id"]
 	if len(eventID) <= 0 {

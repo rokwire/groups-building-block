@@ -21,6 +21,7 @@ import (
 	"groups/driver/web/rest"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/core-auth-library-go/v2/authorization"
@@ -37,9 +38,10 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host string
-	port string
-	auth *Auth
+	host  string
+	port  string
+	auth  *Auth
+	auth2 *Auth2
 
 	apisHandler          *rest.ApisHandler
 	adminApisHandler     *rest.AdminApisHandler
@@ -76,7 +78,7 @@ func (we *Adapter) Start() {
 	subrouter := router.PathPrefix("/gr").Subrouter()
 	subrouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	subrouter.HandleFunc("/doc", we.serveDoc)
-	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
@@ -192,7 +194,7 @@ func (we *Adapter) Start() {
 
 	// BB Apis
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
-	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.internalKeyAuthFunc(we.bbsApiHandler.GetEventUserIDs)).Methods("GET")
+	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsApiHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -205,15 +207,6 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 func (we Adapter) serveDocUI() http.Handler {
 	url := fmt.Sprintf("%s/gr/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
-}
-
-func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-		handler(w, req)
-		logObj.RequestComplete()
-	}
 }
 
 type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
@@ -349,6 +342,46 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 
 // BBs auth ///////////
 
+type handleFunc = func(*logs.Log, *http.Request, *model.User) logs.HTTPResponse
+
+func (a Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		logObj := a.logger.NewRequestLog(req)
+
+		logObj.RequestReceived()
+
+		var response logs.HTTPResponse
+
+		//1. Handles authorization
+		if authorization != nil {
+			responseStatus, claims, err := authorization.Check(req)
+			if err != nil {
+				logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, responseStatus, true))
+				return
+			}
+
+			logObj.SetContext("account_id", claims.Subject)
+
+			user := model.User{
+				AppID:       claims.AppID,
+				OrgID:       claims.OrgID,
+				ID:          claims.Subject,
+				AuthType:    claims.AuthType,
+				IsBBUser:    true,
+				IsCoreUser:  true,
+				Permissions: a.getPermissions(claims),
+			}
+			response = handler(logObj, req, &user)
+		} else {
+			response = handler(logObj, req, nil)
+		}
+
+		//3. complete response
+		logObj.SendHTTPResponse(w, response)
+		logObj.RequestComplete()
+	}
+}
+
 func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
 	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/authorization_bbs_permission_policy.csv")
 	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
@@ -374,6 +407,22 @@ func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*t
 
 // END BBs auth //////////
 
+func (a Adapter) getPermissions(claims *tokenauth.Claims) []string {
+	if claims == nil {
+		return []string{}
+	}
+	permissions := strings.Split(claims.Permissions, ",")
+	return permissions
+}
+
+func (a Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResponse, l *logs.Log) {
+	//1. return response
+	l.SendHTTPResponse(w, response)
+
+	//2. print
+	l.RequestComplete()
+}
+
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
@@ -382,12 +431,18 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
+
+	auth2, err := NewAuth2(serviceRegManager, logger)
+	if err != nil {
+		logger.Fatalf("unable to start auth2")
+	}
+
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
 	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
 	bbApisHandler := rest.NewBBApisHandler(app)
 
-	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
+	return &Adapter{host: host, port: port, auth: auth, auth2: auth2, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
 		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, bbsApiHandler: bbApisHandler, logger: logger}
 }
