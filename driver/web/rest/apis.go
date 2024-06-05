@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/rokwire/logging-library-go/v2/logs"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -43,8 +44,8 @@ type ApisHandler struct {
 // @Produce plain
 // @Success 200 {string} v1.4.9
 // @Router /version [get]
-func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(h.app.Services.GetVersion()))
+func (h ApisHandler) Version(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	return log.HTTPResponseSuccessMessage(h.app.Services.GetVersion())
 }
 
 type createGroupRequest struct {
@@ -2474,4 +2475,9 @@ func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 // NewAnalyticsApisHandler creates new rest Analytics Handler instance
 func NewAnalyticsApisHandler(app *core.Application) *AnalyticsApisHandler {
 	return &AnalyticsApisHandler{app: app}
+}
+
+// NewBBApisHandler creates new rest BB Api Handler instance
+func NewBBApisHandler(app *core.Application) *BBSApisHandler {
+	return &BBSApisHandler{app: app}
 }

@@ -348,6 +348,27 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	return nil
 }
 
+func (app *Application) reportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error {
+
+	err := app.storage.ReportGroupAsAbuse(clientID, current.ID, group)
+	if err != nil {
+		log.Printf("error while reporting an abuse group: %s", err)
+		return fmt.Errorf("error while reporting an abuse group: %s", err)
+	}
+
+	subject := fmt.Sprintf("Report violation of Student Code to Dean of Students for group: %s", group.Title)
+
+	body := fmt.Sprintf(`
+<div>Group title: %s\n</div>
+<div>Reported by: %s %s\n</div>
+<div>Reported comment: %s\n</div>
+	`, group.Title, current.ExternalID, current.Name, comment)
+	body = strings.ReplaceAll(body, `\n`, "\n")
+	app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+
+	return nil
+}
+
 func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
 	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
 	if err != nil {
@@ -718,7 +739,7 @@ func (app *Application) deleteManagedGroupConfig(id string, clientID string) err
 }
 
 func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return app.storage.FindSyncConfig(clientID)
+	return app.storage.FindSyncConfig(nil, clientID)
 }
 
 func (app *Application) updateSyncConfig(config model.SyncConfig) error {

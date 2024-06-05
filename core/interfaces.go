@@ -39,6 +39,7 @@ type Services interface {
 	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
+	ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string, sendToDean bool, sendToGroupAdmins bool) error
 
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
@@ -50,6 +51,7 @@ type Services interface {
 	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
+	GetEventUserIDs(eventID string) ([]string, error)
 
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
@@ -153,6 +155,10 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filte
 	return s.app.getUserGroups(clientID, current, filter)
 }
 
+func (s *servicesImpl) ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+	return s.app.reportGroupAsAbuse(clientID, current, group, comment)
+}
+
 func (s *servicesImpl) DeleteUser(clientID string, current *model.User) error {
 	return s.app.deleteUser(clientID, current)
 }
@@ -187,6 +193,10 @@ func (s *servicesImpl) UpdateEvent(clientID string, current *model.User, eventID
 
 func (s *servicesImpl) DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error {
 	return s.app.deleteEvent(clientID, current, eventID, groupID)
+}
+
+func (s *servicesImpl) GetEventUserIDs(eventID string) ([]string, error) {
+	return s.app.findEventUserIDs(eventID)
 }
 
 func (s *servicesImpl) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error) {
@@ -362,8 +372,8 @@ type Storage interface {
 	PerformTransaction(transaction func(context storage.TransactionContext) error) error
 
 	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
-	FindSyncConfigs() ([]model.SyncConfig, error)
-	FindSyncConfig(clientID string) (*model.SyncConfig, error)
+	FindSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
+	FindSyncConfig(context storage.TransactionContext, clientID string) (*model.SyncConfig, error)
 	SaveSyncConfig(context storage.TransactionContext, config model.SyncConfig) error
 
 	FindSyncTimes(context storage.TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error)
@@ -391,13 +401,17 @@ type Storage interface {
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 
+	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
+
+	ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error
+	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
+
 	FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error)
 	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error)
 
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
 

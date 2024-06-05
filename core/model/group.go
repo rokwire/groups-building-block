@@ -32,6 +32,7 @@ type Group struct {
 	WebURL              *string  `json:"web_url" bson:"web_url"`
 	Tags                []string `json:"tags" bson:"tags"`
 	MembershipQuestions []string `json:"membership_questions" bson:"membership_questions"`
+	IsAbuse             *bool    `json:"is_abuse,omitempty" bson:"is_abuse,omitempty"`
 
 	Settings   *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
 	Attributes map[string]interface{} `json:"attributes" bson:"attributes"`

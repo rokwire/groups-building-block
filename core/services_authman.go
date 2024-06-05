@@ -33,8 +33,10 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		if err != nil {
 			return err
 		}
+
+		time.Now().Unix()
 		if times != nil && times.StartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindSyncConfig(context, clientID)
 			if err != nil {
 				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
 			}
@@ -321,7 +323,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 		}
 
 		if group.SyncStartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindSyncConfig(context, clientID)
 			if err != nil {
 				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
 			}

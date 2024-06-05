@@ -153,12 +153,12 @@ func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConf
 }
 
 // FindSyncConfig finds the sync config for the specified clientID
-func (sa *Adapter) FindSyncConfig(clientID string) (*model.SyncConfig, error) {
+func (sa *Adapter) FindSyncConfig(context TransactionContext, clientID string) (*model.SyncConfig, error) {
 	return sa.getCachedSyncConfig(clientID)
 }
 
 // FindSyncConfigs finds all sync configs
-func (sa *Adapter) FindSyncConfigs() ([]model.SyncConfig, error) {
+func (sa *Adapter) FindSyncConfigs(context TransactionContext) ([]model.SyncConfig, error) {
 	return sa.getCachedSyncConfigs()
 }
 
@@ -208,7 +208,7 @@ func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTim
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
-	err := sa.db.syncTimes.ReplaceOne(filter, times, &opts)
+	err := sa.db.syncTimes.ReplaceOneWithContext(context, filter, times, &opts)
 	if err != nil {
 		return err
 	}
@@ -1486,6 +1486,28 @@ func (sa *Adapter) UpdatePost(clientID string, userID string, post *model.Post) 
 		return post, err
 	}
 	return nil, nil
+}
+
+// ReportGroupAsAbuse Report group as abuse
+func (sa *Adapter) ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error {
+	if group != nil {
+		filter := bson.D{
+			primitive.E{Key: "client_id", Value: clientID},
+			primitive.E{Key: "_id", Value: group.ID},
+		}
+
+		update := bson.D{
+			primitive.E{Key: "$set", Value: bson.D{
+				primitive.E{Key: "is_abuse", Value: true},
+				primitive.E{Key: "date_updated", Value: time.Now()},
+			},
+			},
+		}
+		_, err := sa.db.groups.UpdateOne(filter, update, nil)
+
+		return err
+	}
+	return nil
 }
 
 // ReportPostAsAbuse Report post as abuse
