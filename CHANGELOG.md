@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.41.0] - 2024-06-05
 ### Added
 - Introduce BBs APIs. Implement aggregate event users. [#459](https://github.com/rokwire/groups-building-block/issues/459)
 
