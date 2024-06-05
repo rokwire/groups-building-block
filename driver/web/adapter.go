@@ -47,7 +47,7 @@ type Adapter struct {
 	adminApisHandler     *rest.AdminApisHandler
 	internalApisHandler  *rest.InternalApisHandler
 	analyticsApisHandler *rest.AnalyticsApisHandler
-	bbsApiHandler        *rest.BBSApisHandler
+	bbsAPIHandler        *rest.BBSApisHandler
 
 	logger *logs.Logger
 }
@@ -194,7 +194,7 @@ func (we *Adapter) Start() {
 
 	// BB Apis
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
-	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsApiHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsAPIHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
@@ -344,9 +344,9 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 
 type handleFunc = func(*logs.Log, *http.Request, *model.User) logs.HTTPResponse
 
-func (a Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) http.HandlerFunc {
+func (we Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := a.logger.NewRequestLog(req)
+		logObj := we.logger.NewRequestLog(req)
 
 		logObj.RequestReceived()
 
@@ -369,7 +369,7 @@ func (a Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) h
 				AuthType:    claims.AuthType,
 				IsBBUser:    true,
 				IsCoreUser:  true,
-				Permissions: a.getPermissions(claims),
+				Permissions: we.getPermissions(claims),
 			}
 			response = handler(logObj, req, &user)
 		} else {
@@ -407,7 +407,7 @@ func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*t
 
 // END BBs auth //////////
 
-func (a Adapter) getPermissions(claims *tokenauth.Claims) []string {
+func (we Adapter) getPermissions(claims *tokenauth.Claims) []string {
 	if claims == nil {
 		return []string{}
 	}
@@ -415,7 +415,7 @@ func (a Adapter) getPermissions(claims *tokenauth.Claims) []string {
 	return permissions
 }
 
-func (a Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResponse, l *logs.Log) {
+func (we Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResponse, l *logs.Log) {
 	//1. return response
 	l.SendHTTPResponse(w, response)
 
@@ -444,5 +444,5 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 	bbApisHandler := rest.NewBBApisHandler(app)
 
 	return &Adapter{host: host, port: port, auth: auth, auth2: auth2, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
-		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, bbsApiHandler: bbApisHandler, logger: logger}
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, bbsAPIHandler: bbApisHandler, logger: logger}
 }

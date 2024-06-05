@@ -23,7 +23,7 @@ import (
 	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
-// Auth handler
+// Auth2 handler
 type Auth2 struct {
 	bbs tokenauth.Handlers
 
