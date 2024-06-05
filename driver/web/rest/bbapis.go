@@ -2,12 +2,14 @@ package rest
 
 import (
 	"encoding/json"
+	"errors"
 	"groups/core"
 	"groups/core/model"
-	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 )
 
 // BBSApisHandler handles the rest BBS APIs implementation
@@ -28,30 +30,22 @@ type getEventUserIDsResponse struct {
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
 // @Router /api/v2/user/groups [get]
-func (h *BBSApisHandler) GetEventUserIDs(user *model.User, w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
+func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
 	eventID := params["event_id"]
 	if len(eventID) <= 0 {
-		log.Println("event_id is required")
-		http.Error(w, "eventID is required", http.StatusBadRequest)
-		return
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing event_id"), http.StatusBadRequest, false)
 	}
 
 	userIDs, err := h.app.Services.GetEventUserIDs(eventID)
 	if err != nil {
-		log.Printf("bbs.GetEventUserIDs() error: %s", err)
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
 	}
 
 	data, err := json.Marshal(getEventUserIDsResponse{UserIDs: userIDs})
 	if err != nil {
-		log.Printf("bbs.GetEventUserIDs() error: %s", err)
-		http.Error(w, "error", http.StatusInternalServerError)
-		return
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
 	}
 
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	return log.HTTPResponseSuccessJSON(data)
 }

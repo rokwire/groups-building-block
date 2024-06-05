@@ -44,7 +44,7 @@ type ApisHandler struct {
 // @Produce plain
 // @Success 200 {string} v1.4.9
 // @Router /version [get]
-func (h ApisHandler) Version(log *logs.Log, req *http.Request, user *model.User) {
+func (h ApisHandler) Version(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	return log.HTTPResponseSuccessMessage(h.app.Services.GetVersion())
 }
 
