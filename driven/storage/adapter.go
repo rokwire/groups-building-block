@@ -1955,7 +1955,16 @@ func (sa *Adapter) DeleteGroupMembershipsByAccountsIDs(log *logs.Logger, context
 // DeleteUsersByAccountsIDs deletes users by accountsIDs
 func (sa *Adapter) DeleteUsersByAccountsIDs(log *logs.Logger, context TransactionContext, accountsIDs []string) error {
 	filter := bson.D{
-		primitive.E{Key: "_id", Value: primitive.M{"$in": accountsIDs}},
+		primitive.E{Key: "user_id", Value: primitive.M{"$in": accountsIDs}},
+	}
+	_, err := sa.db.users.DeleteManyWithContext(context, filter, nil)
+	return err
+}
+
+// DeletePostsByAccountsIDs deletes postsusers by accountsIDs
+func (sa *Adapter) DeletePostsByAccountsIDs(log *logs.Logger, context TransactionContext, accountsIDs []string) error {
+	filter := bson.D{
+		primitive.E{Key: "member.user_id", Value: primitive.M{"$in": accountsIDs}},
 	}
 	_, err := sa.db.users.DeleteManyWithContext(context, filter, nil)
 	return err

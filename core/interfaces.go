@@ -417,6 +417,7 @@ type Storage interface {
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
+	DeletePostsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindScheduledPosts(context storage.TransactionContext) ([]model.Post, error)
 	UpdateDateNotifiedForPostIDs(context storage.TransactionContext, ids []string, dateNotified time.Time) error
