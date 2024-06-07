@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 type scheduledTask struct {
@@ -48,6 +49,9 @@ type Application struct {
 
 	authmanSyncInProgress bool
 
+	// delete data logic
+	deleteDataLogic deleteDataLogic
+
 	//synchronize managed groups timer
 	scheduler *cron.Cron
 }
@@ -57,6 +61,7 @@ func (app *Application) Start() {
 	// set storage listener
 	storageListener := storageListenerImpl{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
+	app.deleteDataLogic.start()
 
 	app.setupCronTimer()
 }
@@ -289,11 +294,21 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, calendar *calendar.Adapter, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter, calendar *calendar.Adapter, serviceID string, logger *logs.Logger, config *model.ApplicationConfig) *Application {
+	deleteDataLogic := deleteDataLogic{logger: *logger, coreAdapter: core, serviceID: serviceID, storage: storage}
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
-	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, calendar: calendar, config: config, scheduler: scheduler}
+	application := Application{version: version,
+		build:           build,
+		storage:         storage,
+		notifications:   notifications,
+		authman:         authman,
+		corebb:          core,
+		rewards:         rewards,
+		calendar:        calendar,
+		config:          config,
+		deleteDataLogic: deleteDataLogic,
+		scheduler:       scheduler}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
