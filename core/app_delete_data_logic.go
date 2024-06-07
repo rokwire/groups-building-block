@@ -20,6 +20,7 @@ package core
 import (
 	"fmt"
 	"groups/core/model"
+	"log"
 	"time"
 
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -64,7 +65,7 @@ func (d deleteDataLogic) setupTimerForDelete() {
 	now := time.Now().In(location)
 	d.logger.Infof("setupTimerForDelete -> now - hours:%d minutes:%d seconds:%d\n", now.Hour(), now.Minute(), now.Second())
 
-	/*nowSecondsInDay := 60*60*now.Hour() + 60*now.Minute() + now.Second()
+	nowSecondsInDay := 60*60*now.Hour() + 60*now.Minute() + now.Second()
 	desiredMoment := 14400 //4 AM
 
 	var durationInSeconds int
@@ -76,10 +77,10 @@ func (d deleteDataLogic) setupTimerForDelete() {
 		d.logger.Infof("setupTimerForDelete -> the delete process has already been processed today, so the first process will be tomorrow")
 		leftToday := 86400 - nowSecondsInDay
 		durationInSeconds = leftToday + desiredMoment // the time which left today + desired moment from tomorrow
-	}*/
-	//log.Println(durationInSeconds)
-	duration := time.Second * time.Duration(3)
-	//duration := time.Second * time.Duration(durationInSeconds)
+	}
+	log.Println(durationInSeconds)
+	//duration := time.Second * time.Duration(3)
+	duration := time.Second * time.Duration(durationInSeconds)
 	d.logger.Infof("setupTimerForDelete -> first call after %s", duration)
 
 	d.dailyDeleteTimer = time.NewTimer(duration)

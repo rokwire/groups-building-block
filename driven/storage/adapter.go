@@ -1966,7 +1966,7 @@ func (sa *Adapter) DeletePostsByAccountsIDs(log *logs.Logger, context Transactio
 	filter := bson.D{
 		primitive.E{Key: "member.user_id", Value: primitive.M{"$in": accountsIDs}},
 	}
-	_, err := sa.db.users.DeleteManyWithContext(context, filter, nil)
+	_, err := sa.db.posts.DeleteManyWithContext(context, filter, nil)
 	return err
 }
 
