@@ -43,6 +43,7 @@ type database struct {
 	events              *collectionWrapper
 	posts               *collectionWrapper
 	managedGroupConfigs *collectionWrapper
+	users               *collectionWrapper
 
 	listeners []Listener
 }
@@ -159,6 +160,7 @@ func (m *database) start() error {
 	m.events = events
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
+	m.users = users
 
 	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
@@ -381,7 +383,7 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
-	name := "title_unique"
+	/*name := "title_unique"
 	unique := true
 	if indexMapping["title_unique"] == nil {
 		err := groups.AddIndexWithOptions(
@@ -400,7 +402,7 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		if err != nil {
 			return err
 		}
-	}
+	}*/
 	log.Println("groups checks passed")
 	return nil
 }

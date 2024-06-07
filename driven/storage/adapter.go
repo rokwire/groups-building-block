@@ -1952,6 +1952,15 @@ func (sa *Adapter) DeleteGroupMembershipsByAccountsIDs(log *logs.Logger, context
 	return err
 }
 
+// DeleteUsersByAccountsIDs deletes users by accountsIDs
+func (sa *Adapter) DeleteUsersByAccountsIDs(log *logs.Logger, context TransactionContext, accountsIDs []string) error {
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: primitive.M{"$in": accountsIDs}},
+	}
+	_, err := sa.db.users.DeleteManyWithContext(context, filter, nil)
+	return err
+}
+
 // NewStorageAdapter creates a new storage adapter instance
 func NewStorageAdapter(mongoDBAuth string, mongoDBName string, mongoTimeout string) *Adapter {
 	timeout, err := strconv.Atoi(mongoTimeout)

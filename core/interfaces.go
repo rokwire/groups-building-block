@@ -397,6 +397,7 @@ type Storage interface {
 	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
+	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
