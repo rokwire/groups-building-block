@@ -496,6 +496,7 @@ type Core interface {
 	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
 	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
+	LoadDeletedMemberships() ([]model.DeletedUserData, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users
