@@ -32,6 +32,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/google/uuid"
+	"github.com/rokwire/logging-library-go/v2/logs"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -1940,6 +1941,15 @@ func (sa *Adapter) abortTransaction(sessionContext mongo.SessionContext) {
 	if err != nil {
 		log.Printf("error aborting a transaction - %s\n", err)
 	}
+}
+
+// DeleteGroupMembershipsByAccountsIDs deletes the groups memberships by accountsIDs
+func (sa *Adapter) DeleteGroupMembershipsByAccountsIDs(log *logs.Logger, context TransactionContext, accountsIDs []string) error {
+	filter := bson.D{
+		primitive.E{Key: "user_id", Value: primitive.M{"$in": accountsIDs}},
+	}
+	_, err := sa.db.groupMemberships.DeleteManyWithContext(context, filter, nil)
+	return err
 }
 
 // NewStorageAdapter creates a new storage adapter instance

@@ -140,12 +140,17 @@ func (d deleteDataLogic) processDelete() {
 		d.logger.Infof("accounts for deletion - %s", accountsIDs)
 
 		//delete the data
-		d.deleteAppOrgUsersData(appOrgSection.AppID, appOrgSection.OrgID, accountsIDs)
+		d.deleteAppOrgUsersData(accountsIDs)
 	}
 }
 
-func (d deleteDataLogic) deleteAppOrgUsersData(appID string, orgID string, accountsIDs []string) {
-
+func (d deleteDataLogic) deleteAppOrgUsersData(accountsIDs []string) {
+	// delete the group memberships
+	err := d.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
+	if err != nil {
+		d.logger.Errorf("error deleting the group memberships by account ID - %s", err)
+		return
+	}
 }
 
 func (d deleteDataLogic) getAccountsIDs(memberships []model.DeletedMembership) []string {

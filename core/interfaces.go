@@ -20,6 +20,8 @@ import (
 	"groups/driven/storage"
 	"groups/utils"
 	"time"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 // Services exposes APIs for the driver adapters
@@ -448,6 +450,7 @@ type Storage interface {
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
+	DeleteGroupMembershipsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 
