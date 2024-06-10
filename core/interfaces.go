@@ -403,6 +403,7 @@ type Storage interface {
 	CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
+	PullMembersByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
 
