@@ -383,7 +383,7 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		}
 	}
 
-	/*name := "title_unique"
+	name := "title_unique"
 	unique := true
 	if indexMapping["title_unique"] == nil {
 		err := groups.AddIndexWithOptions(
@@ -402,7 +402,7 @@ func (m *database) applyGroupsChecks(groups *collectionWrapper) error {
 		if err != nil {
 			return err
 		}
-	}*/
+	}
 	log.Println("groups checks passed")
 	return nil
 }

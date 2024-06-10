@@ -1961,7 +1961,7 @@ func (sa *Adapter) DeleteUsersByAccountsIDs(log *logs.Logger, context Transactio
 	return err
 }
 
-// DeletePostsByAccountsIDs deletes postsusers by accountsIDs
+// DeletePostsByAccountsIDs deletes posts users by accountsIDs
 func (sa *Adapter) DeletePostsByAccountsIDs(log *logs.Logger, context TransactionContext, accountsIDs []string) error {
 	filter := bson.D{
 		primitive.E{Key: "member.user_id", Value: primitive.M{"$in": accountsIDs}},
@@ -1970,6 +1970,7 @@ func (sa *Adapter) DeletePostsByAccountsIDs(log *logs.Logger, context Transactio
 	return err
 }
 
+// PullMembersByUserIDs deletes event members by accountsIDs
 func (sa *Adapter) PullMembersByUserIDs(log *logs.Logger, context TransactionContext, accountIDs []string) error {
 
 	// Create filter to match documents containing the specified user IDs in to_members
