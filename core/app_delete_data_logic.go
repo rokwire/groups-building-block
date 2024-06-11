@@ -20,6 +20,7 @@ package core
 import (
 	"fmt"
 	"groups/core/model"
+	"groups/driven/storage"
 	"log"
 	"time"
 
@@ -146,7 +147,50 @@ func (d deleteDataLogic) processDelete() {
 }
 
 func (d deleteDataLogic) deleteAppOrgUsersData(accountsIDs []string) {
-	err := d.storage.PullMembersFromEventsByUserIDs(nil, nil, accountsIDs)
+	//in transaction
+	errTr := d.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		err := d.storage.PullMembersFromEventsByUserIDs(nil, nil, accountsIDs)
+		if err != nil {
+			d.logger.Errorf("error deleting  members from event by account ID - %s", err)
+			return err
+		}
+
+		err = d.storage.PullMembersFromPostsByUserIDs(nil, nil, accountsIDs)
+		if err != nil {
+			d.logger.Errorf("error deleting  members from event by account ID - %s", err)
+			return err
+		}
+
+		// delete the group memberships
+		err = d.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
+		if err != nil {
+			d.logger.Errorf("error deleting the group memberships by account ID - %s", err)
+			return err
+		}
+
+		// delete users
+		err = d.storage.DeleteUsersByAccountsIDs(nil, nil, accountsIDs)
+		if err != nil {
+			d.logger.Errorf("error deleting users by account ID - %s", err)
+			return err
+		}
+
+		// delete posts
+		err = d.storage.DeletePostsByAccountsIDs(nil, nil, accountsIDs)
+		if err != nil {
+			d.logger.Errorf("error deleting posts by account ID - %s", err)
+			return err
+		}
+		return nil
+	})
+
+	if errTr != nil {
+		d.logger.Errorf("error deleting - %s", errTr)
+		return
+	}
+
+	return
+	/*err := d.storage.PullMembersFromEventsByUserIDs(nil, nil, accountsIDs)
 	if err != nil {
 		d.logger.Errorf("error deleting  members from event by account ID - %s", err)
 		return
@@ -177,7 +221,7 @@ func (d deleteDataLogic) deleteAppOrgUsersData(accountsIDs []string) {
 	if err != nil {
 		d.logger.Errorf("error deleting posts by account ID - %s", err)
 		return
-	}
+	}*/
 }
 
 func (d deleteDataLogic) getAccountsIDs(memberships []model.DeletedMembership) []string {
