@@ -64,7 +64,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			}
 		}
 
-		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID, Key: syncKey})
+		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, Key: syncKey})
 	}
 
 	err := app.storage.PerformTransaction(transaction)
@@ -77,7 +77,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
 		endTime := time.Now()
-		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID, Key: syncKey})
+		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, Key: syncKey})
 		if err != nil {
 			log.Printf("Error saving sync configs to end sync: %s\n", err)
 			return

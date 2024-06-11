@@ -205,7 +205,7 @@ func (sa *Adapter) FindSyncTimes(context TransactionContext, clientID string, ke
 
 // SaveSyncTimes saves the provided sync times fields
 func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTimes) error {
-	filter := bson.M{"client_id": times.ClientID, "key": times.Key}
+	filter := bson.M{"key": times.Key}
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
