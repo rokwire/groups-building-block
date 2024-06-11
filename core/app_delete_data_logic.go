@@ -146,8 +146,20 @@ func (d deleteDataLogic) processDelete() {
 }
 
 func (d deleteDataLogic) deleteAppOrgUsersData(accountsIDs []string) {
+	err := d.storage.PullMembersFromEventsByUserIDs(nil, nil, accountsIDs)
+	if err != nil {
+		d.logger.Errorf("error deleting  members from event by account ID - %s", err)
+		return
+	}
+
+	err = d.storage.PullMembersFromPostsByUserIDs(nil, nil, accountsIDs)
+	if err != nil {
+		d.logger.Errorf("error deleting  members from event by account ID - %s", err)
+		return
+	}
+
 	// delete the group memberships
-	err := d.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
+	err = d.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
 	if err != nil {
 		d.logger.Errorf("error deleting the group memberships by account ID - %s", err)
 		return

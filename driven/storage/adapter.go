@@ -1970,8 +1970,8 @@ func (sa *Adapter) DeletePostsByAccountsIDs(log *logs.Logger, context Transactio
 	return err
 }
 
-// PullMembersByUserIDs deletes event members by accountsIDs
-func (sa *Adapter) PullMembersByUserIDs(log *logs.Logger, context TransactionContext, accountIDs []string) error {
+// PullMembersFromEventsByUserIDsdeletes event members by accountsIDs
+func (sa *Adapter) PullMembersFromEventsByUserIDs(log *logs.Logger, context TransactionContext, accountIDs []string) error {
 
 	// Create filter to match documents containing the specified user IDs in to_members
 	filter := bson.D{
@@ -1987,6 +1987,30 @@ func (sa *Adapter) PullMembersByUserIDs(log *logs.Logger, context TransactionCon
 
 	// Perform the update operation
 	_, err := sa.db.events.UpdateManyWithContext(context, filter, update, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// PullMembersFromPostsByUserIDsdeletes posts members by accountsIDs
+func (sa *Adapter) PullMembersFromPostsByUserIDs(log *logs.Logger, context TransactionContext, accountIDs []string) error {
+
+	// Create filter to match documents containing the specified user IDs in to_members
+	filter := bson.D{
+		{"to_members.user_id", bson.D{{"$in", accountIDs}}},
+	}
+
+	// Create update to pull the whole object where user_id matches one of the specified accountIDs
+	update := bson.D{
+		{"$pull", bson.D{
+			{"to_members", bson.M{"user_id": bson.D{{"$in", accountIDs}}}},
+		}},
+	}
+
+	// Perform the update operation
+	_, err := sa.db.posts.UpdateManyWithContext(context, filter, update, nil)
 	if err != nil {
 		return err
 	}
