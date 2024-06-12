@@ -20,6 +20,8 @@ import (
 	"groups/driven/storage"
 	"groups/utils"
 	"time"
+
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 // Services exposes APIs for the driver adapters
@@ -395,11 +397,13 @@ type Storage interface {
 	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
+	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
+	PullMembersFromEventsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
 
@@ -414,6 +418,8 @@ type Storage interface {
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
 	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
 	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
+	DeletePostsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
+	PullMembersFromPostsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindScheduledPosts(context storage.TransactionContext) ([]model.Post, error)
 	UpdateDateNotifiedForPostIDs(context storage.TransactionContext, ids []string, dateNotified time.Time) error
@@ -448,6 +454,7 @@ type Storage interface {
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
+	DeleteGroupMembershipsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	GetGroupMembershipStats(context storage.TransactionContext, clientID string, groupID string) (*model.GroupStats, error)
 
@@ -496,6 +503,7 @@ type Core interface {
 	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
 	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
+	LoadDeletedMemberships() ([]model.DeletedUserData, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users

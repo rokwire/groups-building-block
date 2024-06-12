@@ -158,7 +158,7 @@ func main() {
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, calendarAdapter, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, serviceID, logger, config)
 	application.Start()
 
 	//web adapter
