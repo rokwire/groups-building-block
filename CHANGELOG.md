@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ## [1.42.0] - 2024-06-12
+### Changed
+- Updated golang & alpine Docker container versions
 ### Added
 - Delete everything from the database related to the core account  [#463](https://github.com/rokwire/groups-building-block/issues/463)
 - Add new permissions for managing group events independently for granting access [#465](https://github.com/rokwire/groups-building-block/issues/465)

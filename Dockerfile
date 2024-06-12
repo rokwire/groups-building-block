@@ -1,4 +1,4 @@
-FROM golang:1.21-bullseye as builder
+FROM golang:1.22-bullseye as builder
 
 ENV CGO_ENABLED=0
 
@@ -8,7 +8,7 @@ WORKDIR /groups-app
 COPY . .
 RUN make
 
-FROM alpine:3.19
+FROM alpine:3.20
 
 COPY --from=builder /groups-app/bin/groups /
 COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml
