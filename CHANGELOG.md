@@ -5,8 +5,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
 ### Added
 - Delete everything from the database related to the core account  [#463](https://github.com/rokwire/groups-building-block/issues/463)
+- Add new permissions for managing group events independently for granting access [#465](https://github.com/rokwire/groups-building-block/issues/465)
+
 ## [1.41.0] - 2024-06-05
 ### Added
 - Introduce BBs APIs. Implement aggregate event users. [#459](https://github.com/rokwire/groups-building-block/issues/459)

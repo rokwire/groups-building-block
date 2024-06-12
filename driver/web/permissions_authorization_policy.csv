@@ -1,2 +1,14 @@
 p, all_admin_groups, /gr/api/admin/*, (GET)|(POST)|(PUT)|(DELETE), All admin actions for Groups BB
 p, research_group_admin, /gr/api/research-profile/user-count, (POST), Manage research groups
+
+
+p, get_groups, /gr/api/admin/groups, (GET), Get all groups
+p, get_groups, /gr/api/admin/v2/groups, (GET)|(POST), Get all groups
+p, get_groups, /gr/api/admin/user/groups, (GET), Get my groups
+p, get_groups, /gr/api/admin/user/v2/groups, (GET)|(POST), Get my groups
+p, get_group_events, /gr/api/admin/group/{group-id}/events, (GET), Get group events
+p, get_group_events, /gr/api/admin/group/{group-id}/events/v3/load, (GET)|(POST), Gets the group calendar events
+p, create_multigroup_event, /gr/api/admin/group/events/v3, (POST), Create multi group event
+p, create_group_event, /gr/api/admin/group/{group-id}/events/v3, (POST), Create group event mapping
+p, update_group_event, /gr/api/admin/group/{group-id}/events/v3, (PUT), Update group event mapping
+p, delete_group_event, /gr/api/admin/group/{group-id}/event/{event-id}, (DELETE), Delete a group event mapping
