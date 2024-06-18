@@ -32,7 +32,7 @@ type Post struct {
 	Private           bool                `json:"private" bson:"private"`
 	UseAsNotification bool                `json:"use_as_notification" bson:"use_as_notification"`
 	IsAbuse           bool                `json:"is_abuse" bson:"is_abuse"`
-	Replies           []*Post             `json:"replies,omitempty"` // This is constructed by the code (ParentID)
+	Replies           []Post              `json:"replies,omitempty"` // This is constructed by the code (ParentID)
 	Reactions         map[string][]string `json:"reactions,omitempty" bson:"reactions,omitempty"`
 	ImageURL          *string             `json:"image_url" bson:"image_url"`
 

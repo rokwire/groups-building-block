@@ -1078,7 +1078,7 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 }
 
 // FindPosts Retrieves posts for a group
-func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error) {
+func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
 
 	var userID *string
 	if current != nil {
@@ -1167,7 +1167,7 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.
 		mongoFilter = append(mongoFilter, primitive.E{Key: "parent_id", Value: nil})
 	}
 
-	var list []*model.Post
+	var list []model.Post
 	err := sa.db.posts.Find(mongoFilter, &list, findOptions)
 	if err != nil {
 		return nil, err
@@ -1186,24 +1186,22 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.
 		}
 	}
 
-	var resultList = make([]*model.Post, 0)
-	var postMapping = make(map[string]*model.Post)
+	var resultList = make([]model.Post, 0)
+	var postMapping = make(map[string]model.Post)
 
 	if list != nil {
 		for i := range list {
 			postID := list[i].ID
-			list[i].Replies = make([]*model.Post, 0)
+			list[i].Replies = make([]model.Post, 0)
 			postMapping[postID] = list[i]
 		}
 		for _, post := range list {
-			if post != nil {
-				if post.ParentID != nil {
-					if parentPost, ok := postMapping[*post.ParentID]; ok && parentPost != nil {
-						parentPost.Replies = append(parentPost.Replies, post)
-					}
-				} else {
-					resultList = append(resultList, post)
+			if post.ParentID != nil {
+				if parentPost, ok := postMapping[*post.ParentID]; ok {
+					parentPost.Replies = append(parentPost.Replies, post)
 				}
+			} else {
+				resultList = append(resultList, post)
 			}
 		}
 	}
@@ -1230,7 +1228,41 @@ func (sa *Adapter) FindAllUserPosts(context TransactionContext, clientID string,
 
 // FindPost Retrieves a post by groupID and postID
 func (sa *Adapter) FindPost(context TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return sa.findPostWithContext(context, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+
+	var post *model.Post
+	wrapper := func(context TransactionContext) error {
+
+		postRecord, err := sa.findPostWithContext(context, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+		if err != nil {
+			return err
+		}
+
+		post = postRecord
+
+		if postRecord != nil {
+			nestedPosts, err := sa.FindPostsByParentID(context, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers, true, nil)
+			if err != nil {
+				return err
+			}
+
+			postRecord.Replies = nestedPosts
+		}
+
+		return nil
+	}
+
+	var err error
+	if context != nil {
+		err = wrapper(context)
+	} else {
+		err = sa.PerformTransaction(wrapper)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return post, nil
 }
 
 func (sa *Adapter) findPostWithContext(context TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
@@ -1295,15 +1327,15 @@ func (sa *Adapter) FindTopPostByParentID(clientID string, current *model.User, g
 
 // FindPostsByParentID FindPostByParentID Retrieves a post by groupID and postID
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, userID string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]*model.Post, error) {
+func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, userID *string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]model.Post, error) {
 
 	filter := bson.D{
 		primitive.E{Key: "client_id", Value: clientID},
 		primitive.E{Key: "parent_id", Value: parentID},
 	}
 
-	if !skipMembershipCheck {
-		membership, err := sa.FindGroupMembershipWithContext(ctx, clientID, groupID, userID)
+	if !skipMembershipCheck && userID != nil {
+		membership, err := sa.FindGroupMembershipWithContext(ctx, clientID, groupID, *userID)
 		if membership == nil || err != nil || !membership.IsAdminOrMember() {
 			return nil, fmt.Errorf("the user is not member or admin of the group")
 		}
@@ -1316,7 +1348,7 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 
-	var posts []*model.Post
+	var posts []model.Post
 	err := sa.db.posts.Find(filter, &posts, findOptions)
 	if err != nil {
 		return nil, err
@@ -1324,12 +1356,12 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 
 	if recursive {
 		if len(posts) > 0 {
-			for _, post := range posts {
+			for index, post := range posts {
 				childPosts, err := sa.FindPostsByParentID(ctx, clientID, userID, groupID, post.ID, true, filterByToMembers, recursive, order)
-				if err == nil && childPosts != nil {
-					for _, childPost := range childPosts {
-						posts = append(posts, childPost)
-					}
+				if err == nil {
+					posts[index].Replies = childPosts
+				} else {
+					log.Printf("error on finding nested posts: %s", err)
 				}
 			}
 		}
@@ -1340,7 +1372,7 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 
 // FindPostsByTopParentID  Retrieves a post by groupID and top parent id
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, groupID string, topParentID string, skipMembershipCheck bool, order *string) ([]*model.Post, error) {
+func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, groupID string, topParentID string, skipMembershipCheck bool, order *string) ([]model.Post, error) {
 	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "top_parent_id", Value: topParentID}}
 
 	if !skipMembershipCheck {
@@ -1357,7 +1389,7 @@ func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, 
 		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
 	}
 
-	var posts []*model.Post
+	var posts []model.Post
 	err := sa.db.posts.Find(filter, &posts, findOptions)
 	if err != nil {
 		return nil, err
@@ -1576,11 +1608,29 @@ func (sa *Adapter) DeletePost(ctx TransactionContext, clientID string, userID st
 			}
 		}
 
-		childPosts, err := sa.FindPostsByParentID(transactionContext, clientID, userID, groupID, postID, true, false, false, nil)
-		if len(childPosts) > 0 && err == nil {
-			for _, post := range childPosts {
-				sa.DeletePost(transactionContext, clientID, userID, groupID, post.ID, true)
+		var recursiveDelete func(post model.Post) error
+		recursiveDelete = func(post model.Post) error {
+			if post.Replies != nil && len(post.Replies) > 0 {
+				for _, innerPost := range post.Replies {
+					err := recursiveDelete(innerPost)
+					if err != nil {
+						return err
+					}
+
+					err = sa.DeletePost(transactionContext, clientID, userID, groupID, post.ID, true)
+					if err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}
+		childPosts, err := sa.FindPostsByParentID(transactionContext, clientID, &userID, groupID, postID, true, false, false, nil)
+		if err != nil {
+			return err
+		}
+		for _, childchildPost := range childPosts {
+			recursiveDelete(childchildPost)
 		}
 
 		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "_id", Value: postID}}
