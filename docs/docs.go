@@ -2617,6 +2617,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{id}/report/abuse": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Reports an abusive group",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "ReportAbuseGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/reportAbuseGroupRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/groups": {
             "get": {
                 "security": [
@@ -3660,71 +3700,20 @@ const docTemplate = `{
                 "security": [
                     {
                         "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
                     }
                 ],
-                "description": "Gives the user groups. It can be filtered by category, title and privacy. V2.",
-                "consumes": [
-                    "application/json"
-                ],
+                "description": "Gets all related group users linked for the described event id",
                 "tags": [
-                    "Client"
+                    "BBS"
                 ],
-                "operationId": "GetUserGroupsV2",
+                "operationId": "BBSGetEventUsers",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
+                        "description": "Event ID",
+                        "name": "event_id",
+                        "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! category - filter by category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
-                        "name": "privacy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! limit - limit the result",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
-                        "name": "include_hidden",
-                        "in": "query"
-                    },
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/GroupsFilter"
-                        }
                     }
                 ],
                 "responses": {
@@ -3733,7 +3722,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/Group"
+                                "$ref": "#/definitions/getEventUserIDsResponse"
                             }
                         }
                     }
@@ -3926,6 +3915,9 @@ const docTemplate = `{
                 },
                 "image_url": {
                     "type": "string"
+                },
+                "is_abuse": {
+                    "type": "boolean"
                 },
                 "members": {
                     "type": "array",
@@ -4708,6 +4700,17 @@ const docTemplate = `{
                 }
             }
         },
+        "getEventUserIDsResponse": {
+            "type": "object",
+            "properties": {
+                "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "getGroupResponse": {
             "type": "object",
             "properties": {
@@ -5073,6 +5076,14 @@ const docTemplate = `{
                 },
                 "send_to_group_admins": {
                     "type": "boolean"
+                }
+            }
+        },
+        "reportAbuseGroupRequestBody": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
                 }
             }
         },

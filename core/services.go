@@ -364,9 +364,7 @@ func (app *Application) reportGroupAsAbuse(clientID string, current *model.User,
 <div>Reported comment: %s\n</div>
 	`, group.Title, current.ExternalID, current.Name, comment)
 	body = strings.ReplaceAll(body, `\n`, "\n")
-	app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
-
-	return nil
+	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 }
 
 func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
@@ -668,7 +666,7 @@ Reported comment: %s
 	`, current.ExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 
-		app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
+		return app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
 			"type":         "group",
 			"operation":    "report_abuse_post",
 			"entity_type":  "group",

@@ -79,6 +79,8 @@ definitions:
         type: string
       image_url:
         type: string
+      is_abuse:
+        type: boolean
       members:
         items:
           $ref: '#/definitions/Member'
@@ -604,6 +606,13 @@ definitions:
       inserted_id:
         type: string
     type: object
+  getEventUserIDsResponse:
+    properties:
+      user_ids:
+        items:
+          type: string
+        type: array
+    type: object
   getGroupResponse:
     properties:
       category:
@@ -850,6 +859,11 @@ definitions:
         type: boolean
       send_to_group_admins:
         type: boolean
+    type: object
+  reportAbuseGroupRequestBody:
+    properties:
+      comment:
+        type: string
     type: object
   rest.analyticsGetGroupsMembersResponse:
     properties:
@@ -2712,6 +2726,31 @@ paths:
       - AppUserAuth: []
       tags:
       - Client
+  /api/group/{id}/report/abuse:
+    put:
+      consumes:
+      - application/json
+      description: Reports an abusive group
+      operationId: ReportAbuseGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/reportAbuseGroupRequestBody'
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
   /api/group/events/v3:
     post:
       consumes:
@@ -3432,66 +3471,25 @@ paths:
       - Client
   /api/v2/user/groups:
     get:
-      consumes:
-      - application/json
-      description: Gives the user groups. It can be filtered by category, title and
-        privacy. V2.
-      operationId: GetUserGroupsV2
+      description: Gets all related group users linked for the described event id
+      operationId: BBSGetEventUsers
       parameters:
-      - description: APP
-        in: header
-        name: APP
+      - description: Event ID
+        in: path
+        name: event_id
         required: true
         type: string
-      - description: Deprecated - instead use request body filter! Filtering by group's
-          title (case-insensitive)
-        in: query
-        name: title
-        type: string
-      - description: Deprecated - instead use request body filter! category - filter
-          by category
-        in: query
-        name: category
-        type: string
-      - description: Deprecated - instead use request body filter! privacy - filter
-          by privacy
-        in: query
-        name: privacy
-        type: string
-      - description: Deprecated - instead use request body filter! offset - skip number
-          of records
-        in: query
-        name: offset
-        type: string
-      - description: Deprecated - instead use request body filter! limit - limit the
-          result
-        in: query
-        name: limit
-        type: string
-      - description: Deprecated - instead use request body filter! include_hidden
-          - Includes hidden groups if a search by title is performed. Possible value
-          is true. Default false.
-        in: query
-        name: include_hidden
-        type: string
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/Group'
+              $ref: '#/definitions/getEventUserIDsResponse'
             type: array
       security:
       - AppUserAuth: []
-      - APIKeyAuth: []
       tags:
-      - Client
+      - BBS
   /int/authman/synchronize:
     post:
       consumes:
