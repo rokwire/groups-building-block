@@ -41,7 +41,7 @@ type Services interface {
 	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
-	ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string, sendToDean bool, sendToGroupAdmins bool) error
+	ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error
 
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
@@ -157,7 +157,7 @@ func (s *servicesImpl) GetUserGroups(clientID string, current *model.User, filte
 	return s.app.getUserGroups(clientID, current, filter)
 }
 
-func (s *servicesImpl) ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+func (s *servicesImpl) ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error {
 	return s.app.reportGroupAsAbuse(clientID, current, group, comment)
 }
 
@@ -480,7 +480,7 @@ func (a *storageListenerImpl) OnConfigsChanged() {
 // Notifications exposes Notifications BB APIs for the driver adapters
 type Notifications interface {
 	SendNotification(recipients []notifications.Recipient, topic *string, title string, text string, data map[string]string, appID string, orgID string, dateScheduled *time.Time) error
-	SendMail(toEmail string, subject string, body string)
+	SendMail(toEmail string, subject string, body string) error
 	DeleteNotifications(appID string, orgID string, ids string) error
 	AddNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error
 	RemoveNotificationRecipients(appID string, orgID string, notificationID string, userIDs []string) error

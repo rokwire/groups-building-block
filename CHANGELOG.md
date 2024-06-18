@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Create Group Report Abuse API [#456](https://github.com/rokwire/groups-building-block/issues/456)
+
 ## [1.42.0] - 2024-06-12
 ### Changed
 - Updated golang & alpine Docker container versions
