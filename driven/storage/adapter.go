@@ -1187,21 +1187,24 @@ func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.
 	}
 
 	var resultList = make([]model.Post, 0)
-	var postMapping = make(map[string]model.Post)
+	var postIndexMapping = make(map[string]int)
 
 	if list != nil {
 		for i := range list {
 			postID := list[i].ID
 			list[i].Replies = make([]model.Post, 0)
-			postMapping[postID] = list[i]
+			postIndexMapping[postID] = i
 		}
 		for _, post := range list {
 			if post.ParentID != nil {
-				if parentPost, ok := postMapping[*post.ParentID]; ok {
-					parentPost.Replies = append(parentPost.Replies, post)
+				if listIndex, ok := postIndexMapping[*post.ParentID]; ok {
+					list[listIndex].Replies = append(list[listIndex].Replies, post)
 				}
-			} else {
-				resultList = append(resultList, post)
+			}
+		}
+		for index := range list {
+			if list[index].ParentID == nil {
+				resultList = append(resultList, list[index])
 			}
 		}
 	}
