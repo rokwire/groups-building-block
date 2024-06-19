@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.43.0] - 2024-06-19
 ### Added
 - Provide Replies when loading single Post [#468](https://github.com/rokwire/groups-building-block/issues/468)
 - Create Group Report Abuse API [#456](https://github.com/rokwire/groups-building-block/issues/456)
