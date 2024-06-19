@@ -392,7 +392,6 @@ type Storage interface {
 	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
-	FindGroupWithContext(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)

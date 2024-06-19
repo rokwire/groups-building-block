@@ -627,11 +627,6 @@ func (sa *Adapter) DeleteGroup(ctx TransactionContext, clientID string, id strin
 
 // FindGroup finds group by id and client id
 func (sa *Adapter) FindGroup(context TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error) {
-	return sa.FindGroupWithContext(context, clientID, groupID, userID)
-}
-
-// FindGroupWithContext finds group by id and client id with context
-func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error) {
 	filter := bson.D{primitive.E{Key: "_id", Value: groupID},
 		primitive.E{Key: "client_id", Value: clientID}}
 
@@ -639,7 +634,7 @@ func (sa *Adapter) FindGroupWithContext(context TransactionContext, clientID str
 	var membership *model.GroupMembership
 	if userID != nil {
 		// find group memberships
-		membership, err = sa.FindGroupMembership(clientID, groupID, *userID)
+		membership, err = sa.FindGroupMembershipWithContext(context, clientID, groupID, *userID)
 	}
 
 	var rec model.Group
@@ -1080,133 +1075,141 @@ func (sa *Adapter) DeleteEvent(clientID string, eventID string, groupID string) 
 // FindPosts Retrieves posts for a group
 func (sa *Adapter) FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
 
-	var userID *string
-	if current != nil {
-		userID = &current.ID
-	}
+	var resultList = make([]model.Post, 0)
+	var postIndexMapping = make(map[string]int)
 
-	group, errGr := sa.FindGroup(nil, clientID, filter.GroupID, userID)
-	if group == nil {
-		if errGr != nil {
-			log.Printf("unable to find group with id %s: %s", filter.GroupID, errGr)
-		} else {
-			log.Printf("group does not exists %s", filter.GroupID)
-		}
-		return nil, errGr
-	}
-
-	mongoFilter := bson.D{
-		primitive.E{Key: "client_id", Value: clientID},
-		primitive.E{Key: "group_id", Value: filter.GroupID},
-	}
-
-	if filter.PostType != nil {
-		if *filter.PostType == "message" {
-			mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
-				{"$and": []bson.M{
-					{"to_members": bson.M{"$ne": primitive.Null{}}},
-					{"parent_id": primitive.Null{}},
-				}},
-				{"parent_id": bson.M{"$ne": primitive.Null{}}},
-			}})
-		} else if *filter.PostType == "post" {
-			mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
-				{"$and": []bson.M{
-					{"to_members": primitive.Null{}},
-					{"parent_id": primitive.Null{}},
-				}},
-				{"parent_id": bson.M{"$ne": primitive.Null{}}},
-			}})
-		}
-	}
-
-	if filter.ScheduledOnly != nil && *filter.ScheduledOnly {
-		mongoFilter = append(mongoFilter, bson.E{Key: "date_scheduled", Value: bson.M{"$gt": time.Now()}})
-	} else {
-		mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
-			{"date_scheduled": nil},
-			{"date_scheduled": bson.M{"$lt": time.Now()}},
-		}})
-	}
-
-	if filterByToMembers {
-		innerFilter := []primitive.M{
-			{"to_members": primitive.Null{}},
-			{"to_members": primitive.M{"$exists": true, "$size": 0}},
-		}
+	wrapper := func(ctx TransactionContext) error {
+		var userID *string
 		if current != nil {
-			innerFilter = append(innerFilter, []primitive.M{
-				{"to_members.user_id": current.ID},
-				{"member.user_id": current.ID},
-			}...)
+			userID = &current.ID
 		}
-		mongoFilter = append(mongoFilter, primitive.E{Key: "$or", Value: innerFilter})
-	}
 
-	if filterPrivatePostsValue != nil {
-		mongoFilter = append(mongoFilter, primitive.E{Key: "private", Value: *filterPrivatePostsValue})
-	}
+		group, errGr := sa.FindGroup(ctx, clientID, filter.GroupID, userID)
+		if group == nil {
+			if errGr != nil {
+				log.Printf("unable to find group with id %s: %s", filter.GroupID, errGr)
+			} else {
+				log.Printf("group does not exists %s", filter.GroupID)
+			}
+			return errGr
+		}
 
-	paging := false
-	findOptions := options.Find()
-	if filter.Order != nil && "desc" == *filter.Order {
-		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
-	} else {
-		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
-	}
-	if filter.Limit != nil {
-		findOptions.SetLimit(*filter.Limit)
-		paging = true
-	}
-	if filter.Offset != nil {
-		findOptions.SetSkip(*filter.Offset)
-		paging = true
-	}
+		mongoFilter := bson.D{
+			primitive.E{Key: "client_id", Value: clientID},
+			primitive.E{Key: "group_id", Value: filter.GroupID},
+		}
 
-	if paging {
-		mongoFilter = append(mongoFilter, primitive.E{Key: "parent_id", Value: nil})
-	}
+		if filter.PostType != nil {
+			if *filter.PostType == "message" {
+				mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
+					{"$and": []bson.M{
+						{"to_members": bson.M{"$ne": primitive.Null{}}},
+						{"parent_id": primitive.Null{}},
+					}},
+					{"parent_id": bson.M{"$ne": primitive.Null{}}},
+				}})
+			} else if *filter.PostType == "post" {
+				mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
+					{"$and": []bson.M{
+						{"to_members": primitive.Null{}},
+						{"parent_id": primitive.Null{}},
+					}},
+					{"parent_id": bson.M{"$ne": primitive.Null{}}},
+				}})
+			}
+		}
 
-	var list []model.Post
-	err := sa.db.posts.Find(mongoFilter, &list, findOptions)
-	if err != nil {
-		return nil, err
-	}
+		if filter.ScheduledOnly != nil && *filter.ScheduledOnly {
+			mongoFilter = append(mongoFilter, bson.E{Key: "date_scheduled", Value: bson.M{"$gt": time.Now()}})
+		} else {
+			mongoFilter = append(mongoFilter, bson.E{Key: "$or", Value: []bson.M{
+				{"date_scheduled": nil},
+				{"date_scheduled": bson.M{"$lt": time.Now()}},
+			}})
+		}
 
-	if paging && len(list) > 0 {
-		for _, post := range list {
-			childPosts, err := sa.FindPostsByTopParentID(clientID, current, filter.GroupID, post.ID, true, filter.Order)
-			if err == nil && childPosts != nil {
-				for _, childPost := range childPosts {
-					if childPost.UserCanSeePost(current.ID) {
-						list = append(list, childPost)
+		if filterByToMembers {
+			innerFilter := []primitive.M{
+				{"to_members": primitive.Null{}},
+				{"to_members": primitive.M{"$exists": true, "$size": 0}},
+			}
+			if current != nil {
+				innerFilter = append(innerFilter, []primitive.M{
+					{"to_members.user_id": current.ID},
+					{"member.user_id": current.ID},
+				}...)
+			}
+			mongoFilter = append(mongoFilter, primitive.E{Key: "$or", Value: innerFilter})
+		}
+
+		if filterPrivatePostsValue != nil {
+			mongoFilter = append(mongoFilter, primitive.E{Key: "private", Value: *filterPrivatePostsValue})
+		}
+
+		paging := false
+		findOptions := options.Find()
+		if filter.Order != nil && "desc" == *filter.Order {
+			findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
+		} else {
+			findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
+		}
+		if filter.Limit != nil {
+			findOptions.SetLimit(*filter.Limit)
+			paging = true
+		}
+		if filter.Offset != nil {
+			findOptions.SetSkip(*filter.Offset)
+			paging = true
+		}
+
+		if paging {
+			mongoFilter = append(mongoFilter, primitive.E{Key: "parent_id", Value: nil})
+		}
+
+		var list []model.Post
+		err := sa.db.posts.FindWithContext(ctx, mongoFilter, &list, findOptions)
+		if err != nil {
+			return err
+		}
+
+		if paging && len(list) > 0 {
+			for _, post := range list {
+				childPosts, err := sa.FindPostsByTopParentID(ctx, clientID, current, filter.GroupID, post.ID, true, filter.Order)
+				if err == nil && childPosts != nil {
+					for _, childPost := range childPosts {
+						if childPost.UserCanSeePost(current.ID) {
+							list = append(list, childPost)
+						}
 					}
 				}
 			}
 		}
-	}
 
-	var resultList = make([]model.Post, 0)
-	var postIndexMapping = make(map[string]int)
-
-	if list != nil {
-		for i := range list {
-			postID := list[i].ID
-			list[i].Replies = make([]model.Post, 0)
-			postIndexMapping[postID] = i
-		}
-		for _, post := range list {
-			if post.ParentID != nil {
-				if listIndex, ok := postIndexMapping[*post.ParentID]; ok {
-					list[listIndex].Replies = append(list[listIndex].Replies, post)
+		if list != nil {
+			for i := range list {
+				postID := list[i].ID
+				list[i].Replies = make([]model.Post, 0)
+				postIndexMapping[postID] = i
+			}
+			for _, post := range list {
+				if post.ParentID != nil {
+					if listIndex, ok := postIndexMapping[*post.ParentID]; ok {
+						list[listIndex].Replies = append(list[listIndex].Replies, post)
+					}
+				}
+			}
+			for index := range list {
+				if list[index].ParentID == nil {
+					resultList = append(resultList, list[index])
 				}
 			}
 		}
-		for index := range list {
-			if list[index].ParentID == nil {
-				resultList = append(resultList, list[index])
-			}
-		}
+		return nil
+	}
+
+	err := sa.PerformTransaction(wrapper)
+	if err != nil {
+		return nil, err
 	}
 
 	return resultList, nil
@@ -1375,25 +1378,39 @@ func (sa *Adapter) FindPostsByParentID(ctx TransactionContext, clientID string, 
 
 // FindPostsByTopParentID  Retrieves a post by groupID and top parent id
 // This method doesn't construct tree hierarchy!
-func (sa *Adapter) FindPostsByTopParentID(clientID string, current *model.User, groupID string, topParentID string, skipMembershipCheck bool, order *string) ([]model.Post, error) {
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "top_parent_id", Value: topParentID}}
-
-	if !skipMembershipCheck {
-		membership, err := sa.FindGroupMembership(clientID, groupID, current.ID)
-		if membership == nil || err != nil || !membership.IsAdminOrMember() {
-			return nil, fmt.Errorf("the user is not member or admin of the group")
-		}
-	}
-
-	findOptions := options.Find()
-	if order != nil && "desc" == *order {
-		findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
-	} else {
-		findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
-	}
-
+func (sa *Adapter) FindPostsByTopParentID(context TransactionContext, clientID string, current *model.User, groupID string, topParentID string, skipMembershipCheck bool, order *string) ([]model.Post, error) {
 	var posts []model.Post
-	err := sa.db.posts.Find(filter, &posts, findOptions)
+	wrapper := func(ctx TransactionContext) error {
+		filter := bson.D{primitive.E{Key: "client_id", Value: clientID}, primitive.E{Key: "top_parent_id", Value: topParentID}}
+
+		if !skipMembershipCheck {
+			membership, err := sa.FindGroupMembershipWithContext(ctx, clientID, groupID, current.ID)
+			if membership == nil || err != nil || !membership.IsAdminOrMember() {
+				return fmt.Errorf("the user is not member or admin of the group")
+			}
+		}
+
+		findOptions := options.Find()
+		if order != nil && "desc" == *order {
+			findOptions.SetSort(bson.D{{Key: "date_created", Value: -1}})
+		} else {
+			findOptions.SetSort(bson.D{{Key: "date_created", Value: 1}})
+		}
+
+		err := sa.db.posts.FindWithContext(ctx, filter, &posts, findOptions)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	var err error
+	if context != nil {
+		err = wrapper(context)
+	} else {
+		err = sa.PerformTransaction(wrapper)
+	}
 	if err != nil {
 		return nil, err
 	}

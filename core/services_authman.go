@@ -311,7 +311,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, clientID, groupID, nil)
+		group, err = app.storage.FindGroup(context, clientID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
