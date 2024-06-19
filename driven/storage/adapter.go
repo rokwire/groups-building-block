@@ -1251,7 +1251,7 @@ func (sa *Adapter) FindPost(context TransactionContext, clientID string, userID 
 				return err
 			}
 
-			postRecord.Replies = nestedPosts
+			post.Replies = nestedPosts
 		}
 
 		return nil
