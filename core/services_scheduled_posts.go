@@ -49,7 +49,7 @@ func (app Application) processScheduledPosts() error {
 					return err
 				}
 				if group != nil {
-					err = app.sendGroupNotificationForNewPost(post.ClientID, &post.Creator.UserID, group, &post)
+					err = app.sendGroupNotificationForNewPost(post.ClientID, &post.Creator.UserID, &post.Creator.Name, group, &post)
 					if err != nil {
 						return nil
 					}

@@ -490,59 +490,95 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	}
 	go handleRewardsAsync(clientID, current.ID)
 
-	go app.sendGroupNotificationForNewPost(clientID, &current.ID, group, post)
+	go app.sendGroupNotificationForNewPost(clientID, &current.ID, &current.Name, group, post)
 
 	return post, nil
 }
 
-func (app *Application) sendGroupNotificationForNewPost(clientID string, currentUserID *string, group *model.Group, post *model.Post) error {
-	recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, currentUserID)
+func (app *Application) sendGroupNotificationForNewPost(clientID string, currentUserID *string, currentUserName *string, group *model.Group, post *model.Post) error {
+	now := time.Now()
+	if post.DateScheduled == nil || now.After(*post.DateScheduled) {
 
-	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: []string{group.ID},
-		UserIDs:  recipientsUserIDs,
-		Statuses: []string{"member", "admin"},
-	})
-	recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-		return member.IsAdminOrMember() && (*currentUserID != member.UserID),
-			member.NotificationsPreferences.OverridePreferences &&
-				(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
-	})
+		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, currentUserID)
 
-	if len(recipients) > 0 {
-		groupStr := "Group"
-		if group.ResearchGroup {
-			groupStr = "Research Project"
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{group.ID},
+			UserIDs:  recipientsUserIDs,
+			Statuses: []string{"member", "admin"},
+		})
+		var recipients []notifications.Recipient
+		if post.ParentID == nil {
+			recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+				return member.IsAdminOrMember() && (*currentUserID != member.UserID),
+					member.NotificationsPreferences.OverridePreferences &&
+						(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
+			})
+		} else {
+			parentPost, err := app.storage.FindPost(nil, clientID, nil, group.ID, *post.ParentID, true, false)
+			if err != nil {
+				log.Printf("error app.sendGroupNotificationForNewPost() - %s", err)
+				return fmt.Errorf("error app.sendGroupNotificationForNewPost() - %s", err)
+			}
+			if parentPost != nil {
+				recipients = append(recipients, notifications.Recipient{
+					UserID: parentPost.Creator.UserID,
+				})
+			}
 		}
-		title := fmt.Sprintf("%s - %s", groupStr, group.Title)
-		body := fmt.Sprintf("New post has been published in '%s' %s", group.Title, strings.ToLower(groupStr))
-		if post.UseAsNotification {
-			title = post.Subject
-			body = post.Body
-		}
 
-		topic := "group.posts"
-		return app.notifications.SendNotification(
-			recipients,
-			&topic,
-			title,
-			body,
-			map[string]string{
-				"type":         "group",
-				"operation":    "post_created",
-				"entity_type":  "group",
-				"entity_id":    group.ID,
-				"entity_name":  group.Title,
-				"post_id":      post.ID,
-				"post_subject": post.Subject,
-				"post_body":    post.Body,
-			},
-			app.config.AppID,
-			app.config.OrgID,
-			nil,
-		)
+		if len(recipients) > 0 {
+			groupStr := "Group"
+			if group.ResearchGroup {
+				groupStr = "Research Project"
+			}
+			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
+			operation := "posted"
+			if post.ParentID != nil {
+				operation = "replied"
+			}
+			if currentUserName == nil && currentUserID != nil {
+				coreUsers, err := app.corebb.GetAccountsWithIDs([]string{*currentUserID}, nil, nil, nil, nil)
+				if err != nil {
+					log.Printf("error app.sendGroupNotificationForNewPost() - %s", err)
+				}
+				if len(coreUsers) > 0 {
+					val := coreUsers[0].GetFullName()
+					currentUserName = &val
+				}
+			}
+			if currentUserName == nil || *currentUserName == "" {
+				val := "User"
+				currentUserName = &val
+			}
+
+			body := fmt.Sprintf("%s %s '%s'", *currentUserName, operation, post.Body)
+			if post.UseAsNotification {
+				title = post.Subject
+				body = post.Body
+			}
+
+			topic := "group.posts"
+			return app.notifications.SendNotification(
+				recipients,
+				&topic,
+				title,
+				body,
+				map[string]string{
+					"type":         "group",
+					"operation":    "post_created",
+					"entity_type":  "group",
+					"entity_id":    group.ID,
+					"entity_name":  group.Title,
+					"post_id":      post.ID,
+					"post_subject": post.Subject,
+					"post_body":    post.Body,
+				},
+				app.config.AppID,
+				app.config.OrgID,
+				nil,
+			)
+		}
 	}
-
 	return nil
 }
 

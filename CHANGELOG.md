@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Include sender, post content and action in group post notification body [#457](https://github.com/rokwire/groups-building-block/issues/457)
+- Send post notification only to the creator of the post [#372](https://github.com/rokwire/groups-building-block/issues/372)
+
 ## [1.43.0] - 2024-06-19
 ### Added
 - Provide Replies when loading single Post [#468](https://github.com/rokwire/groups-building-block/issues/468)
