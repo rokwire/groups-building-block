@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Use all_bbs_groups permissions for all BBs APIs [#473](https://github.com/rokwire/groups-building-block/issues/473)
+
 ## [1.44.0] - 2024-06-24
 ### Added
 - Include sender, post content and action in group post notification body [#457](https://github.com/rokwire/groups-building-block/issues/457)

@@ -1,1 +1,1 @@
-p, all_admin_groups, /gr/api/bbs/event/*/aggregated-users, (GET), Get event group users (aggregated)
+p, all_bbs_groups, /gr/api/bbs/event/*/aggregated-users, (GET), Get event group users (aggregated)
