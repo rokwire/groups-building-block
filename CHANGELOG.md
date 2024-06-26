@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Use all_bbs_groups & get_aggregated-users permissions for BBs APIs (Additional change) [#473](https://github.com/rokwire/groups-building-block/issues/473)
+
 ## [1.45.0] - 2024-06-26
 ### Changed
 - Use all_bbs_groups permissions for all BBs APIs [#473](https://github.com/rokwire/groups-building-block/issues/473)
