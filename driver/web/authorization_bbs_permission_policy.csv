@@ -1,1 +1,3 @@
-p, all_bbs_groups, /gr/api/bbs/event/*/aggregated-users, (GET), Get event group users (aggregated)
+p, all_bbs_groups, /gr/api/bbs/*, (GET)|(POST)|(PUT)|(DELETE), All BBs APIs
+
+p, get_aggregated-users, /gr/api/bbs/event/*/aggregated-users, (GET), Get event group users (aggregated)
