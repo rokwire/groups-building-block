@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Update direct messages notification pattern [#475](https://github.com/rokwire/groups-building-block/issues/475)
+
+
 ## [1.45.1] - 2024-06-26
 ### Changed
 - Use all_bbs_groups & get_aggregated-users permissions for BBs APIs (Additional change) [#473](https://github.com/rokwire/groups-building-block/issues/473)

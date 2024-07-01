@@ -532,9 +532,12 @@ func (app *Application) sendGroupNotificationForNewPost(clientID string, current
 				groupStr = "Research Project"
 			}
 			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
-			operation := "posted"
-			if post.ParentID != nil {
-				operation = "replied"
+			operation := "messaged you"
+			if len(post.ToMembersList) == 0 {
+				operation = "posted"
+				if post.ParentID != nil {
+					operation = "replied"
+				}
 			}
 			if currentUserName == nil && currentUserID != nil {
 				coreUsers, err := app.corebb.GetAccountsWithIDs([]string{*currentUserID}, nil, nil, nil, nil)
