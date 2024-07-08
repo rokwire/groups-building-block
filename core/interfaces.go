@@ -439,8 +439,10 @@ type Storage interface {
 	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipWithContext(context storage.TransactionContext, clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
+	FindUserGroupMembershipsWithContext(ctx storage.TransactionContext, clientID string, userID string) (model.MembershipCollection, error)
 	BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error)
@@ -500,6 +502,7 @@ type Core interface {
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
 	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
 	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
+	GetAllCoreAccountsWithNetIDs(netIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 	LoadDeletedMemberships() ([]model.DeletedUserData, error)

@@ -235,8 +235,8 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 		userExternalIDmapping := map[string]model.CoreAccount{}
 		for _, user := range users {
 			identifier := user.GetExternalID()
-			if identifier != nil {
-				userExternalIDmapping[*identifier] = user
+			if identifier != "" {
+				userExternalIDmapping[identifier] = user
 			}
 		}
 
@@ -406,8 +406,8 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		if len(localUsers) > 0 {
 			for _, user := range localUsers {
 				identifier := user.GetExternalID()
-				if identifier != nil {
-					localUsersMapping[*identifier] = user
+				if identifier != "" {
+					localUsersMapping[identifier] = user
 				}
 			}
 		}

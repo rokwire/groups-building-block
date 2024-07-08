@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"groups/core/model"
@@ -225,15 +224,11 @@ func (sa *Adapter) FindGroupMembership(clientID string, groupID string, userID s
 }
 
 // FindGroupMembershipWithContext finds the group membership for a given user and group
-func (sa *Adapter) FindGroupMembershipWithContext(ctx context.Context, clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
+func (sa *Adapter) FindGroupMembershipWithContext(context TransactionContext, clientID string, groupID string, userID string) (*model.GroupMembership, error) {
 	filter := bson.M{"client_id": clientID, "group_id": groupID, "user_id": userID}
 
 	var result model.GroupMembership
-	err := sa.db.groupMemberships.FindOneWithContext(ctx, filter, &result, nil)
+	err := sa.db.groupMemberships.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}

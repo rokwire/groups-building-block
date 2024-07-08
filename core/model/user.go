@@ -122,23 +122,23 @@ type CoreAccount struct {
 }
 
 // GetExternalID Gets the external id
-func (c *CoreAccount) GetExternalID() *string {
+func (c *CoreAccount) GetExternalID() string {
 	for _, auth := range c.AuthTypes {
 		if auth.Active && len(auth.Identifier) > 0 {
-			return &auth.Identifier
+			return auth.Identifier
 		}
 	}
-	return nil
+	return ""
 }
 
 // GetNetID Gets the external id
-func (c *CoreAccount) GetNetID() *string {
+func (c *CoreAccount) GetNetID() string {
 	for _, auth := range c.AuthTypes {
 		if auth.Active && len(auth.Identifier) > 0 {
-			return &auth.Params.User.SystemSpecific.PreferredUsername
+			return auth.Params.User.SystemSpecific.PreferredUsername
 		}
 	}
-	return nil
+	return ""
 }
 
 // GetFullName Builds the fullname
@@ -154,6 +154,17 @@ func (c *CoreAccount) GetFullName() string {
 		name += c.Profile.LastName
 	}
 	return name
+}
+
+// ToMembership Builds the fullname
+func (c *CoreAccount) ToMembership(status string) GroupMembership {
+	return GroupMembership{
+		UserID:      c.ID,
+		ExternalID:  c.GetExternalID(),
+		Name:        c.GetFullName(),
+		Email:       c.Profile.Email,
+		DateCreated: time.Now(),
+	}
 }
 
 // DeletedUserData represents a user-deleted

@@ -104,13 +104,13 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 				externalID := account.GetExternalID()
 				fullName := account.GetFullName()
 				netID := account.GetNetID()
-				if externalID != nil && fullName != "" && netID != nil && *netID != current.NetID {
+				if externalID != "" && fullName != "" && netID != "" && netID != current.NetID {
 					members = append(members, model.GroupMembership{
 						ClientID:   clientID,
 						GroupID:    group.ID,
 						UserID:     account.ID,
-						ExternalID: *externalID,
-						NetID:      *netID,
+						ExternalID: externalID,
+						NetID:      netID,
 						Name:       fullName,
 						Email:      account.Profile.Email,
 						Status:     membersConfig.Status,
