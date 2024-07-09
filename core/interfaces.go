@@ -361,10 +361,20 @@ func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.Us
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
+	AdminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
+	AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error
 }
 
 type administrationImpl struct {
 	app *Application
+}
+
+func (s *administrationImpl) AdminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
+	return s.app.adminAddGroupMemberships(clientID, current, groupID, membershipStatuses)
+}
+
+func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
+	return s.app.adminDeleteMembershipsByID(clientID, current, groupID, accountIDs)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc

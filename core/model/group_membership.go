@@ -298,7 +298,7 @@ func (m MembershipStatuses) GetAllNetIDStatusMapping() map[string]string {
 
 // MembershipStatus short membership status
 type MembershipStatus struct {
-	NetID  string `json:"net_ids" bson:"user_id"`
+	NetID  string `json:"net_id" bson:"net_id"`
 	Status string `json:"status" bson:"status"` //pending, member, admin, rejected
 }
 

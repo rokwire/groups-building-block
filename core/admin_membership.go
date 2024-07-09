@@ -40,7 +40,7 @@ func (app *Application) adminAddGroupMemberships(clientID string, current *model
 			if len(netIDAccounts) > 0 {
 				for _, account := range netIDAccounts {
 					if status, ok := mapping[account.GetNetID()]; ok {
-						memberships = append(memberships, account.ToMembership(status))
+						memberships = append(memberships, account.ToMembership(groupID, status))
 					}
 				}
 

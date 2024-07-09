@@ -594,6 +594,76 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 	w.Write(data)
 }
 
+// adminCreateMembershipsRequest is the request body for creating multiple group memberships
+type adminCreateMembershipsRequest []model.MembershipStatus
+
+//@name adminCreateMembershipsRequest
+
+// CreateMemberships create multiple group memberships.
+// @Description Updates a membership. Only the status can be changed.
+// @ID AdminCreateMemberships
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body adminCreateMembershipsRequest true "body data"
+// @Param mgroup-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /group/{group-id}/members [put]
+func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("adminapis.CreateMemberships() Error on Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.CreateMemberships() Error on read request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData adminCreateMembershipsRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("adminapis.CreateMemberships() Error on unmarshal request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	for _, item := range requestData {
+		err = validate.Struct(item)
+		if err != nil {
+			log.Printf("adminapis.CreateMemberships() Error on validating request data - %s\n", err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	//check if allowed to see the events for this group
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	err = h.app.Admin.AdminAddGroupMemberships(clientID, current, groupID, model.MembershipStatuses(requestData))
+	if err != nil {
+		log.Printf("adminapis.CreateMemberships() Error - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
 type adminUpdateMembershipRequest struct {
 	Status *string `json:"status" validate:"required,oneof=pending member admin rejected"`
 } // @name adminUpdateMembershipRequest

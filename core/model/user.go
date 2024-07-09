@@ -157,12 +157,15 @@ func (c *CoreAccount) GetFullName() string {
 }
 
 // ToMembership Builds the fullname
-func (c *CoreAccount) ToMembership(status string) GroupMembership {
+func (c *CoreAccount) ToMembership(groupID, status string) GroupMembership {
 	return GroupMembership{
+		GroupID:     groupID,
 		UserID:      c.ID,
 		ExternalID:  c.GetExternalID(),
 		Name:        c.GetFullName(),
+		NetID:       c.GetNetID(),
 		Email:       c.Profile.Email,
+		Status:      status,
 		DateCreated: time.Now(),
 	}
 }
