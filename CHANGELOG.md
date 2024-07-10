@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Admin API for adding group members by NetIDs [#458](https://github.com/rokwire/groups-building-block/issues/458)
+
 ## [1.45.2] - 2024-07-01
 ### Fixed
 - Update direct messages notification pattern [#475](https://github.com/rokwire/groups-building-block/issues/475)
