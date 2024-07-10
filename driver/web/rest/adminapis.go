@@ -607,7 +607,7 @@ type adminCreateMembershipsRequest []model.MembershipStatus
 // @Produce json
 // @Param APP header string true "APP"
 // @Param data body adminCreateMembershipsRequest true "body data"
-// @Param mgroup-id path string true "Group ID"
+// @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
 // @Router /group/{group-id}/members [put]
