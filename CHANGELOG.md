@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.46.0] - 2024-07-10
 ### Added
 - Admin API for adding group members by NetIDs [#458](https://github.com/rokwire/groups-building-block/issues/458)
 
