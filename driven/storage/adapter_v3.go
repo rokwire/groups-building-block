@@ -189,6 +189,8 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 	}
 	if filter.NetID != nil {
 		matchFilter = append(matchFilter, bson.E{Key: "net_id", Value: *filter.NetID})
+	} else if len(filter.NetIDs) > 0 {
+		matchFilter = append(matchFilter, bson.E{Key: "net_id", Value: bson.D{{Key: "$in", Value: filter.NetIDs}}})
 	}
 	if filter.ExternalID != nil {
 		matchFilter = append(matchFilter, bson.E{Key: "external_id", Value: *filter.ExternalID})

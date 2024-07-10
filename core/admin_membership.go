@@ -30,7 +30,16 @@ func (app *Application) adminAddGroupMemberships(clientID string, current *model
 				return err
 			}
 
-			netIDAccounts, err := app.corebb.GetAllCoreAccountsWithNetIDs(membershipStatuses.GetAllNetIDs(), &current.AppID, &current.OrgID)
+			netIDs := membershipStatuses.GetAllNetIDs()
+			netIDAccounts, err := app.corebb.GetAllCoreAccountsWithNetIDs(netIDs, &current.AppID, &current.OrgID)
+			if err != nil {
+				return err
+			}
+
+			existingMemberships, err := app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+				GroupIDs: []string{groupID},
+				NetIDs:   netIDs,
+			})
 			if err != nil {
 				return err
 			}
@@ -40,12 +49,16 @@ func (app *Application) adminAddGroupMemberships(clientID string, current *model
 			if len(netIDAccounts) > 0 {
 				for _, account := range netIDAccounts {
 					if status, ok := mapping[account.GetNetID()]; ok {
-						memberships = append(memberships, account.ToMembership(groupID, status))
+						if existingMemberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+							return membership.NetID == account.GetNetID()
+						}) == nil {
+							memberships = append(memberships, account.ToMembership(groupID, status))
+						}
 					}
 				}
-
-				return app.storage.CreateMemberships(context, clientID, current, group, memberships)
-
+				if len(memberships) > 0 {
+					return app.storage.CreateMemberships(context, clientID, current, group, memberships)
+				}
 			}
 		}
 
