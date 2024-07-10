@@ -64,8 +64,8 @@ func (h *ApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.U
 	}
 
 	//check if allowed to see the events for this group
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
-	if group == nil || group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
