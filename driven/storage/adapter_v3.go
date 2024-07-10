@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"groups/core/model"
@@ -190,6 +189,8 @@ func (sa *Adapter) FindGroupMembershipsWithContext(ctx TransactionContext, clien
 	}
 	if filter.NetID != nil {
 		matchFilter = append(matchFilter, bson.E{Key: "net_id", Value: *filter.NetID})
+	} else if len(filter.NetIDs) > 0 {
+		matchFilter = append(matchFilter, bson.E{Key: "net_id", Value: bson.D{{Key: "$in", Value: filter.NetIDs}}})
 	}
 	if filter.ExternalID != nil {
 		matchFilter = append(matchFilter, bson.E{Key: "external_id", Value: *filter.ExternalID})
@@ -225,15 +226,11 @@ func (sa *Adapter) FindGroupMembership(clientID string, groupID string, userID s
 }
 
 // FindGroupMembershipWithContext finds the group membership for a given user and group
-func (sa *Adapter) FindGroupMembershipWithContext(ctx context.Context, clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	if ctx == nil {
-		ctx = context.Background()
-	}
-
+func (sa *Adapter) FindGroupMembershipWithContext(context TransactionContext, clientID string, groupID string, userID string) (*model.GroupMembership, error) {
 	filter := bson.M{"client_id": clientID, "group_id": groupID, "user_id": userID}
 
 	var result model.GroupMembership
-	err := sa.db.groupMemberships.FindOneWithContext(ctx, filter, &result, nil)
+	err := sa.db.groupMemberships.FindOneWithContext(context, filter, &result, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -477,37 +474,23 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 // CreateMemberships Created multiple members to a group
 func (sa *Adapter) CreateMemberships(context TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) error {
 	now := time.Now()
-	wrapper := func(context TransactionContext) error {
 
-		existingMembership, err := sa.FindGroupMembershipWithContext(context, clientID, group.ID, current.ID)
-		if err != nil || existingMembership == nil || !existingMembership.IsAdmin() {
-			log.Printf("error: storage.CreateMemberships() - current user is not admin of the group")
-			return fmt.Errorf("current user is not admin of the group")
+	var objects []interface{}
+	for index := range memberships {
+		memberships[index].ID = uuid.NewString()
+		memberships[index].ClientID = clientID
+		memberships[index].DateCreated = now
+		if memberships[index].UserID != "" && memberships[index].ExternalID != "" && memberships[index].Email != "" && memberships[index].Status != "" {
+			objects = append(objects, memberships[index])
 		}
-
-		var objects []interface{}
-		for index := range memberships {
-			memberships[index].ID = uuid.NewString()
-			memberships[index].ClientID = clientID
-			memberships[index].DateCreated = now
-			if memberships[index].UserID != "" && memberships[index].ExternalID != "" && memberships[index].Email != "" && memberships[index].Status != "" {
-				objects = append(objects, memberships[index])
-			}
-		}
-
-		if len(objects) > 0 {
-			_, err := sa.db.groupMemberships.InsertManyWithContext(context, objects, nil)
-			return err
-		}
-
-		return nil
 	}
 
-	if context != nil {
-		return wrapper(context)
+	if len(objects) > 0 {
+		_, err := sa.db.groupMemberships.InsertManyWithContext(context, objects, nil)
+		return err
 	}
-	return sa.PerformTransaction(wrapper)
 
+	return nil
 }
 
 // ApplyMembershipApproval applies a membership approval

@@ -199,7 +199,32 @@ func (a *Adapter) GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID 
 
 	for {
 		buffer, err := a.GetAccounts(map[string]interface{}{
-			"auth_types.identifier": externalIDs,
+			"external_ids.uin": externalIDs,
+		}, appID, orgID, &limit, &offset)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(buffer) == 0 {
+			break
+		} else {
+			list = append(list, buffer...)
+			offset += limit
+		}
+	}
+
+	return list, nil
+}
+
+// GetAllCoreAccountsWithNetIDs Gets all Core accounts with net IDs
+func (a *Adapter) GetAllCoreAccountsWithNetIDs(netIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error) {
+	var list []model.CoreAccount
+	var limit int = 100
+	var offset int = 0
+
+	for {
+		buffer, err := a.GetAccounts(map[string]interface{}{
+			"external_ids.net_id": netIDs,
 		}, appID, orgID, &limit, &offset)
 		if err != nil {
 			return nil, err

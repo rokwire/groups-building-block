@@ -397,6 +397,11 @@ definitions:
       net_id:
         description: core user net id
         type: string
+      net_ids:
+        description: core user net ids
+        items:
+          type: string
+        type: array
       offset:
         description: result offset
         type: integer
@@ -779,6 +784,14 @@ definitions:
         type: string
     required:
     - approve
+    type: object
+  model.MembershipStatus:
+    properties:
+      net_id:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
     type: object
   model.Post:
     properties:
@@ -3490,6 +3503,40 @@ paths:
       - AppUserAuth: []
       tags:
       - BBS
+  /group/{group-id}/members:
+    put:
+      consumes:
+      - application/json
+      description: Updates a membership. Only the status can be changed.
+      operationId: AdminCreateMemberships
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/model.MembershipStatus'
+          type: array
+      - description: Group ID
+        in: path
+        name: mgroup-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /int/authman/synchronize:
     post:
       consumes:

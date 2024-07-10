@@ -3729,6 +3729,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/group/{group-id}/members": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a membership. Only the status can be changed.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminCreateMemberships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.MembershipStatus"
+                            }
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "mgroup-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/int/authman/synchronize": {
             "post": {
                 "security": [
@@ -4385,6 +4438,13 @@ const docTemplate = `{
                     "description": "core user net id",
                     "type": "string"
                 },
+                "net_ids": {
+                    "description": "core user net ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "offset": {
                     "description": "result offset",
                     "type": "integer"
@@ -4959,6 +5019,18 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "reject_reason": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.MembershipStatus": {
+            "type": "object",
+            "properties": {
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
                     "type": "string"
                 }
             }
