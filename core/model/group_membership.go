@@ -73,11 +73,11 @@ func (c *MembershipCollection) GetMembersByStatus(status string) []GroupMembersh
 	return members
 }
 
-// Evaluate membership mute policy. First result is canSend, second result is for muted
-type mutePreferencePredicate = func(member GroupMembership) (bool, bool)
+// MutePreferencePredicate Evaluates membership mute policy. First result is canSend, second result is for muted
+type MutePreferencePredicate = func(member GroupMembership) (bool, bool) // @name MutePreferencePredicate
 
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
-func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate mutePreferencePredicate) []notifications.Recipient {
+func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate MutePreferencePredicate) []notifications.Recipient {
 
 	recipients := []notifications.Recipient{}
 

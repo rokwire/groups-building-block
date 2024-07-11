@@ -89,7 +89,7 @@ type Services interface {
 	DeletePendingMembership(clientID string, current *model.User, groupID string) error
 
 	// Group Notifications
-	SendGroupNotification(clientID string, notification model.GroupNotification) error
+	SendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 
 	// Group Events
@@ -311,8 +311,8 @@ func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, gr
 	return s.app.deleteMembership(clientID, current, groupID)
 }
 
-func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification) error {
-	return s.app.sendGroupNotification(clientID, notification)
+func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
+	return s.app.sendGroupNotification(clientID, notification, predicate)
 }
 
 func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {

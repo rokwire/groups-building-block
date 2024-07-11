@@ -3087,6 +3087,12 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "type": "string",
+                        "description": "The name of the service which invokes the API",
+                        "name": "service",
+                        "in": "query"
+                    },
+                    {
                         "description": "body data",
                         "name": "data",
                         "in": "body",
@@ -3770,7 +3776,7 @@ const docTemplate = `{
                     {
                         "type": "string",
                         "description": "Group ID",
-                        "name": "mgroup-id",
+                        "name": "group-id",
                         "in": "path",
                         "required": true
                     }

@@ -464,6 +464,7 @@ type sendGroupNotificationRequestBody struct {
 // @Tags Internal
 // @Accept json
 // @Param APP header string true "APP"
+// @Param service query string false "The name of the service which invokes the API"
 // @Param data body sendGroupNotificationRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200
@@ -477,6 +478,12 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 		log.Println("group-id is required")
 		http.Error(w, "group-id is required", http.StatusBadRequest)
 		return
+	}
+
+	var service *string
+	bb, ok := r.URL.Query()["service"]
+	if ok && len(bb[0]) > 0 {
+		service = &bb[0]
 	}
 
 	data, err := io.ReadAll(r.Body)
@@ -502,6 +509,15 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 		return
 	}
 
+	// TBD: Check for which BB invokes the request. Currently only Polls is invoking this API.
+	predicate := func(membership model.GroupMembership) (bool, bool) {
+		if service == nil || (service != nil && *service == "polls") {
+			return true, (membership.NotificationsPreferences.AllMute || membership.NotificationsPreferences.PollsMuted) &&
+				membership.NotificationsPreferences.OverridePreferences
+		}
+		return true, membership.NotificationsPreferences.AllMute && membership.NotificationsPreferences.OverridePreferences
+	}
+
 	notification := model.GroupNotification{
 		GroupID:        groupID,
 		Members:        requestData.Members,
@@ -512,7 +528,7 @@ func (h *InternalApisHandler) SendGroupNotification(clientID string, w http.Resp
 		Topic:          requestData.Topic,
 		Data:           requestData.Data,
 	}
-	err = h.app.Services.SendGroupNotification(clientID, notification)
+	err = h.app.Services.SendGroupNotification(clientID, notification, predicate)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
