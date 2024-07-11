@@ -464,6 +464,7 @@ type sendGroupNotificationRequestBody struct {
 // @Tags Internal
 // @Accept json
 // @Param APP header string true "APP"
+// @Param service query string false "The name of the service which invokes the API"
 // @Param data body sendGroupNotificationRequestBody true "body data"
 // @Param group-id path string true "Group ID"
 // @Success 200

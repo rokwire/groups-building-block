@@ -3046,6 +3046,10 @@ paths:
         name: APP
         required: true
         type: string
+      - description: The name of the service which invokes the API
+        in: query
+        name: service
+        type: string
       - description: body data
         in: body
         name: data
@@ -3525,7 +3529,7 @@ paths:
           type: array
       - description: Group ID
         in: path
-        name: mgroup-id
+        name: group-id
         required: true
         type: string
       produces:
