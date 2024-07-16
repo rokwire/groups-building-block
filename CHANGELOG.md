@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+### Fixed
+- Additional fix: Truncate the post body to 250 characters within the notification[#457](https://github.com/rokwire/groups-building-block/issues/457)
+
 ## [1.46.1] - 2024-07-11
 ### Fixed
 - Do not send polls and direct message notifications as muted when they are not [#477](https://github.com/rokwire/groups-building-block/issues/477)

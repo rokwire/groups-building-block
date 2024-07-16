@@ -531,6 +531,7 @@ func (app *Application) sendGroupNotificationForNewPost(clientID string, current
 			if group.ResearchGroup {
 				groupStr = "Research Project"
 			}
+
 			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
 			operation := "messaged you"
 			if len(post.ToMembersList) == 0 {
@@ -554,7 +555,11 @@ func (app *Application) sendGroupNotificationForNewPost(clientID string, current
 				currentUserName = &val
 			}
 
-			body := fmt.Sprintf("%s %s '%s'", *currentUserName, operation, post.Body)
+			notificationBody := post.Body
+			if len(notificationBody) > 250 {
+				notificationBody = notificationBody[:250] + "..."
+			}
+			body := fmt.Sprintf("%s %s \"%s\"", *currentUserName, operation, notificationBody)
 			if post.UseAsNotification {
 				title = post.Subject
 				body = post.Body
