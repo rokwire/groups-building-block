@@ -8,6 +8,7 @@ type MembershipFilter struct {
 	UserIDs    []string `json:"user_ids"`    // core user ids
 	ExternalID *string  `json:"external_id"` // core user external id
 	NetID      *string  `json:"net_id"`      // core user net id
+	NetIDs     []string `json:"net_ids"`     // core user net ids
 	Name       *string  `json:"name"`        // member's name
 	Statuses   []string `json:"statuses"`    // lest of membership statuses
 	Offset     *int64   `json:"offset"`      // result offset

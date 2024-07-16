@@ -104,13 +104,13 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 				externalID := account.GetExternalID()
 				fullName := account.GetFullName()
 				netID := account.GetNetID()
-				if externalID != nil && fullName != "" && netID != nil && *netID != current.NetID {
+				if externalID != "" && fullName != "" && netID != "" && netID != current.NetID {
 					members = append(members, model.GroupMembership{
 						ClientID:   clientID,
 						GroupID:    group.ID,
 						UserID:     account.ID,
-						ExternalID: *externalID,
-						NetID:      *netID,
+						ExternalID: externalID,
+						NetID:      netID,
 						Name:       fullName,
 						Email:      account.Profile.Email,
 						Status:     membersConfig.Status,
@@ -532,9 +532,12 @@ func (app *Application) sendGroupNotificationForNewPost(clientID string, current
 				groupStr = "Research Project"
 			}
 			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
-			operation := "posted"
-			if post.ParentID != nil {
-				operation = "replied"
+			operation := "messaged you"
+			if len(post.ToMembersList) == 0 {
+				operation = "posted"
+				if post.ParentID != nil {
+					operation = "replied"
+				}
 			}
 			if currentUserName == nil && currentUserID != nil {
 				coreUsers, err := app.corebb.GetAccountsWithIDs([]string{*currentUserID}, nil, nil, nil, nil)
@@ -725,7 +728,7 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
 }
 
-func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification) error {
+func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
 	memberStatuses := notification.MemberStatuses
 	if len(memberStatuses) == 0 {
 		memberStatuses = []string{"admin", "member"}
@@ -741,9 +744,8 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 		return err
 	}
 
-	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-		return true, true // Should it be a separate notification preference?
-	}), notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
+	recipients := members.GetMembersAsNotificationRecipients(predicate)
+	app.sendNotification(recipients, notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
 
 	return nil
 }

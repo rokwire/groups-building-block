@@ -73,11 +73,11 @@ func (c *MembershipCollection) GetMembersByStatus(status string) []GroupMembersh
 	return members
 }
 
-// Evaluate membership mute policy. First result is canSend, second result is for muted
-type mutePreferencePredicate = func(member GroupMembership) (bool, bool)
+// MutePreferencePredicate Evaluates membership mute policy. First result is canSend, second result is for muted
+type MutePreferencePredicate = func(member GroupMembership) (bool, bool) // @name MutePreferencePredicate
 
 // GetMembersAsNotificationRecipients constructs all official members as notification recipients
-func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate mutePreferencePredicate) []notifications.Recipient {
+func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate MutePreferencePredicate) []notifications.Recipient {
 
 	recipients := []notifications.Recipient{}
 
@@ -154,8 +154,8 @@ func (m *GroupMembership) ApplyFromCoreAccountIfEmpty(user CoreAccount) {
 	if m.UserID == "" && user.ID != "" {
 		m.UserID = user.ID
 	}
-	if m.ExternalID == "" && user.GetExternalID() != nil {
-		m.ExternalID = *user.GetExternalID()
+	if m.ExternalID == "" && user.GetExternalID() != "" {
+		m.ExternalID = user.GetExternalID()
 	}
 	if m.Email == "" && user.Profile.Email != "" {
 		m.Email = user.Profile.Email
@@ -266,3 +266,46 @@ type NotificationsPreferences struct {
 	EventsMuted         bool `json:"events_mute" bson:"events_mute"`
 	PollsMuted          bool `json:"polls_mute" bson:"polls_mute"`
 } // @name NotificationsPreferences
+
+// MembershipStatuses list of membership statuses
+type MembershipStatuses []MembershipStatus
+
+// GetAllNetIDs returns all net ids
+func (m MembershipStatuses) GetAllNetIDs() []string {
+	var list []string
+
+	for _, status := range m {
+		if status.IsValid() && status.NetID != "" {
+			list = append(list, status.NetID)
+		}
+	}
+
+	return list
+}
+
+// GetAllNetIDStatusMapping returns all netID to status mapping
+func (m MembershipStatuses) GetAllNetIDStatusMapping() map[string]string {
+	mapping := map[string]string{}
+
+	for _, status := range m {
+		if status.IsValid() && status.NetID != "" {
+			mapping[status.NetID] = status.Status
+		}
+	}
+
+	return mapping
+}
+
+// MembershipStatus short membership status
+type MembershipStatus struct {
+	NetID  string `json:"net_id" bson:"net_id"`
+	Status string `json:"status" bson:"status"` //pending, member, admin, rejected
+}
+
+// IsValid Checks if the membership status is valid
+func (m *MembershipStatus) IsValid() bool {
+	return (m.Status == "rejected" || m.Status == "pending" || m.Status == "member" || m.Status == "admin") &&
+		(len(m.NetID) > 0)
+}
+
+// @name MembershipStatus

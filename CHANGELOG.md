@@ -6,6 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.46.1] - 2024-07-11
+### Fixed
+- Do not send polls and direct message notifications as muted when they are not [#477](https://github.com/rokwire/groups-building-block/issues/477)
+
+## [1.46.0] - 2024-07-10
+### Added
+- Admin API for adding group members by NetIDs [#458](https://github.com/rokwire/groups-building-block/issues/458)
+
+## [1.45.2] - 2024-07-01
+### Fixed
+- Update direct messages notification pattern [#475](https://github.com/rokwire/groups-building-block/issues/475)
+
+
+## [1.45.1] - 2024-06-26
+### Changed
+- Use all_bbs_groups & get_aggregated-users permissions for BBs APIs (Additional change) [#473](https://github.com/rokwire/groups-building-block/issues/473)
+
+## [1.45.0] - 2024-06-26
+### Changed
+- Use all_bbs_groups permissions for all BBs APIs [#473](https://github.com/rokwire/groups-building-block/issues/473)
+
+## [1.44.0] - 2024-06-24
 ### Added
 - Include sender, post content and action in group post notification body [#457](https://github.com/rokwire/groups-building-block/issues/457)
 - Send post notification only to the creator of the post [#372](https://github.com/rokwire/groups-building-block/issues/372)

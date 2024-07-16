@@ -89,7 +89,7 @@ type Services interface {
 	DeletePendingMembership(clientID string, current *model.User, groupID string) error
 
 	// Group Notifications
-	SendGroupNotification(clientID string, notification model.GroupNotification) error
+	SendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error
 	GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
 
 	// Group Events
@@ -311,8 +311,8 @@ func (s *servicesImpl) DeleteMembership(clientID string, current *model.User, gr
 	return s.app.deleteMembership(clientID, current, groupID)
 }
 
-func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification) error {
-	return s.app.sendGroupNotification(clientID, notification)
+func (s *servicesImpl) SendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
+	return s.app.sendGroupNotification(clientID, notification, predicate)
 }
 
 func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
@@ -361,10 +361,20 @@ func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.Us
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
+	AdminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
+	AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error
 }
 
 type administrationImpl struct {
 	app *Application
+}
+
+func (s *administrationImpl) AdminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
+	return s.app.adminAddGroupMemberships(clientID, current, groupID, membershipStatuses)
+}
+
+func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
+	return s.app.adminDeleteMembershipsByID(clientID, current, groupID, accountIDs)
 }
 
 // Storage is used by corebb to storage data - DB storage adapter, file storage adapter etc
@@ -439,8 +449,10 @@ type Storage interface {
 	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 
 	FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipWithContext(context storage.TransactionContext, clientID string, groupID string, userID string) (*model.GroupMembership, error)
 	FindGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error)
 	FindUserGroupMemberships(clientID string, userID string) (model.MembershipCollection, error)
+	FindUserGroupMembershipsWithContext(ctx storage.TransactionContext, clientID string, userID string) (model.MembershipCollection, error)
 	BulkUpdateGroupMembershipsByExternalID(clientID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
 	SaveGroupMembershipByExternalID(clientID string, groupID string, externalID string, userID *string, status *string,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error)
@@ -500,6 +512,7 @@ type Core interface {
 	RetrieveCoreServices(serviceIDs []string) ([]model.CoreService, error)
 	GetAccounts(searchParams map[string]interface{}, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
 	GetAccountsWithIDs(ids []string, appID *string, orgID *string, limit *int, offset *int) ([]model.CoreAccount, error)
+	GetAllCoreAccountsWithNetIDs(netIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 	LoadDeletedMemberships() ([]model.DeletedUserData, error)
