@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Use "get_groups" permission for loading user groups in the admin API [#481](https://github.com/rokwire/groups-building-block/issues/481)
+
 ## [1.46.2] - 2024-07-16
 ### Fixed
 - Additional fix: Truncate the post body to 250 characters within the notification[#457](https://github.com/rokwire/groups-building-block/issues/457)
