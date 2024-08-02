@@ -24,7 +24,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
 )
 
 // Adapter implements the Notifications interface

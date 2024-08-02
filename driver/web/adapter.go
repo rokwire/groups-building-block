@@ -23,7 +23,8 @@ import (
 	"net/http"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/webauth"
 	"github.com/rokwire/logging-library-go/v2/logs"
 
 	"github.com/gorilla/mux"
@@ -41,6 +42,9 @@ type Adapter struct {
 	adminApisHandler     *rest.AdminApisHandler
 	internalApisHandler  *rest.InternalApisHandler
 	analyticsApisHandler *rest.AnalyticsApisHandler
+
+	corsAllowedOrigins []string
+	corsAllowedHeaders []string
 
 	logger *logs.Logger
 }
@@ -180,7 +184,11 @@ func (we *Adapter) Start() {
 	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
 	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
 
-	log.Fatal(http.ListenAndServe(":"+we.port, router))
+	var handler http.Handler = router
+	if len(we.corsAllowedOrigins) > 0 {
+		handler = webauth.SetupCORS(we.corsAllowedOrigins, we.corsAllowedHeaders, router)
+	}
+	we.logger.Fatalf("Error serving: %v", http.ListenAndServe(":"+we.port, handler))
 }
 
 func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
@@ -335,8 +343,8 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
-	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
+	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, internalAPIKey string, serviceRegManager *authservice.ServiceRegManager,
+	groupServiceURL string, corsAllowedOrigins []string, corsAllowedHeaders []string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
@@ -347,5 +355,6 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
 
 	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
-		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, logger: logger}
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler,
+		corsAllowedOrigins: corsAllowedOrigins, corsAllowedHeaders: corsAllowedHeaders, logger: logger}
 }

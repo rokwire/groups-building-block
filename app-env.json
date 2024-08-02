@@ -26,6 +26,8 @@
         "CORE_BB_HOST": "<core bb host>",
         "GROUP_SERVICE_URL": "<service url>",
         "CALENDAR_BASE_URL": "<service url>",
-        "GR_SERVICE_ACCOUNT_ID": "<service account id>"
+        "GR_SERVICE_ACCOUNT_ID": "<service account id>",
+        "GR_CORS_ALLOWED_HEADERS": "<header1>,<header2>",
+        "GR_CORS_ALLOWED_ORIGINS": "<origin1>,<origin2>"
     }
 }
