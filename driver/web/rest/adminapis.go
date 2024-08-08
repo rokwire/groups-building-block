@@ -594,6 +594,68 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 	w.Write(data)
 }
 
+// GetGroupMembersV2 Gets the list of group members.
+// @Description Gets the list of group members.
+// @ID AdminGetGroupMembersV2
+// @Tags Admin
+// @Accept plain
+// @Param data body model.MembershipFilter true "body data"
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.GroupMembership
+// @Security AppUserAuth
+// @Router /api/admin/group/{group-id}/members/v2 [post]
+func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("adminapis.GetGroupMembers() Error: group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	requestData, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.GetGroupMembers() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var request model.MembershipFilter
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &request)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("adminapis.GetGroupMembers() Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
+		}
+	}
+
+	request.GroupIDs = append(request.GroupIDs, groupID)
+
+	//check if allowed to update
+	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	if err != nil {
+		log.Printf("adminapis.GetGroupMembers()  error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if members.Items == nil {
+		members.Items = []model.GroupMembership{}
+	}
+
+	data, err := json.Marshal(members.Items)
+	if err != nil {
+		log.Printf("adminapis.GetGroupMembers() error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // adminCreateMembershipsRequest is the request body for creating multiple group memberships
 type adminCreateMembershipsRequest []model.MembershipStatus
 
