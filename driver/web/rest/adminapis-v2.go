@@ -109,7 +109,7 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
+	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
