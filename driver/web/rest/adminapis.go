@@ -594,7 +594,7 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 	w.Write(data)
 }
 
-// GetGroupMembers Gets the list of group members.
+// GetGroupMembersV2 Gets the list of group members.
 // @Description Gets the list of group members.
 // @ID AdminGetGroupMembersV2
 // @Tags Admin

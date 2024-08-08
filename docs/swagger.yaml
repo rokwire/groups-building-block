@@ -1315,6 +1315,40 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/group/{group-id}/members/v2:
+    post:
+      consumes:
+      - text/plain
+      description: Gets the list of group members.
+      operationId: AdminGetGroupMembersV2
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMembership'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /api/admin/group/{group-id}/stats:
     get:
       consumes:
