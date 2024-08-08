@@ -1,3 +1,17 @@
+// Copyright 2022 Board of Trustees of the University of Illinois.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package web
 
 import (
@@ -6,18 +20,22 @@ import (
 	"fmt"
 	"groups/core"
 	"groups/core/model"
-	"groups/utils"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"golang.org/x/sync/syncmap"
-	"gopkg.in/ericchiang/go-oidc.v2"
+
+	"github.com/casbin/casbin"
+	"github.com/rokwire/core-auth-library-go/v2/authorization"
+	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/core-auth-library-go/v2/authutils"
+	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
 )
 
-//Auth handler
+// Auth handler
 type Auth struct {
 	apiKeysAuth  *APIKeysAuth
 	idTokenAuth  *IDTokenAuth
@@ -27,14 +45,7 @@ type Auth struct {
 	supportedClients []string
 }
 
-//Start starts the auth module
-func (auth *Auth) Start() error {
-	auth.idTokenAuth.start()
-
-	return nil
-}
-
-func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, *string) {
+func (auth *Auth) clientIDCheck(r *http.Request) (bool, string) {
 	clientID := r.Header.Get("APP")
 	if len(clientID) == 0 {
 		clientID = "edu.illinois.rokwire"
@@ -43,54 +54,62 @@ func (auth *Auth) clientIDCheck(w http.ResponseWriter, r *http.Request) (bool, *
 	//check if supported
 	for _, s := range auth.supportedClients {
 		if s == clientID {
-			return true, &clientID
+			return true, clientID
 		}
 	}
-
-	log.Println(fmt.Sprintf("400 - Bad Request"))
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("Bad Request"))
-	return false, nil
+	return false, ""
 }
 
-func (auth *Auth) apiKeyCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", false
 	}
 
 	apiKey := auth.getAPIKey(r)
-	authenticated := auth.apiKeysAuth.check(apiKey, w)
+	authenticated := auth.apiKeysAuth.check(apiKey, r)
 
-	return *clientID, authenticated
+	return clientID, authenticated
 }
 
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(*clientID, idToken, w)
-	return *clientID, user
+	user := auth.idTokenAuth.check(clientID, idToken, allowAnonymousCoreToken, nil, r)
+	return clientID, user
+}
+
+func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCClientIDs []string) (string, *model.User) {
+	clientIDOK, clientID := auth.clientIDCheck(r)
+	if !clientIDOK {
+		return "", nil
+	}
+
+	idToken := auth.getIDToken(r)
+	user := auth.idTokenAuth.check(clientID, idToken, false, allowedOIDCClientIDs, r)
+	return clientID, user
 }
 
 func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
+		log.Printf("%s %s error - missing or bad APP header", r.Method, r.URL.Path)
 		return "", false
 	}
 
 	internalAuthKey := auth.getInternalAPIKey(r)
 	authenticated := auth.internalAuth.check(internalAuthKey, w)
 
-	return *clientID, authenticated
+	return clientID, authenticated
 }
 
-func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bool, *model.User) {
+func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
 	//get client ID
-	clientIDOK, clientID := auth.clientIDCheck(w, r)
+	clientIDOK, clientID := auth.clientIDCheck(r)
 	if !clientIDOK {
 		return "", false, nil
 	}
@@ -99,25 +118,30 @@ func (auth *Auth) mixedCheck(w http.ResponseWriter, r *http.Request) (string, bo
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(*clientID, idToken, w)
+		user := auth.idTokenAuth.check(clientID, idToken, true, nil, r)
 		if user != nil {
 			authenticated = true
 		}
-		return *clientID, authenticated, user
+		return clientID, authenticated, user
 	}
 
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
-		authenticated := auth.apiKeysAuth.check(apiKey, w)
-		return *clientID, authenticated, nil
+		authenticated := auth.apiKeysAuth.check(apiKey, r)
+		return clientID, authenticated, nil
+	}
+	return clientID, false, nil
+}
+
+func (auth *Auth) adminCheck(r *http.Request) (string, *model.User, bool) {
+	clientIDOK, clientID := auth.clientIDCheck(r)
+	if !clientIDOK {
+		return "", nil, false
 	}
 
-	//neither id token nor api key - so bad request
-	log.Println("400 - Bad Request")
-	w.WriteHeader(http.StatusBadRequest)
-	w.Write([]byte("Bad Request"))
-	return *clientID, false, nil
+	user, forbidden := auth.adminAuth.check(clientID, r)
+	return clientID, user, forbidden
 }
 
 func (auth *Auth) getAPIKey(r *http.Request) *string {
@@ -128,12 +152,18 @@ func (auth *Auth) getAPIKey(r *http.Request) *string {
 	return &apiKey
 }
 
+// TBD Remove the legacy API key functionality
 func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
-	apiKey := r.Header.Get("ROKWIRE_GS_API_KEY")
-	if len(apiKey) == 0 {
-		return nil
+	internalAPIKey := r.Header.Get("INTERNAL-API-KEY")
+	if len(internalAPIKey) > 0 {
+		return &internalAPIKey
 	}
-	return &apiKey
+
+	legacyAPIKey := r.Header.Get("ROKWIRE_GS_API_KEY")
+	if len(legacyAPIKey) > 0 {
+		return &legacyAPIKey
+	}
+	return nil
 }
 
 func (auth *Auth) getIDToken(r *http.Request) *string {
@@ -154,34 +184,50 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 	return &idToken
 }
 
-//NewAuth creates new auth handler
-func NewAuth(app *core.Application, appKeys []string, internalAPIKeys []string, oidcProvider string, oidcClientID string, oidcAdminClientID string, oidcAdminWebClientID string) *Auth {
-	apiKeysAuth := newAPIKeysAuth(appKeys)
-	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID)
-	internalAuth := newInternalAuth(internalAPIKeys)
-	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID)
+// NewAuth creates new auth handler
+func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
+	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	var tokenAuth *tokenauth.TokenAuth
+	if serviceRegManager != nil {
+		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceRegManager.AuthService.ServiceID)
 
-	supportedClients := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
+		// Instantiate TokenAuth instance to perform token validation
+		var err error
+		tokenAuth, err = tokenauth.NewTokenAuth(true, serviceRegManager, permissionAuth, scopeAuth)
+		if err != nil {
+			log.Fatalf("error instancing token auth: %s", err)
+		}
+	}
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClients}
+	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
+	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
+	internalAuth := newInternalAuth(internalAPIKey)
+	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
+
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClientIDs}
 	return &auth
 }
 
 /////////////////////////////////////
 
-//APIKeysAuth entity
+// APIKeysAuth entity
 type APIKeysAuth struct {
 	appKeys []string
+
+	coreTokenAuth *tokenauth.TokenAuth
 }
 
-func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
+func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
-		//no key, so return 400
-		log.Println(fmt.Sprintf("400 - Bad Request"))
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
+		if auth.coreTokenAuth != nil {
+			_, err := auth.coreTokenAuth.CheckRequestTokens(r)
+			if err == nil {
+				return true
+			}
+			return false
+		}
 		return false
 	}
 
@@ -195,340 +241,236 @@ func (auth *APIKeysAuth) check(apiKey *string, w http.ResponseWriter) bool {
 		}
 	}
 	if !exist {
-		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *apiKey))
-
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
 		return false
 	}
 	return true
 }
 
-//NewAPIKeysAuth creates new api keys auth
-func newAPIKeysAuth(appKeys []string) *APIKeysAuth {
-	auth := APIKeysAuth{appKeys}
+// NewAPIKeysAuth creates new api keys auth
+func newAPIKeysAuth(appKeys []string, coreTokenAuth *tokenauth.TokenAuth) *APIKeysAuth {
+	auth := APIKeysAuth{appKeys, coreTokenAuth}
 	return &auth
 }
 
 ////////////////////////////////////
 
 type userData struct {
-	UIuceduUIN        *string   `json:"uiucedu_uin"`
-	Sub               *string   `json:"sub"`
-	Email             *string   `json:"email"`
-	UIuceduIsMemberOf *[]string `json:"uiucedu_is_member_of"`
-}
-
-type cacheUser struct {
-	user      *model.User
-	lastUsage time.Time
+	UIuceduUIN  *string  `json:"uiucedu_uin"`
+	Sub         *string  `json:"sub"`
+	AppID       *string  `json:"app_id"`
+	OrgID       *string  `json:"org_id"`
+	Aud         *string  `json:"aud"`
+	Email       *string  `json:"email"`
+	Name        *string  `json:"name"`
+	Uin         *string  `json:"uin"`
+	NetID       *string  `json:"net_id"`
+	Permissions []string `json:"uiucedu_is_member_of"`
 }
 
 ////////////////////////////////////
 
-//InternalAuth entity
+// InternalAuth entity
 type InternalAuth struct {
-	appKeys []string
+	internalAPIKey string
 }
 
-func (auth *InternalAuth) check(internalKey *string, w http.ResponseWriter) bool {
+// TBD Remove the legacy API key functionality
+func (auth *InternalAuth) check(internalAPIKey *string, w http.ResponseWriter) bool {
 	//check if there is internal key in the header
-	if internalKey == nil || len(*internalKey) == 0 {
-		//no key, so return 400
-		log.Println(fmt.Sprintf("400 - Bad Request"))
-
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("Bad Request"))
+	if internalAPIKey == nil || len(*internalAPIKey) == 0 {
 		return false
 	}
 
-	//check if the api key is one of the listed
-	appKeys := auth.appKeys
-	exist := false
-	for _, element := range appKeys {
-		if element == *internalKey {
-			exist = true
-			break
-		}
+	if *internalAPIKey == auth.internalAPIKey {
+		return true
 	}
-	if !exist {
-		//not exist, so return 401
-		log.Println(fmt.Sprintf("401 - Unauthorized for key %s", *internalKey))
 
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("Unauthorized"))
-		return false
-	}
-	return true
+	return false
 }
 
-//newInternalAuth creates new internal auth
-func newInternalAuth(internalAPIKeys []string) *InternalAuth {
-	auth := InternalAuth{appKeys: internalAPIKeys}
+// newInternalAuth creates new internal auth
+func newInternalAuth(internalAPIKey string) *InternalAuth {
+	auth := InternalAuth{
+		internalAPIKey: internalAPIKey,
+	}
 	return &auth
 }
 
 ///////////////////////////////////
 
-//IDTokenAuth entity
+// IDTokenAuth entity
 type IDTokenAuth struct {
 	app *core.Application
 
-	idTokenVerifier *oidc.IDTokenVerifier
+	idTokenVerifier   *oidc.IDTokenVerifier
+	appClientIDs      []string
+	extendedClientIDs []string
 
-	cachedUsers     *syncmap.Map //cache users while active - 5 minutes timeout
-	cachedUsersLock *sync.RWMutex
+	coreTokenAuth *tokenauth.TokenAuth
+
+	cachedUsers            *syncmap.Map //cache users while active - 5 minutes timeout
+	cachedUsersLock        *sync.RWMutex
+	cachedUsersLockMapping map[string]*sync.Mutex
 }
 
-func (auth *IDTokenAuth) start() {
-	go auth.cleanCacheUser()
-}
+func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCoreToken bool, allowedClientIDs []string, r *http.Request) *model.User {
+	var data *userData
+	var isCoreUser = false
+	var isAnonymous = false
+	var coreErr error
+	if auth.coreTokenAuth != nil {
+		var claims *tokenauth.Claims
+		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
+			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
+			if err != nil {
+				return nil
+			}
 
-//cleanChacheUser cleans all users from the cache with no activity > 5 minutes
-func (auth *IDTokenAuth) cleanCacheUser() {
-	log.Println("IDTokenAuth -> cleanCacheUser -> start")
+			var netID *string
+			if claims.ExternalIDs != nil {
+				if value, ok := claims.ExternalIDs["net_id"]; ok {
+					netID = &value
+				}
+			}
 
-	toRemove := []string{}
-
-	//find all users to remove - more than 5 minutes period from their last usage
-	now := time.Now().Unix()
-	auth.cachedUsers.Range(func(key, value interface{}) bool {
-		cacheUser, ok := value.(*cacheUser)
-		if !ok {
-			return false //break the iteration
+			log.Printf("Authentication successful for user: %v", claims)
+			permissions := strings.Split(claims.Permissions, ",")
+			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
+				Permissions: permissions, UIuceduUIN: &claims.UID, NetID: netID}
+			isCoreUser = true
+			isAnonymous = claims.Anonymous
 		}
-		identifier, ok := key.(string)
-		if !ok {
-			return false //break the iteration
+	}
+
+	if data == nil {
+		//Return error from core validation if OIDC is not configured
+		if auth.idTokenVerifier == nil {
+			log.Printf("error validating token - %s\n", coreErr)
+			return nil
 		}
 
-		difference := now - cacheUser.lastUsage.Unix()
-		//5 minutes
-		if difference > 300 {
-			toRemove = append(toRemove, identifier)
+		//1. Check if there is a token
+		if token == nil || len(*token) == 0 {
+			return nil
 		}
+		rawIDToken := *token
 
-		// this will continue iterating
-		return true
-	})
-
-	//remove the selected ones
-	count := len(toRemove)
-	if count > 0 {
-		log.Printf("IDTokenAuth -> cleanCacheUser -> %d items to remove\n", count)
-
-		for _, key := range toRemove {
-			auth.deleteCacheUser(key)
-		}
-	} else {
-		log.Println("IDTokenAuth -> cleanCacheUser -> nothing to remove")
-	}
-
-	nextLoad := time.Minute * 5
-	log.Printf("IDTokenAuth -> cleanCacheUser() -> next exec after %s\n", nextLoad)
-	timer := time.NewTimer(nextLoad)
-	<-timer.C
-	log.Println("IDTokenAuth -> cleanCacheUser() -> timer expired")
-
-	auth.cleanCacheUser()
-}
-
-func (auth *IDTokenAuth) check(clientID string, token *string, w http.ResponseWriter) *model.User {
-	//1. Check if there is a token
-	if token == nil || len(*token) == 0 {
-		auth.responseBadRequest(w)
-		return nil
-	}
-	rawIDToken := *token
-
-	//2. Validate the token
-	idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)
-	if err != nil {
-		log.Printf("error validating token - %s\n", err)
-
-		auth.responseUnauthorized(rawIDToken, w)
-		return nil
-	}
-
-	//3. Get the user data from the token
-	var userData userData
-	if err := idToken.Claims(&userData); err != nil {
-		log.Printf("error getting user data from token - %s\n", err)
-
-		auth.responseUnauthorized(rawIDToken, w)
-		return nil
-	}
-	//we must have UIuceduUIN
-	if userData.UIuceduUIN == nil {
-		log.Printf("missing uiuceuin data in the token - %s\n", err)
-
-		auth.responseUnauthorized(rawIDToken, w)
-		return nil
-	}
-
-	//4. Get the user for the provided external id.
-	user, err := auth.getUser(clientID, userData)
-	if err != nil {
-		log.Printf("error getting an user for external id - %s\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-	if user == nil {
-		log.Printf("for some reasons the user for external id - %s is nil\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-
-	//5. Update the user if needed
-	user, err = auth.updateUserIfNeeded(clientID, *user, userData)
-	if err != nil {
-		log.Printf("error updating an user for external id - %s\n", err)
-
-		auth.responseInternalServerError(w)
-		return nil
-	}
-
-	//6. Return the user
-	return user
-}
-
-func (auth *IDTokenAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
-	currentList := current.IsMemberOf
-	newList := userData.UIuceduIsMemberOf
-
-	isEqual := utils.EqualPointers(currentList, newList)
-	if !isEqual {
-		log.Println("updateUserIfNeeded -> need to update user")
-
-		//1. remove it from the cache
-		auth.deleteCacheUser(current.ExternalID + "_" + clientID)
-
-		//2. update it
-		current.IsMemberOf = userData.UIuceduIsMemberOf
-		err := auth.app.UpdateUser(clientID, &current)
+		//2. Validate the token
+		idToken, err := auth.idTokenVerifier.Verify(context.Background(), rawIDToken)
 		if err != nil {
-			return nil, err
+			log.Printf("error validating token - %s\n", err)
+			return nil
+		}
+
+		//3. Get the user data from the token
+		if err := idToken.Claims(&data); err != nil {
+			log.Printf("error getting user data from token - %s\n", err)
+			return nil
+		}
+
+		if allowedClientIDs == nil {
+			allowedClientIDs = auth.appClientIDs
+		}
+
+		validAud := false
+		if data.Aud != nil {
+			validAud = authutils.ContainsString(allowedClientIDs, *data.Aud)
+		}
+		if !validAud {
+			log.Printf("invalid audience in token: expected %v, got %s\n", allowedClientIDs, *data.Aud)
+			return nil
+		}
+
+		//we must have UIuceduUIN
+		if data.UIuceduUIN == nil {
+			log.Printf("missing uiuceuin data in the token - %s\n", err)
+			return nil
 		}
 	}
 
-	return &current, nil
-}
-
-//the identifier is externalID_clientID
-func (auth *IDTokenAuth) getCachedUser(identifier string) *cacheUser {
-	auth.cachedUsersLock.RLock()
-	defer auth.cachedUsersLock.RUnlock()
-
-	var cachedUser *cacheUser //to return
-
-	item, _ := auth.cachedUsers.Load(identifier)
-	if item != nil {
-		cachedUser = item.(*cacheUser)
+	if data == nil {
+		log.Println("nil user data")
+		return nil
 	}
 
-	//keep the last get time
-	if cachedUser != nil {
-		cachedUser.lastUsage = time.Now()
-		auth.cachedUsers.Store(identifier, cachedUser)
+	// 4. Construct user struct
+	var userID, name, externalID, email, netID, appID, orgID string
+	if data.Sub != nil {
+		userID = *data.Sub
 	}
-
-	return cachedUser
-}
-
-//the identifier is externalID_clientID
-func (auth *IDTokenAuth) cacheUser(identifier string, user *model.User) {
-	auth.cachedUsersLock.RLock()
-
-	cacheUser := &cacheUser{user: user, lastUsage: time.Now()}
-	auth.cachedUsers.Store(identifier, cacheUser)
-
-	auth.cachedUsersLock.RUnlock()
-}
-
-//the identifier is externalID_clientID
-func (auth *IDTokenAuth) deleteCacheUser(identifier string) {
-	auth.cachedUsersLock.RLock()
-
-	auth.cachedUsers.Delete(identifier)
-
-	auth.cachedUsersLock.RUnlock()
-}
-
-func (auth *IDTokenAuth) getUser(clientID string, userData userData) (*model.User, error) {
-	var err error
-
-	//1. First check if cached
-	cachedUser := auth.getCachedUser(*userData.UIuceduUIN + "_" + clientID)
-	if cachedUser != nil {
-		return cachedUser.user, nil
+	if data.Name != nil {
+		name = *data.Name
 	}
-
-	//2. Check if we have a such user in the application
-	user, err := auth.app.FindUser(clientID, *userData.UIuceduUIN)
-	if err != nil {
-		log.Printf("error finding an for external id - %s\n", err)
-		return nil, err
+	if data.AppID != nil {
+		appID = *data.AppID
 	}
-	if user != nil {
-		//cache it
-		auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
-		return user, nil
+	if data.OrgID != nil {
+		orgID = *data.OrgID
 	}
-
-	//3. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(clientID, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
-	if err != nil {
-		log.Printf("error creating an user - %s\n", err)
-		return nil, err
+	if data.UIuceduUIN != nil {
+		externalID = *data.UIuceduUIN
 	}
-	//cache it
-	auth.cacheUser(*userData.UIuceduUIN+"_"+clientID, user)
-	return user, nil
+	if data.Email != nil {
+		email = *data.Email
+	}
+	if data.NetID != nil {
+		netID = *data.NetID
+	}
+	return &model.User{
+		ID: userID, AppID: appID, OrgID: orgID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
+		Permissions: data.Permissions,
+	}
 }
 
 func (auth *IDTokenAuth) responseBadRequest(w http.ResponseWriter) {
-	log.Println(fmt.Sprintf("400 - Bad Request"))
+	log.Println("400 - Bad Request")
 
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("Bad Request"))
 }
 
 func (auth *IDTokenAuth) responseUnauthorized(token string, w http.ResponseWriter) {
-	log.Println(fmt.Sprintf("401 - Unauthorized for token %s", token))
+	log.Printf("401 - Unauthorized for token %s", token)
 
 	w.WriteHeader(http.StatusUnauthorized)
 	w.Write([]byte("Unauthorized"))
 }
 
 func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
-	log.Println(fmt.Sprintf("500 - Internal Server Error"))
+	log.Printf("500 - Internal Server Error")
 
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Write([]byte("Internal Server Error"))
 }
 
-//newIDTokenAuth creates new id token auth
-func newIDTokenAuth(app *core.Application, oidcProvider string, oidcClientID string) *IDTokenAuth {
-	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
-	if err != nil {
-		log.Fatalln(err)
+// newIDTokenAuth creates new id token auth
+func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
+	var idTokenVerifier *oidc.IDTokenVerifier
+	if len(oidcProvider) > 0 {
+		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		idTokenVerifier = provider.Verifier(&oidc.Config{SkipClientIDCheck: true})
 	}
-	idTokenVerifier := provider.Verifier(&oidc.Config{ClientID: oidcClientID})
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
-	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier,
+	appClientIDList := strings.Split(appClientIDs, ",")
+	extendedClientIDList := strings.Split(extendedClientIDs, ",")
+
+	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
+		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList,
 		cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }
 
 ////////////////////////////////////
 
-//AdminAuth entity
+// AdminAuth entity
 type AdminAuth struct {
 	app *core.Application
 
@@ -536,6 +478,10 @@ type AdminAuth struct {
 	appClientID    string
 	webAppVerifier *oidc.IDTokenVerifier
 	webAppClientID string
+
+	authorization *casbin.Enforcer
+
+	coreTokenAuth *tokenauth.TokenAuth
 
 	cachedUsers     *syncmap.Map //cache users while active - 5 minutes timeout
 	cachedUsersLock *sync.RWMutex
@@ -545,8 +491,116 @@ func (auth *AdminAuth) start() {
 
 }
 
-//gets the token from the request - as cookie or as Authorization header.
-//returns the id token and its type - mobile or web. If the token is taken by the cookie it is web otherwise it is mobile
+func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, bool) {
+	var data *userData
+	var isCoreUser = false
+	var coreErr error
+	if auth.coreTokenAuth != nil {
+		var claims *tokenauth.Claims
+		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		if coreErr == nil && claims != nil && !claims.Anonymous {
+			err := auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
+			if err != nil {
+				return nil, true
+			}
+
+			permissions := strings.Split(claims.Permissions, ",")
+			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
+				Permissions: permissions, UIuceduUIN: &claims.UID}
+			isCoreUser = true
+		}
+	}
+
+	if data == nil {
+		if auth.appVerifier == nil && auth.webAppVerifier == nil {
+			fmt.Printf("error validating token - %s\n", coreErr)
+			return nil, false
+		}
+
+		//1. Get the token from the request
+		rawIDToken, tokenType, err := auth.getIDToken(r)
+		if err != nil {
+			return nil, false
+		}
+
+		//3. Validate the token
+		idToken, err := auth.verify(*rawIDToken, *tokenType)
+		if err != nil {
+			log.Printf("error validating token - %s\n", err)
+			return nil, false
+		}
+
+		//4. Get the user data from the token
+		if err := idToken.Claims(&data); err != nil {
+			log.Printf("error getting user data from token - %s\n", err)
+			return nil, false
+		}
+
+		//we must have UIuceduUIN
+		if data.UIuceduUIN == nil {
+			log.Printf("error - missing uiuceuin data in the token - %s\n", err)
+			return nil, false
+		}
+
+		obj := r.URL.Path // the resource that is going to be accessed.
+		act := r.Method   // the operation that the user performs on the resource.
+
+		hasAccess := false
+		for _, s := range data.Permissions {
+			hasAccess = auth.authorization.Enforce(s, obj, act)
+			if hasAccess {
+				break
+			}
+		}
+
+		if !hasAccess {
+			log.Printf("Access control error - UIN: %s is trying to apply %s operation for %s\n", *data.UIuceduUIN, act, obj)
+			return nil, true
+		}
+	}
+
+	if data == nil {
+		log.Println("nil user data")
+		return nil, false
+	}
+
+	var name, externalID, email, userID, appID, orgID string
+	if data.Sub != nil {
+		userID = *data.Sub
+	}
+	if data.AppID != nil {
+		appID = *data.AppID
+	}
+	if data.OrgID != nil {
+		orgID = *data.OrgID
+	}
+	if data.Name != nil {
+		name = *data.Name
+	}
+	if data.UIuceduUIN != nil {
+		externalID = *data.UIuceduUIN
+	}
+	if data.Email != nil {
+		email = *data.Email
+	}
+	if data.Email != nil {
+		email = *data.Email
+	}
+	return &model.User{
+		ID:          userID,
+		AppID:       appID,
+		OrgID:       orgID,
+		ClientID:    clientID,
+		ExternalID:  externalID,
+		Email:       email,
+		Name:        name,
+		IsCoreUser:  isCoreUser,
+		Permissions: data.Permissions,
+	}, false
+}
+
+// gets the token from the request - as cookie or as Authorization header.
+// returns the id token and its type - mobile or web. If the token is taken by the cookie it is web otherwise it is mobile
 func (auth *AdminAuth) getIDToken(r *http.Request) (*string, *string, error) {
 	var tokenType string
 
@@ -617,61 +671,23 @@ func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
 	w.Write([]byte("Internal Server Error"))
 }
 
-func (auth *AdminAuth) getUser(clientID *string, userData userData) (*model.User, error) {
-	var err error
-
-	//2. Check if we have a such user in the application
-	user, err := auth.app.FindUser(*clientID, *userData.UIuceduUIN)
-	if err != nil {
-		log.Printf("error finding an for external id - %s\n", err)
-		return nil, err
-	}
-	if user != nil {
-		return user, nil
-	}
-
-	//3. This is the first call for the user, so we need to create it
-	user, err = auth.app.CreateUser(*clientID, *userData.UIuceduUIN, *userData.Email, userData.UIuceduIsMemberOf)
-	if err != nil {
-		log.Printf("error creating an user - %s\n", err)
-		return nil, err
-	}
-	return user, nil
-}
-
-func (auth *AdminAuth) updateUserIfNeeded(clientID string, current model.User, userData userData) (*model.User, error) {
-	currentList := current.IsMemberOf
-	newList := userData.UIuceduIsMemberOf
-
-	isEqual := utils.EqualPointers(currentList, newList)
-	if !isEqual {
-		log.Println("updateUserIfNeeded -> need to update user")
-
-		//2. update it
-		current.IsMemberOf = userData.UIuceduIsMemberOf
-		err := auth.app.UpdateUser(clientID, &current)
+func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string, coreTokenAuth *tokenauth.TokenAuth, authorization *casbin.Enforcer) *AdminAuth {
+	var appVerifier *oidc.IDTokenVerifier
+	var webAppVerifier *oidc.IDTokenVerifier
+	if len(oidcProvider) > 0 {
+		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
 		if err != nil {
-			return nil, err
+			log.Fatalln(err)
 		}
+		appVerifier = provider.Verifier(&oidc.Config{ClientID: appClientID})
+		webAppVerifier = provider.Verifier(&oidc.Config{ClientID: webAppClientID})
 	}
-
-	return &current, nil
-}
-
-func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string) *AdminAuth {
-	provider, err := oidc.NewProvider(context.Background(), oidcProvider)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	appVerifier := provider.Verifier(&oidc.Config{ClientID: appClientID})
-	webAppVerifier := provider.Verifier(&oidc.Config{ClientID: webAppClientID})
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
 	auth := AdminAuth{app: app, appVerifier: appVerifier, appClientID: appClientID,
-		webAppVerifier: webAppVerifier, webAppClientID: webAppClientID,
-		cachedUsers: cacheUsers, cachedUsersLock: lock}
+		webAppVerifier: webAppVerifier, webAppClientID: webAppClientID, coreTokenAuth: coreTokenAuth,
+		cachedUsers: cacheUsers, cachedUsersLock: lock, authorization: authorization}
 	return &auth
 }

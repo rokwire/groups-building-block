@@ -1,4 +1,9 @@
 vendor/
 bin/
-go.sum
+build/
 .vscode/
+*.sh
+docker-compose.env
+docker-compose.yml
+env.list
+*.exe
