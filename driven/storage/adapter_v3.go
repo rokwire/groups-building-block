@@ -549,6 +549,39 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 
 }
 
+// UpdateMembership updates a membership
+func (sa *Adapter) UpdateMemberships(clientID string, user *model.User, groupID string, operation model.MembershipMultiUpdate) error {
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.D{
+			primitive.E{Key: "group_id", Value: groupID},
+			primitive.E{Key: "user_id", Value: bson.M{"$in": operation.UserIDs}},
+		}
+		operarions := bson.D{}
+		if operation.Status != nil {
+			operarions = append(operarions, primitive.E{Key: "status", Value: *operation.Status})
+		}
+		if operation.Reason != nil {
+			operarions = append(operarions, primitive.E{Key: "reject_reason", Value: *operation.Reason})
+		}
+		if operation.DateAttended != nil {
+			operarions = append(operarions, primitive.E{Key: "date_attended", Value: *operation.DateAttended})
+		}
+		if len(operarions) > 0 {
+			operarions = append(operarions, primitive.E{Key: "date_updated", Value: time.Now()})
+			update := bson.D{
+				primitive.E{Key: "$set", Value: operarions},
+			}
+			_, err := sa.db.groupMemberships.UpdateManyWithContext(context, filter, update, nil)
+			if err != nil {
+				return err
+			}
+
+			return sa.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
+		}
+		return nil
+	})
+}
+
 // DeleteMembership deletes a member membership from a specific group
 func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID string) error {
 	return sa.DeleteMembershipWithContext(nil, clientID, groupID, userID)
