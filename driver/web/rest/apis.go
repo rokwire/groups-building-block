@@ -1160,12 +1160,12 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 // @ID MultiUpdateMembers
 // @Tags Client
 // @Accept plain
-// @Param data body createMemberRequest true "body data"
+// @Param data body model.MembershipMultiUpdate true "body data"
 // @Param APP header string true "APP"
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /api/group/{group-id}/members [post]
+// @Router /api/group/{group-id}/members/multi-update [put]
 func (h *ApisHandler) MultiUpdateMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
