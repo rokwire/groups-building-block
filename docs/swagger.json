@@ -2192,6 +2192,53 @@
                 }
             }
         },
+        "/api/group/{group-id}/members/multi-update": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates multiple members in a group at once with status and other details",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "MultiUpdateMembers",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MembershipMultiUpdate"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/pending-members": {
             "post": {
                 "security": [
@@ -4518,6 +4565,30 @@
                 },
                 "user_ids": {
                     "description": "core user ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "MembershipMultiUpdate": {
+            "type": "object",
+            "properties": {
+                "date_attended": {
+                    "description": "date attended",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "reason",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "new status",
+                    "type": "string"
+                },
+                "user_ids": {
+                    "description": "list of user ids",
                     "type": "array",
                     "items": {
                         "type": "string"

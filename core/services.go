@@ -348,6 +348,16 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	return nil
 }
 
+func (app *Application) updateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error {
+	if group != nil && group.CurrentMember != nil && group.CurrentMember.IsAdmin() {
+		err := app.storage.UpdateMemberships(clientID, user, group.ID, operation)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (app *Application) reportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error {
 
 	err := app.storage.ReportGroupAsAbuse(clientID, current.ID, group)

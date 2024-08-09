@@ -419,6 +419,23 @@ definitions:
           type: string
         type: array
     type: object
+  MembershipMultiUpdate:
+    properties:
+      date_attended:
+        description: date attended
+        type: string
+      reason:
+        description: reason
+        type: string
+      status:
+        description: new status
+        type: string
+      user_ids:
+        description: list of user ids
+        items:
+          type: string
+        type: array
+    type: object
   NotificationsPreferences:
     properties:
       all_mute:
@@ -2461,6 +2478,37 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/createMemberRequest'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/group/{group-id}/members/multi-update:
+    put:
+      consumes:
+      - text/plain
+      description: Updates multiple members in a group at once with status and other
+        details
+      operationId: MultiUpdateMembers
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipMultiUpdate'
       - description: APP
         in: header
         name: APP

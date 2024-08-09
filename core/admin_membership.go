@@ -64,7 +64,7 @@ func (app *Application) adminAddGroupMemberships(clientID string, current *model
 				}
 			}
 
-			return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, false)
+			return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
 		}
 
 		return nil
@@ -86,7 +86,7 @@ func (app *Application) adminDeleteMembershipsByID(clientID string, current *mod
 			}
 		}
 
-		return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, false)
+		return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
 	})
 
 	return err
