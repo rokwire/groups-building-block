@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Approve all API [#484](https://github.com/rokwire/groups-building-block/issues/484)
+### Fixed 
+- Fix Groups Stats are not updated [#490](https://github.com/rokwire/groups-building-block/issues/490)
 
 ## [1.47.0] - 2024-08-08
 ### Fixed
