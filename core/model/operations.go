@@ -26,5 +26,5 @@ type MembershipMultiUpdate struct {
 
 // IsStatusValid Checks if the status is valid
 func (m MembershipMultiUpdate) IsStatusValid() bool {
-	return m.Status != nil && (*m.Status == "pending" || *m.Status == "member" || *m.Status == "admin" || *m.Status == "rejected")
+	return m.Status == nil || (*m.Status == "pending" || *m.Status == "member" || *m.Status == "admin" || *m.Status == "rejected")
 }

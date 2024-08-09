@@ -549,7 +549,7 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 
 }
 
-// UpdateMembership updates a membership
+// UpdateMemberships Updates multiple memberships for userids in a group
 func (sa *Adapter) UpdateMemberships(clientID string, user *model.User, groupID string, operation model.MembershipMultiUpdate) error {
 	return sa.PerformTransaction(func(context TransactionContext) error {
 		filter := bson.D{

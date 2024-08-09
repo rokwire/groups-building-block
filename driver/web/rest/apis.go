@@ -1155,6 +1155,84 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	w.WriteHeader(http.StatusOK)
 }
 
+// MultiUpdateMembers Updates multiple members in a group at once with status and other details
+// @Description Updates multiple members in a group at once with status and other details
+// @ID MultiUpdateMembers
+// @Tags Client
+// @Accept plain
+// @Param data body createMemberRequest true "body data"
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/members [post]
+func (h *ApisHandler) MultiUpdateMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error: api.MultiUpdateMembers() - Error on marshal create a pending member - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var operation model.MembershipMultiUpdate
+	err = json.Unmarshal(data, &operation)
+	if err != nil {
+		log.Printf("error: api.MultiUpdateMembers() - Error on unmarshal the create pending member data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if len(operation.UserIDs) == 0 {
+		log.Printf("error: api.MultiUpdateMembers() - expected user_id or external_id")
+		http.Error(w, "expected user_id or external_id", http.StatusBadRequest)
+		return
+	}
+
+	if !operation.IsStatusValid() {
+		log.Printf("error: api.MultiUpdateMembers() - expected status with possible value (null, member, admin, rejected, pending)")
+		http.Error(w, "expected status with possible value (member, admin, rejected, pending)", http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("error: api.MultiUpdateMembers() - there is no a group for the provided id - %s", groupID)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+		log.Printf("error: api.MultiUpdateMembers() - %s is not allowed to create group member", current.Email)
+		w.WriteHeader(http.StatusForbidden)
+		w.Write([]byte("Forbidden"))
+		return
+	}
+
+	err = h.app.Services.UpdateMemberships(clientID, current, group, operation)
+	if err != nil {
+		log.Printf("error: api.MultiUpdateMembers() - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
 // DeleteMember deletes a member membership from a group
 // @Description Deletes a member membership from a group
 // @ID DeleteMember
