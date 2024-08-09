@@ -5,13 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
+### Added
+- Approve all API [#484](https://github.com/rokwire/groups-building-block/issues/484)
 ### Fixed 
 - Fix Groups Stats are not updated [#490](https://github.com/rokwire/groups-building-block/issues/490)
 
 ## [1.47.0] - 2024-08-08
 ### Fixed
 - The value for "current_member" is not available in group json [#485](https://github.com/rokwire/groups-building-block/issues/485)
-### Fixed 
 - Groups Stats are not updated [#483](https://github.com/rokwire/groups-building-block/issues/483)
 ### Added
 - POST request for loading group members [#455](https://github.com/rokwire/groups-building-block/issues/455)

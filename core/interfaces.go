@@ -48,6 +48,7 @@ type Services interface {
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
 	UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
+	UpdateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
@@ -179,6 +180,10 @@ func (s *servicesImpl) ApplyMembershipApproval(clientID string, current *model.U
 
 func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
 	return s.app.updateMembership(clientID, current, membershipID, status, dateAttended, notificationsPreferences)
+}
+
+func (s *servicesImpl) UpdateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error {
+	return s.app.updateMemberships(clientID, user, group, operation)
 }
 
 func (s *servicesImpl) GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
@@ -462,6 +467,7 @@ type Storage interface {
 	CreatePendingMembership(clientID string, current *model.User, group *model.Group, member *model.GroupMembership) error
 	ApplyMembershipApproval(clientID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
 	UpdateMembership(clientID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
+	UpdateMemberships(clientID string, user *model.User, groupID string, operation model.MembershipMultiUpdate) error
 	DeleteMembership(clientID string, groupID string, userID string) error
 	DeleteMembershipByID(clientID string, current *model.User, membershipID string) error
 	DeleteUnsyncedGroupMemberships(clientID string, groupID string, syncID string) (int64, error)
