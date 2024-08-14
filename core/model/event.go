@@ -29,11 +29,11 @@ type Event struct {
 	ToMembersList []ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
 } // @name Event
 
-// AdminsIdentifiers represents extended identfier which handles external id in addtion of the account id.
-type AdminsIdentifiers struct {
+// AccountIdentifiers represents extended identfier which handles external id in addtion of the account id.
+type AccountIdentifiers struct {
 	AccountID  *string `json:"account_id"`
 	ExternalID *string `json:"external_id"`
-}
+} // @name AccountIdentifiers
 
 // HasToMembersList Checks if the ToMembersList is not empty
 func (e Event) HasToMembersList() bool {
@@ -87,8 +87,10 @@ type GroupEventFilter struct {
 	Limit  *int64 `json:"limit,omitempty"`
 	Offset *int64 `json:"offset,omitempty"`
 
-	StartTimeAfter  *int64 `json:"start_time_after,omitempty"`
-	StartTimeBefore *int64 `json:"start_time_before,omitempty"`
-	EndTimeAfter    *int64 `json:"end_time_after,omitempty"`
-	EndTimeBefore   *int64 `json:"end_time_before,omitempty"`
+	StartTimeAfter             *int64 `json:"start_time_after,omitempty"`
+	StartTimeAfterNullEndTime  *int64 `json:"start_time_after_null_end_time,omitempty"`
+	StartTimeBefore            *int64 `json:"start_time_before,omitempty"`
+	StartTimeBeforeNullEndTime *int64 `json:"start_time_before_null_end_time,omitempty"`
+	EndTimeAfter               *int64 `json:"end_time_after,omitempty"`
+	EndTimeBefore              *int64 `json:"end_time_before,omitempty"`
 } // @name GroupEventFilter

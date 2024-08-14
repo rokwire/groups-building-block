@@ -307,6 +307,231 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 	w.Write(data)
 }
 
+type adminCreateGroupRequest struct {
+	Title                    string                         `json:"title" validate:"required"`
+	Description              *string                        `json:"description"`
+	Category                 string                         `json:"category"`
+	Tags                     []string                       `json:"tags"`
+	Privacy                  string                         `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool                           `json:"hidden_for_search"`
+	CreatorName              string                         `json:"creator_name"`
+	CreatorEmail             string                         `json:"creator_email"`
+	CreatorPhotoURL          string                         `json:"creator_photo_url"`
+	ImageURL                 *string                        `json:"image_url"`
+	WebURL                   *string                        `json:"web_url"`
+	MembershipQuestions      []string                       `json:"membership_questions"`
+	AuthmanEnabled           bool                           `json:"authman_enabled"`
+	AuthmanGroup             *string                        `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool                           `json:"only_admins_can_create_polls" `
+	CanJoinAutomatically     bool                           `json:"can_join_automatically"`
+	AttendanceGroup          bool                           `json:"attendance_group" `
+	ResearchOpen             bool                           `json:"research_open"`
+	ResearchGroup            bool                           `json:"research_group"`
+	ResearchConsentStatement string                         `json:"research_consent_statement"`
+	ResearchConsentDetails   string                         `json:"research_consent_details"`
+	ResearchDescription      string                         `json:"research_description"`
+	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
+	Settings                 *model.GroupSettings           `json:"settings"`
+	Attributes               map[string]interface{}         `json:"attributes"`
+	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
+} //@name adminCreateGroupRequest
+
+// CreateGroup creates a group
+// @Description Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire groups access. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
+// @ID AdminCreateGroup
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body createGroupRequest true "body data"
+// @Success 200 {object} createResponse
+// @Security AppUserAuth
+// @Router /api/groups [post]
+func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal create a group - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	var requestData adminCreateGroupRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create group data - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	//validate
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating create group data - %s\n", err.Error())
+		http.Error(w, utils.NewValidationError(err).JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	if requestData.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
+		log.Printf("Only managed_group_admin could create a managed group")
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
+	if requestData.ResearchGroup && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to create research group '%s'. Only user with research_group_admin permission can create research group", current.Email, requestData.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
+	groupData := &model.Group{
+		Title:                    requestData.Title,
+		Description:              requestData.Description,
+		Category:                 requestData.Category,
+		Tags:                     requestData.Tags,
+		Privacy:                  requestData.Privacy,
+		HiddenForSearch:          requestData.Hidden,
+		ImageURL:                 requestData.ImageURL,
+		WebURL:                   requestData.WebURL,
+		MembershipQuestions:      requestData.MembershipQuestions,
+		AuthmanGroup:             requestData.AuthmanGroup,
+		AuthmanEnabled:           requestData.AuthmanEnabled,
+		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:     requestData.CanJoinAutomatically,
+		AttendanceGroup:          requestData.AttendanceGroup,
+		ResearchGroup:            requestData.ResearchGroup,
+		ResearchOpen:             requestData.ResearchOpen,
+		ResearchConsentStatement: requestData.ResearchConsentStatement,
+		ResearchConsentDetails:   requestData.ResearchConsentDetails,
+		ResearchDescription:      requestData.ResearchDescription,
+		ResearchProfile:          requestData.ResearchProfile,
+		Settings:                 requestData.Settings,
+		Attributes:               requestData.Attributes,
+	}
+
+	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, groupData, requestData.MembersConfig)
+	if groupErr != nil {
+		log.Println(groupErr.Error())
+		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	if insertedID != nil {
+		data, err = json.Marshal(createResponse{InsertedID: *insertedID})
+		if err != nil {
+			log.Println("Error on marshal create group response")
+			http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// UpdateGroup updates a group
+// @Description Updates a group.
+// @ID AdminUpdateGroup
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body updateGroupRequest true "body data"
+// @Param id path string true "ID"
+// @Success 200 {string} Successfully updated
+// @Security AppUserAuth
+// @Router /api/groups/{id} [put]
+func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	id := params["id"]
+	if len(id) <= 0 {
+		log.Println("Group id is required")
+		http.Error(w, utils.NewMissingParamError("Group id is required").JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal the update group item - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	var requestData updateGroupRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the update group request data - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating update group data - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to update
+	group, err := h.app.Services.GetGroup(clientID, current, id)
+	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could update a group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
+		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+	if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
+	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
+		ID:                       id,
+		Title:                    requestData.Title,
+		Description:              requestData.Description,
+		Category:                 requestData.Category,
+		Tags:                     requestData.Tags,
+		Privacy:                  requestData.Privacy,
+		HiddenForSearch:          requestData.Hidden,
+		ImageURL:                 requestData.ImageURL,
+		WebURL:                   requestData.WebURL,
+		MembershipQuestions:      requestData.MembershipQuestions,
+		AuthmanGroup:             requestData.AuthmanGroup,
+		AuthmanEnabled:           requestData.AuthmanEnabled,
+		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:     requestData.CanJoinAutomatically,
+		AttendanceGroup:          requestData.AttendanceGroup,
+
+		ResearchGroup:            requestData.ResearchGroup,
+		ResearchOpen:             requestData.ResearchOpen,
+		ResearchConsentStatement: requestData.ResearchConsentStatement,
+		ResearchConsentDetails:   requestData.ResearchConsentDetails,
+		ResearchDescription:      requestData.ResearchDescription,
+		ResearchProfile:          requestData.ResearchProfile,
+		Settings:                 requestData.Settings,
+		Attributes:               requestData.Attributes,
+	})
+	if groupErr != nil {
+		log.Printf("Error on updating group - %s\n", err)
+		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
 // GetGroupMembers Gets the list of group members.
 // @Description Gets the list of group members.
 // @ID AdminGetGroupMembers
@@ -369,9 +594,79 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 	w.Write(data)
 }
 
+// adminCreateMembershipsRequest is the request body for creating multiple group memberships
+type adminCreateMembershipsRequest []model.MembershipStatus
+
+//@name adminCreateMembershipsRequest
+
+// CreateMemberships create multiple group memberships.
+// @Description Updates a membership. Only the status can be changed.
+// @ID AdminCreateMemberships
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body adminCreateMembershipsRequest true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /group/{group-id}/members [put]
+func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("adminapis.CreateMemberships() Error on Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.CreateMemberships() Error on read request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData adminCreateMembershipsRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("adminapis.CreateMemberships() Error on unmarshal request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	for _, item := range requestData {
+		err = validate.Struct(item)
+		if err != nil {
+			log.Printf("adminapis.CreateMemberships() Error on validating request data - %s\n", err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	//check if allowed to see the events for this group
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	err = h.app.Admin.AdminAddGroupMemberships(clientID, current, groupID, model.MembershipStatuses(requestData))
+	if err != nil {
+		log.Printf("adminapis.CreateMemberships() Error - %s\n", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
 type adminUpdateMembershipRequest struct {
 	Status *string `json:"status" validate:"required,oneof=pending member admin rejected"`
-} // @name updateMembershipRequest
+} // @name adminUpdateMembershipRequest
 
 // UpdateMembership updates a membership. Only the status can be changed.
 // @Description Updates a membership. Only the status can be changed.
@@ -479,97 +774,6 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-}
-
-// GetGroupPosts gets all posts for the desired group.
-// @Description gets all posts for the desired group.
-// @ID AdminGetGroupPosts
-// @Tags Admin
-// @Param APP header string true "APP"
-// @Param groupID query string true "groupID"
-// @Param type query string false "Values: message|post"
-// @Param offset query string false "offset"
-// @Param limit query integer false "limit"
-// @Param order query string false "asc|desc"
-// @Success 200 {array} model.Post
-// @Security AppUserAuth
-// @Router /api/admin/group/{groupID}/posts [get]
-func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	var filter model.PostsFilter
-	id := params["group-id"]
-	if len(id) <= 0 {
-		log.Println("groupID is required")
-		http.Error(w, "groupID is required", http.StatusBadRequest)
-		return
-	}
-	filter.GroupID = id
-
-	postTypesQuery, ok := r.URL.Query()["type"]
-	if ok && len(postTypesQuery) > 0 {
-		if postTypesQuery[0] != "message" && postTypesQuery[0] != "post" {
-			log.Println("the 'type' query param can be 'message' or 'post'")
-			http.Error(w, "the 'type' query param can be 'message' or 'post'", http.StatusBadRequest)
-			return
-		}
-		filter.PostType = &postTypesQuery[0]
-	}
-
-	scheduleOnlyQuery, ok := r.URL.Query()["scheduled_only"]
-	if ok && len(scheduleOnlyQuery) > 0 {
-		if scheduleOnlyQuery[0] != "true" && scheduleOnlyQuery[0] != "false" {
-			log.Println("the 'scheduled_only' query param can be 'true', 'false', or missing")
-			http.Error(w, "the 'scheduled_only' query param can be 'true', 'false', or missing", http.StatusBadRequest)
-			return
-		}
-		if scheduleOnlyQuery[0] == "true" {
-			val := true
-			filter.ScheduledOnly = &val
-		}
-		if scheduleOnlyQuery[0] == "false" {
-			val := false
-			filter.ScheduledOnly = &val
-		}
-	}
-
-	offsets, ok := r.URL.Query()["offset"]
-	if ok && len(offsets[0]) > 0 {
-		val, err := strconv.ParseInt(offsets[0], 0, 64)
-		if err == nil {
-			filter.Offset = &val
-		}
-	}
-
-	limits, ok := r.URL.Query()["limit"]
-	if ok && len(limits[0]) > 0 {
-		val, err := strconv.ParseInt(limits[0], 0, 64)
-		if err == nil {
-			filter.Limit = &val
-		}
-	}
-
-	orders, ok := r.URL.Query()["order"]
-	if ok && len(orders[0]) > 0 {
-		filter.Order = &orders[0]
-	}
-
-	posts, err := h.app.Services.GetPosts(clientID, current, filter, nil, false)
-	if err != nil {
-		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	data, err := json.Marshal(posts)
-	if err != nil {
-		log.Printf("error on marshal posts for group (%s) - %s", id, err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
 }
 
 // GetGroupEvents gives the group events

@@ -1,5 +1,12 @@
 basePath: /gr
 definitions:
+  AccountIdentifiers:
+    properties:
+      account_id:
+        type: string
+      external_id:
+        type: string
+    type: object
   Creator:
     properties:
       email:
@@ -72,6 +79,8 @@ definitions:
         type: string
       image_url:
         type: string
+      is_abuse:
+        type: boolean
       members:
         items:
           $ref: '#/definitions/Member'
@@ -135,7 +144,11 @@ definitions:
         type: integer
       start_time_after:
         type: integer
+      start_time_after_null_end_time:
+        type: integer
       start_time_before:
+        type: integer
+      start_time_before_null_end_time:
         type: integer
     type: object
   GroupMembership:
@@ -218,6 +231,8 @@ definitions:
       attributes:
         additionalProperties: true
         type: object
+      authman_enabled:
+        type: boolean
       category:
         description: group category
         type: string
@@ -382,6 +397,11 @@ definitions:
       net_id:
         description: core user net id
         type: string
+      net_ids:
+        description: core user net ids
+        items:
+          type: string
+        type: array
       offset:
         description: result offset
         type: integer
@@ -591,6 +611,13 @@ definitions:
       inserted_id:
         type: string
     type: object
+  getEventUserIDsResponse:
+    properties:
+      user_ids:
+        items:
+          type: string
+        type: array
+    type: object
   getGroupResponse:
     properties:
       category:
@@ -758,11 +785,12 @@ definitions:
     required:
     - approve
     type: object
-  model.AdminsIdentifiers:
+  model.MembershipStatus:
     properties:
-      account_id:
+      net_id:
         type: string
-      external_id:
+      status:
+        description: pending, member, admin, rejected
         type: string
     type: object
   model.Post:
@@ -845,6 +873,11 @@ definitions:
       send_to_group_admins:
         type: boolean
     type: object
+  reportAbuseGroupRequestBody:
+    properties:
+      comment:
+        type: string
+    type: object
   rest.analyticsGetGroupsMembersResponse:
     properties:
       client_id:
@@ -906,7 +939,7 @@ definitions:
     properties:
       admins_identifiers:
         items:
-          $ref: '#/definitions/model.AdminsIdentifiers'
+          $ref: '#/definitions/AccountIdentifiers'
         type: array
       event:
         additionalProperties: true
@@ -1046,12 +1079,14 @@ definitions:
     type: object
   updateMembershipRequest:
     properties:
+      date_attended:
+        type: string
+      notifications_preferences:
+        $ref: '#/definitions/NotificationsPreferences'
       status:
         enum:
-        - pending
         - member
         - admin
-        - rejected
         type: string
     required:
     - status
@@ -2704,6 +2739,31 @@ paths:
       - AppUserAuth: []
       tags:
       - Client
+  /api/group/{id}/report/abuse:
+    put:
+      consumes:
+      - application/json
+      description: Reports an abusive group
+      operationId: ReportAbuseGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/reportAbuseGroupRequestBody'
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
   /api/group/events/v3:
     post:
       consumes:
@@ -2985,6 +3045,10 @@ paths:
         in: header
         name: APP
         required: true
+        type: string
+      - description: The name of the service which invokes the API
+        in: query
+        name: service
         type: string
       - description: body data
         in: body
@@ -3424,66 +3488,59 @@ paths:
       - Client
   /api/v2/user/groups:
     get:
+      description: Gets all related group users linked for the described event id
+      operationId: BBSGetEventUsers
+      parameters:
+      - description: Event ID
+        in: path
+        name: event_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getEventUserIDsResponse'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /group/{group-id}/members:
+    put:
       consumes:
       - application/json
-      description: Gives the user groups. It can be filtered by category, title and
-        privacy. V2.
-      operationId: GetUserGroupsV2
+      description: Updates a membership. Only the status can be changed.
+      operationId: AdminCreateMemberships
       parameters:
       - description: APP
         in: header
         name: APP
         required: true
         type: string
-      - description: Deprecated - instead use request body filter! Filtering by group's
-          title (case-insensitive)
-        in: query
-        name: title
-        type: string
-      - description: Deprecated - instead use request body filter! category - filter
-          by category
-        in: query
-        name: category
-        type: string
-      - description: Deprecated - instead use request body filter! privacy - filter
-          by privacy
-        in: query
-        name: privacy
-        type: string
-      - description: Deprecated - instead use request body filter! offset - skip number
-          of records
-        in: query
-        name: offset
-        type: string
-      - description: Deprecated - instead use request body filter! limit - limit the
-          result
-        in: query
-        name: limit
-        type: string
-      - description: Deprecated - instead use request body filter! include_hidden
-          - Includes hidden groups if a search by title is performed. Possible value
-          is true. Default false.
-        in: query
-        name: include_hidden
-        type: string
       - description: body data
         in: body
         name: data
         required: true
         schema:
-          $ref: '#/definitions/GroupsFilter'
+          items:
+            $ref: '#/definitions/model.MembershipStatus'
+          type: array
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
       responses:
         "200":
           description: OK
-          schema:
-            items:
-              $ref: '#/definitions/Group'
-            type: array
       security:
       - AppUserAuth: []
-      - APIKeyAuth: []
       tags:
-      - Client
+      - Admin
   /int/authman/synchronize:
     post:
       consumes:

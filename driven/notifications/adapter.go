@@ -113,13 +113,13 @@ func (na *Adapter) sendNotification(recipients []Recipient, topic *string, title
 }
 
 // SendMail sends email to a user
-func (na *Adapter) SendMail(toEmail string, subject string, body string) {
-	go na.sendMail(toEmail, subject, body)
+func (na *Adapter) SendMail(toEmail string, subject string, body string) error {
+	return na.sendMail(toEmail, subject, body)
 }
 
 func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
 	if len(toEmail) > 0 && len(subject) > 0 && len(body) > 0 {
-		url := fmt.Sprintf("%s/api/int/mail", na.baseURL)
+		url := fmt.Sprintf("%s/api/bbs/mail", na.baseURL)
 
 		bodyData := map[string]interface{}{
 			"to_mail": toEmail,
@@ -128,13 +128,13 @@ func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
 		}
 		bodyBytes, err := json.Marshal(bodyData)
 		if err != nil {
-			log.Printf("error creating notification request - %s", err)
+			log.Printf("sendMail error creating notification request - %s", err)
 			return err
 		}
 
 		req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
 		if err != nil {
-			log.Printf("error creating load user data request - %s", err)
+			log.Printf("sendMail error creating load user data request - %s", err)
 			return err
 		}
 
@@ -147,8 +147,17 @@ func (na *Adapter) sendMail(toEmail string, subject string, body string) error {
 		defer resp.Body.Close()
 
 		if resp.StatusCode != 200 {
-			log.Printf("error with response code - %d", resp.StatusCode)
-			return fmt.Errorf("error with response code != 200")
+			responseData, err := io.ReadAll(resp.Body)
+			if err != nil {
+				log.Printf("sendMail error: unable to read response json: %s", err)
+				return fmt.Errorf("sendMail error: unable to parse response json: %s", err)
+			}
+			if responseData != nil {
+				log.Printf("sendMail rror with response code - %d, response: %s", resp.StatusCode, responseData)
+			} else {
+				log.Printf("sendMail rror with response code - %d", resp.StatusCode)
+			}
+			return fmt.Errorf("sendMail error with response code != 200")
 		}
 	}
 	return nil

@@ -10,13 +10,14 @@ WORKDIR /groups-app
 COPY . .
 RUN make
 
-FROM alpine:3.19
+FROM alpine:3.20
 
 COPY --from=builder /groups-app/bin/groups /
 COPY --from=builder /groups-app/docs/swagger.yaml /docs/swagger.yaml
 
 COPY --from=builder /groups-app/driver/web/authorization_model.conf /driver/web/authorization_model.conf
 COPY --from=builder /groups-app/driver/web/authorization_policy.csv /driver/web/authorization_policy.csv
+COPY --from=builder /groups-app/driver/web/authorization_bbs_permission_policy.csv /driver/web/authorization_bbs_permission_policy.csv
 
 COPY --from=builder /groups-app/driver/web/permissions_authorization_policy.csv /driver/web/permissions_authorization_policy.csv
 COPY --from=builder /groups-app/driver/web/scope_authorization_policy.csv /driver/web/scope_authorization_policy.csv

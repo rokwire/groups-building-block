@@ -8,6 +8,7 @@ type MembershipFilter struct {
 	UserIDs    []string `json:"user_ids"`    // core user ids
 	ExternalID *string  `json:"external_id"` // core user external id
 	NetID      *string  `json:"net_id"`      // core user net id
+	NetIDs     []string `json:"net_ids"`     // core user net ids
 	Name       *string  `json:"name"`        // member's name
 	Statuses   []string `json:"statuses"`    // lest of membership statuses
 	Offset     *int64   `json:"offset"`      // result offset
@@ -27,6 +28,7 @@ type GroupsFilter struct {
 	IncludeHidden    *bool                          `json:"include_hidden"`     // Include hidden groups
 	Hidden           *bool                          `json:"hidden"`             // Filter by hidden flag. Values: true (show only hidden), false (show only not hidden), missing - don't do any filtering on this field.
 	ExcludeMyGroups  *bool                          `json:"exclude_my_groups"`  // Exclude My groups
+	AuthmanEnabled   *bool                          `json:"authman_enabled"`
 	ResearchOpen     *bool                          `json:"research_open"`
 	ResearchGroup    *bool                          `json:"research_group"`
 	ResearchAnswers  map[string]map[string][]string `json:"research_answers"`

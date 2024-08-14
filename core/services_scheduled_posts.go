@@ -30,21 +30,7 @@ func (app Application) processScheduledPosts() error {
 	startTime := time.Now()
 	syncKey := "scheduled_posts"
 	transaction := func(context storage.TransactionContext) error {
-		times, err := app.storage.FindSyncTimes(context, "", "scheduled_posts", false)
-		if err != nil {
-			return err
-		}
-		if times != nil && times.StartTime != nil {
-			if times.EndTime == nil {
-				if !startTime.After(times.StartTime.Add(time.Second * time.Duration(60))) {
-					log.Println("Another schduled post task process is running for clientID ")
-					return fmt.Errorf("another schduled post task  process is running")
-				}
-				log.Printf("schduled post task past timeout threshold %d\n", 60)
-			}
-		}
-
-		err = app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, Key: syncKey})
+		err := app.checkForConcurentRun(context, startTime, syncKey)
 		if err != nil {
 			return err
 		}
@@ -63,7 +49,7 @@ func (app Application) processScheduledPosts() error {
 					return err
 				}
 				if group != nil {
-					err = app.sendGroupNotificationForNewPost(post.ClientID, &post.Creator.UserID, group, &post)
+					err = app.sendGroupNotificationForNewPost(post.ClientID, &post.Creator.UserID, &post.Creator.Name, group, &post)
 					if err != nil {
 						return nil
 					}
@@ -97,5 +83,27 @@ func (app Application) processScheduledPosts() error {
 		return err
 	}
 
+	return nil
+}
+
+func (app Application) checkForConcurentRun(context storage.TransactionContext, startTime time.Time, syncKey string) error {
+	times, err := app.storage.FindSyncTimes(context, "", "scheduled_posts", false)
+	if err != nil {
+		return err
+	}
+	if times != nil && times.StartTime != nil {
+		if times.EndTime == nil {
+			if !startTime.After(times.StartTime.Add(time.Second * time.Duration(60))) {
+				log.Println("Another schduled post task process is running for clientID ")
+				return fmt.Errorf("another schduled post task  process is running")
+			}
+			log.Printf("schduled post task past timeout threshold %d\n", 60)
+		}
+	}
+
+	err = app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, Key: syncKey})
+	if err != nil {
+		return err
+	}
 	return nil
 }

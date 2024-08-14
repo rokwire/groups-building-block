@@ -2617,6 +2617,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/{id}/report/abuse": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Reports an abusive group",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "ReportAbuseGroup",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/reportAbuseGroupRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/groups": {
             "get": {
                 "security": [
@@ -3045,6 +3085,12 @@ const docTemplate = `{
                         "name": "APP",
                         "in": "header",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "The name of the service which invokes the API",
+                        "name": "service",
+                        "in": "query"
                     },
                     {
                         "description": "body data",
@@ -3660,19 +3706,53 @@ const docTemplate = `{
                 "security": [
                     {
                         "AppUserAuth": []
-                    },
-                    {
-                        "APIKeyAuth": []
                     }
                 ],
-                "description": "Gives the user groups. It can be filtered by category, title and privacy. V2.",
+                "description": "Gets all related group users linked for the described event id",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "BBSGetEventUsers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getEventUserIDsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/group/{group-id}/members": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates a membership. Only the status can be changed.",
                 "consumes": [
                     "application/json"
                 ],
-                "tags": [
-                    "Client"
+                "produces": [
+                    "application/json"
                 ],
-                "operationId": "GetUserGroupsV2",
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminCreateMemberships",
                 "parameters": [
                     {
                         "type": "string",
@@ -3682,60 +3762,28 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! category - filter by category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
-                        "name": "privacy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! limit - limit the result",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
-                        "name": "include_hidden",
-                        "in": "query"
-                    },
-                    {
                         "description": "body data",
                         "name": "data",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/GroupsFilter"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.MembershipStatus"
+                            }
                         }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/Group"
-                            }
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -3809,6 +3857,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "AccountIdentifiers": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "external_id": {
+                    "type": "string"
+                }
+            }
+        },
         "Creator": {
             "type": "object",
             "required": [
@@ -3916,6 +3975,9 @@ const docTemplate = `{
                 "image_url": {
                     "type": "string"
                 },
+                "is_abuse": {
+                    "type": "boolean"
+                },
                 "members": {
                     "type": "array",
                     "items": {
@@ -4011,7 +4073,13 @@ const docTemplate = `{
                 "start_time_after": {
                     "type": "integer"
                 },
+                "start_time_after_null_end_time": {
+                    "type": "integer"
+                },
                 "start_time_before": {
+                    "type": "integer"
+                },
+                "start_time_before_null_end_time": {
                     "type": "integer"
                 }
             }
@@ -4135,6 +4203,9 @@ const docTemplate = `{
                 "attributes": {
                     "type": "object",
                     "additionalProperties": true
+                },
+                "authman_enabled": {
+                    "type": "boolean"
                 },
                 "category": {
                     "description": "group category",
@@ -4372,6 +4443,13 @@ const docTemplate = `{
                 "net_id": {
                     "description": "core user net id",
                     "type": "string"
+                },
+                "net_ids": {
+                    "description": "core user net ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "offset": {
                     "description": "result offset",
@@ -4688,6 +4766,17 @@ const docTemplate = `{
                 }
             }
         },
+        "getEventUserIDsResponse": {
+            "type": "object",
+            "properties": {
+                "user_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "getGroupResponse": {
             "type": "object",
             "properties": {
@@ -4940,13 +5029,14 @@ const docTemplate = `{
                 }
             }
         },
-        "model.AdminsIdentifiers": {
+        "model.MembershipStatus": {
             "type": "object",
             "properties": {
-                "account_id": {
+                "net_id": {
                     "type": "string"
                 },
-                "external_id": {
+                "status": {
+                    "description": "pending, member, admin, rejected",
                     "type": "string"
                 }
             }
@@ -5067,6 +5157,14 @@ const docTemplate = `{
                 }
             }
         },
+        "reportAbuseGroupRequestBody": {
+            "type": "object",
+            "properties": {
+                "comment": {
+                    "type": "string"
+                }
+            }
+        },
         "rest.analyticsGetGroupsMembersResponse": {
             "type": "object",
             "properties": {
@@ -5160,7 +5258,7 @@ const docTemplate = `{
                 "admins_identifiers": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.AdminsIdentifiers"
+                        "$ref": "#/definitions/AccountIdentifiers"
                     }
                 },
                 "event": {
@@ -5372,13 +5470,17 @@ const docTemplate = `{
                 "status"
             ],
             "properties": {
+                "date_attended": {
+                    "type": "string"
+                },
+                "notifications_preferences": {
+                    "$ref": "#/definitions/NotificationsPreferences"
+                },
                 "status": {
                     "type": "string",
                     "enum": [
-                        "pending",
                         "member",
-                        "admin",
-                        "rejected"
+                        "admin"
                     ]
                 }
             }

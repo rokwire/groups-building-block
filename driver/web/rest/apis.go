@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/rokwire/logging-library-go/v2/logs"
 	"gopkg.in/go-playground/validator.v9"
 )
 
@@ -43,8 +44,8 @@ type ApisHandler struct {
 // @Produce plain
 // @Success 200 {string} v1.4.9
 // @Router /version [get]
-func (h ApisHandler) Version(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(h.app.Services.GetVersion()))
+func (h ApisHandler) Version(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	return log.HTTPResponseSuccessMessage(h.app.Services.GetVersion())
 }
 
 type createGroupRequest struct {
@@ -156,7 +157,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
-	})
+	}, nil)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -2456,6 +2457,70 @@ func (h *ApisHandler) GetResearchProfileUserCount(clientID string, current *mode
 	w.Write(data)
 }
 
+// reportAbuseGroupRequestBody request body for report abuse group API call
+type reportAbuseGroupRequestBody struct {
+	Comment string `json:"comment"`
+} // @name reportAbuseGroupRequestBody
+
+// ReportAbuseGroup Reports an abusive group
+// @Description Reports an abusive group
+// @ID ReportAbuseGroup
+// @Tags Client
+// @Accept  json
+// @Param APP header string true "APP"
+// @Param data body reportAbuseGroupRequestBody true "body data"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/group/{id}/report/abuse [put]
+func (h *ApisHandler) ReportAbuseGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["id"]
+	if len(groupID) <= 0 {
+		log.Println("id is required")
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on read reportAbuseGroupRequestBody - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var body reportAbuseGroupRequestBody
+	err = json.Unmarshal(data, &body)
+	if err != nil {
+		log.Printf("error on unmarshal reportAbuseGroupRequestBody (%s) - %s", groupID, err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//check if allowed to delete
+	group, err := h.app.Services.GetGroupEntity(clientID, groupID)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if group == nil {
+		log.Printf("there is no a group for the provided group id - %s", groupID)
+		//do not say to much to the user as we do not know if he/she is an admin for the group yet
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	err = h.app.Services.ReportGroupAsAbuse(clientID, current, group, body.Comment)
+	if err != nil {
+		log.Printf("error on report group as abuse (%s) - %s", groupID, err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
 // NewApisHandler creates new rest Client APIs Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}
@@ -2474,4 +2539,9 @@ func NewInternalApisHandler(app *core.Application) *InternalApisHandler {
 // NewAnalyticsApisHandler creates new rest Analytics Handler instance
 func NewAnalyticsApisHandler(app *core.Application) *AnalyticsApisHandler {
 	return &AnalyticsApisHandler{app: app}
+}
+
+// NewBBApisHandler creates new rest BB Api Handler instance
+func NewBBApisHandler(app *core.Application) *BBSApisHandler {
+	return &BBSApisHandler{app: app}
 }

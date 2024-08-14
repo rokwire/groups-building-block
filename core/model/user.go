@@ -15,7 +15,6 @@
 package model
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -35,6 +34,9 @@ type User struct {
 	ClientID      string     `bson:"client_id"`
 	Permissions   []string   `bson:"permissions"`
 	OriginalToken string
+
+	AuthType string
+	IsBBUser bool
 } // @name User
 
 // ToCreator coverts to Creator
@@ -120,16 +122,63 @@ type CoreAccount struct {
 }
 
 // GetExternalID Gets the external id
-func (c *CoreAccount) GetExternalID() *string {
+func (c *CoreAccount) GetExternalID() string {
 	for _, auth := range c.AuthTypes {
 		if auth.Active && len(auth.Identifier) > 0 {
-			return &auth.Identifier
+			return auth.Identifier
 		}
 	}
-	return nil
+	return ""
+}
+
+// GetNetID Gets the external id
+func (c *CoreAccount) GetNetID() string {
+	for _, auth := range c.AuthTypes {
+		if auth.Active && len(auth.Identifier) > 0 {
+			return auth.Params.User.SystemSpecific.PreferredUsername
+		}
+	}
+	return ""
 }
 
 // GetFullName Builds the fullname
 func (c *CoreAccount) GetFullName() string {
-	return fmt.Sprintf("%s %s", c.Profile.FirstName, c.Profile.LastName)
+	var name string
+	if len(c.Profile.FirstName) > 0 {
+		name += c.Profile.FirstName
+	}
+	if len(c.Profile.LastName) > 0 {
+		if len(name) > 0 {
+			name += " "
+		}
+		name += c.Profile.LastName
+	}
+	return name
+}
+
+// ToMembership Builds the fullname
+func (c *CoreAccount) ToMembership(groupID, status string) GroupMembership {
+	return GroupMembership{
+		GroupID:     groupID,
+		UserID:      c.ID,
+		ExternalID:  c.GetExternalID(),
+		Name:        c.GetFullName(),
+		NetID:       c.GetNetID(),
+		Email:       c.Profile.Email,
+		Status:      status,
+		DateCreated: time.Now(),
+	}
+}
+
+// DeletedUserData represents a user-deleted
+type DeletedUserData struct {
+	AppID       string              `json:"app_id"`
+	Memberships []DeletedMembership `json:"memberships"`
+	OrgID       string              `json:"org_id"`
+}
+
+// DeletedMembership defines model for DeletedMembership.
+type DeletedMembership struct {
+	AccountID string                  `json:"account_id"`
+	Context   *map[string]interface{} `json:"context,omitempty"`
 }

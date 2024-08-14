@@ -43,6 +43,7 @@ type database struct {
 	events              *collectionWrapper
 	posts               *collectionWrapper
 	managedGroupConfigs *collectionWrapper
+	users               *collectionWrapper
 
 	listeners []Listener
 }
@@ -159,6 +160,7 @@ func (m *database) start() error {
 	m.events = events
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
+	m.users = users
 
 	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
@@ -183,7 +185,27 @@ func (m *database) applyConfigsChecks(configs *collectionWrapper) error {
 func (m *database) applySyncTimesChecks(syncTimes *collectionWrapper) error {
 	log.Println("apply sync times checks.....")
 
-	err := syncTimes.AddIndex(bson.D{primitive.E{Key: "client_id", Value: 1}}, true)
+	indexes, err := syncTimes.ListIndexes()
+	if err != nil {
+		return err
+	}
+	if len(indexes) > 0 {
+		for _, index := range indexes {
+			if index["name"] == "client_id_1" {
+				log.Printf("drop client_id_1 index")
+				err = syncTimes.DropIndex("client_id_1")
+				if err != nil {
+					return err
+				}
+				break
+			}
+
+		}
+	}
+
+	err = syncTimes.AddIndex(bson.D{
+		primitive.E{Key: "key", Value: 1},
+	}, true)
 	if err != nil {
 		return err
 	}

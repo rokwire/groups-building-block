@@ -21,11 +21,17 @@ import (
 	"groups/driver/web/rest"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/casbin/casbin"
+	"github.com/rokwire/core-auth-library-go/v3/authorization"
 	"github.com/rokwire/core-auth-library-go/v3/authservice"
+	"github.com/rokwire/core-auth-library-go/v3/tokenauth"
 	"github.com/rokwire/core-auth-library-go/v3/webauth"
+
+	"github.com/rokwire/logging-library-go/v2/errors"
 	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 
 	"github.com/gorilla/mux"
 
@@ -34,14 +40,16 @@ import (
 
 // Adapter entity
 type Adapter struct {
-	host string
-	port string
-	auth *Auth
+	host  string
+	port  string
+	auth  *Auth
+	auth2 *Auth2
 
 	apisHandler          *rest.ApisHandler
 	adminApisHandler     *rest.AdminApisHandler
 	internalApisHandler  *rest.InternalApisHandler
 	analyticsApisHandler *rest.AnalyticsApisHandler
+	bbsAPIHandler        *rest.BBSApisHandler
 
 	corsAllowedOrigins []string
 	corsAllowedHeaders []string
@@ -75,7 +83,7 @@ func (we *Adapter) Start() {
 	subrouter := router.PathPrefix("/gr").Subrouter()
 	subrouter.PathPrefix("/doc/ui").Handler(we.serveDocUI())
 	subrouter.HandleFunc("/doc", we.serveDoc)
-	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version)).Methods("GET")
+	subrouter.HandleFunc("/version", we.wrapFunc(we.apisHandler.Version, nil)).Methods("GET")
 
 	//handle rest apis
 	restSubrouter := router.PathPrefix("/gr/api").Subrouter()
@@ -92,12 +100,18 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
 	adminSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.CreateGroup)).Methods("POST")
+	adminSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroup)).Methods("PUT")
 	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembers)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateMemberships)).Methods("POST")
 	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/events", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.adminApisHandler.CreateGroupPost)).Methods("POST")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.GetGroupPost)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroupPost)).Methods("PUT")
 	adminSubrouter.HandleFunc("/group/{group-id}/posts/{postID}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/events/v3/load", we.mixedAuthWrapFunc(we.adminApisHandler.GetGroupCalendarEventsV3)).Methods("GET", "POST")
 	adminSubrouter.HandleFunc("/group/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.CreateCalendarEventMultiGroup)).Methods("POST")
@@ -138,6 +152,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
 	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
+	restSubrouter.HandleFunc("/group/{id}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
 
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
@@ -184,6 +199,10 @@ func (we *Adapter) Start() {
 	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
 	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
 
+	// BB Apis
+	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
+	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsAPIHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
+
 	var handler http.Handler = router
 	if len(we.corsAllowedOrigins) > 0 {
 		handler = webauth.SetupCORS(we.corsAllowedOrigins, we.corsAllowedHeaders, router)
@@ -199,15 +218,6 @@ func (we Adapter) serveDoc(w http.ResponseWriter, r *http.Request) {
 func (we Adapter) serveDocUI() http.Handler {
 	url := fmt.Sprintf("%s/gr/doc", we.host)
 	return httpSwagger.Handler(httpSwagger.URL(url))
-}
-
-func (we *Adapter) wrapFunc(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-		handler(w, req)
-		logObj.RequestComplete()
-	}
 }
 
 type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
@@ -341,6 +351,89 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 	}
 }
 
+// BBs auth ///////////
+
+type handleFunc = func(*logs.Log, *http.Request, *model.User) logs.HTTPResponse
+
+func (we Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, req *http.Request) {
+		logObj := we.logger.NewRequestLog(req)
+
+		logObj.RequestReceived()
+
+		var response logs.HTTPResponse
+
+		//1. Handles authorization
+		if authorization != nil {
+			responseStatus, claims, err := authorization.Check(req)
+			if err != nil {
+				logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, responseStatus, true))
+				return
+			}
+
+			logObj.SetContext("account_id", claims.Subject)
+
+			user := model.User{
+				AppID:       claims.AppID,
+				OrgID:       claims.OrgID,
+				ID:          claims.Subject,
+				AuthType:    claims.AuthType,
+				IsBBUser:    true,
+				IsCoreUser:  true,
+				Permissions: we.getPermissions(claims),
+			}
+			response = handler(logObj, req, &user)
+		} else {
+			response = handler(logObj, req, nil)
+		}
+
+		//3. complete response
+		logObj.SendHTTPResponse(w, response)
+		logObj.RequestComplete()
+	}
+}
+
+func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
+	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/authorization_bbs_permission_policy.csv")
+	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs token auth", nil, err)
+	}
+
+	check := func(claims *tokenauth.Claims, req *http.Request) (int, error) {
+		if !claims.Service {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
+		}
+
+		if !claims.FirstParty {
+			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
+		}
+
+		return http.StatusOK, nil
+	}
+
+	auth := tokenauth.NewStandardHandler(bbsTokenAuth, check)
+	return auth, nil
+}
+
+// END BBs auth //////////
+
+func (we Adapter) getPermissions(claims *tokenauth.Claims) []string {
+	if claims == nil {
+		return []string{}
+	}
+	permissions := strings.Split(claims.Permissions, ",")
+	return permissions
+}
+
+func (we Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResponse, l *logs.Log) {
+	//1. return response
+	l.SendHTTPResponse(w, response)
+
+	//2. print
+	l.RequestComplete()
+}
+
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string, internalAPIKey string, serviceRegManager *authservice.ServiceRegManager,
@@ -349,12 +442,19 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
+
+	auth2, err := NewAuth2(serviceRegManager, logger)
+	if err != nil {
+		logger.Fatalf("unable to start auth2")
+	}
+
 	apisHandler := rest.NewApisHandler(app)
 	adminApisHandler := rest.NewAdminApisHandler(app)
 	internalApisHandler := rest.NewInternalApisHandler(app)
 	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
+	bbApisHandler := rest.NewBBApisHandler(app)
 
 	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
-		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler,
-		corsAllowedOrigins: corsAllowedOrigins, corsAllowedHeaders: corsAllowedHeaders, logger: logger}
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, auth2: auth2,
+		corsAllowedOrigins: corsAllowedOrigins, bbsAPIHandler: bbApisHandler, corsAllowedHeaders: corsAllowedHeaders, logger: logger}
 }

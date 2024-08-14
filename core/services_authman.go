@@ -33,8 +33,10 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		if err != nil {
 			return err
 		}
+
+		time.Now().Unix()
 		if times != nil && times.StartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindSyncConfig(context, clientID)
 			if err != nil {
 				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
 			}
@@ -62,7 +64,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			}
 		}
 
-		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, ClientID: clientID, Key: syncKey})
+		return app.storage.SaveSyncTimes(context, model.SyncTimes{StartTime: &startTime, EndTime: nil, Key: syncKey})
 	}
 
 	err := app.storage.PerformTransaction(transaction)
@@ -75,7 +77,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
 		endTime := time.Now()
-		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, ClientID: clientID, Key: syncKey})
+		err := app.storage.SaveSyncTimes(nil, model.SyncTimes{StartTime: &startTime, EndTime: &endTime, Key: syncKey})
 		if err != nil {
 			log.Printf("Error saving sync configs to end sync: %s\n", err)
 			return
@@ -233,8 +235,8 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 		userExternalIDmapping := map[string]model.CoreAccount{}
 		for _, user := range users {
 			identifier := user.GetExternalID()
-			if identifier != nil {
-				userExternalIDmapping[*identifier] = user
+			if identifier != "" {
+				userExternalIDmapping[identifier] = user
 			}
 		}
 
@@ -242,6 +244,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 			if value, ok := userExternalIDmapping[externalID]; ok {
 				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
+					ClientID:    clientID,
 					UserID:      value.ID,
 					ExternalID:  externalID,
 					Name:        value.GetFullName(),
@@ -252,6 +255,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 			} else {
 				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
+					ClientID:    clientID,
 					ExternalID:  externalID,
 					Status:      memberStatus,
 					DateCreated: time.Now(),
@@ -307,7 +311,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroupWithContext(context, clientID, groupID, nil)
+		group, err = app.storage.FindGroup(context, clientID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
@@ -319,7 +323,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 		}
 
 		if group.SyncStartTime != nil {
-			config, err := app.storage.FindSyncConfig(clientID)
+			config, err := app.storage.FindSyncConfig(context, clientID)
 			if err != nil {
 				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
 			}
@@ -382,6 +386,15 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 	updateOperations := []storage.SingleMembershipOperation{}
 	batchUpdate := func(externalIDs []string, operations []storage.SingleMembershipOperation) {
 
+		authmanUsersMapping := map[string]model.AuthmanSubject{}
+		authmanMembers, err := app.authman.RetrieveAuthmanUsers(externalIDs)
+		if err != nil {
+			log.Printf("Error on bulk loading %d Authman users %s: %s\n", len(externalIDs), *authmanGroup.AuthmanGroup, err)
+		}
+		for _, authmanauthmanMember := range authmanMembers {
+			authmanUsersMapping[authmanauthmanMember.ID] = authmanauthmanMember
+		}
+
 		localUsersMapping := map[string]model.CoreAccount{}
 		localUsers, err := app.corebb.GetAllCoreAccountsWithExternalIDs(externalIDs, nil, nil)
 		if err != nil {
@@ -393,14 +406,31 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		if len(localUsers) > 0 {
 			for _, user := range localUsers {
 				identifier := user.GetExternalID()
-				if identifier != nil {
-					localUsersMapping[*identifier] = user
+				if identifier != "" {
+					localUsersMapping[identifier] = user
 				}
 			}
 		}
 		for index := range operations {
 			if localUser, ok := localUsersMapping[operations[index].ExternalID]; ok {
 				operations[index].UserID = &localUser.ID
+				coreName := localUser.GetFullName()
+				if operations[index].Name == nil && coreName != "" {
+					operations[index].Name = &coreName
+				}
+				if operations[index].Email == nil && localUser.Profile.Email != "" {
+					val := localUser.Profile.Email
+					operations[index].Email = &val
+				}
+			}
+			// Assume - there is no core account yet
+			if operations[index].Name == nil {
+				if authmanMember, ok := authmanUsersMapping[operations[index].ExternalID]; ok {
+					if operations[index].Name == nil && authmanMember.Name != "" {
+						val := authmanMember.Name
+						operations[index].Name = &val
+					}
+				}
 			}
 		}
 

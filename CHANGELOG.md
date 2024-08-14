@@ -8,6 +8,81 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add CORS support
 
+## [1.46.3] - 2024-07-24
+### Fixed
+- Use "get_groups" permission for loading user groups in the admin API [#481](https://github.com/rokwire/groups-building-block/issues/481)
+
+## [1.46.2] - 2024-07-16
+### Fixed
+- Additional fix: Truncate the post body to 250 characters within the notification[#457](https://github.com/rokwire/groups-building-block/issues/457)
+
+## [1.46.1] - 2024-07-11
+### Fixed
+- Do not send polls and direct message notifications as muted when they are not [#477](https://github.com/rokwire/groups-building-block/issues/477)
+
+## [1.46.0] - 2024-07-10
+### Added
+- Admin API for adding group members by NetIDs [#458](https://github.com/rokwire/groups-building-block/issues/458)
+
+## [1.45.2] - 2024-07-01
+### Fixed
+- Update direct messages notification pattern [#475](https://github.com/rokwire/groups-building-block/issues/475)
+
+
+## [1.45.1] - 2024-06-26
+### Changed
+- Use all_bbs_groups & get_aggregated-users permissions for BBs APIs (Additional change) [#473](https://github.com/rokwire/groups-building-block/issues/473)
+
+## [1.45.0] - 2024-06-26
+### Changed
+- Use all_bbs_groups permissions for all BBs APIs [#473](https://github.com/rokwire/groups-building-block/issues/473)
+
+## [1.44.0] - 2024-06-24
+### Added
+- Include sender, post content and action in group post notification body [#457](https://github.com/rokwire/groups-building-block/issues/457)
+- Send post notification only to the creator of the post [#372](https://github.com/rokwire/groups-building-block/issues/372)
+
+## [1.43.0] - 2024-06-19
+### Added
+- Provide Replies when loading single Post [#468](https://github.com/rokwire/groups-building-block/issues/468)
+- Create Group Report Abuse API [#456](https://github.com/rokwire/groups-building-block/issues/456)
+
+## [1.42.0] - 2024-06-12
+### Changed
+- Updated golang & alpine Docker container versions
+### Added
+- Delete everything from the database related to the core account  [#463](https://github.com/rokwire/groups-building-block/issues/463)
+- Add new permissions for managing group events independently for granting access [#465](https://github.com/rokwire/groups-building-block/issues/465)
+
+## [1.41.0] - 2024-06-05
+### Added
+- Introduce BBs APIs. Implement aggregate event users. [#459](https://github.com/rokwire/groups-building-block/issues/459)
+
+## [1.40.2] - 2024-06-03
+### Fixed
+- Fix missing member name and email for a managed group auto sync task [#460](https://github.com/rokwire/groups-building-block/issues/460)
+
+## [1.40.1] - 2024-05-10
+### Fixed
+- Additional fix and cleanup[#452](https://github.com/rokwire/groups-building-block/issues/452)
+
+## [1.40.0] - 2024-05-09
+### Added
+- Improve create group admin api [#452](https://github.com/rokwire/groups-building-block/issues/452)
+
+## [1.39.0] - 2024-04-30
+### Added
+- Improve group events APIs [#450](https://github.com/rokwire/groups-building-block/issues/450)
+
+## [1.38.0] - 2024-04-26
+### Added
+- Groups rapid fixes and improvements [#447](https://github.com/rokwire/groups-building-block/issues/447)
+- Group Create Post adds members by default [#442](https://github.com/rokwire/groups-building-block/issues/442)
+- Implement create and update post admin APIs [#448](https://github.com/rokwire/groups-building-block/issues/448)
+- API for creating Group for the Admin app [#445](https://github.com/rokwire/groups-building-block/issues/445)
+- API for updating group for the Admin app [#446](https://github.com/rokwire/groups-building-block/issues/446)
+- Ability to filter authman/manged groups [#441](https://github.com/rokwire/groups-building-block/issues/441)
+
 ## [1.37.1] - 2024-04-24
 ### Fixed
 - Additional fix for scheduled posts[#437](https://github.com/rokwire/groups-building-block/issues/437)

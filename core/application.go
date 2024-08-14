@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/robfig/cron/v3"
+	"github.com/rokwire/logging-library-go/v2/logs"
 )
 
 type scheduledTask struct {
@@ -37,8 +38,8 @@ type Application struct {
 
 	config *model.ApplicationConfig
 
-	Services       Services       //expose to the drivers adapters
-	Administration Administration //expose to the drivrs adapters
+	Services Services
+	Admin    Administration
 
 	storage       Storage
 	notifications Notifications
@@ -51,6 +52,7 @@ type Application struct {
 
 	//synchronize managed groups timer
 	scheduler *cron.Cron
+	logger    *logs.Logger
 }
 
 // Start starts the corebb part of the application
@@ -65,7 +67,7 @@ func (app *Application) Start() {
 func (app *Application) setupCronTimer() {
 	log.Println("setupCronTimer")
 
-	configs, err := app.storage.FindSyncConfigs()
+	configs, err := app.storage.FindSyncConfigs(nil)
 	if err != nil {
 		log.Printf("error loading sync configs: %s", err)
 	}
@@ -89,8 +91,29 @@ func (app *Application) setupCronTimer() {
 		}
 	}
 
-	_, err = app.scheduler.AddFunc("* * * * *", func() {
-		log.Println("run scheduled post tick")
+	app.startScheduledPostTask()
+
+	app.startCoreCleanupTask()
+
+	app.scheduler.Start()
+}
+
+func (app *Application) startCoreCleanupTask() {
+	// TBD: Implement CRUD APIs for config and load them from DB
+	_, err := app.scheduler.AddFunc("0 0 * * *", func() {
+		log.Println("run scheduled core account cleanup tick")
+		app.processCoreAccountsCleanup()
+	})
+	if err != nil {
+		log.Printf("error on running core account cleanup task: %s", err)
+	}
+	log.Printf("successful running of core account cleanup scheduling task")
+}
+
+func (app *Application) startScheduledPostTask() {
+	// TBD: Implement CRUD APIs for config and load them from DB
+	_, err := app.scheduler.AddFunc("* * * * *", func() {
+		log.Println("run scheduled core cleanup tick")
 		err := app.processScheduledPosts()
 		if err != nil {
 			log.Printf("error processing scheduled prosts: %s", err)
@@ -100,11 +123,9 @@ func (app *Application) setupCronTimer() {
 		log.Printf("error on running post scheduling task: %s", err)
 	}
 	log.Printf("successful running of post scheduling task")
-
-	app.scheduler.Start()
 }
 
-func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifiers []model.AdminsIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifiers []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
 	memberships, err := app.findGroupMemberships(clientID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 		UserID:   &current.ID,
@@ -115,7 +136,8 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, current.ID, event, current.OrgID, current.AppID)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
+		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, currentAccount, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -188,8 +210,8 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	}
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
-
-		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AdminsIdentifiers{}, current.ID, event, current.OrgID, current.AppID)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.ExternalID}
+		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AccountIdentifiers{}, currentAccount, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -234,7 +256,8 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 		}
 
 		eventID := event["id"].(string)
-		createdEvent, err := app.calendar.UpdateCalendarEvent(current.ID, eventID, event, current.OrgID, current.AppID)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
+		createdEvent, err := app.calendar.UpdateCalendarEvent(currentAccount, eventID, event, current.OrgID, current.AppID)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -279,7 +302,8 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 		for _, eventMapping := range mappings {
 			eventIDs = append(eventIDs, eventMapping.EventID)
 		}
-		return app.calendar.GetGroupCalendarEvents(current.ID, eventIDs, current.AppID, current.OrgID, published, filter)
+		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
+		return app.calendar.GetGroupCalendarEvents(currentAccount, eventIDs, current.AppID, current.OrgID, published, filter)
 	}
 
 	return nil, err
@@ -287,15 +311,25 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, calendar *calendar.Adapter, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter, calendar *calendar.Adapter, serviceID string, logger *logs.Logger, config *model.ApplicationConfig) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
-	application := Application{version: version, build: build, storage: storage, notifications: notifications,
-		authman: authman, corebb: core, rewards: rewards, calendar: calendar, config: config, scheduler: scheduler}
+	application := Application{version: version,
+		build:         build,
+		storage:       storage,
+		notifications: notifications,
+		authman:       authman,
+		corebb:        core,
+		rewards:       rewards,
+		calendar:      calendar,
+		config:        config,
+		scheduler:     scheduler,
+		logger:        logger,
+	}
 
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
-	application.Administration = &administrationImpl{app: &application}
+	application.Admin = &administrationImpl{app: &application}
 
 	return &application
 }

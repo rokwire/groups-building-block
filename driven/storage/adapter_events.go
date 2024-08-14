@@ -1,10 +1,11 @@
 package storage
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"groups/core/model"
 	"time"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // FindAdminGroupsForEvent Finds all groups for an event where the user is admin
@@ -186,4 +187,49 @@ func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clien
 	}
 
 	return result, nil
+}
+
+// FindEventUserIDs Find all linked users for group event
+func (sa *Adapter) FindEventUserIDs(context TransactionContext, eventID string) ([]string, error) {
+
+	var list []struct {
+		List []string `bson:"list"`
+	}
+	pipeline := bson.A{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "event_id", Value: eventID}}}},
+		bson.D{
+			{Key: "$lookup",
+				Value: bson.D{
+					{Key: "from", Value: "group_memberships"},
+					{Key: "localField", Value: "group_id"},
+					{Key: "foreignField", Value: "group_id"},
+					{Key: "as", Value: "member"},
+				},
+			},
+		},
+		bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: "$member"}}}},
+		bson.D{{Key: "$group", Value: bson.D{{Key: "_id", Value: "$member.user_id"}}}},
+		bson.D{{Key: "$match", Value: bson.D{
+			{Key: "_id", Value: bson.M{"$ne": nil}},
+			{Key: "_id", Value: bson.M{"$ne": ""}},
+		}}},
+		bson.D{{Key: "$group",
+			Value: bson.D{
+				{Key: "_id", Value: primitive.Null{}},
+				{Key: "list", Value: bson.D{{Key: "$addToSet", Value: "$_id"}}},
+			},
+		}},
+	}
+
+	err := sa.db.events.AggregateWithContext(context, pipeline, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(list) > 0 {
+		return list[0].List, nil
+	}
+
+	return nil, nil
+
 }

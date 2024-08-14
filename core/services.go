@@ -83,16 +83,47 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, group *model.Group) (*string, *utils.GroupError) {
+func (app *Application) createGroup(clientID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError) {
 
 	var groupError *utils.GroupError
 	var groupID *string
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
 		var err error
-		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, nil)
-		if err != nil {
+
+		// Create intitial members if need
+		var members []model.GroupMembership
+		if membersConfig != nil && len(membersConfig.NetIDs) > 0 {
+			accounts, err := app.corebb.GetAccounts(map[string]interface{}{
+				"external_ids.net_id": membersConfig.NetIDs,
+			}, &current.AppID, &current.OrgID, nil, nil)
+			if err != nil {
+				return nil
+			}
+
+			for _, account := range accounts {
+				externalID := account.GetExternalID()
+				fullName := account.GetFullName()
+				netID := account.GetNetID()
+				if externalID != "" && fullName != "" && netID != "" && netID != current.NetID {
+					members = append(members, model.GroupMembership{
+						ClientID:   clientID,
+						GroupID:    group.ID,
+						UserID:     account.ID,
+						ExternalID: externalID,
+						NetID:      netID,
+						Name:       fullName,
+						Email:      account.Profile.Email,
+						Status:     membersConfig.Status,
+					})
+				}
+			}
+		}
+
+		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, members)
+		if groupError != nil {
 			return err
 		}
+
 		if group.ResearchGroup {
 			searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
 
@@ -317,6 +348,25 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	return nil
 }
 
+func (app *Application) reportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error {
+
+	err := app.storage.ReportGroupAsAbuse(clientID, current.ID, group)
+	if err != nil {
+		log.Printf("error while reporting an abuse group: %s", err)
+		return fmt.Errorf("error while reporting an abuse group: %s", err)
+	}
+
+	subject := fmt.Sprintf("Report violation of Student Code to Dean of Students for group: %s", group.Title)
+
+	body := fmt.Sprintf(`
+<div>Group title: %s\n</div>
+<div>Reported by: %s %s\n</div>
+<div>Reported comment: %s\n</div>
+	`, group.Title, current.ExternalID, current.Name, comment)
+	body = strings.ReplaceAll(body, `\n`, "\n")
+	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+}
+
 func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
 	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
 	if err != nil {
@@ -407,7 +457,7 @@ func (app *Application) deleteEvent(clientID string, _ *model.User, eventID stri
 	return nil
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]*model.Post, error) {
+func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
 	return app.storage.FindPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 }
 
@@ -420,29 +470,6 @@ func (app *Application) getUserPostCount(clientID string, userID string) (*int64
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-
-	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
-		userIDs := post.GetMembersAsUserIDs(&current.ID)
-		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
-			GroupIDs: []string{post.GroupID},
-			UserIDs:  userIDs,
-			Statuses: []string{"admin"},
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if len(memberships.Items) > 0 {
-			var toMembers []model.ToMember
-			for _, membership := range memberships.Items {
-				toMembers = append(toMembers, model.ToMember{
-					UserID: membership.UserID,
-					Name:   membership.Name,
-				})
-			}
-			post.ToMembersList = toMembers
-		}
-	}
 
 	post, err := app.storage.CreatePost(clientID, current, post)
 	if err != nil {
@@ -463,59 +490,103 @@ func (app *Application) createPost(clientID string, current *model.User, post *m
 	}
 	go handleRewardsAsync(clientID, current.ID)
 
-	go app.sendGroupNotificationForNewPost(clientID, &current.ID, group, post)
+	go app.sendGroupNotificationForNewPost(clientID, &current.ID, &current.Name, group, post)
 
 	return post, nil
 }
 
-func (app *Application) sendGroupNotificationForNewPost(clientID string, currentUserID *string, group *model.Group, post *model.Post) error {
-	recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, currentUserID)
+func (app *Application) sendGroupNotificationForNewPost(clientID string, currentUserID *string, currentUserName *string, group *model.Group, post *model.Post) error {
+	now := time.Now()
+	if post.DateScheduled == nil || now.After(*post.DateScheduled) {
 
-	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: []string{group.ID},
-		UserIDs:  recipientsUserIDs,
-		Statuses: []string{"member", "admin"},
-	})
-	recipients := result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-		return member.IsAdminOrMember() && (*currentUserID != member.UserID),
-			member.NotificationsPreferences.OverridePreferences &&
-				(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
-	})
+		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, currentUserID)
 
-	if len(recipients) > 0 {
-		groupStr := "Group"
-		if group.ResearchGroup {
-			groupStr = "Research Project"
+		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+			GroupIDs: []string{group.ID},
+			UserIDs:  recipientsUserIDs,
+			Statuses: []string{"member", "admin"},
+		})
+		var recipients []notifications.Recipient
+		if post.ParentID == nil {
+			recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
+				return member.IsAdminOrMember() && (*currentUserID != member.UserID),
+					member.NotificationsPreferences.OverridePreferences &&
+						(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
+			})
+		} else {
+			parentPost, err := app.storage.FindPost(nil, clientID, nil, group.ID, *post.ParentID, true, false)
+			if err != nil {
+				log.Printf("error app.sendGroupNotificationForNewPost() - %s", err)
+				return fmt.Errorf("error app.sendGroupNotificationForNewPost() - %s", err)
+			}
+			if parentPost != nil {
+				recipients = append(recipients, notifications.Recipient{
+					UserID: parentPost.Creator.UserID,
+				})
+			}
 		}
-		title := fmt.Sprintf("%s - %s", groupStr, group.Title)
-		body := fmt.Sprintf("New post has been published in '%s' %s", group.Title, strings.ToLower(groupStr))
-		if post.UseAsNotification {
-			title = post.Subject
-			body = post.Body
-		}
 
-		topic := "group.posts"
-		return app.notifications.SendNotification(
-			recipients,
-			&topic,
-			title,
-			body,
-			map[string]string{
-				"type":         "group",
-				"operation":    "post_created",
-				"entity_type":  "group",
-				"entity_id":    group.ID,
-				"entity_name":  group.Title,
-				"post_id":      post.ID,
-				"post_subject": post.Subject,
-				"post_body":    post.Body,
-			},
-			app.config.AppID,
-			app.config.OrgID,
-			nil,
-		)
+		if len(recipients) > 0 {
+			groupStr := "Group"
+			if group.ResearchGroup {
+				groupStr = "Research Project"
+			}
+
+			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
+			operation := "messaged you"
+			if len(post.ToMembersList) == 0 {
+				operation = "posted"
+				if post.ParentID != nil {
+					operation = "replied"
+				}
+			}
+			if currentUserName == nil && currentUserID != nil {
+				coreUsers, err := app.corebb.GetAccountsWithIDs([]string{*currentUserID}, nil, nil, nil, nil)
+				if err != nil {
+					log.Printf("error app.sendGroupNotificationForNewPost() - %s", err)
+				}
+				if len(coreUsers) > 0 {
+					val := coreUsers[0].GetFullName()
+					currentUserName = &val
+				}
+			}
+			if currentUserName == nil || *currentUserName == "" {
+				val := "User"
+				currentUserName = &val
+			}
+
+			notificationBody := post.Body
+			if len(notificationBody) > 250 {
+				notificationBody = notificationBody[:250] + "..."
+			}
+			body := fmt.Sprintf("%s %s \"%s\"", *currentUserName, operation, notificationBody)
+			if post.UseAsNotification {
+				title = post.Subject
+				body = post.Body
+			}
+
+			topic := "group.posts"
+			return app.notifications.SendNotification(
+				recipients,
+				&topic,
+				title,
+				body,
+				map[string]string{
+					"type":         "group",
+					"operation":    "post_created",
+					"entity_type":  "group",
+					"entity_id":    group.ID,
+					"entity_name":  group.Title,
+					"post_id":      post.ID,
+					"post_subject": post.Subject,
+					"post_body":    post.Body,
+				},
+				app.config.AppID,
+				app.config.OrgID,
+				nil,
+			)
+		}
 	}
-
 	return nil
 }
 
@@ -549,29 +620,6 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	if group.Settings != nil && !group.Settings.PostPreferences.CanSendPostToAdmins {
-		userIDs := post.GetMembersAsUserIDs(&current.ID)
-		memberships, err := app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
-			GroupIDs: []string{post.GroupID},
-			UserIDs:  userIDs,
-			Statuses: []string{"admin"},
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		if len(memberships.Items) > 0 {
-			var toMembers []model.ToMember
-			for _, membership := range memberships.Items {
-				toMembers = append(toMembers, model.ToMember{
-					UserID: membership.UserID,
-					Name:   membership.Name,
-				})
-			}
-			post.ToMembersList = toMembers
-		}
-	}
-
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
@@ -662,7 +710,7 @@ Reported comment: %s
 	`, current.ExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
 			current.ExternalID, current.Name, comment)
 
-		app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
+		return app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
 			"type":         "group",
 			"operation":    "report_abuse_post",
 			"entity_type":  "group",
@@ -685,7 +733,7 @@ func (app *Application) deletePost(clientID string, userID string, groupID strin
 	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
 }
 
-func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification) error {
+func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
 	memberStatuses := notification.MemberStatuses
 	if len(memberStatuses) == 0 {
 		memberStatuses = []string{"admin", "member"}
@@ -701,9 +749,8 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 		return err
 	}
 
-	app.sendNotification(members.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-		return true, true // Should it be a separate notification preference?
-	}), notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
+	recipients := members.GetMembersAsNotificationRecipients(predicate)
+	app.sendNotification(recipients, notification.Topic, notification.Subject, notification.Body, notification.Data, app.config.AppID, app.config.OrgID)
 
 	return nil
 }
@@ -733,7 +780,7 @@ func (app *Application) deleteManagedGroupConfig(id string, clientID string) err
 }
 
 func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return app.storage.FindSyncConfig(clientID)
+	return app.storage.FindSyncConfig(nil, clientID)
 }
 
 func (app *Application) updateSyncConfig(config model.SyncConfig) error {
