@@ -29,3 +29,7 @@ func (app *Application) updateGroupMappingsForEvent(clientID string, current *mo
 func (app *Application) findEventUserIDs(eventID string) ([]string, error) {
 	return app.storage.FindEventUserIDs(nil, eventID)
 }
+
+func (app *Application) findGroupMembershipsStatusAndGroupsTitle(userID string) ([]model.GetGroupMembershipsResponse, error) {
+	return app.storage.FindGroupMembershipStatusAndGroupTitle(nil, userID)
+}

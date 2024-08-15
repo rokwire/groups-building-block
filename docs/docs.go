@@ -1553,14 +1553,14 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/bbs/groups/account_id/memberships": {
+        "/api/bbs/groups/{user_id}/memberships": {
             "get": {
                 "security": [
                     {
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Gets all related group memberships linked for the described account id",
+                "description": "Gets all related group memberships status and group title using userID",
                 "tags": [
                     "BBS"
                 ],
@@ -1568,8 +1568,8 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "Account ID",
-                        "name": "account_id",
+                        "description": "User ID",
+                        "name": "user_id",
                         "in": "path",
                         "required": true
                     }
@@ -1580,7 +1580,10 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/getGroupMembershipsResponse"
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/GetGroupMembershipsResponse"
+                                }
                             }
                         }
                     }
@@ -4048,6 +4051,17 @@ const docTemplate = `{
                 }
             }
         },
+        "GetGroupMembershipsResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "Group": {
             "type": "object",
             "properties": {
@@ -4932,17 +4946,6 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
-                }
-            }
-        },
-        "getGroupMembershipsResponse": {
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
                 }
             }
         },

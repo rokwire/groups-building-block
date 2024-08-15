@@ -39,6 +39,13 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  GetGroupMembershipsResponse:
+    properties:
+      status:
+        type: string
+      title:
+        type: string
+    type: object
   Group:
     properties:
       attendance_group:
@@ -634,13 +641,6 @@ definitions:
         items:
           type: string
         type: array
-    type: object
-  getGroupMembershipsResponse:
-    properties:
-      name:
-        type: string
-      status:
-        type: string
     type: object
   getGroupResponse:
     properties:
@@ -2122,15 +2122,15 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
-  /api/bbs/groups/account_id/memberships:
+  /api/bbs/groups/{user_id}/memberships:
     get:
-      description: Gets all related group memberships linked for the described account
-        id
+      description: Gets all related group memberships status and group title using
+        userID
       operationId: GetGroupMemberships
       parameters:
-      - description: Account ID
+      - description: User ID
         in: path
-        name: account_id
+        name: user_id
         required: true
         type: string
       responses:
@@ -2138,7 +2138,9 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getGroupMembershipsResponse'
+              items:
+                $ref: '#/definitions/GetGroupMembershipsResponse'
+              type: array
             type: array
       security:
       - AppUserAuth: []
