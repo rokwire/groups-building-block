@@ -1553,6 +1553,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups/account_id/memberships": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related group memberships linked for the described account id",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupMemberships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Account ID",
+                        "name": "account_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getGroupMembershipsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/events/v3": {
             "post": {
                 "security": [
@@ -4898,6 +4932,17 @@ const docTemplate = `{
                     "items": {
                         "type": "string"
                     }
+                }
+            }
+        },
+        "getGroupMembershipsResponse": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         },

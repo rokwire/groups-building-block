@@ -635,6 +635,13 @@ definitions:
           type: string
         type: array
     type: object
+  getGroupMembershipsResponse:
+    properties:
+      name:
+        type: string
+      status:
+        type: string
+    type: object
   getGroupResponse:
     properties:
       category:
@@ -2115,6 +2122,28 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
+  /api/bbs/groups/account_id/memberships:
+    get:
+      description: Gets all related group memberships linked for the described account
+        id
+      operationId: GetGroupMemberships
+      parameters:
+      - description: Account ID
+        in: path
+        name: account_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getGroupMembershipsResponse'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
