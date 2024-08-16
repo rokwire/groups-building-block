@@ -284,7 +284,7 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 	for _, g := range groups {
 		for _, gm := range groupMembership {
 			if g.ID == gm.GroupID {
-				res := model.GetGroupMembershipsResponse{Title: g.Title, Status: gm.Status}
+				res := model.GetGroupMembershipsResponse{GroupID: g.ID, Title: g.Title, Status: gm.Status}
 				response = append(response, res)
 			}
 		}
