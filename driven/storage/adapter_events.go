@@ -237,17 +237,17 @@ func (sa *Adapter) FindEventUserIDs(context TransactionContext, eventID string) 
 // FindGroupMembershipStatusAndGroupTitle Find group membership status and group Title
 func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error) {
 	pipeline := bson.A{
-		bson.D{{"$match", bson.D{{"user_id", userID}}}},
-		bson.D{{"$lookup", bson.D{
-			{"from", "groups"},
-			{"localField", "group_id"},
-			{"foreignField", "_id"},
-			{"as", "group_info"},
+		bson.D{{Key: "$match", Value: bson.D{{Key: "user_id", Value: userID}}}},
+		bson.D{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "groups"},
+			{Key: "localField", Value: "group_id"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "group_info"},
 		}}},
-		bson.D{{"$unwind", "$group_info"}},
-		bson.D{{"$project", bson.D{
-			{"title", "$group_info.title"},
-			{"status", "$status"},
+		bson.D{{Key: "$unwind", Value: "$group_info"}},
+		bson.D{{Key: "$project", Value: bson.D{
+			{Key: "title", Value: "$group_info.title"},
+			{Key: "status", Value: "$status"},
 		}}},
 	}
 

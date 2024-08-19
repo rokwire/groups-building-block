@@ -66,7 +66,7 @@ type Group struct {
 
 // GetGroupMembershipsResponse response
 type GetGroupMembershipsResponse struct {
-	Title  string `json:”title`
+	Title  string `json:"title"`
 	Status string `json:"status"`
 } // @name GetGroupMembershipsResponse
 
