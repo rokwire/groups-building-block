@@ -66,9 +66,8 @@ type Group struct {
 
 // GetGroupMembershipsResponse response
 type GetGroupMembershipsResponse struct {
-	GroupID string `json:”group_id`
-	Title   string `json:”title`
-	Status  string `json:"status"`
+	Title  string `json:”title`
+	Status string `json:"status"`
 } // @name GetGroupMembershipsResponse
 
 // ApplyLegacyMembership applies legacy membership to the group for backward compatibility

@@ -426,8 +426,6 @@ type Storage interface {
 
 	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
-	FindGroupMembershipsByUserID(userID string) ([]model.GroupMembership, error)
-	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 
 	ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error
 	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error

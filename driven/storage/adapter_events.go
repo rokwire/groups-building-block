@@ -234,61 +234,31 @@ func (sa *Adapter) FindEventUserIDs(context TransactionContext, eventID string) 
 
 }
 
-// FindGroupMembershipsByUserID finds all group memberships using user id
-func (sa *Adapter) FindGroupMembershipsByUserID(userID string) ([]model.GroupMembership, error) {
-	filter := bson.D{bson.E{Key: "user_id", Value: userID}}
-
-	var list []model.GroupMembership
-
-	err := sa.db.groupMemberships.Find(filter, &list, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-// FindGroupsByGroupIDs finds all groups with the given groupIDs
-func (sa *Adapter) FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
-	filter := bson.D{primitive.E{Key: "_id", Value: bson.D{primitive.E{Key: "$in", Value: groupIDs}}}}
-
-	var groups []model.Group
-	err := sa.db.groups.Find(filter, &groups, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return groups, nil
-}
-
-// FindGroupMembershipStatusAndGroupTitle Find all group membership status and gtoupTitle
+// FindGroupMembershipStatusAndGroupTitle Find group membership status and group Title
 func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error) {
-	groupMembership, err := sa.FindGroupMembershipsByUserID(userID)
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"user_id", userID}}}},
+		bson.D{{"$lookup", bson.D{
+			{"from", "groups"},
+			{"localField", "group_id"},
+			{"foreignField", "_id"},
+			{"as", "group_info"},
+		}}},
+		bson.D{{"$unwind", "$group_info"}},
+		bson.D{{"$project", bson.D{
+			{"title", "$group_info.title"},
+			{"status", "$status"},
+		}}},
+	}
+
+	// Define the results slice
+	var results []model.GetGroupMembershipsResponse
+
+	// Execute the aggregation pipeline
+	err := sa.db.groupMemberships.AggregateWithContext(context, pipeline, &results, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	var groupIDs []string
-	for _, d := range groupMembership {
-		if d.GroupID != "" {
-			groupIDs = append(groupIDs, d.GroupID)
-		}
-	}
-
-	groups, err := sa.FindGroupsByGroupIDs(groupIDs)
-	if err != nil {
-		return nil, err
-	}
-
-	var response []model.GetGroupMembershipsResponse
-	for _, g := range groups {
-		for _, gm := range groupMembership {
-			if g.ID == gm.GroupID {
-				res := model.GetGroupMembershipsResponse{GroupID: g.ID, Title: g.Title, Status: gm.Status}
-				response = append(response, res)
-			}
-		}
-	}
-
-	return response, nil
+	return results, nil
 }
