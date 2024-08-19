@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ## [1.49.0] - 2024-08-19
+### Fixed
+- Fix Aggregation pipeline [#497](https://github.com/rokwire/groups-building-block/issues/497)
 ### Added
 - BBs Api for getting group memberships [#494](https://github.com/rokwire/groups-building-block/issues/494)
 
