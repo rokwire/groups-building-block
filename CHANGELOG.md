@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- BBs Api for getting group memberships [#494](https://github.com/rokwire/groups-building-block/issues/494)
+
 ## [1.48.0] - 2024-08-09
 ### Added
 - Approve all API [#484](https://github.com/rokwire/groups-building-block/issues/484)

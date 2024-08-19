@@ -49,3 +49,32 @@ func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user 
 
 	return log.HTTPResponseSuccessJSON(data)
 }
+
+// GetGroupMemberships Gets all related group memberships status and group title using userID
+// @Description  Gets all related group memberships status and group title using userID
+// @ID GetGroupMemberships
+// @Tags BBS
+// @Param user_id path string true "User ID"
+// @Success 200 {array} []model.GetGroupMembershipsResponse
+// @Security AppUserAuth
+// @Router /api/bbs/groups/{user_id}/memberships [get]
+func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
+	userID := params["user_id"]
+	if len(userID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing user_id"), http.StatusBadRequest, false)
+	}
+
+	groupMembershipsStatusAndGroupsTitle, err := h.app.Services.GetGroupMembershipsStatusAndGroupTitle(userID)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	data, err := json.Marshal(groupMembershipsStatusAndGroupsTitle)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+
+}
