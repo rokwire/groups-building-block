@@ -1553,6 +1553,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups/{user_id}/memberships": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related group memberships status and group title using userID",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupMemberships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/GetGroupMembershipsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/events/v3": {
             "post": {
                 "security": [
@@ -4011,6 +4048,17 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/ToMember"
                     }
+                }
+            }
+        },
+        "GetGroupMembershipsResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
                 }
             }
         },

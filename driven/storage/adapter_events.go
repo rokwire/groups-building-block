@@ -233,3 +233,32 @@ func (sa *Adapter) FindEventUserIDs(context TransactionContext, eventID string) 
 	return nil, nil
 
 }
+
+// FindGroupMembershipStatusAndGroupTitle Find group membership status and group Title
+func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error) {
+	pipeline := bson.A{
+		bson.D{{"$match", bson.D{{"user_id", userID}}}},
+		bson.D{{"$lookup", bson.D{
+			{"from", "groups"},
+			{"localField", "group_id"},
+			{"foreignField", "_id"},
+			{"as", "group_info"},
+		}}},
+		bson.D{{"$unwind", "$group_info"}},
+		bson.D{{"$project", bson.D{
+			{"title", "$group_info.title"},
+			{"status", "$status"},
+		}}},
+	}
+
+	// Define the results slice
+	var results []model.GetGroupMembershipsResponse
+
+	// Execute the aggregation pipeline
+	err := sa.db.groupMemberships.AggregateWithContext(context, pipeline, &results, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
