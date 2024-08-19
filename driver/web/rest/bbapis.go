@@ -51,6 +51,13 @@ func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user 
 }
 
 // GetGroupMemberships Gets all related group memberships status and group title using userID
+// @Description  Gets all related group memberships status and group title using userID
+// @ID GetGroupMemberships
+// @Tags BBS
+// @Param user_id path string true "User ID"
+// @Success 200 {array} []model.GetGroupMembershipsResponse
+// @Security AppUserAuth
+// @Router /api/bbs/groups/{user_id}/memberships [get]
 func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	userID := params["user_id"]
