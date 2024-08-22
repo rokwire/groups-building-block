@@ -248,6 +248,7 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 		bson.D{{Key: "$project", Value: bson.D{
 			{Key: "title", Value: "$group_info.title"},
 			{Key: "status", Value: "$status"},
+			{Key: "groupId", Value: "$group_info._id"},
 		}}},
 	}
 
