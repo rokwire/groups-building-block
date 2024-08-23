@@ -33,3 +33,7 @@ func (app *Application) findEventUserIDs(eventID string) ([]string, error) {
 func (app *Application) findGroupMembershipsStatusAndGroupsTitle(userID string) ([]model.GetGroupMembershipsResponse, error) {
 	return app.storage.FindGroupMembershipStatusAndGroupTitle(nil, userID)
 }
+
+func (app *Application) findGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
+	return app.storage.FindGroupsEvents(nil, eventIDs)
+}

@@ -4,6 +4,8 @@ import (
 	"groups/core/model"
 	"time"
 
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -262,4 +264,21 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 	}
 
 	return results, nil
+}
+
+// FindGroupsEvents Find group ID and event ID
+func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error) {
+	filter := bson.D{}
+
+	if len(eventIDs) > 0 {
+		filter = append(filter, bson.E{Key: "event_id", Value: bson.M{"$in": eventIDs}})
+	}
+
+	var groupsEvents []model.GetGroupsEvents
+	err := sa.db.events.Find(filter, &groupsEvents, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "groups events", nil, err)
+	}
+
+	return groupsEvents, nil
 }

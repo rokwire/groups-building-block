@@ -6,6 +6,7 @@ import (
 	"groups/core"
 	"groups/core/model"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/rokwire/logging-library-go/v2/logs"
@@ -77,4 +78,31 @@ func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, u
 
 	return log.HTTPResponseSuccessJSON(data)
 
+}
+
+// GetGroupsEvents Gets all related eventID and groupID using eventIDs
+// @Description  Gets all related eventID and groupID using eventIDs
+// @ID GetGroupsEvents
+// @Tags BBS
+// @Param comma separated eventIDs query
+// @Success 200 {array} []model.GetGroupsEvents
+// @Security AppUserAuth
+// @Router /api/bbs/groups/events [get]
+func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	var eventsIDs []string
+	eventsArg := req.URL.Query().Get("events-ids")
+	if eventsArg != "" {
+		eventsIDs = strings.Split(eventsArg, ",")
+	}
+
+	groupevents, err := h.app.Services.GetGroupsEvents(eventsIDs)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+	data, err := json.Marshal(groupevents)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
 }
