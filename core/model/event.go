@@ -37,8 +37,8 @@ type AccountIdentifiers struct {
 
 // GetGroupsEvents response
 type GetGroupsEvents struct {
-	EventID string `json:"event_id"`
-	GroupID string `json:"group_id"`
+	EventID string `json:"event_id" bson:"event_id"`
+	GroupID string `json:"group_id" bson:"group_id"`
 } // @name GetGroupsEvents
 
 // HasToMembersList Checks if the ToMembersList is not empty
