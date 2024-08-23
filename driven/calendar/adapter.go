@@ -52,7 +52,7 @@ func (a *Adapter) CreateCalendarEvent(adminIdentifier []model.AccountIdentifiers
 		CurrentAccountIdentifiers model.AccountIdentifiers   `json:"current_account_identifiers"`
 		AppID                     string                     `json:"app_id"`
 		OrgID                     string                     `json:"org_id"`
-		GroupIDs                  []string                   `json:"group_id"`
+		GroupIDs                  []string                   `json:"group_ids"`
 	}
 
 	body := calendarRequest{AdminsIdentifiers: adminIdentifier, Event: event, CurrentAccountIdentifiers: currentAccountIdentifier, AppID: appID, OrgID: orgID, GroupIDs: groupIDs}
