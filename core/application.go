@@ -137,7 +137,7 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
 		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.NetID}
-		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, currentAccount, event, current.OrgID, current.AppID)
+		createdEvent, err := app.calendar.CreateCalendarEvent(adminIdentifiers, currentAccount, event, current.OrgID, current.AppID, groupIDs)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -209,9 +209,14 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 		return nil, nil, err
 	}
 
+	var groupIDs []string
+	if groupID != "" {
+		groupIDs = append(groupIDs, groupID)
+	}
+
 	if memberships.GetMembershipByAccountID(current.ID) != nil {
 		currentAccount := model.AccountIdentifiers{AccountID: &current.ID, ExternalID: &current.ExternalID}
-		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AccountIdentifiers{}, currentAccount, event, current.OrgID, current.AppID)
+		createdEvent, err := app.calendar.CreateCalendarEvent([]model.AccountIdentifiers{}, currentAccount, event, current.OrgID, current.AppID, groupIDs)
 		if err != nil {
 			return nil, nil, err
 		}
