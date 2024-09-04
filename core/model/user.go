@@ -63,11 +63,11 @@ func (u *User) HasPermission(name string) bool {
 // @name CoreAccount
 type CoreAccount struct {
 	AuthTypes []struct {
-		Active     bool   `json:"active"`
-		Code       string `json:"code"`
-		ID         string `json:"id"`
-		Identifier string `json:"identifier"`
-		Params     struct {
+		Active       bool   `json:"active"`
+		AuthTypeCode string `json:"auth_type_code"`
+		AuthTypeID   string `json:"auth_type_id"`
+		Identifier   string `json:"identifier"`
+		Params       struct {
 			User struct {
 				Email          string        `json:"email"`
 				FirstName      string        `json:"first_name"`
@@ -82,26 +82,6 @@ type CoreAccount struct {
 			} `json:"user"`
 		} `json:"params"`
 	} `json:"auth_types"`
-	Groups      []interface{} `json:"groups"`
-	ID          string        `json:"id"`
-	Permissions []interface{} `json:"permissions"`
-	Preferences struct {
-		Favorites interface{} `json:"favorites"`
-		Interests struct {
-		} `json:"interests"`
-		PrivacyLevel int      `json:"privacy_level"`
-		Roles        []string `json:"roles"`
-		Settings     struct {
-		} `json:"settings"`
-		Tags struct {
-		} `json:"tags"`
-		Voter struct {
-			RegisteredVoter bool        `json:"registered_voter"`
-			VotePlace       string      `json:"vote_place"`
-			Voted           bool        `json:"voted"`
-			VoterByMail     interface{} `json:"voter_by_mail"`
-		} `json:"voter"`
-	} `json:"preferences"`
 	Profile struct {
 		Address   string `json:"address"`
 		BirthYear int    `json:"birth_year"`
@@ -115,16 +95,13 @@ type CoreAccount struct {
 		State     string `json:"state"`
 		ZipCode   string `json:"zip_code"`
 	} `json:"profile"`
-	Roles []struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-	} `json:"roles"`
+	ID string `json:"id"`
 }
 
 // GetExternalID Gets the external id
 func (c *CoreAccount) GetExternalID() string {
 	for _, auth := range c.AuthTypes {
-		if auth.Active && len(auth.Identifier) > 0 {
+		if auth.Active && auth.AuthTypeCode == "illinois_oidc" && len(auth.Identifier) > 0 {
 			return auth.Identifier
 		}
 	}
