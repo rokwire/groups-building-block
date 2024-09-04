@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.51.1] - 2024-09-04
 ### Fixed
 - Bad Authman sync for user who has alternative auth method for first login [#509](https://github.com/rokwire/groups-building-block/issues/509)
 
