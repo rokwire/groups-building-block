@@ -17,6 +17,7 @@ package core
 import (
 	"fmt"
 	"groups/core/model"
+	"groups/driven/storage"
 	"log"
 	"strings"
 )
@@ -41,11 +42,11 @@ func (app *Application) checkUserGroupMembershipPermission(clientID string, curr
 }
 
 func (app *Application) findGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return app.storage.FindGroupsV3(clientID, filter)
+	return app.storage.FindGroupsV3(nil, clientID, filter)
 }
 
-func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	collection, err := app.storage.FindGroupMemberships(clientID, filter)
+func (app *Application) findGroupMemberships(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
+	collection, err := app.storage.FindGroupMembershipsWithContext(context, clientID, filter)
 
 	if len(filter.GroupIDs) > 0 {
 		groups, err := app.findGroupsV3(clientID, model.GroupsFilter{

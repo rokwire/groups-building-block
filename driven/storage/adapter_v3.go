@@ -17,7 +17,7 @@ import (
 )
 
 // FindGroupsV3 finds groups with filter
-func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
+func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
 	var groupIDs []string
@@ -38,7 +38,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 	// Credits to Ryan Oberlander suggest
 	if filter.MemberUserID != nil || filter.MemberID != nil || filter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
+		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 			ID:         filter.MemberID,
 			UserID:     filter.MemberUserID,
 			ExternalID: filter.MemberExternalID,
@@ -143,7 +143,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 	}
 
 	var list []model.Group
-	err = sa.db.groups.Find(groupFilter, &list, findOptions)
+	err = sa.db.groups.FindWithContext(context, groupFilter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
