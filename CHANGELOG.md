@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.52.0] - 2024-09-11
 ### Fixed
 - New Event notifications are not sent to Group members [#506](https://github.com/rokwire/groups-building-block/issues/506)
 
