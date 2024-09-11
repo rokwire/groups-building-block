@@ -217,7 +217,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 
 				eventID := createdEvent["id"].(string)
 
-				_, err := app.storage.CreateEvent(context, clientID, eventID, groupID, members, &model.Creator{
+				mapping, err := app.storage.CreateEvent(context, clientID, eventID, groupID, members, &model.Creator{
 					UserID: current.ID,
 					Name:   current.Name,
 					Email:  current.Email,
@@ -225,6 +225,13 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 				if err != nil {
 					log.Printf("Error create goup mapping: %s", err)
 				}
+
+				group, grErr := app.storage.FindGroup(context, clientID, groupID, &current.ID)
+				if grErr != nil {
+					return grErr
+				}
+
+				app.notifyGroupMembersForNewEvent(context, clientID, current, group, mapping, &current.ID)
 			}
 		}
 		return nil
