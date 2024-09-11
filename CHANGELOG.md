@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- New Event notifications are not sent to Group members [#506](https://github.com/rokwire/groups-building-block/issues/506)
+
 ## [1.51.1] - 2024-09-04
 ### Fixed
 - Bad Authman sync for user who has alternative auth method for first login [#509](https://github.com/rokwire/groups-building-block/issues/509)
