@@ -66,9 +66,38 @@ func (app *Application) findGroupMemberships(context storage.TransactionContext,
 				collection.Items[index].ApplyGroupSettings(group.Settings)
 			}
 		}
+		var userIds []string
+		for _, s := range collection.Items {
+			if s.UserID != "" {
+				userIds = append(userIds, s.UserID)
+			}
+		}
+
+		ferpa, err := app.corebb.RetrieveFerpaAccounts(userIds)
+		if err != nil {
+			return model.MembershipCollection{}, fmt.Errorf("RetrieveFerpaAccounts error: %s", err)
+		}
+
+		for i := range collection.Items {
+			if contains(ferpa, collection.Items[i].UserID) {
+				collection.Items[i] = model.GroupMembership{
+					UserID: collection.Items[i].UserID, // Keep UserID but nullify others
+				}
+			}
+		}
 	}
 
 	return collection, err
+}
+
+// Helper function to check if a slice contains a value
+func contains(slice []string, value string) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }
 
 func (app *Application) findGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {
