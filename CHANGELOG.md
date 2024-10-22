@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+## [1.53.0] - 2024-10-22
+### Added
+- FERPA issues for group memberships [#513](https://github.com/rokwire/groups-building-block/issues/513)
+
+## [1.52.0] - 2024-09-11
+### Fixed
+- New Event notifications are not sent to Group members [#506](https://github.com/rokwire/groups-building-block/issues/506)
+
+## [1.51.1] - 2024-09-04
+### Fixed
+- Bad Authman sync for user who has alternative auth method for first login [#509](https://github.com/rokwire/groups-building-block/issues/509)
+
 ## [1.51.0] - 2024-08-23
 ### Added
 - Calendar events issues [#503](https://github.com/rokwire/groups-building-block/issues/503)

@@ -291,7 +291,7 @@ func (s *servicesImpl) FindGroupsV3(clientID string, filter model.GroupsFilter) 
 }
 
 func (s *servicesImpl) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	return s.app.findGroupMemberships(clientID, filter)
+	return s.app.findGroupMemberships(nil, clientID, filter)
 }
 
 func (s *servicesImpl) FindGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
@@ -424,7 +424,7 @@ type Storage interface {
 	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
+	CreateEvent(context storage.TransactionContext, clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
 	UpdateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember) error
 	DeleteEvent(clientID string, eventID string, groupID string) error
 	PullMembersFromEventsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
@@ -461,7 +461,7 @@ type Storage interface {
 	DeleteManagedGroupConfig(id string, clientID string) error
 
 	// V3
-	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroupsV3(context storage.TransactionContext, clientID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 
@@ -534,6 +534,7 @@ type Core interface {
 	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 	LoadDeletedMemberships() ([]model.DeletedUserData, error)
+	RetrieveFerpaAccounts(ids []string) ([]string, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users
