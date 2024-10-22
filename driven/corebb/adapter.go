@@ -371,28 +371,30 @@ func (a *Adapter) LoadDeletedMemberships() ([]model.DeletedUserData, error) {
 func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
 	if len(ids) > 0 {
 		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, strings.Join(ids, ","))
-		client := &http.Client{}
+
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
-			log.Printf("RetrieveFerpaAccounts: error creating load core service regs - %s", err)
+			a.logger.Errorf("delete membership: error creating request - %s", err)
+			return nil, err
+		}
+		req.Header.Add("Content-Type", "application/json")
+
+		resp, err := a.serviceAccountManager.MakeRequest(req, "all", "all")
+		if err != nil {
+			log.Printf("RetrieveFerpaAccounts: error sending request - %s", err)
 			return nil, err
 		}
 
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Printf("RetrieveFerpaAccounts: error loading core service regs data - %s", err)
-			return nil, err
-		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			log.Printf("RetrieveFerpaAccounts: error with response code - %d", resp.StatusCode)
-			return nil, fmt.Errorf("RetrieveCoreUserAccount: error with response code != 200")
+			return nil, fmt.Errorf("RetrieveFerpaAccounts: error with response code != 200")
 		}
 
-		data, err := io.ReadAll(resp.Body)
+		data, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveFerpaAccounts: unable to read json: %s", err)
-			return nil, fmt.Errorf("RetrieveCoreUserAccount: unable to parse json: %s", err)
+			return nil, fmt.Errorf("RetrieveFerpaAccounts: unable to parse json: %s", err)
 		}
 
 		var ferpaAccountIDs []string
