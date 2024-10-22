@@ -534,6 +534,7 @@ type Core interface {
 	GetAllCoreAccountsWithExternalIDs(externalIDs []string, appID *string, orgID *string) ([]model.CoreAccount, error)
 	GetAccountsCount(searchParams map[string]interface{}, appID *string, orgID *string) (int64, error)
 	LoadDeletedMemberships() ([]model.DeletedUserData, error)
+	RetrieveFerpaAccounts(ids []string) ([]string, error)
 }
 
 // Rewards exposes Rewards internal APIs for giving rewards to the users
