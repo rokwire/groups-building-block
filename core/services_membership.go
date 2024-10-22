@@ -90,7 +90,7 @@ func (app *Application) findGroupMemberships(context storage.TransactionContext,
 	return collection, err
 }
 
-// Helper function to check if a slice contains a value
+// Check if a slice contains a value
 func contains(slice []string, value string) bool {
 	for _, v := range slice {
 		if v == value {
