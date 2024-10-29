@@ -90,11 +90,21 @@ func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, u
 // @Router /api/bbs/groups/{group_id}/group-memberships [get]
 func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
-	userID := params["group_id"]
-	if len(userID) <= 0 {
-		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing user_id"), http.StatusBadRequest, false)
+	groupID := params["group_id"]
+	if len(groupID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing group_id"), http.StatusBadRequest, false)
 	}
-	return log.HTTPResponseSuccess()
+	groupMembershipsIDs, err := h.app.Services.GetGroupMembershipsByGroupID(groupID)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	data, err := json.Marshal(groupMembershipsIDs)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
 
 }
 

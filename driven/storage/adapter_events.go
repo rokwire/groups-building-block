@@ -266,6 +266,11 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 	return results, nil
 }
 
+// FindGroupMembershipByGroupID Find group membership ids
+func (sa *Adapter) FindGroupMembershipByGroupID(context TransactionContext, groupID string) ([]string, error) {
+	return nil, nil
+}
+
 // FindGroupsEvents Find group ID and event ID
 func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error) {
 	filter := bson.D{}
