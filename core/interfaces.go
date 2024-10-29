@@ -56,6 +56,8 @@ type Services interface {
 	DeleteEvent(clientID string, current *model.User, eventID string, groupID string) error
 	GetEventUserIDs(eventID string) ([]string, error)
 	GetGroupMembershipsStatusAndGroupTitle(userID string) ([]model.GetGroupMembershipsResponse, error)
+	GetGroupMembershipsByGroupID(groupID string) ([]string, error)
+
 	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
 
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
@@ -210,6 +212,9 @@ func (s *servicesImpl) GetEventUserIDs(eventID string) ([]string, error) {
 
 func (s *servicesImpl) GetGroupMembershipsStatusAndGroupTitle(userID string) ([]model.GetGroupMembershipsResponse, error) {
 	return s.app.findGroupMembershipsStatusAndGroupsTitle(userID)
+}
+func (s *servicesImpl) GetGroupMembershipsByGroupID(groupID string) ([]string, error) {
+	return s.app.findGroupMembershipsByGroupID(groupID)
 }
 
 func (s *servicesImpl) GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
@@ -431,6 +436,8 @@ type Storage interface {
 
 	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
+	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
+
 	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)
 
 	ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error
