@@ -201,7 +201,7 @@ func (we *Adapter) Start() {
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
 	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsAPIHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/{user_id}/memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMemberships, we.auth2.bbs.Permissions)).Methods("GET")
-	bbsSubrouter.HandleFunc("/groups/{group_id}/memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMembershipsByGroupID, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/groups/{group_id}/group-memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMembershipsByGroupID, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))

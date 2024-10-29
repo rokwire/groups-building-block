@@ -268,7 +268,25 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 
 // FindGroupMembershipByGroupID Find group membership ids
 func (sa *Adapter) FindGroupMembershipByGroupID(context TransactionContext, groupID string) ([]string, error) {
-	return nil, nil
+	filter := bson.D{primitive.E{Key: "group_id", Value: groupID}}
+
+	// Define the results slice
+	var results []model.GroupMembership
+
+	// Execute the aggregation pipeline
+	err := sa.db.groupMemberships.FindWithContext(context, filter, &results, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var userIDs []string
+	for _, u := range results {
+		if u.UserID != "" {
+			userIDs = append(userIDs, u.UserID)
+		}
+	}
+
+	return userIDs, nil
 }
 
 // FindGroupsEvents Find group ID and event ID
