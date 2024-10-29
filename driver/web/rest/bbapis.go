@@ -87,8 +87,13 @@ func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, u
 // @Param group_id path string true "Group ID"
 // @Success 200 {array} []string
 // @Security AppUserAuth
-// @Router /api/bbs/groups/{group_id}/memberships [get]
+// @Router /api/bbs/groups/{group_id}/group-memberships [get]
 func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
+	userID := params["group_id"]
+	if len(userID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing user_id"), http.StatusBadRequest, false)
+	}
 	return log.HTTPResponseSuccess()
 
 }
