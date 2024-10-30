@@ -1005,7 +1005,7 @@ func (sa *Adapter) FindEvents(clientID string, current *model.User, groupID stri
 }
 
 // CreateEvent creates a group event
-func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+func (sa *Adapter) CreateEvent(context TransactionContext, clientID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
 	event := model.Event{
 		ClientID:      clientID,
 		EventID:       eventID,
@@ -1015,14 +1015,21 @@ func (sa *Adapter) CreateEvent(clientID string, eventID string, groupID string, 
 		Creator:       creator,
 	}
 
-	err := sa.PerformTransaction(func(context TransactionContext) error {
+	wrapper := func(context TransactionContext) error {
 		_, err := sa.db.events.InsertOne(event)
 		if err != nil {
 			return err
 		}
 
 		return sa.UpdateGroupStats(context, clientID, groupID, true, false, false, false)
-	})
+	}
+
+	var err error
+	if context != nil {
+		err = wrapper(context)
+	} else {
+		err = sa.PerformTransaction(wrapper)
+	}
 
 	return &event, err
 }

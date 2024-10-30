@@ -17,6 +17,7 @@ package core
 import (
 	"fmt"
 	"groups/core/model"
+	"groups/driven/storage"
 	"log"
 	"strings"
 )
@@ -41,11 +42,11 @@ func (app *Application) checkUserGroupMembershipPermission(clientID string, curr
 }
 
 func (app *Application) findGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	return app.storage.FindGroupsV3(clientID, filter)
+	return app.storage.FindGroupsV3(nil, clientID, filter)
 }
 
-func (app *Application) findGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
-	collection, err := app.storage.FindGroupMemberships(clientID, filter)
+func (app *Application) findGroupMemberships(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
+	c, err := app.storage.FindGroupMembershipsWithContext(context, clientID, filter)
 
 	if len(filter.GroupIDs) > 0 {
 		groups, err := app.findGroupsV3(clientID, model.GroupsFilter{
@@ -60,14 +61,53 @@ func (app *Application) findGroupMemberships(clientID string, filter model.Membe
 			groupIDMapping[group.ID] = group
 		}
 
-		for index, member := range collection.Items {
+		for index, member := range c.Items {
 			if group, ok := groupIDMapping[member.GroupID]; ok {
-				collection.Items[index].ApplyGroupSettings(group.Settings)
+				c.Items[index].ApplyGroupSettings(group.Settings)
 			}
 		}
 	}
 
+	collection, err := app.protectByFerpa(c, c.Items)
+	if err != nil {
+		return model.MembershipCollection{}, fmt.Errorf("app.fprotectByFerpa() error: %s", err)
+	}
+
 	return collection, err
+}
+
+// Check if a slice contains a value
+func contains(slice []string, value string) bool {
+	for _, v := range slice {
+		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+func (app *Application) protectByFerpa(col model.MembershipCollection, items []model.GroupMembership) (model.MembershipCollection, error) {
+	var userIds []string
+	for _, s := range items {
+		if s.UserID != "" {
+			userIds = append(userIds, s.UserID)
+		}
+	}
+
+	ferpa, err := app.corebb.RetrieveFerpaAccounts(userIds)
+	if err != nil {
+		return model.MembershipCollection{}, fmt.Errorf("RetrieveFerpaAccounts error: %s", err)
+	}
+
+	for i := range items {
+		if contains(ferpa, items[i].UserID) {
+			items[i] = model.GroupMembership{
+				UserID: items[i].UserID,
+			}
+		}
+	}
+
+	return col, nil
 }
 
 func (app *Application) findGroupMembershipByID(clientID string, id string) (*model.GroupMembership, error) {

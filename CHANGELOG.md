@@ -8,6 +8,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Add CORS support
 
+## [1.53.0] - 2024-10-22
+### Added
+- FERPA issues for group memberships [#513](https://github.com/rokwire/groups-building-block/issues/513)
+
+## [1.52.0] - 2024-09-11
+### Fixed
+- New Event notifications are not sent to Group members [#506](https://github.com/rokwire/groups-building-block/issues/506)
+
+## [1.51.1] - 2024-09-04
+### Fixed
+- Bad Authman sync for user who has alternative auth method for first login [#509](https://github.com/rokwire/groups-building-block/issues/509)
+
+## [1.51.0] - 2024-08-23
+### Added
+- Calendar events issues [#503](https://github.com/rokwire/groups-building-block/issues/503)
+
+## [1.50.0] - 2024-08-22
+### Added 
+- Add "group_id" to the bbs get group membership API [#500](https://github.com/rokwire/groups-building-block/issues/500)
+
+## [1.49.0] - 2024-08-19
+### Fixed
+- Fix Aggregation pipeline [#497](https://github.com/rokwire/groups-building-block/issues/497)
+### Added
+- BBs Api for getting group memberships [#494](https://github.com/rokwire/groups-building-block/issues/494)
+
+## [1.48.0] - 2024-08-09
+### Added
+- Approve all API [#484](https://github.com/rokwire/groups-building-block/issues/484)
+### Fixed 
+- Fix Groups Stats are not updated [#490](https://github.com/rokwire/groups-building-block/issues/490)
+
+## [1.47.0] - 2024-08-08
+### Fixed
+- The value for "current_member" is not available in group json [#485](https://github.com/rokwire/groups-building-block/issues/485)
+- Groups Stats are not updated [#483](https://github.com/rokwire/groups-building-block/issues/483)
+### Added
+- POST request for loading group members [#455](https://github.com/rokwire/groups-building-block/issues/455)
+
 ## [1.46.3] - 2024-07-24
 ### Fixed
 - Use "get_groups" permission for loading user groups in the admin API [#481](https://github.com/rokwire/groups-building-block/issues/481)

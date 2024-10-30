@@ -4,6 +4,8 @@ import (
 	"groups/core/model"
 	"time"
 
+	"github.com/rokwire/logging-library-go/v2/errors"
+	"github.com/rokwire/logging-library-go/v2/logutils"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -232,4 +234,51 @@ func (sa *Adapter) FindEventUserIDs(context TransactionContext, eventID string) 
 
 	return nil, nil
 
+}
+
+// FindGroupMembershipStatusAndGroupTitle Find group membership status and group Title
+func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error) {
+	pipeline := bson.A{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "user_id", Value: userID}}}},
+		bson.D{{Key: "$lookup", Value: bson.D{
+			{Key: "from", Value: "groups"},
+			{Key: "localField", Value: "group_id"},
+			{Key: "foreignField", Value: "_id"},
+			{Key: "as", Value: "group_info"},
+		}}},
+		bson.D{{Key: "$unwind", Value: "$group_info"}},
+		bson.D{{Key: "$project", Value: bson.D{
+			{Key: "title", Value: "$group_info.title"},
+			{Key: "status", Value: "$status"},
+			{Key: "groupId", Value: "$group_info._id"},
+		}}},
+	}
+
+	// Define the results slice
+	var results []model.GetGroupMembershipsResponse
+
+	// Execute the aggregation pipeline
+	err := sa.db.groupMemberships.AggregateWithContext(context, pipeline, &results, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
+// FindGroupsEvents Find group ID and event ID
+func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error) {
+	filter := bson.D{}
+
+	if len(eventIDs) > 0 {
+		filter = append(filter, bson.E{Key: "event_id", Value: bson.M{"$in": eventIDs}})
+	}
+
+	var groupsEvents []model.GetGroupsEvents
+	err := sa.db.events.Find(filter, &groupsEvents, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "groups events", nil, err)
+	}
+
+	return groupsEvents, nil
 }

@@ -64,6 +64,13 @@ type Group struct {
 	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
 } // @name Group
 
+// GetGroupMembershipsResponse response
+type GetGroupMembershipsResponse struct {
+	GroupID string `json:"group_id"`
+	Title   string `json:"group_title"`
+	Status  string `json:"status"`
+} // @name GetGroupMembershipsResponse
+
 // ApplyLegacyMembership applies legacy membership to the group for backward compatibility
 func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection) {
 	var list []Member

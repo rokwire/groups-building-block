@@ -57,9 +57,14 @@ func (app *Application) adminAddGroupMemberships(clientID string, current *model
 					}
 				}
 				if len(memberships) > 0 {
-					return app.storage.CreateMemberships(context, clientID, current, group, memberships)
+					err := app.storage.CreateMemberships(context, clientID, current, group, memberships)
+					if err != nil {
+						return err
+					}
 				}
 			}
+
+			return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
 		}
 
 		return nil
@@ -81,7 +86,7 @@ func (app *Application) adminDeleteMembershipsByID(clientID string, current *mod
 			}
 		}
 
-		return nil
+		return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
 	})
 
 	return err

@@ -348,6 +348,16 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	return nil
 }
 
+func (app *Application) updateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error {
+	if group != nil && group.CurrentMember != nil && group.CurrentMember.IsAdmin() {
+		err := app.storage.UpdateMemberships(clientID, user, group.ID, operation)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (app *Application) reportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error {
 
 	err := app.storage.ReportGroupAsAbuse(clientID, current.ID, group)
@@ -365,96 +375,6 @@ func (app *Application) reportGroupAsAbuse(clientID string, current *model.User,
 	`, group.Title, current.ExternalID, current.Name, comment)
 	body = strings.ReplaceAll(body, `\n`, "\n")
 	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
-}
-
-func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
-	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
-	if err != nil {
-		return nil, err
-	}
-	return events, nil
-}
-
-func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
-	var skipUserID *string
-
-	if current != nil && creator == nil {
-		creator = &model.Creator{
-			UserID: current.ID,
-			Name:   current.Name,
-			Email:  current.Email,
-		}
-	}
-	if creator != nil {
-		skipUserID = &creator.UserID
-	}
-
-	event, err := app.storage.CreateEvent(clientID, eventID, group.ID, toMemberList, creator)
-	if err != nil {
-		return nil, err
-	}
-
-	var userIDs []string
-	var recipients []notifications.Recipient
-	if len(event.ToMembersList) > 0 {
-		userIDs = event.GetMembersAsUserIDs(skipUserID)
-	}
-
-	result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-		GroupIDs: []string{group.ID},
-		UserIDs:  userIDs,
-		Statuses: []string{"member", "admin"},
-	})
-	recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-		return member.IsAdminOrMember() && (skipUserID == nil || *skipUserID != member.UserID),
-			member.NotificationsPreferences.OverridePreferences &&
-				(member.NotificationsPreferences.EventsMuted || member.NotificationsPreferences.AllMute)
-	})
-
-	if len(recipients) > 0 {
-		topic := "group.events"
-		appID := app.config.AppID
-		orgID := app.config.OrgID
-		if current != nil {
-			appID = current.AppID
-			orgID = current.OrgID
-		}
-		groupStr := "Group"
-		if group.ResearchGroup {
-			groupStr = "Research Project"
-		}
-
-		go app.notifications.SendNotification(
-			recipients,
-			&topic,
-			fmt.Sprintf("%s - %s", groupStr, group.Title),
-			fmt.Sprintf("New event has been published in '%s' %s", group.Title, strings.ToLower(groupStr)),
-			map[string]string{
-				"type":        "group",
-				"operation":   "event_created",
-				"entity_type": "group",
-				"entity_id":   group.ID,
-				"entity_name": group.Title,
-			},
-			appID,
-			orgID,
-			nil,
-		)
-	}
-
-	return event, nil
-}
-
-func (app *Application) updateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
-	return app.storage.UpdateEvent(clientID, eventID, groupID, toMemberList)
-}
-
-func (app *Application) deleteEvent(clientID string, _ *model.User, eventID string, groupID string) error {
-	err := app.storage.DeleteEvent(clientID, eventID, groupID)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
@@ -739,7 +659,7 @@ func (app *Application) sendGroupNotification(clientID string, notification mode
 		memberStatuses = []string{"admin", "member"}
 	}
 
-	members, err := app.findGroupMemberships(clientID, model.MembershipFilter{
+	members, err := app.findGroupMemberships(nil, clientID, model.MembershipFilter{
 		GroupIDs: []string{notification.GroupID},
 		UserIDs:  notification.Members.ToUserIDs(),
 		Statuses: memberStatuses,

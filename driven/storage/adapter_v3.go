@@ -17,7 +17,7 @@ import (
 )
 
 // FindGroupsV3 finds groups with filter
-func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error) {
+func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, filter model.GroupsFilter) ([]model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
 	var groupIDs []string
@@ -38,7 +38,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 	// Credits to Ryan Oberlander suggest
 	if filter.MemberUserID != nil || filter.MemberID != nil || filter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err = sa.FindGroupMemberships(clientID, model.MembershipFilter{
+		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 			ID:         filter.MemberID,
 			UserID:     filter.MemberUserID,
 			ExternalID: filter.MemberExternalID,
@@ -143,7 +143,7 @@ func (sa *Adapter) FindGroupsV3(clientID string, filter model.GroupsFilter) ([]m
 	}
 
 	var list []model.Group
-	err = sa.db.groups.Find(groupFilter, &list, findOptions)
+	err = sa.db.groups.FindWithContext(context, groupFilter, &list, findOptions)
 	if err != nil {
 		return nil, err
 	}
@@ -547,6 +547,39 @@ func (sa *Adapter) UpdateMembership(clientID string, _ *model.User, membershipID
 		return sa.UpdateGroupStats(context, clientID, membership.GroupID, false, true, false, true)
 	})
 
+}
+
+// UpdateMemberships Updates multiple memberships for userids in a group
+func (sa *Adapter) UpdateMemberships(clientID string, user *model.User, groupID string, operation model.MembershipMultiUpdate) error {
+	return sa.PerformTransaction(func(context TransactionContext) error {
+		filter := bson.D{
+			primitive.E{Key: "group_id", Value: groupID},
+			primitive.E{Key: "user_id", Value: bson.M{"$in": operation.UserIDs}},
+		}
+		operarions := bson.D{}
+		if operation.Status != nil {
+			operarions = append(operarions, primitive.E{Key: "status", Value: *operation.Status})
+		}
+		if operation.Reason != nil {
+			operarions = append(operarions, primitive.E{Key: "reject_reason", Value: *operation.Reason})
+		}
+		if operation.DateAttended != nil {
+			operarions = append(operarions, primitive.E{Key: "date_attended", Value: *operation.DateAttended})
+		}
+		if len(operarions) > 0 {
+			operarions = append(operarions, primitive.E{Key: "date_updated", Value: time.Now()})
+			update := bson.D{
+				primitive.E{Key: "$set", Value: operarions},
+			}
+			_, err := sa.db.groupMemberships.UpdateManyWithContext(context, filter, update, nil)
+			if err != nil {
+				return err
+			}
+
+			return sa.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
+		}
+		return nil
+	})
 }
 
 // DeleteMembership deletes a member membership from a specific group

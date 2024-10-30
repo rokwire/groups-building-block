@@ -104,6 +104,8 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroup)).Methods("PUT")
 	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembers)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{group-id}/members/v2", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembersV2)).Methods("POST")
+
 	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateMemberships)).Methods("POST")
 	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
 	adminSubrouter.HandleFunc("/group/{group-id}/events", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
@@ -160,6 +162,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupMembers)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.CreateMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMember)).Methods("DELETE")
+	restSubrouter.HandleFunc("/group/{group-id}/members/multi-update", we.idTokenAuthWrapFunc(we.apisHandler.MultiUpdateMembers)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{group-id}/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchAuthmanGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/memberships/{membership-id}/approval", we.idTokenAuthWrapFunc(we.apisHandler.MembershipApproval)).Methods("PUT")
 	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMembership)).Methods("DELETE")
@@ -202,6 +205,8 @@ func (we *Adapter) Start() {
 	// BB Apis
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
 	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsAPIHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/groups/{user_id}/memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMemberships, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 
 	var handler http.Handler = router
 	if len(we.corsAllowedOrigins) > 0 {
@@ -454,7 +459,7 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedCli
 	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
 	bbApisHandler := rest.NewBBApisHandler(app)
 
-	return &Adapter{host: host, port: port, auth: auth, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
-		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, auth2: auth2,
-		corsAllowedOrigins: corsAllowedOrigins, bbsAPIHandler: bbApisHandler, corsAllowedHeaders: corsAllowedHeaders, logger: logger}
+	return &Adapter{host: host, port: port, auth: auth, auth2: auth2, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
+		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, bbsAPIHandler: bbApisHandler,
+		corsAllowedOrigins: corsAllowedOrigins, corsAllowedHeaders: corsAllowedHeaders, logger: logger}
 }

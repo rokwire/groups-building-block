@@ -39,6 +39,13 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  GetGroupMembershipsResponse:
+    properties:
+      status:
+        type: string
+      title:
+        type: string
+    type: object
   Group:
     properties:
       attendance_group:
@@ -415,6 +422,23 @@ definitions:
         type: string
       user_ids:
         description: core user ids
+        items:
+          type: string
+        type: array
+    type: object
+  MembershipMultiUpdate:
+    properties:
+      date_attended:
+        description: date attended
+        type: string
+      reason:
+        description: reason
+        type: string
+      status:
+        description: new status
+        type: string
+      user_ids:
+        description: list of user ids
         items:
           type: string
         type: array
@@ -1315,6 +1339,40 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/group/{group-id}/members/v2:
+    post:
+      consumes:
+      - text/plain
+      description: Gets the list of group members.
+      operationId: AdminGetGroupMembersV2
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMembership'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
   /api/admin/group/{group-id}/stats:
     get:
       consumes:
@@ -2064,6 +2122,30 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
+  /api/bbs/groups/{user_id}/memberships:
+    get:
+      description: Gets all related group memberships status and group title using
+        userID
+      operationId: GetGroupMemberships
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/GetGroupMembershipsResponse'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
   /api/group/{group-id}/authman/synchronize:
     post:
       consumes:
@@ -2427,6 +2509,37 @@ paths:
         required: true
         schema:
           $ref: '#/definitions/createMemberRequest'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/group/{group-id}/members/multi-update:
+    put:
+      consumes:
+      - text/plain
+      description: Updates multiple members in a group at once with status and other
+        details
+      operationId: MultiUpdateMembers
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipMultiUpdate'
       - description: APP
         in: header
         name: APP

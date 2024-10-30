@@ -35,6 +35,12 @@ type AccountIdentifiers struct {
 	ExternalID *string `json:"external_id"`
 } // @name AccountIdentifiers
 
+// GetGroupsEvents response
+type GetGroupsEvents struct {
+	EventID string `json:"event_id" bson:"event_id"`
+	GroupID string `json:"group_id" bson:"group_id"`
+} // @name GetGroupsEvents
+
 // HasToMembersList Checks if the ToMembersList is not empty
 func (e Event) HasToMembersList() bool {
 	return len(e.ToMembersList) > 0

@@ -366,3 +366,45 @@ func (a *Adapter) LoadDeletedMemberships() ([]model.DeletedUserData, error) {
 
 	return deletedMemberships, nil
 }
+
+// RetrieveFerpaAccounts retrieves ferpa accounts
+func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
+	if len(ids) > 0 {
+		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, strings.Join(ids, ","))
+
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			a.logger.Errorf("delete membership: error creating request - %s", err)
+			return nil, err
+		}
+		req.Header.Add("Content-Type", "application/json")
+
+		resp, err := a.serviceAccountManager.MakeRequest(req, "all", "all")
+		if err != nil {
+			log.Printf("RetrieveFerpaAccounts: error sending request - %s", err)
+			return nil, err
+		}
+
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			log.Printf("RetrieveFerpaAccounts: error with response code - %d", resp.StatusCode)
+			return nil, fmt.Errorf("RetrieveFerpaAccounts: error with response code != 200")
+		}
+
+		data, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("RetrieveFerpaAccounts: unable to read json: %s", err)
+			return nil, fmt.Errorf("RetrieveFerpaAccounts: unable to parse json: %s", err)
+		}
+
+		var ferpaAccountIDs []string
+		err = json.Unmarshal(data, &ferpaAccountIDs)
+		if err != nil {
+			log.Printf("RetrieveFerpaAccounts: unable to parse json: %s", err)
+			return nil, fmt.Errorf("RetrieveFerpaAccounts: unable to parse json: %s", err)
+		}
+
+		return ferpaAccountIDs, nil
+	}
+	return nil, nil
+}

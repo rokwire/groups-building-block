@@ -408,6 +408,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/admin/group/{group-id}/members/v2": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets the list of group members.",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetGroupMembersV2",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MembershipFilter"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/GroupMembership"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/group/{group-id}/stats": {
             "get": {
                 "security": [
@@ -1500,6 +1553,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups/{user_id}/memberships": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related group memberships status and group title using userID",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupMemberships",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/GetGroupMembershipsResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/events/v3": {
             "post": {
                 "security": [
@@ -2138,6 +2228,53 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    }
+                }
+            }
+        },
+        "/api/group/{group-id}/members/multi-update": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Updates multiple members in a group at once with status and other details",
+                "consumes": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "MultiUpdateMembers",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/MembershipMultiUpdate"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -3914,6 +4051,17 @@ const docTemplate = `{
                 }
             }
         },
+        "GetGroupMembershipsResponse": {
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string"
+                },
+                "title": {
+                    "type": "string"
+                }
+            }
+        },
         "Group": {
             "type": "object",
             "properties": {
@@ -4468,6 +4616,30 @@ const docTemplate = `{
                 },
                 "user_ids": {
                     "description": "core user ids",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "MembershipMultiUpdate": {
+            "type": "object",
+            "properties": {
+                "date_attended": {
+                    "description": "date attended",
+                    "type": "string"
+                },
+                "reason": {
+                    "description": "reason",
+                    "type": "string"
+                },
+                "status": {
+                    "description": "new status",
+                    "type": "string"
+                },
+                "user_ids": {
+                    "description": "list of user ids",
                     "type": "array",
                     "items": {
                         "type": "string"
