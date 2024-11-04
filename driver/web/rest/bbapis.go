@@ -143,5 +143,14 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 // @Security AppUserAuth
 // @Router /api/bbs/user-data [get]
 func (h *BBSApisHandler) GetUserData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
-	return log.HTTPResponseSuccess()
+	userData, err := h.app.Services.GetUserData(user.ID)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+	data, err := json.Marshal(userData)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
 }

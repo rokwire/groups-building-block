@@ -59,6 +59,7 @@ type Services interface {
 	GetGroupMembershipsByGroupID(groupID string) ([]string, error)
 
 	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
+	GetUserData(userID string) (*model.UserDataResponse, error)
 
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
@@ -219,6 +220,10 @@ func (s *servicesImpl) GetGroupMembershipsByGroupID(groupID string) ([]string, e
 
 func (s *servicesImpl) GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
 	return s.app.findGroupsEvents(eventIDs)
+}
+
+func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, error) {
+	return s.app.getUserData(userID)
 }
 
 func (s *servicesImpl) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
