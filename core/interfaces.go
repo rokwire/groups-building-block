@@ -443,6 +443,7 @@ type Storage interface {
 	GetEventByUserID(userID string) ([]model.Event, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
 	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
+	GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error)
 
 	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)
 
