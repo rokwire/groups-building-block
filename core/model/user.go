@@ -159,3 +159,35 @@ type DeletedMembership struct {
 	AccountID string                  `json:"account_id"`
 	Context   *map[string]interface{} `json:"context,omitempty"`
 }
+
+// UserDataResponse defines the user data
+type UserDataResponse struct {
+	EventResponse            []EventResponse           `json:"events"`
+	GroupMembershipsResponse []GroupMembershipResponse `json:"group_memberships"`
+	GroupResponse            []GroupResponse           `json:"groups"`
+	PostResponse             []PostResponse            `json:"posts"`
+}
+
+// EventResponse represents event entity
+type EventResponse struct {
+	UserID  string `json:"user_id" bson:"user_id"`
+	EventID string `json:"event_id" bson:"event_id"`
+} // @name EventResponse
+
+// GroupMembershipResponse represents the membership of a user to a given group
+type GroupMembershipResponse struct {
+	ID     string `json:"id" bson:"_id"`
+	UserID string `json:"user_id" bson:"user_id"`
+} //@name GroupMembershipResponse
+
+// GroupResponse represents the user groups
+type GroupResponse struct {
+	ID     string `json:"id" bson:"_id"`
+	UserID string `json:"user_id" bson:"user_id"`
+} //@name GroupResponse
+
+// PostResponse  represents the user posts
+type PostResponse struct {
+	ID     string `json:"id" bson:"_id"`
+	UserID string `json:"user_id" bson:"user_id"`
+} //@name PostResponse

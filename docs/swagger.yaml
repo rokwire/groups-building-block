@@ -39,11 +39,27 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  EventResponse:
+    properties:
+      event_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   GetGroupMembershipsResponse:
     properties:
+      group_id:
+        type: string
+      group_title:
+        type: string
       status:
         type: string
-      title:
+    type: object
+  GetGroupsEvents:
+    properties:
+      event_id:
+        type: string
+      group_id:
         type: string
     type: object
   Group:
@@ -195,6 +211,20 @@ definitions:
         type: string
       sync_id:
         description: ID of sync that last updated this membership
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupMembershipResponse:
+    properties:
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupResponse:
+    properties:
+      id:
         type: string
       user_id:
         type: string
@@ -472,6 +502,13 @@ definitions:
         type: boolean
       can_send_post_to_specific_members:
         type: boolean
+    type: object
+  PostResponse:
+    properties:
+      id:
+        type: string
+      user_id:
+        type: string
     type: object
   Sender:
     properties:
@@ -887,6 +924,25 @@ definitions:
         type: integer
       type:
         type: string
+    type: object
+  model.UserDataResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/EventResponse'
+        type: array
+      group_memberships:
+        items:
+          $ref: '#/definitions/GroupMembershipResponse'
+        type: array
+      groups:
+        items:
+          $ref: '#/definitions/GroupResponse'
+        type: array
+      posts:
+        items:
+          $ref: '#/definitions/PostResponse'
+        type: array
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -2122,26 +2178,89 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
-  /api/bbs/groups/{group_id}/memberships:
-  get:
-    description: Gets an array of user IDs for all members in the group specified by groupID
-    operationId: GetGroupMembershipUserIds
-    parameters:
+  /api/bbs/groups/{group_id}/group-memberships:
+    get:
+      description: Gets all related group memberships status and group title using
+        groupID
+      operationId: GetGroupMembershipsByGroupID
+      parameters:
       - description: Group ID
         in: path
         name: group_id
         required: true
         type: string
-    responses:
-      "200":
-        description: OK
-        schema:
-          type: array
-          items:
-            type: string  
-    security:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                type: string
+              type: array
+            type: array
+      security:
       - AppUserAuth: []
-    tags:
+      tags:
+      - BBS
+  /api/bbs/groups/{user_id}/memberships:
+    get:
+      description: Gets all related group memberships status and group title using
+        userID
+      operationId: GetGroupMemberships
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/GetGroupMembershipsResponse'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/groups/events:
+    get:
+      description: Gets all related eventID and groupID using eventIDs
+      operationId: GetGroupsEvents
+      parameters:
+      - description: Comma-separated list of event IDs
+        in: query
+        name: event-ids
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/GetGroupsEvents'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/user-data:
+    get:
+      description: Gets all related user data
+      operationId: GetUserData
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserDataResponse'
+      security:
+      - AppUserAuth: []
+      tags:
       - BBS
   /api/group/{group-id}/authman/synchronize:
     post:

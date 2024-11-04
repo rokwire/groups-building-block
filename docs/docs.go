@@ -1553,6 +1553,80 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups/events": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related eventID and groupID using eventIDs",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupsEvents",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated list of event IDs",
+                        "name": "event-ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/GetGroupsEvents"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bbs/groups/{group_id}/group-memberships": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related group memberships status and group title using groupID",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupMembershipsByGroupID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/bbs/groups/{user_id}/memberships": {
             "get": {
                 "security": [
@@ -1585,6 +1659,28 @@ const docTemplate = `{
                                     "$ref": "#/definitions/GetGroupMembershipsResponse"
                                 }
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bbs/user-data": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related user data",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetUserData",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.UserDataResponse"
                         }
                     }
                 }
@@ -4051,13 +4147,38 @@ const docTemplate = `{
                 }
             }
         },
+        "EventResponse": {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "GetGroupMembershipsResponse": {
             "type": "object",
             "properties": {
-                "status": {
+                "group_id": {
                     "type": "string"
                 },
-                "title": {
+                "group_title": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "GetGroupsEvents": {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "group_id": {
                     "type": "string"
                 }
             }
@@ -4286,6 +4407,28 @@ const docTemplate = `{
                 },
                 "sync_id": {
                     "description": "ID of sync that last updated this membership",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupMembershipResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "string"
                 },
                 "user_id": {
@@ -4690,6 +4833,17 @@ const docTemplate = `{
                 },
                 "can_send_post_to_specific_members": {
                     "type": "boolean"
+                }
+            }
+        },
+        "PostResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -5312,6 +5466,35 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "model.UserDataResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EventResponse"
+                    }
+                },
+                "group_memberships": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GroupMembershipResponse"
+                    }
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GroupResponse"
+                    }
+                },
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PostResponse"
+                    }
                 }
             }
         },
