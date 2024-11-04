@@ -47,7 +47,20 @@ func (app *Application) findGroupsEvents(eventIDs []string) ([]model.GetGroupsEv
 }
 
 func (app *Application) getUserData(userID string) (*model.UserDataResponse, error) {
-	return nil, nil
+	var eventResponse []model.EventResponse
+	events, err := app.storage.GetEventByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if events != nil {
+		for _, ev := range events {
+			eve := model.EventResponse{UserID: userID, EventID: ev.EventID}
+			eventResponse = append(eventResponse, eve)
+		}
+	}
+
+	userData := model.UserDataResponse{EventResponse: eventResponse}
+	return &userData, nil
 }
 
 func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {

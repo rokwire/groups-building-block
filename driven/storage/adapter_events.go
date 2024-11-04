@@ -305,3 +305,16 @@ func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []strin
 
 	return groupsEvents, nil
 }
+
+// GetEventByUserID Find events by userID
+func (sa *Adapter) GetEventByUserID(userID string) ([]model.Event, error) {
+	filter := bson.D{primitive.E{Key: "to_members.user_id", Value: userID}}
+
+	var events []model.Event
+	err := sa.db.events.Find(filter, &events, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "events", nil, err)
+	}
+
+	return events, nil
+}

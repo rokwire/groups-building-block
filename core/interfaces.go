@@ -440,6 +440,7 @@ type Storage interface {
 	PullMembersFromEventsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
+	GetEventByUserID(userID string) ([]model.Event, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
 	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
 
