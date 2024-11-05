@@ -21,6 +21,7 @@ import (
 	"groups/driven/storage"
 	"log"
 	"strings"
+	"sync"
 )
 
 func (app *Application) findAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error) {
@@ -47,47 +48,87 @@ func (app *Application) findGroupsEvents(eventIDs []string) ([]model.GetGroupsEv
 }
 
 func (app *Application) getUserData(userID string) (*model.UserDataResponse, error) {
-	var eventResponse []model.EventResponse
-	var groupMemberhshipResponse []model.GroupMembershipResponse
-	var groupResponse []model.GroupResponse
-	var postResponse []model.PostResponse
-	events, err := app.storage.GetEventByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-	if events != nil {
-		for _, ev := range events {
-			eve := model.EventResponse{UserID: userID, EventID: ev.EventID}
-			eventResponse = append(eventResponse, eve)
+	var (
+		eventResponse           []model.EventResponse
+		groupMembershipResponse []model.GroupMembershipResponse
+		groupResponse           []model.GroupResponse
+		postResponse            []model.PostResponse
+		mu                      sync.Mutex            // Mutex to safely update shared slices
+		wg                      sync.WaitGroup        // WaitGroup to wait for all goroutines
+		errChan                 = make(chan error, 3) // Channel for error handling
+	)
+
+	// Fetch events asynchronously
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		events, err := app.storage.GetEventByUserID(userID)
+		if err != nil {
+			errChan <- err
+			return
 		}
-	}
-
-	groupMembership, err := app.storage.GetGroupMembershipByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-	if groupMembership != nil {
-		for _, gr := range groupMembership {
-			grM := model.GroupMembershipResponse{ID: gr.ID, UserID: gr.UserID}
-			groupMemberhshipResponse = append(groupMemberhshipResponse, grM)
-
-			g := model.GroupResponse{ID: gr.GroupID}
-			groupResponse = append(groupResponse, g)
+		if events != nil {
+			mu.Lock()
+			for _, ev := range events {
+				eventResponse = append(eventResponse, model.EventResponse{UserID: userID, EventID: ev.EventID})
+			}
+			mu.Unlock()
 		}
-	}
+	}()
 
-	posts, err := app.storage.GetPostsByUserID(userID)
-	if err != nil {
-		return nil, err
-	}
-	if posts != nil {
-		for _, p := range posts {
-			po := model.PostResponse{ID: p.ID, UserID: userID}
-			postResponse = append(postResponse, po)
+	// Fetch group memberships asynchronously
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		groupMemberships, err := app.storage.GetGroupMembershipByUserID(userID)
+		if err != nil {
+			errChan <- err
+			return
 		}
+		if groupMemberships != nil {
+			mu.Lock()
+			for _, gr := range groupMemberships {
+				groupMembershipResponse = append(groupMembershipResponse, model.GroupMembershipResponse{ID: gr.ID, UserID: gr.UserID})
+				groupResponse = append(groupResponse, model.GroupResponse{ID: gr.GroupID})
+			}
+			mu.Unlock()
+		}
+	}()
+
+	// Fetch posts asynchronously
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		posts, err := app.storage.GetPostsByUserID(userID)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		if posts != nil {
+			mu.Lock()
+			for _, p := range posts {
+				postResponse = append(postResponse, model.PostResponse{ID: p.ID, UserID: userID})
+			}
+			mu.Unlock()
+		}
+	}()
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+	close(errChan) // Close error channel once all goroutines complete
+
+	// Check if any errors were received
+	if len(errChan) > 0 {
+		return nil, <-errChan // Return the first error encountered
 	}
 
-	userData := model.UserDataResponse{EventResponse: eventResponse, GroupMembershipsResponse: groupMemberhshipResponse, GroupResponse: groupResponse, PostResponse: postResponse}
+	// Create and return the final response
+	userData := model.UserDataResponse{
+		EventResponse:            eventResponse,
+		GroupMembershipsResponse: groupMembershipResponse,
+		GroupResponse:            groupResponse,
+		PostResponse:             postResponse,
+	}
 	return &userData, nil
 }
 
