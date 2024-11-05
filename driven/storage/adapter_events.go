@@ -331,3 +331,16 @@ func (sa *Adapter) GetGroupMembershipByUserID(userID string) ([]model.GroupMembe
 
 	return groupMemberships, nil
 }
+
+// GetPostsByUserID Find posts by userID
+func (sa *Adapter) GetPostsByUserID(userID string) ([]model.Post, error) {
+	filter := bson.D{primitive.E{Key: "member.user_id", Value: userID}}
+
+	var posts []model.Post
+	err := sa.db.posts.Find(filter, &posts, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "posts", nil, err)
+	}
+
+	return posts, nil
+}

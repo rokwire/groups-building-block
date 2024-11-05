@@ -50,6 +50,7 @@ func (app *Application) getUserData(userID string) (*model.UserDataResponse, err
 	var eventResponse []model.EventResponse
 	var groupMemberhshipResponse []model.GroupMembershipResponse
 	var groupResponse []model.GroupResponse
+	var postResponse []model.PostResponse
 	events, err := app.storage.GetEventByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -75,7 +76,18 @@ func (app *Application) getUserData(userID string) (*model.UserDataResponse, err
 		}
 	}
 
-	userData := model.UserDataResponse{EventResponse: eventResponse, GroupMembershipsResponse: groupMemberhshipResponse, GroupResponse: groupResponse}
+	posts, err := app.storage.GetPostsByUserID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if posts != nil {
+		for _, p := range posts {
+			po := model.PostResponse{ID: p.ID, UserID: userID}
+			postResponse = append(postResponse, po)
+		}
+	}
+
+	userData := model.UserDataResponse{EventResponse: eventResponse, GroupMembershipsResponse: groupMemberhshipResponse, GroupResponse: groupResponse, PostResponse: postResponse}
 	return &userData, nil
 }
 
