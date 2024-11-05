@@ -112,7 +112,7 @@ func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.R
 // @Description  Gets all related eventID and groupID using eventIDs
 // @ID GetGroupsEvents
 // @Tags BBS
-// @Param comma separated eventIDs query
+// @Param event-ids query string true "Comma-separated list of event IDs"
 // @Success 200 {array} []model.GetGroupsEvents
 // @Security AppUserAuth
 // @Router /api/bbs/groups/events [get]
@@ -128,6 +128,26 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
 	}
 	data, err := json.Marshal(groupevents)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+}
+
+// GetUserData Gets all related user data
+// @Description  Gets all related user data
+// @ID GetUserData
+// @Tags BBS
+// @Success 200 {object} model.UserDataResponse
+// @Security AppUserAuth
+// @Router /api/bbs/user-data [get]
+func (h *BBSApisHandler) GetUserData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	userData, err := h.app.Services.GetUserData(user.ID)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+	data, err := json.Marshal(userData)
 	if err != nil {
 		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
 	}
