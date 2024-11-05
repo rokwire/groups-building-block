@@ -49,6 +49,7 @@ func (app *Application) findGroupsEvents(eventIDs []string) ([]model.GetGroupsEv
 func (app *Application) getUserData(userID string) (*model.UserDataResponse, error) {
 	var eventResponse []model.EventResponse
 	var groupMemberhshipResponse []model.GroupMembershipResponse
+	var groupResponse []model.GroupResponse
 	events, err := app.storage.GetEventByUserID(userID)
 	if err != nil {
 		return nil, err
@@ -68,10 +69,13 @@ func (app *Application) getUserData(userID string) (*model.UserDataResponse, err
 		for _, gr := range groupMembership {
 			grM := model.GroupMembershipResponse{ID: gr.ID, UserID: gr.UserID}
 			groupMemberhshipResponse = append(groupMemberhshipResponse, grM)
+
+			g := model.GroupResponse{ID: gr.GroupID}
+			groupResponse = append(groupResponse, g)
 		}
 	}
 
-	userData := model.UserDataResponse{EventResponse: eventResponse, GroupMembershipsResponse: groupMemberhshipResponse}
+	userData := model.UserDataResponse{EventResponse: eventResponse, GroupMembershipsResponse: groupMemberhshipResponse, GroupResponse: groupResponse}
 	return &userData, nil
 }
 

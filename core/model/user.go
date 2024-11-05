@@ -182,8 +182,7 @@ type GroupMembershipResponse struct {
 
 // GroupResponse represents the user groups
 type GroupResponse struct {
-	ID     string `json:"id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
+	ID string `json:"id" bson:"_id"`
 } //@name GroupResponse
 
 // PostResponse  represents the user posts
