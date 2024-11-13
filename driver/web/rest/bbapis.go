@@ -135,7 +135,7 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 	return log.HTTPResponseSuccessJSON(data)
 }
 
-// GetGroupsbyGroupsIDs Gets all related groups by groupIDs
+// GetGroupsByGroupIDs Gets all related groups by groupIDs
 // @Description  Gets all related groups by groupIDs
 // @ID GetGroupsbyGroupsIDs
 // @Tags BBS
