@@ -266,6 +266,29 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 	return results, nil
 }
 
+// FindGroupMembershipByGroupID Find group membership ids
+func (sa *Adapter) FindGroupMembershipByGroupID(context TransactionContext, groupID string) ([]string, error) {
+	filter := bson.D{primitive.E{Key: "group_id", Value: groupID}}
+
+	// Define the results slice
+	var results []model.GroupMembership
+
+	// Execute the aggregation pipeline
+	err := sa.db.groupMemberships.FindWithContext(context, filter, &results, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var userIDs []string
+	for _, u := range results {
+		if u.UserID != "" {
+			userIDs = append(userIDs, u.UserID)
+		}
+	}
+
+	return userIDs, nil
+}
+
 // FindGroupsEvents Find group ID and event ID
 func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error) {
 	filter := bson.D{}
@@ -281,4 +304,21 @@ func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []strin
 	}
 
 	return groupsEvents, nil
+}
+
+// FindGroupsByGroupIDs Find group by group ID
+func (sa *Adapter) FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
+	filter := bson.D{}
+
+	if len(groupIDs) > 0 {
+		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupIDs}})
+	}
+
+	var groups []model.Group
+	err := sa.db.groups.Find(filter, &groups, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "groups", nil, err)
+	}
+
+	return groups, nil
 }

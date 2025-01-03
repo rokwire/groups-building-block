@@ -2,4 +2,5 @@ p, all_bbs_groups, /gr/api/bbs/*, (GET)|(POST)|(PUT)|(DELETE), All BBs APIs
 
 p, get_aggregated-users, /gr/api/bbs/event/*/aggregated-users, (GET), Get event group users (aggregated)
 p, get_user_membership, /gr/api/bbs/groups/*/memberships, (GET), Gets all related group memberships status and group title using userID
+p, get_user_membership, /gr/api/bbs/groups/*/group-memberships, (GET), Gets all related group memberships status and group title using groupID
 p, get_groups_events, /gr/api/bbs/groups/events*, (GET), Gets all related eventID and groupID using eventIDs

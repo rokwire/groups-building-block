@@ -80,6 +80,34 @@ func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, u
 
 }
 
+// GetGroupMembershipsByGroupID Gets all related group memberships status and group title using groupID
+// @Description  Gets all related group memberships status and group title using groupID
+// @ID GetGroupMembershipsByGroupID
+// @Tags BBS
+// @Param group_id path string true "Group ID"
+// @Success 200 {array} []string
+// @Security AppUserAuth
+// @Router /api/bbs/groups/{group_id}/group-memberships [get]
+func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
+	groupID := params["group_id"]
+	if len(groupID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing group_id"), http.StatusBadRequest, false)
+	}
+	groupMembershipsIDs, err := h.app.Services.GetGroupMembershipsByGroupID(groupID)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	data, err := json.Marshal(groupMembershipsIDs)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+
+}
+
 // GetGroupsEvents Gets all related eventID and groupID using eventIDs
 // @Description  Gets all related eventID and groupID using eventIDs
 // @ID GetGroupsEvents
@@ -105,4 +133,34 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 	}
 
 	return log.HTTPResponseSuccessJSON(data)
+}
+
+// GetGroupsByGroupIDs Gets all related groups by groupIDs
+// @Description  Gets all related groups by groupIDs
+// @ID GetGroupsbyGroupsIDs
+// @Tags BBS
+// @Param comma separated groupIDs query
+// @Success 200 {array} []model.Group
+// @Security AppUserAuth
+// @Router /api/bbs/groups [get]
+func (h *BBSApisHandler) GetGroupsByGroupIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	var groupIDs []string
+	groupArg := req.URL.Query().Get("group-ids")
+	if len(groupArg) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeQueryParam, nil, errors.New("missing group_ids"), http.StatusBadRequest, false)
+	}
+	if groupArg != "" {
+		groupIDs = strings.Split(groupArg, ",")
+	}
+	groups, err := h.app.Services.GetGroupsByGroupIDs(groupIDs)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+	data, err := json.Marshal(groups)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+
 }
