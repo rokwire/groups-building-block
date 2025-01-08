@@ -226,8 +226,6 @@ definitions:
     properties:
       id:
         type: string
-      user_id:
-        type: string
     type: object
   GroupSettings:
     properties:
@@ -2178,6 +2176,29 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
+  /api/bbs/groups:
+    get:
+      description: Gets all related groups by groupIDs
+      operationId: GetGroupsbyGroupsIDs
+      parameters:
+      - description: Comma-separated list of group IDs
+        in: query
+        name: group-ids
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/Group'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
   /api/bbs/groups/{group_id}/group-memberships:
     get:
       description: Gets all related group memberships status and group title using
@@ -2245,19 +2266,6 @@ paths:
                 $ref: '#/definitions/GetGroupsEvents'
               type: array
             type: array
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-  /api/bbs/user-data:
-    get:
-      description: Gets all related user data
-      operationId: GetUserData
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/model.UserDataResponse'
       security:
       - AppUserAuth: []
       tags:
@@ -3512,6 +3520,19 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client
+  /api/user-data:
+    get:
+      description: Gets all related user data
+      operationId: GetUserData
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserDataResponse'
+      security:
+      - AppUserAuth: []
       tags:
       - Client
   /api/user/group-memberships:

@@ -135,31 +135,11 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 	return log.HTTPResponseSuccessJSON(data)
 }
 
-// GetUserData Gets all related user data
-// @Description  Gets all related user data
-// @ID GetUserData
-// @Tags BBS
-// @Success 200 {object} model.UserDataResponse
-// @Security AppUserAuth
-// @Router /api/bbs/user-data [get]
-func (h *BBSApisHandler) GetUserData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
-	userData, err := h.app.Services.GetUserData(user.ID)
-	if err != nil {
-		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
-	}
-	data, err := json.Marshal(userData)
-	if err != nil {
-		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
-	}
-
-	return log.HTTPResponseSuccessJSON(data)
-}
-
 // GetGroupsByGroupIDs Gets all related groups by groupIDs
 // @Description  Gets all related groups by groupIDs
 // @ID GetGroupsbyGroupsIDs
 // @Tags BBS
-// @Param comma separated groupIDs query
+// @Param group-ids query string true "Comma-separated list of group IDs"
 // @Success 200 {array} []model.Group
 // @Security AppUserAuth
 // @Router /api/bbs/groups [get]

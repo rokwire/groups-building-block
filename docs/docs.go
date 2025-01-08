@@ -1553,6 +1553,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related groups by groupIDs",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupsbyGroupsIDs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Comma-separated list of group IDs",
+                        "name": "group-ids",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/Group"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/bbs/groups/events": {
             "get": {
                 "security": [
@@ -1659,28 +1696,6 @@ const docTemplate = `{
                                     "$ref": "#/definitions/GetGroupMembershipsResponse"
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bbs/user-data": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all related user data",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "GetUserData",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/model.UserDataResponse"
                         }
                     }
                 }
@@ -3639,6 +3654,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/user-data": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related user data",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetUserData",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.UserDataResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/group-memberships": {
             "get": {
                 "security": [
@@ -4429,9 +4466,6 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "id": {
-                    "type": "string"
-                },
-                "user_id": {
                     "type": "string"
                 }
             }
