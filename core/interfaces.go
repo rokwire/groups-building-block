@@ -44,6 +44,8 @@ type Services interface {
 	ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error
 
 	GetGroup(clientID string, current *model.User, id string) (*model.Group, error)
+	GetGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
+
 	GetGroupStats(clientID string, id string) (*model.GroupStats, error)
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
@@ -220,6 +222,9 @@ func (s *servicesImpl) GetGroupMembershipsByGroupID(groupID string) ([]string, e
 
 func (s *servicesImpl) GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
 	return s.app.findGroupsEvents(eventIDs)
+}
+func (s *servicesImpl) GetGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
+	return s.app.findGroupsByGroupIDs(groupIDs)
 }
 
 func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, error) {
@@ -429,6 +434,7 @@ type Storage interface {
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
 	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroupsCount(clientID string, userID string) (*int64, error)
 	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error

@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Consolidate the information, and make it accessible with a single API call [#519](https://github.com/rokwire/groups-building-block/issues/519)
 
+## [1.55.0] - 2024-11-13
+### Added 
+- BBs API to Get groups by group_ids [#521] (https://github.com/rokwire/groups-building-block/issues/521)
+
 ## [1.54.0] - 2024-10-29
 ### Added 
 - Get groups membership by groupID BBs [#516] (https://github.com/rokwire/groups-building-block/issues/516)

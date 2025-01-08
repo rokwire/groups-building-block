@@ -131,6 +131,9 @@ func (app *Application) getUserData(userID string) (*model.UserDataResponse, err
 	}
 	return &userData, nil
 }
+func (app *Application) findGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
+	return app.storage.FindGroupsByGroupIDs(groupIDs)
+}
 
 func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
 	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)

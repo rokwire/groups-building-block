@@ -154,3 +154,32 @@ func (h *BBSApisHandler) GetUserData(log *logs.Log, req *http.Request, user *mod
 
 	return log.HTTPResponseSuccessJSON(data)
 }
+
+// GetGroupsByGroupIDs Gets all related groups by groupIDs
+// @Description  Gets all related groups by groupIDs
+// @ID GetGroupsbyGroupsIDs
+// @Tags BBS
+// @Param comma separated groupIDs query
+// @Success 200 {array} []model.Group
+// @Security AppUserAuth
+// @Router /api/bbs/groups [get]
+func (h *BBSApisHandler) GetGroupsByGroupIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	var groupIDs []string
+	groupArg := req.URL.Query().Get("group-ids")
+	if len(groupArg) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeQueryParam, nil, errors.New("missing group_ids"), http.StatusBadRequest, false)
+	}
+	if groupArg != "" {
+		groupIDs = strings.Split(groupArg, ",")
+	}
+	groups, err := h.app.Services.GetGroupsByGroupIDs(groupIDs)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+	data, err := json.Marshal(groups)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+}

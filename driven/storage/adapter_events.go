@@ -344,3 +344,20 @@ func (sa *Adapter) GetPostsByUserID(userID string) ([]model.Post, error) {
 
 	return posts, nil
 }
+
+// FindGroupsByGroupIDs Find group by group ID
+func (sa *Adapter) FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
+	filter := bson.D{}
+
+	if len(groupIDs) > 0 {
+		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupIDs}})
+	}
+
+	var groups []model.Group
+	err := sa.db.groups.Find(filter, &groups, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "groups", nil, err)
+	}
+
+	return groups, nil
+}
