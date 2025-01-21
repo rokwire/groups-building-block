@@ -41,9 +41,18 @@ definitions:
     type: object
   GetGroupMembershipsResponse:
     properties:
+      group_id:
+        type: string
+      group_title:
+        type: string
       status:
         type: string
-      title:
+    type: object
+  GetGroupsEvents:
+    properties:
+      event_id:
+        type: string
+      group_id:
         type: string
     type: object
   Group:
@@ -1443,6 +1452,30 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
+  /api/admin/group/{groupId}/posts:
+    post:
+      consumes:
+      - application/json
+      description: creates a post within the desired group.
+      operationId: AdminCreateGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin
   /api/admin/group/{groupId}/posts/{postId}:
     delete:
       consumes:
@@ -1458,6 +1491,48 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin
+    get:
+      consumes:
+      - application/json
+      description: Gets a post within the desired group.
+      operationId: AdminGetGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin
+    put:
+      consumes:
+      - application/json
+      description: Updates a post within the desired group.
+      operationId: AdminUpdateGroupPost
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Post'
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
@@ -1583,6 +1658,70 @@ paths:
             type: array
       security:
       - APIKeyAuth: []
+      - AppUserAuth: []
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: Creates a group. The user must be part of urn:mace:uiuc.edu:urbana:authman:app-rokwire-service-policy-rokwire
+        groups access. Title must be a unique. Category must be one of the categories
+        list. Privacy can be public or private
+      operationId: AdminCreateGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+  /api/admin/groups/{id}:
+    put:
+      consumes:
+      - application/json
+      description: Updates a group.
+      operationId: AdminUpdateGroup
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/updateGroupRequest'
+      - description: ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
       - AppUserAuth: []
       tags:
       - Admin
@@ -1793,7 +1932,7 @@ paths:
   /api/admin/user/event/{event-id}/groups:
     get:
       description: Updates the group mappings for an event with id
-      operationId: UpdateGroupMappingsEventID
+      operationId: AdminUpdateGroupMappingsEventID
       parameters:
       - description: APP
         in: header
@@ -1805,6 +1944,12 @@ paths:
         name: event-id
         required: true
         type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
       responses:
         "200":
           description: OK
@@ -1813,7 +1958,7 @@ paths:
       security:
       - AppUserAuth: []
       tags:
-      - Client
+      - Admin
   /api/admin/user/event/{event_id}/groups:
     get:
       description: Get all group IDs where the current user is an admin
@@ -1889,6 +2034,66 @@ paths:
       - Admin
   /api/admin/v2/groups:
     get:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V2
+      operationId: AdminGetGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Group'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    post:
       consumes:
       - application/json
       description: Gives the groups list. It can be filtered by category, title and
@@ -2036,6 +2241,67 @@ paths:
       - APIKeyAuth: []
       tags:
       - Admin
+    post:
+      consumes:
+      - application/json
+      description: Gives the user groups. It can be filtered by category, title and
+        privacy. V2.
+      operationId: AdminGetUserGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Group'
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Admin
   /api/analytics/groups:
     get:
       consumes:
@@ -2122,26 +2388,119 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
-  /api/bbs/groups/{group_id}/memberships:
-  get:
-    description: Gets an array of user IDs for all members in the group specified by groupID
-    operationId: GetGroupMembershipUserIds
-    parameters:
+  /api/bbs/event/{event_id}/aggregated-users:
+    get:
+      description: Gets all related group users linked for the described event id
+      operationId: BBSGetEventUsers
+      parameters:
+      - description: Event ID
+        in: path
+        name: event_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getEventUserIDsResponse'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/groups:
+    get:
+      description: Gets all related groups by groupIDs
+      operationId: GetGroupsbyGroupsIDs
+      parameters:
+      - description: comma separated groupIDs query
+        in: query
+        name: group-ids
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/Group'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/groups/{group_id}/group-memberships:
+    get:
+      description: Gets all related group memberships status and group title using
+        groupID
+      operationId: GetGroupMembershipsByGroupID
+      parameters:
       - description: Group ID
         in: path
         name: group_id
         required: true
         type: string
-    responses:
-      "200":
-        description: OK
-        schema:
-          type: array
-          items:
-            type: string  
-    security:
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                type: string
+              type: array
+            type: array
+      security:
       - AppUserAuth: []
-    tags:
+      tags:
+      - BBS
+  /api/bbs/groups/{user_id}/memberships:
+    get:
+      description: Gets all related group memberships status and group title using
+        userID
+      operationId: GetGroupMemberships
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/GetGroupMembershipsResponse'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/groups/events:
+    get:
+      description: Gets all related eventID and groupID using eventIDs
+      operationId: GetGroupsEvents
+      parameters:
+      - description: comma separated eventIDs query
+        in: query
+        name: events-ids
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/GetGroupsEvents'
+              type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
       - BBS
   /api/group/{group-id}/authman/synchronize:
     post:
@@ -2464,7 +2823,7 @@ paths:
       - text/plain
       description: Gets the list of group members. The result would be empty if the
         current user doesn't belong to the requested group.
-      operationId: CreateMember
+      operationId: GetGroupMembers
       parameters:
       - description: body data
         in: body
@@ -2550,6 +2909,41 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/group/{group-id}/members/v2:
+    post:
+      consumes:
+      - text/plain
+      description: Gets the list of group members. The result would be empty if the
+        current user doesn't belong to the requested group.
+      operationId: GetGroupMembersV2
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/MembershipFilter'
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/GroupMembership'
+            type: array
       security:
       - AppUserAuth: []
       tags:
@@ -3395,6 +3789,59 @@ paths:
       - APIKeyAuth: []
       tags:
       - Client
+  /api/user/event/{event-id}/groups:
+    get:
+      description: Get all group IDs where the current user is an admin
+      operationId: GetAdminGroupIDsForEventID
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+    put:
+      description: Updates the group mappings for an event with id
+      operationId: UpdateGroupMappingsEventID
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Event ID
+        in: path
+        name: event-id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getPutAdminGroupIDsForEventIDRequestAndResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
   /api/user/group-memberships:
     get:
       consumes:
@@ -3570,6 +4017,66 @@ paths:
       - AppUserAuth: []
       tags:
       - Client
+    post:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V2
+      operationId: GetGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Group'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
   /api/v2/groups/{id}:
     get:
       consumes:
@@ -3598,25 +4105,127 @@ paths:
       - Client
   /api/v2/user/groups:
     get:
-      description: Gets all related group users linked for the described event id
-      operationId: BBSGetEventUsers
+      consumes:
+      - application/json
+      description: Gives the user groups. It can be filtered by category, title and
+        privacy. V2.
+      operationId: GetUserGroupsV2
       parameters:
-      - description: Event ID
-        in: path
-        name: event_id
+      - description: APP
+        in: header
+        name: APP
         required: true
         type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
       responses:
         "200":
           description: OK
           schema:
             items:
-              $ref: '#/definitions/getEventUserIDsResponse'
+              $ref: '#/definitions/Group'
             type: array
       security:
       - AppUserAuth: []
+      - APIKeyAuth: []
       tags:
-      - BBS
+      - Client
+    post:
+      consumes:
+      - application/json
+      description: Gives the user groups. It can be filtered by category, title and
+        privacy. V2.
+      operationId: GetUserGroupsV2
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/Group'
+            type: array
+      security:
+      - AppUserAuth: []
+      - APIKeyAuth: []
+      tags:
+      - Client
   /group/{group-id}/members:
     put:
       consumes:
