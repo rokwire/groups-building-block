@@ -5,7 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
 ### Added
+- Create migration api for Social BB [#527](https://github.com/rokwire/groups-building-block/issues/524)
 - Implement GET /v2/groups API via http POST method [#524](https://github.com/rokwire/groups-building-block/issues/524)
 
 ## [1.55.0] - 2024-11-13
