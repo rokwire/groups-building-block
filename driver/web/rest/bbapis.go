@@ -18,6 +18,43 @@ type BBSApisHandler struct {
 	app *core.Application
 }
 
+type getPostsMigrationResponseData struct {
+	Groups []model.Group `json:"groups"`
+	Posts  []model.Post  `json:"posts"`
+}
+
+// GetPostsMigrationData Gets all groups and all posts without any restrictions
+// @Description  Gets all groups and all posts without any restrictions
+// @ID BBSGetPostsMigrationData
+// @Tags BBS
+// @Success 200 {array} getEventUserIDsResponse
+// @Security AppUserAuth
+// @Router /api/bbs/groups [get]
+func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
+	eventID := params["event_id"]
+	if len(eventID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing event_id"), http.StatusBadRequest, false)
+	}
+
+	groups, err := h.app.Services.GetAllGroupsUnsecured()
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	posts, err := h.app.Services.GetAllPostsUnsecured()
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	data, err := json.Marshal(getPostsMigrationResponseData{Groups: groups, Posts: posts})
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+}
+
 // getEventUserIDsResponse response
 type getEventUserIDsResponse struct {
 	UserIDs []string `json:"user_ids"`
