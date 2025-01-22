@@ -126,7 +126,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 // @Success 200 {object} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{groupId}/posts/{postId} [get]
+// @Router /api/admin/group/{groupId}/posts/{postId} [get]
 func (h *AdminApisHandler) GetGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
@@ -193,7 +193,7 @@ func (h *AdminApisHandler) GetGroupPost(clientID string, current *model.User, w 
 // @Success 200 {object} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{groupId}/posts [post]
+// @Router /api/admin/group/{groupId}/posts [post]
 func (h *AdminApisHandler) CreateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["groupID"]
@@ -281,7 +281,7 @@ func (h *AdminApisHandler) CreateGroupPost(clientID string, current *model.User,
 // @Success 200 {object} model.Post
 // @Security AppUserAuth
 // @Security APIKeyAuth
-// @Router /api/group/{groupId}/posts/{postId} [put]
+// @Router /api/admin/group/{groupId}/posts/{postId} [put]
 func (h *AdminApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]

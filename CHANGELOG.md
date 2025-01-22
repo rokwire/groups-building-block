@@ -5,6 +5,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+### Added
+- Implement GET /v2/groups API via http POST method [#524](https://github.com/rokwire/groups-building-block/issues/524)
+
 ## [1.55.0] - 2024-11-13
 ### Added 
 - BBs API to Get groups by group_ids [#521] (https://github.com/rokwire/groups-building-block/issues/521)

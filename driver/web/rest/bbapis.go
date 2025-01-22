@@ -30,7 +30,7 @@ type getEventUserIDsResponse struct {
 // @Param event_id path string true "Event ID"
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
-// @Router /api/v2/user/groups [get]
+// @Router /api/bbs/event/{event_id}/aggregated-users [get]
 func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	eventID := params["event_id"]
@@ -112,7 +112,7 @@ func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.R
 // @Description  Gets all related eventID and groupID using eventIDs
 // @ID GetGroupsEvents
 // @Tags BBS
-// @Param comma separated eventIDs query
+// @Param events-ids query string false "comma separated eventIDs query"
 // @Success 200 {array} []model.GetGroupsEvents
 // @Security AppUserAuth
 // @Router /api/bbs/groups/events [get]
@@ -139,7 +139,7 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 // @Description  Gets all related groups by groupIDs
 // @ID GetGroupsbyGroupsIDs
 // @Tags BBS
-// @Param comma separated groupIDs query
+// @Param group-ids query string true "comma separated groupIDs query"
 // @Success 200 {array} []model.Group
 // @Security AppUserAuth
 // @Router /api/bbs/groups [get]
