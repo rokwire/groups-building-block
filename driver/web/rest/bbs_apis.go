@@ -29,7 +29,7 @@ type getPostsMigrationResponseData struct {
 // @Tags BBS
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
-// @Router /api/bbs/groups [get]
+// @Router /api/bbs/post-migration-data [get]
 func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	eventID := params["event_id"]
