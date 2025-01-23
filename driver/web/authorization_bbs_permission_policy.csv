@@ -4,4 +4,4 @@ p, get_aggregated-users, /gr/api/bbs/event/*/aggregated-users, (GET), Get event 
 p, get_user_membership, /gr/api/bbs/groups/*/memberships, (GET), Gets all related group memberships status and group title using userID
 p, get_user_membership, /gr/api/bbs/groups/*/group-memberships, (GET), Gets all related group memberships status and group title using groupID
 p, get_groups_events, /gr/api/bbs/groups/events*, (GET), Gets all related eventID and groupID using eventIDs
-p, posts_migration_data, /api/bbs/posts-migration-data, (GET), Gets posts migration data
+p, posts_migration_data, /gr/api/bbs/posts-migration-data, (GET), Gets posts migration data
