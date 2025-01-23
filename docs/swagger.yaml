@@ -39,6 +39,13 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  EventResponse:
+    properties:
+      event_id:
+        type: string
+      user_id:
+        type: string
+    type: object
   GetGroupMembershipsResponse:
     properties:
       group_id:
@@ -206,6 +213,18 @@ definitions:
         description: ID of sync that last updated this membership
         type: string
       user_id:
+        type: string
+    type: object
+  GroupMembershipResponse:
+    properties:
+      id:
+        type: string
+      user_id:
+        type: string
+    type: object
+  GroupResponse:
+    properties:
+      id:
         type: string
     type: object
   GroupSettings:
@@ -481,6 +500,13 @@ definitions:
         type: boolean
       can_send_post_to_specific_members:
         type: boolean
+    type: object
+  PostResponse:
+    properties:
+      id:
+        type: string
+      user_id:
+        type: string
     type: object
   Sender:
     properties:
@@ -896,6 +922,25 @@ definitions:
         type: integer
       type:
         type: string
+    type: object
+  model.UserDataResponse:
+    properties:
+      events:
+        items:
+          $ref: '#/definitions/EventResponse'
+        type: array
+      group_memberships:
+        items:
+          $ref: '#/definitions/GroupMembershipResponse'
+        type: array
+      groups:
+        items:
+          $ref: '#/definitions/GroupResponse'
+        type: array
+      posts:
+        items:
+          $ref: '#/definitions/PostResponse'
+        type: array
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -3787,6 +3832,19 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client
+  /api/user-data:
+    get:
+      description: Gets all related user data
+      operationId: GetUserData
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.UserDataResponse'
+      security:
+      - AppUserAuth: []
       tags:
       - Client
   /api/user/event/{event-id}/groups:

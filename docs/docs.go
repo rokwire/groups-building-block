@@ -4119,6 +4119,28 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/user-data": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related user data",
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetUserData",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.UserDataResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/user/event/{event-id}/groups": {
             "get": {
                 "security": [
@@ -4924,6 +4946,17 @@ const docTemplate = `{
                 }
             }
         },
+        "EventResponse": {
+            "type": "object",
+            "properties": {
+                "event_id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "GetGroupMembershipsResponse": {
             "type": "object",
             "properties": {
@@ -5176,6 +5209,25 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupMembershipResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "GroupResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
                     "type": "string"
                 }
             }
@@ -5577,6 +5629,17 @@ const docTemplate = `{
                 },
                 "can_send_post_to_specific_members": {
                     "type": "boolean"
+                }
+            }
+        },
+        "PostResponse": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
                 }
             }
         },
@@ -6199,6 +6262,35 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
+                }
+            }
+        },
+        "model.UserDataResponse": {
+            "type": "object",
+            "properties": {
+                "events": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/EventResponse"
+                    }
+                },
+                "group_memberships": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GroupMembershipResponse"
+                    }
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/GroupResponse"
+                    }
+                },
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/PostResponse"
+                    }
                 }
             }
         },

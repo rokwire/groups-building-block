@@ -61,6 +61,7 @@ type Services interface {
 	GetGroupMembershipsByGroupID(groupID string) ([]string, error)
 
 	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
+	GetUserData(userID string) (*model.UserDataResponse, error)
 
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
@@ -224,6 +225,10 @@ func (s *servicesImpl) GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEven
 }
 func (s *servicesImpl) GetGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
 	return s.app.findGroupsByGroupIDs(groupIDs)
+}
+
+func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, error) {
+	return s.app.getUserData(userID)
 }
 
 func (s *servicesImpl) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
@@ -441,8 +446,10 @@ type Storage interface {
 	PullMembersFromEventsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
+	GetEventByUserID(userID string) ([]model.Event, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
 	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
+	GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error)
 
 	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)
 
@@ -452,6 +459,7 @@ type Storage interface {
 	FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
 	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	FindPostsByParentID(context storage.TransactionContext, clientID string, userID *string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]model.Post, error)
+	GetPostsByUserID(userID string) ([]model.Post, error)
 
 	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
 	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)

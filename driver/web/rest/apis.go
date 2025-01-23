@@ -2661,6 +2661,31 @@ func (h *ApisHandler) ReportAbuseGroup(clientID string, current *model.User, w h
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetUserData Gets all related user data
+// @Description  Gets all related user data
+// @ID GetUserData
+// @Tags Client
+// @Success 200 {object} model.UserDataResponse
+// @Security AppUserAuth
+// @Router /api/user-data [get]
+func (h *ApisHandler) GetUserData(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	userData, err := h.app.Services.GetUserData(current.ID)
+	if err != nil {
+		log.Printf("error getting user data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	data, err := json.Marshal(userData)
+	if err != nil {
+		log.Printf("Error on read user data - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // NewApisHandler creates new rest Client APIs Handler instance
 func NewApisHandler(app *core.Application) *ApisHandler {
 	return &ApisHandler{app: app}

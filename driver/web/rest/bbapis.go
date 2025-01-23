@@ -162,5 +162,4 @@ func (h *BBSApisHandler) GetGroupsByGroupIDs(log *logs.Log, req *http.Request, u
 	}
 
 	return log.HTTPResponseSuccessJSON(data)
-
 }
