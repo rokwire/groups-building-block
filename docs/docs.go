@@ -2113,6 +2113,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/posts-migration-data": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all groups and all posts without any restrictions",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "BBSGetPostsMigrationData",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/rest.getPostsMigrationResponseData"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/group/events/v3": {
             "post": {
                 "security": [
@@ -6343,6 +6368,23 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
+        "rest.getPostsMigrationResponseData": {
+            "type": "object",
+            "properties": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Group"
+                    }
+                },
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Post"
                     }
                 }
             }

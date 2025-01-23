@@ -992,6 +992,17 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
+  rest.getPostsMigrationResponseData:
+    properties:
+      groups:
+        items:
+          $ref: '#/definitions/Group'
+        type: array
+      posts:
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+    type: object
   rest.updateCalendarEventSingleGroupData:
     properties:
       event:
@@ -2497,6 +2508,21 @@ paths:
               items:
                 $ref: '#/definitions/GetGroupsEvents'
               type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/posts-migration-data:
+    get:
+      description: Gets all groups and all posts without any restrictions
+      operationId: BBSGetPostsMigrationData
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/rest.getPostsMigrationResponseData'
             type: array
       security:
       - AppUserAuth: []

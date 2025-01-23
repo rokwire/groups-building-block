@@ -27,16 +27,10 @@ type getPostsMigrationResponseData struct {
 // @Description  Gets all groups and all posts without any restrictions
 // @ID BBSGetPostsMigrationData
 // @Tags BBS
-// @Success 200 {array} getEventUserIDsResponse
+// @Success 200 {array} getPostsMigrationResponseData
 // @Security AppUserAuth
-// @Router /api/bbs/post-migration-data [get]
+// @Router /api/bbs/posts-migration-data [get]
 func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
-	params := mux.Vars(req)
-	eventID := params["event_id"]
-	if len(eventID) <= 0 {
-		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing event_id"), http.StatusBadRequest, false)
-	}
-
 	groups, err := h.app.Services.GetAllGroupsUnsecured()
 	if err != nil {
 		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
