@@ -339,7 +339,7 @@ type getPutAdminGroupIDsForEventIDRequestAndResponse struct {
 // @Param data body getPutAdminGroupIDsForEventIDRequestAndResponse true "body data"
 // @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
 // @Security AppUserAuth
-// @Router /api/admin/user/event/{event-id}/groups [get]
+// @Router /api/user/event/{event-id}/groups [get]
 func (h *ApisHandler) GetAdminGroupIDsForEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -381,7 +381,7 @@ func (h *ApisHandler) GetAdminGroupIDsForEventID(clientID string, current *model
 // @Param event-id path string true "Event ID"
 // @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
 // @Security AppUserAuth
-// @Router /api/admin/user/event/{event-id}/groups [get]
+// @Router /api/user/event/{event-id}/groups [put]
 func (h *ApisHandler) UpdateGroupMappingsEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

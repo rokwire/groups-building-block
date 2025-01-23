@@ -346,7 +346,7 @@ type adminCreateGroupRequest struct {
 // @Param data body createGroupRequest true "body data"
 // @Success 200 {object} createResponse
 // @Security AppUserAuth
-// @Router /api/groups [post]
+// @Router /api/admin/groups [post]
 func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	data, err := io.ReadAll(r.Body)
@@ -444,7 +444,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 // @Param id path string true "ID"
 // @Success 200 {string} Successfully updated
 // @Security AppUserAuth
-// @Router /api/groups/{id} [put]
+// @Router /api/admin/groups/{id} [put]
 func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -609,14 +609,14 @@ func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.Use
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
-		log.Println("adminapis.GetGroupMembers() Error: group-id is required")
+		log.Println("adminapis.GetGroupMembersV2() Error: group-id is required")
 		http.Error(w, "group-id is required", http.StatusBadRequest)
 		return
 	}
 
 	requestData, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Printf("adminapis.GetGroupMembers() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
+		log.Printf("adminapis.GetGroupMembersV2() Error on marshal model.MembershipFilter request body - %s\n", err.Error())
 		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
@@ -626,7 +626,7 @@ func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.Use
 		err = json.Unmarshal(requestData, &request)
 		if err != nil {
 			// just log an error and proceed and assume an empty filter
-			log.Printf("adminapis.GetGroupMembers() Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
+			log.Printf("adminapis.GetGroupMembersV2() Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
 		}
 	}
 
@@ -635,7 +635,7 @@ func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.Use
 	//check if allowed to update
 	members, err := h.app.Services.FindGroupMemberships(clientID, request)
 	if err != nil {
-		log.Printf("adminapis.GetGroupMembers()  error: %s", err)
+		log.Printf("adminapis.GetGroupMembersV2()  error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -646,7 +646,7 @@ func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.Use
 
 	data, err := json.Marshal(members.Items)
 	if err != nil {
-		log.Printf("adminapis.GetGroupMembers() error: %s", err)
+		log.Printf("adminapis.GetGroupMembersV2() error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

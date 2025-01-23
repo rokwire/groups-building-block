@@ -42,6 +42,7 @@ import (
 // @Success 200 {array} model.Group
 // @Security AppUserAuth
 // @Router /api/v2/groups [get]
+// @Router /api/v2/groups [post]
 func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	var groupsFilter model.GroupsFilter
@@ -150,6 +151,7 @@ func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.R
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/v2/user/groups [get]
+// @Router /api/v2/user/groups [post]
 func (h *ApisHandler) GetUserGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
