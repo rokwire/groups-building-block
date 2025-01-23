@@ -2129,11 +2129,25 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/rest.getPostsMigrationResponseData"
-                            }
+                            "$ref": "#/definitions/rest.getPostsMigrationResponseData"
                         }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "BBSPutPostsMigrationDataFlag",
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }

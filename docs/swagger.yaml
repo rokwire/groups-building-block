@@ -2566,9 +2566,18 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/rest.getPostsMigrationResponseData'
-            type: array
+            $ref: '#/definitions/rest.getPostsMigrationResponseData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+    put:
+      description: Sets a configuration flag that the posts migration process is successfull
+        and all related APIs to be redirected to Social BB
+      operationId: BBSPutPostsMigrationDataFlag
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       tags:

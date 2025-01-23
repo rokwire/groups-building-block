@@ -27,7 +27,7 @@ type getPostsMigrationResponseData struct {
 // @Description  Gets all groups and all posts without any restrictions
 // @ID BBSGetPostsMigrationData
 // @Tags BBS
-// @Success 200 {array} getPostsMigrationResponseData
+// @Success 200 {object} getPostsMigrationResponseData
 // @Security AppUserAuth
 // @Router /api/bbs/posts-migration-data [get]
 func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
@@ -47,6 +47,18 @@ func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request,
 	}
 
 	return log.HTTPResponseSuccessJSON(data)
+}
+
+// PutPostsMigrationDataFlag Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
+// @Description Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
+// @ID BBSPutPostsMigrationDataFlag
+// @Tags BBS
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/bbs/posts-migration-data [put]
+func (h *BBSApisHandler) PutPostsMigrationDataFlag(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+
+	return log.HTTPResponseSuccess()
 }
 
 // getEventUserIDsResponse response
