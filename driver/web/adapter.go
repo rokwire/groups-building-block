@@ -206,6 +206,7 @@ func (we *Adapter) Start() {
 	bbsSubrouter.HandleFunc("/groups/{group_id}/group-memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMembershipsByGroupID, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups", we.wrapFunc(we.bbsAPIHandler.GetGroupsByGroupIDs, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/posts-migration-data", we.wrapFunc(we.bbsAPIHandler.GetPostsMigrationData, we.auth2.bbs.Permissions)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }

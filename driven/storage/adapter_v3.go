@@ -847,3 +847,27 @@ func (sa Adapter) GetGroupMembershipStats(context TransactionContext, clientID s
 	}
 	return nil, nil
 }
+
+// FindAllGroupsUnsecured finds all groups
+func (sa *Adapter) FindAllGroupsUnsecured() ([]model.Group, error) {
+
+	var list []model.Group
+	err := sa.db.groups.Find(bson.D{}, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
+}
+
+// FindAllPostsUnsecured finds all posts
+func (sa *Adapter) FindAllPostsUnsecured() ([]model.Post, error) {
+
+	var list []model.Post
+	err := sa.db.posts.Find(bson.D{}, &list, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return list, err
+}
