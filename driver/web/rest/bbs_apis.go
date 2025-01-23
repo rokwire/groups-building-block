@@ -18,6 +18,37 @@ type BBSApisHandler struct {
 	app *core.Application
 }
 
+type getPostsMigrationResponseData struct {
+	Groups []model.Group `json:"groups"`
+	Posts  []model.Post  `json:"posts"`
+}
+
+// GetPostsMigrationData Gets all groups and all posts without any restrictions
+// @Description  Gets all groups and all posts without any restrictions
+// @ID BBSGetPostsMigrationData
+// @Tags BBS
+// @Success 200 {array} getPostsMigrationResponseData
+// @Security AppUserAuth
+// @Router /api/bbs/posts-migration-data [get]
+func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	groups, err := h.app.Services.GetAllGroupsUnsecured()
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	posts, err := h.app.Services.GetAllPostsUnsecured()
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	data, err := json.Marshal(getPostsMigrationResponseData{Groups: groups, Posts: posts})
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+}
+
 // getEventUserIDsResponse response
 type getEventUserIDsResponse struct {
 	UserIDs []string `json:"user_ids"`
@@ -30,7 +61,7 @@ type getEventUserIDsResponse struct {
 // @Param event_id path string true "Event ID"
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
-// @Router /api/v2/user/groups [get]
+// @Router /api/bbs/event/{event_id}/aggregated-users [get]
 func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	eventID := params["event_id"]
@@ -112,7 +143,7 @@ func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.R
 // @Description  Gets all related eventID and groupID using eventIDs
 // @ID GetGroupsEvents
 // @Tags BBS
-// @Param comma separated eventIDs query
+// @Param events-ids query string false "comma separated eventIDs query"
 // @Success 200 {array} []model.GetGroupsEvents
 // @Security AppUserAuth
 // @Router /api/bbs/groups/events [get]
@@ -139,7 +170,7 @@ func (h *BBSApisHandler) GetGroupsEvents(log *logs.Log, req *http.Request, user 
 // @Description  Gets all related groups by groupIDs
 // @ID GetGroupsbyGroupsIDs
 // @Tags BBS
-// @Param comma separated groupIDs query
+// @Param group-ids query string true "comma separated groupIDs query"
 // @Success 200 {array} []model.Group
 // @Security AppUserAuth
 // @Router /api/bbs/groups [get]
@@ -162,5 +193,4 @@ func (h *BBSApisHandler) GetGroupsByGroupIDs(log *logs.Log, req *http.Request, u
 	}
 
 	return log.HTTPResponseSuccessJSON(data)
-
 }

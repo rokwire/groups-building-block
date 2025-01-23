@@ -205,6 +205,10 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 	return nil
 }
 
+func (app *Application) getAllGroupsUnsecured() ([]model.Group, error) {
+	return app.storage.FindAllGroupsUnsecured()
+}
+
 func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
 	var userID *string
 	if current != nil {
@@ -375,6 +379,10 @@ func (app *Application) reportGroupAsAbuse(clientID string, current *model.User,
 	`, group.Title, current.ExternalID, current.Name, comment)
 	body = strings.ReplaceAll(body, `\n`, "\n")
 	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
+}
+
+func (app *Application) getAllPostsUnsecured() ([]model.Post, error) {
+	return app.storage.FindAllPostsUnsecured()
 }
 
 func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {

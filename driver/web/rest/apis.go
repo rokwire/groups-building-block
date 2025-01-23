@@ -982,7 +982,7 @@ func (h *ApisHandler) DeletePendingMember(clientID string, current *model.User, 
 
 // GetGroupMembers Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
 // @Description Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
-// @ID CreateMember
+// @ID GetGroupMembers
 // @Tags Client
 // @Accept plain
 // @Param data body model.MembershipFilter true "body data"
@@ -1033,6 +1033,68 @@ func (h *ApisHandler) GetGroupMembers(clientID string, current *model.User, w ht
 	data, err := json.Marshal(members.Items)
 	if err != nil {
 		log.Printf("api.GetGroupMembers error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+// GetGroupMembersV2 Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
+// @Description Gets the list of group members. The result would be empty if the current user doesn't belong to the requested group.
+// @ID GetGroupMembersV2
+// @Tags Client
+// @Accept plain
+// @Param data body model.MembershipFilter true "body data"
+// @Param APP header string true "APP"
+// @Param group-id path string true "Group ID"
+// @Success 200 {array} model.GroupMembership
+// @Security AppUserAuth
+// @Router /api/group/{group-id}/members/v2 [post]
+func (h *ApisHandler) GetGroupMembersV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("group-id is required")
+		http.Error(w, "group-id is required", http.StatusBadRequest)
+		return
+	}
+
+	requestData, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal model.MembershipFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var request model.MembershipFilter
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &request)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("Error on unmarshal model.MembershipFilter request body - %s\n", err.Error())
+		}
+	}
+
+	request.GroupIDs = append(request.GroupIDs, groupID)
+
+	//check if allowed to update
+	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	if err != nil {
+		log.Printf("api.GetGroupMembersV2 error: %s", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	if members.Items == nil {
+		members.Items = []model.GroupMembership{}
+	}
+
+	data, err := json.Marshal(members.Items)
+	if err != nil {
+		log.Printf("api.GetGroupMembersV2 error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}
@@ -2597,6 +2659,31 @@ func (h *ApisHandler) ReportAbuseGroup(clientID string, current *model.User, w h
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
+}
+
+// GetUserData Gets all related user data
+// @Description  Gets all related user data
+// @ID GetUserData
+// @Tags Client
+// @Success 200 {object} model.UserDataResponse
+// @Security AppUserAuth
+// @Router /api/user-data [get]
+func (h *ApisHandler) GetUserData(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	userData, err := h.app.Services.GetUserData(current.ID)
+	if err != nil {
+		log.Printf("error getting user data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	data, err := json.Marshal(userData)
+	if err != nil {
+		log.Printf("Error on read user data - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 // NewApisHandler creates new rest Client APIs Handler instance

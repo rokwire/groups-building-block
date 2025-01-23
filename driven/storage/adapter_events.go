@@ -306,6 +306,45 @@ func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []strin
 	return groupsEvents, nil
 }
 
+// GetEventByUserID Find events by userID
+func (sa *Adapter) GetEventByUserID(userID string) ([]model.Event, error) {
+	filter := bson.D{primitive.E{Key: "to_members.user_id", Value: userID}}
+
+	var events []model.Event
+	err := sa.db.events.Find(filter, &events, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "events", nil, err)
+	}
+
+	return events, nil
+}
+
+// GetEventByUserID Find group membership by userID
+func (sa *Adapter) GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error) {
+	filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+
+	var groupMemberships []model.GroupMembership
+	err := sa.db.groupMemberships.Find(filter, &groupMemberships, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "group membership", nil, err)
+	}
+
+	return groupMemberships, nil
+}
+
+// GetPostsByUserID Find posts by userID
+func (sa *Adapter) GetPostsByUserID(userID string) ([]model.Post, error) {
+	filter := bson.D{primitive.E{Key: "member.user_id", Value: userID}}
+
+	var posts []model.Post
+	err := sa.db.posts.Find(filter, &posts, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "posts", nil, err)
+	}
+
+	return posts, nil
+}
+
 // FindGroupsByGroupIDs Find group by group ID
 func (sa *Adapter) FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
 	filter := bson.D{}
