@@ -66,10 +66,6 @@ func (app *Application) Start() {
 	app.reloadPostsMigrationConfig()
 }
 
-func (app *Application) reloadPostsMigrationConfig() {
-	app.postsMigrationConfig = app.storage.FindPostMigrationConfig(nil)
-}
-
 func (app *Application) setupCronTimer() {
 	log.Println("setupCronTimer")
 

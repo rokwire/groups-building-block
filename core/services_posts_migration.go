@@ -17,7 +17,9 @@ package core
 import "groups/core/model"
 
 func (app *Application) reloadPostsMigrationConfig() {
-	app.postsMigrationConfig = app.storage.FindPostMigrationConfig(nil)
+	var status = app.storage.FindPostMigrationConfig(nil)
+	app.logger.Infof("reloaded posts migration config: old migration status: %v, new migration status: %v", app.postsMigrationConfig.Migrated, status.Migrated)
+	app.postsMigrationConfig = status
 }
 
 func (app *Application) getPostsMigrationConfig() model.PostsMigrationConfig {

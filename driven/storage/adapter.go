@@ -219,8 +219,10 @@ func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTim
 
 // FindPostMigrationConfig finds the post migration config
 func (sa *Adapter) FindPostMigrationConfig(context TransactionContext) model.PostsMigrationConfig {
-	var config model.PostsMigrationConfig
-	err := sa.db.syncTimes.FindWithContext(context, bson.D{{Key: "type", Value: "posts_migration"}}, &config, nil)
+	config := model.PostsMigrationConfig{
+		Type: model.ConfigTypePostsMigration,
+	}
+	err := sa.db.configs.FindOneWithContext(context, bson.D{{Key: "type", Value: model.ConfigTypePostsMigration}}, &config, nil)
 	if err != nil {
 		log.Printf("error on find posts migration config - %s", err.Error())
 	}
@@ -230,9 +232,9 @@ func (sa *Adapter) FindPostMigrationConfig(context TransactionContext) model.Pos
 
 // SavePostsMigrationConfig saves the provided posts migration config fields
 func (sa *Adapter) SavePostsMigrationConfig(context TransactionContext, config model.PostsMigrationConfig) error {
-	filter := bson.M{"type": "posts_migration"}
+	filter := bson.M{"type": model.ConfigTypePostsMigration}
 
-	config.Type = "posts_migration"
+	config.Type = model.ConfigTypePostsMigration
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
