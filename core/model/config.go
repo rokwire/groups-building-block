@@ -25,6 +25,16 @@ type ApplicationConfig struct {
 	OrgID                     string
 }
 
+const (
+	ConfigTypePostsMigration = "posts_migration"
+	ConfigTypeAuthmanSync    = "sync"
+)
+
+type PostsMigrationConfig struct {
+	Type     string `json:"type" bson:"type"`
+	Migrated bool   `json:"migrated" bson:"migrated"`
+}
+
 // SyncConfig defines system configs for managed group sync
 type SyncConfig struct {
 	Type          string `json:"type" bson:"type"`

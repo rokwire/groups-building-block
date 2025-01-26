@@ -85,6 +85,9 @@ type Services interface {
 	GetSyncConfig(clientID string) (*model.SyncConfig, error)
 	UpdateSyncConfig(config model.SyncConfig) error
 
+	GetPostsMigrationConfig() model.PostsMigrationConfig
+	UpdatePostsMigrationConfig(config model.PostsMigrationConfig) error
+
 	// V3
 	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
 	FindGroupsV3(clientID string, filter model.GroupsFilter) ([]model.Group, error)
@@ -305,6 +308,14 @@ func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
 }
 
+func (s *servicesImpl) GetPostsMigrationConfig() model.PostsMigrationConfig {
+	return s.app.getPostsMigrationConfig()
+}
+
+func (s *servicesImpl) UpdatePostsMigrationConfig(config model.PostsMigrationConfig) error {
+	return s.app.savePostsMigrationConfig(config)
+}
+
 // V3
 
 func (s *servicesImpl) CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool) {
@@ -431,6 +442,9 @@ type Storage interface {
 	FindSyncTimes(context storage.TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
+	FindPostMigrationConfig(context storage.TransactionContext) model.PostsMigrationConfig
+	SavePostsMigrationConfig(context storage.TransactionContext, config model.PostsMigrationConfig) error
+
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	DeleteUser(clientID string, userID string) error
 
@@ -537,6 +551,7 @@ type storageListenerImpl struct {
 
 func (a *storageListenerImpl) OnConfigsChanged() {
 	a.app.setupCronTimer()
+	a.app.reloadPostsMigrationConfig()
 }
 
 // Notifications exposes Notifications BB APIs for the driver adapters
