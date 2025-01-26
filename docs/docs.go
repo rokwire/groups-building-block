@@ -2129,7 +2129,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/rest.getPostsMigrationResponseData"
+                            "$ref": "#/definitions/getPostsMigrationResponseData"
                         }
                     }
                 }
@@ -2145,9 +2145,45 @@ const docTemplate = `{
                     "BBS"
                 ],
                 "operationId": "BBSPutPostsMigrationDataFlag",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/postsMigrationFlagData"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/postsMigrationFlagData"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bbs/posts-migration-flag": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all groups and all posts without any restrictions",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "BBSGetPostsMigrationFlag",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/postsMigrationFlagData"
+                        }
                     }
                 }
             }
@@ -6028,6 +6064,23 @@ const docTemplate = `{
                 }
             }
         },
+        "getPostsMigrationResponseData": {
+            "type": "object",
+            "properties": {
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Group"
+                    }
+                },
+                "posts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Post"
+                    }
+                }
+            }
+        },
         "getPutAdminGroupIDsForEventIDRequestAndResponse": {
             "type": "object",
             "properties": {
@@ -6333,6 +6386,14 @@ const docTemplate = `{
                 }
             }
         },
+        "postsMigrationFlagData": {
+            "type": "object",
+            "properties": {
+                "migrated": {
+                    "type": "boolean"
+                }
+            }
+        },
         "reportAbuseGroupPostRequestBody": {
             "type": "object",
             "properties": {
@@ -6474,23 +6535,6 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ToMember"
-                    }
-                }
-            }
-        },
-        "rest.getPostsMigrationResponseData": {
-            "type": "object",
-            "properties": {
-                "groups": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Group"
-                    }
-                },
-                "posts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Post"
                     }
                 }
             }
