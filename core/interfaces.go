@@ -598,3 +598,8 @@ type Calendar interface {
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
 	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
 }
+
+// Social exposes Social BB APIs for the driver adapters
+type Social interface {
+	InvokePostsOperation(operation string, post model.Post) (*model.Post, error)
+}

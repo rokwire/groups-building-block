@@ -26,10 +26,14 @@ type ApplicationConfig struct {
 }
 
 const (
+	// ConfigTypePostsMigration posts migration config key
 	ConfigTypePostsMigration = "posts_migration"
-	ConfigTypeAuthmanSync    = "sync"
+
+	// ConfigTypeAuthmanSync managed group config key
+	ConfigTypeAuthmanSync = "sync"
 )
 
+// PostsMigrationConfig Posts migration config
 type PostsMigrationConfig struct {
 	Type     string `json:"type" bson:"type"`
 	Migrated bool   `json:"migrated" bson:"migrated"`

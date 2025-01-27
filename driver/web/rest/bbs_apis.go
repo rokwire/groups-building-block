@@ -74,9 +74,9 @@ func (h *BBSApisHandler) GetPostsMigrationFlag(log *logs.Log, req *http.Request,
 	return log.HTTPResponseSuccessJSON(data)
 }
 
-// PutPostsMigrationDataFlag Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
+// PutPostsMigrationFlag Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
 // @Description Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
-// @ID BBSPutPostsMigrationDataFlag
+// @ID BBSPutPostsMigrationFlag
 // @Tags BBS
 // @Param data body postsMigrationFlagData true "body data"
 // @Success 200 {object} postsMigrationFlagData

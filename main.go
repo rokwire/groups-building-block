@@ -22,6 +22,7 @@ import (
 	"groups/driven/corebb"
 	"groups/driven/notifications"
 	"groups/driven/rewards"
+	"groups/driven/socialbb"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
 	"log"
@@ -156,9 +157,12 @@ func main() {
 		OrgID:                     orgID,
 	}
 
+	socialBaseURL := getEnvKey("GR_SOCIAL_BASE_URL", true)
+	social := socialbb.NewSocialAdapter(socialBaseURL, serviceAccountManager)
+
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, calendarAdapter, serviceID, logger, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, social, serviceID, logger, config)
 	application.Start()
 
 	//web adapter
