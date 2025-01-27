@@ -5,6 +5,7 @@ import (
 	"errors"
 	"groups/core"
 	"groups/core/model"
+	"io"
 	"net/http"
 	"strings"
 
@@ -18,16 +19,17 @@ type BBSApisHandler struct {
 	app *core.Application
 }
 
+// getPostsMigrationResponseData response
 type getPostsMigrationResponseData struct {
 	Groups []model.Group `json:"groups"`
 	Posts  []model.Post  `json:"posts"`
-}
+} // @name getPostsMigrationResponseData
 
 // GetPostsMigrationData Gets all groups and all posts without any restrictions
 // @Description  Gets all groups and all posts without any restrictions
 // @ID BBSGetPostsMigrationData
 // @Tags BBS
-// @Success 200 {array} getPostsMigrationResponseData
+// @Success 200 {object} getPostsMigrationResponseData
 // @Security AppUserAuth
 // @Router /api/bbs/posts-migration-data [get]
 func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
@@ -42,6 +44,68 @@ func (h *BBSApisHandler) GetPostsMigrationData(log *logs.Log, req *http.Request,
 	}
 
 	data, err := json.Marshal(getPostsMigrationResponseData{Groups: groups, Posts: posts})
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+}
+
+// postsMigrationFlagData request
+type postsMigrationFlagData struct {
+	Migrated bool `json:"migrated"`
+} //@name postsMigrationFlagData
+
+// GetPostsMigrationFlag Gets all groups and all posts without any restrictions
+// @Description  Gets all groups and all posts without any restrictions
+// @ID BBSGetPostsMigrationFlag
+// @Tags BBS
+// @Success 200 {object} postsMigrationFlagData
+// @Security AppUserAuth
+// @Router /api/bbs/posts-migration-flag [get]
+func (h *BBSApisHandler) GetPostsMigrationFlag(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	postsMigrationConfig := h.app.Services.GetPostsMigrationConfig()
+
+	data, err := json.Marshal(postsMigrationFlagData{Migrated: postsMigrationConfig.Migrated})
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
+}
+
+// PutPostsMigrationDataFlag Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
+// @Description Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB
+// @ID BBSPutPostsMigrationDataFlag
+// @Tags BBS
+// @Param data body postsMigrationFlagData true "body data"
+// @Success 200 {object} postsMigrationFlagData
+// @Security AppUserAuth
+// @Router /api/bbs/posts-migration-data [put]
+func (h *BBSApisHandler) PutPostsMigrationFlag(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("error loading body"), http.StatusBadRequest, false)
+	}
+
+	var requestData postsMigrationFlagData
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("error parsing body"), http.StatusBadRequest, false)
+	}
+
+	config := model.PostsMigrationConfig{
+		Type:     model.ConfigTypePostsMigration,
+		Migrated: requestData.Migrated,
+	}
+
+	err = h.app.Services.UpdatePostsMigrationConfig(config)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	data, err = json.Marshal(postsMigrationFlagData{Migrated: requestData.Migrated})
 	if err != nil {
 		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusInternalServerError, false)
 	}

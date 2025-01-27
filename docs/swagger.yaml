@@ -736,6 +736,17 @@ definitions:
       web_url:
         type: string
     type: object
+  getPostsMigrationResponseData:
+    properties:
+      groups:
+        items:
+          $ref: '#/definitions/Group'
+        type: array
+      posts:
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+    type: object
   getPutAdminGroupIDsForEventIDRequestAndResponse:
     properties:
       group_ids:
@@ -942,6 +953,11 @@ definitions:
           $ref: '#/definitions/PostResponse'
         type: array
     type: object
+  postsMigrationFlagData:
+    properties:
+      migrated:
+        type: boolean
+    type: object
   reportAbuseGroupPostRequestBody:
     properties:
       comment:
@@ -1035,17 +1051,6 @@ definitions:
       to_members:
         items:
           $ref: '#/definitions/ToMember'
-        type: array
-    type: object
-  rest.getPostsMigrationResponseData:
-    properties:
-      groups:
-        items:
-          $ref: '#/definitions/Group'
-        type: array
-      posts:
-        items:
-          $ref: '#/definitions/model.Post'
         type: array
     type: object
   rest.updateCalendarEventSingleGroupData:
@@ -2566,9 +2571,40 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/rest.getPostsMigrationResponseData'
-            type: array
+            $ref: '#/definitions/getPostsMigrationResponseData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+    put:
+      description: Sets a configuration flag that the posts migration process is successfull
+        and all related APIs to be redirected to Social BB
+      operationId: BBSPutPostsMigrationDataFlag
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/postsMigrationFlagData'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/postsMigrationFlagData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/posts-migration-flag:
+    get:
+      description: Gets all groups and all posts without any restrictions
+      operationId: BBSGetPostsMigrationFlag
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/postsMigrationFlagData'
       security:
       - AppUserAuth: []
       tags:

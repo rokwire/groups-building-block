@@ -171,7 +171,7 @@ func (sa *Adapter) SaveSyncConfig(context TransactionContext, config model.SyncC
 
 	upsert := true
 	opts := options.ReplaceOptions{Upsert: &upsert}
-	err := sa.db.configs.ReplaceOne(filter, config, &opts)
+	err := sa.db.configs.ReplaceOneWithContext(context, filter, config, &opts)
 	if err != nil {
 		return err
 	}
@@ -211,6 +211,36 @@ func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTim
 	opts := options.ReplaceOptions{Upsert: &upsert}
 	err := sa.db.syncTimes.ReplaceOneWithContext(context, filter, times, &opts)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// FindPostMigrationConfig finds the post migration config
+func (sa *Adapter) FindPostMigrationConfig(context TransactionContext) model.PostsMigrationConfig {
+	config := model.PostsMigrationConfig{
+		Type: model.ConfigTypePostsMigration,
+	}
+	err := sa.db.configs.FindOneWithContext(context, bson.D{{Key: "type", Value: model.ConfigTypePostsMigration}}, &config, nil)
+	if err != nil {
+		log.Printf("error on find posts migration config - %s", err.Error())
+	}
+
+	return config
+}
+
+// SavePostsMigrationConfig saves the provided posts migration config fields
+func (sa *Adapter) SavePostsMigrationConfig(context TransactionContext, config model.PostsMigrationConfig) error {
+	filter := bson.M{"type": model.ConfigTypePostsMigration}
+
+	config.Type = model.ConfigTypePostsMigration
+
+	upsert := true
+	opts := options.ReplaceOptions{Upsert: &upsert}
+	err := sa.db.configs.ReplaceOneWithContext(context, filter, config, &opts)
+	if err != nil {
+		log.Printf("error on save posts migration config - %s", err.Error())
 		return err
 	}
 

@@ -207,6 +207,8 @@ func (we *Adapter) Start() {
 	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups", we.wrapFunc(we.bbsAPIHandler.GetGroupsByGroupIDs, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/posts-migration-data", we.wrapFunc(we.bbsAPIHandler.GetPostsMigrationData, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/posts-migration-flag", we.wrapFunc(we.bbsAPIHandler.GetPostsMigrationFlag, we.auth2.bbs.Permissions)).Methods("GET")
+	bbsSubrouter.HandleFunc("/posts-migration-flag", we.wrapFunc(we.bbsAPIHandler.PutPostsMigrationFlag, we.auth2.bbs.Permissions)).Methods("PUT")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }

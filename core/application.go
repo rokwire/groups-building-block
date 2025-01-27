@@ -49,6 +49,7 @@ type Application struct {
 	calendar      Calendar
 
 	authmanSyncInProgress bool
+	postsMigrationConfig  model.PostsMigrationConfig
 
 	//synchronize managed groups timer
 	scheduler *cron.Cron
@@ -62,6 +63,7 @@ func (app *Application) Start() {
 	app.storage.RegisterStorageListener(&storageListener)
 
 	app.setupCronTimer()
+	app.reloadPostsMigrationConfig()
 }
 
 func (app *Application) setupCronTimer() {
