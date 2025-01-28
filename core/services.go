@@ -386,7 +386,11 @@ func (app *Application) getAllPostsUnsecured() ([]model.Post, error) {
 }
 
 func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.GetPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
+	}
 	return app.storage.FindPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
+
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {

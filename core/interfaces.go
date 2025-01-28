@@ -601,5 +601,6 @@ type Calendar interface {
 
 // Social exposes Social BB APIs for the driver adapters
 type Social interface {
-	InvokePostsOperation(operation string, post model.Post) (*model.Post, error)
+	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
+	//InvokePostsOperation(operation string, post model.Post) (*model.Post, error)
 }
