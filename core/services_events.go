@@ -21,6 +21,7 @@ import (
 	"groups/driven/storage"
 	"log"
 	"strings"
+	"sync"
 )
 
 func (app *Application) findAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error) {
@@ -47,8 +48,75 @@ func (app *Application) findGroupsEvents(eventIDs []string) ([]model.GetGroupsEv
 }
 
 func (app *Application) getUserData(userID string) (*model.UserDataResponse, error) {
-	return nil, nil
+	var wg sync.WaitGroup
+	var events []model.Event
+	var groupMemberships []model.GroupMembership
+	var groups []model.Group
+	var posts []model.Post
+	var eventsErr, membershipsErr, groupsErr, postsErr error
+
+	// Fetch events asynchronously
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		events, eventsErr = app.storage.GetEventByUserID(userID)
+	}()
+
+	// Fetch group memberships asynchronously
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		groupMemberships, membershipsErr = app.storage.GetGroupMembershipByUserID(userID)
+	}()
+
+	// Fetch posts asynchronously
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		posts, postsErr = app.storage.GetPostsByUserID(userID)
+	}()
+
+	// Wait for group memberships to be fetched, then fetch groups
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		var groupIDs []string
+		if groupMemberships != nil {
+			for _, membership := range groupMemberships {
+				groupIDs = append(groupIDs, membership.GroupID)
+			}
+		}
+		groups, groupsErr = app.storage.FindGroupsByGroupIDs(groupIDs)
+	}()
+
+	// Wait for all goroutines to complete
+	wg.Wait()
+
+	// Check for errors from any of the goroutines
+	if eventsErr != nil {
+		return nil, eventsErr
+	}
+	if membershipsErr != nil {
+		return nil, membershipsErr
+	}
+	if groupsErr != nil {
+		return nil, groupsErr
+	}
+	if postsErr != nil {
+		return nil, postsErr
+	}
+
+	// Prepare the response
+	userData := &model.UserDataResponse{
+		EventResponse:            events,
+		GroupMembershipsResponse: groupMemberships,
+		GroupResponse:            groups,
+		PostResponse:             posts,
+	}
+
+	return userData, nil
 }
+
 func (app *Application) findGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
 	return app.storage.FindGroupsByGroupIDs(groupIDs)
 }
