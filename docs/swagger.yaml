@@ -39,13 +39,6 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
-  EventResponse:
-    properties:
-      event_id:
-        type: string
-      user_id:
-        type: string
-    type: object
   GetGroupMembershipsResponse:
     properties:
       group_id:
@@ -213,18 +206,6 @@ definitions:
         description: ID of sync that last updated this membership
         type: string
       user_id:
-        type: string
-    type: object
-  GroupMembershipResponse:
-    properties:
-      id:
-        type: string
-      user_id:
-        type: string
-    type: object
-  GroupResponse:
-    properties:
-      id:
         type: string
     type: object
   GroupSettings:
@@ -500,13 +481,6 @@ definitions:
         type: boolean
       can_send_post_to_specific_members:
         type: boolean
-    type: object
-  PostResponse:
-    properties:
-      id:
-        type: string
-      user_id:
-        type: string
     type: object
   Sender:
     properties:
@@ -938,19 +912,19 @@ definitions:
     properties:
       events:
         items:
-          $ref: '#/definitions/EventResponse'
+          $ref: '#/definitions/Event'
         type: array
       group_memberships:
         items:
-          $ref: '#/definitions/GroupMembershipResponse'
+          $ref: '#/definitions/GroupMembership'
         type: array
       groups:
         items:
-          $ref: '#/definitions/GroupResponse'
+          $ref: '#/definitions/Group'
         type: array
       posts:
         items:
-          $ref: '#/definitions/PostResponse'
+          $ref: '#/definitions/model.Post'
         type: array
     type: object
   postsMigrationFlagData:
