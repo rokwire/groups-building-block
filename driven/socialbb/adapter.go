@@ -47,7 +47,8 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 		"filter_by_to_members": filterByToMembers,
 	})
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+		a.logger.Errorf("social.GetPosts: error invoking posts operation - %s", err)
+		return nil, err
 	}
 
 	type postsResponse struct {
@@ -58,7 +59,7 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 	var posts postsResponse
 	err = json.Unmarshal(result, &posts)
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		a.logger.Errorf("social.GetPosts: error unmarshalling posts - %s", err)
 		return nil, err
 	}
 
@@ -73,7 +74,8 @@ func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postI
 		"filter_by_to_members":  filterByToMembers,
 	})
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+		a.logger.Errorf("social.GetPost: error invoking posts operation - %s", err)
+		return nil, err
 	}
 
 	type postsResponse struct {
@@ -84,7 +86,7 @@ func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postI
 	var post postsResponse
 	err = json.Unmarshal(result, &post)
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		a.logger.Errorf("social.GetPost: error unmarshalling posts - %s", err)
 		return nil, err
 	}
 
@@ -95,7 +97,8 @@ func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postI
 func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, error) {
 	result, err := a.invokePostsOperation("get_user_post_count", &userID, nil, map[string]interface{}{})
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+		a.logger.Errorf("social.GetUserPostCount: error invoking posts operation - %s", err)
+		return nil, err
 	}
 
 	type responseData struct {
@@ -106,7 +109,7 @@ func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, erro
 	var response responseData
 	err = json.Unmarshal(result, &response)
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		a.logger.Errorf("social.GetUserPostCount: error unmarshalling posts - %s", err)
 		return nil, err
 	}
 
@@ -115,20 +118,23 @@ func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, erro
 
 // CreatePost creates a post
 func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-	result, err := a.invokePostsOperation("create_post", &current.ID, nil, map[string]interface{}{})
+	result, err := a.invokePostsOperation("create_post", &current.ID, &post.GroupID, map[string]interface{}{
+		"post": post,
+	})
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+		a.logger.Errorf("social.CreatePost: error invoking posts operation - %s", err)
+		return nil, err
 	}
 
 	type responseData struct {
-		Post  *model.Post `json:"count"`
+		Post  *model.Post `json:"post"`
 		Error error       `json:"error"`
 	}
 
 	var response responseData
 	err = json.Unmarshal(result, &response)
 	if err != nil {
-		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		a.logger.Errorf("social.CreatePost: error unmarshalling posts - %s", err)
 		return nil, err
 	}
 
@@ -137,22 +143,104 @@ func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.P
 
 // UpdatePost updates a post
 func (a *Adapter) UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	return nil, nil
+	result, err := a.invokePostsOperation("update_post", &current.ID, &post.GroupID, map[string]interface{}{
+		"post": post,
+	})
+	if err != nil {
+		a.logger.Errorf("social.UpdatePost: error invoking posts operation - %s", err)
+		return nil, err
+	}
+
+	type responseData struct {
+		Post  *model.Post `json:"post"`
+		Error error       `json:"error"`
+	}
+
+	var response responseData
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		a.logger.Errorf("social.UpdatePost: error unmarshalling posts - %s", err)
+		return nil, err
+	}
+
+	return response.Post, response.Error
 }
 
 // ReactToPost reacts to a post
 func (a *Adapter) ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
-	return nil
+	result, err := a.invokePostsOperation("react_to_post", &current.ID, &groupID, map[string]interface{}{
+		"post_id":  postID,
+		"reaction": reaction,
+	})
+	if err != nil {
+		a.logger.Errorf("social.ReactToPost: error invoking posts operation - %s", err)
+		return err
+	}
+
+	type responseData struct {
+		Error error `json:"error"`
+	}
+
+	var response responseData
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		a.logger.Errorf("social.ReactToPost: error unmarshalling posts - %s", err)
+		return err
+	}
+
+	return response.Error
 }
 
 // ReportPostAsAbuse reports a post as abuse
 func (a *Adapter) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-	return nil
+	result, err := a.invokePostsOperation("report_abuse_post", &current.ID, &post.GroupID, map[string]interface{}{
+		"post_id":              post.ID,
+		"comment":              comment,
+		"send_to_dean":         sendToDean,
+		"send_to_group_admins": sendToGroupAdmins,
+	})
+	if err != nil {
+		a.logger.Errorf("social.ReportPostAsAbuse: error invoking posts operation - %s", err)
+		return err
+	}
+
+	type responseData struct {
+		Error error `json:"error"`
+	}
+
+	var response responseData
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		a.logger.Errorf("social.ReportPostAsAbuse: error unmarshalling posts - %s", err)
+		return err
+	}
+
+	return response.Error
 }
 
 // DeletePost deletes a post
 func (a *Adapter) DeletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	return nil
+	result, err := a.invokePostsOperation("delete_post", &userID, &groupID, map[string]interface{}{
+		"post_id": postID,
+		"force":   force,
+	})
+	if err != nil {
+		a.logger.Errorf("social.DeletePost: error invoking posts operation - %s", err)
+		return err
+	}
+
+	type responseData struct {
+		Error error `json:"error"`
+	}
+
+	var response responseData
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		a.logger.Errorf("social.DeletePost: error unmarshalling posts - %s", err)
+		return err
+	}
+
+	return response.Error
 }
 
 // InvokePostsOperation invokes the posts operation
