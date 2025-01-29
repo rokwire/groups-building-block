@@ -138,7 +138,7 @@ func main() {
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
 	// Core adapter
-	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
+	coreAdapter := corebb.NewCoreAdapter(logger, coreBBHost, serviceAccountManager)
 
 	// Rewards adapter
 	rewardsServiceReg, err := serviceRegManager.GetServiceReg("rewards")
@@ -158,7 +158,7 @@ func main() {
 	}
 
 	socialBaseURL := getEnvKey("GR_SOCIAL_BASE_URL", true)
-	social := socialbb.NewSocialAdapter(socialBaseURL, serviceAccountManager)
+	social := socialbb.NewSocialAdapter(logger, socialBaseURL, serviceAccountManager)
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,

@@ -31,12 +31,12 @@ import (
 type Adapter struct {
 	socialURL             string
 	serviceAccountManager *authservice.ServiceAccountManager
-	logger                logs.Logger
+	logger                *logs.Logger
 }
 
 // NewSocialAdapter creates a new adapter for Core API
-func NewSocialAdapter(socialURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
-	return &Adapter{socialURL: socialURL, serviceAccountManager: serviceAccountManager}
+func NewSocialAdapter(logger *logs.Logger, socialURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
+	return &Adapter{logger: logger, socialURL: socialURL, serviceAccountManager: serviceAccountManager}
 }
 
 // GetPosts retrieves posts from the social BB

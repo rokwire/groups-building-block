@@ -33,12 +33,12 @@ import (
 type Adapter struct {
 	coreURL               string
 	serviceAccountManager *authservice.ServiceAccountManager
-	logger                logs.Logger
+	logger                *logs.Logger
 }
 
 // NewCoreAdapter creates a new adapter for Core API
-func NewCoreAdapter(coreURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
-	return &Adapter{coreURL: coreURL, serviceAccountManager: serviceAccountManager}
+func NewCoreAdapter(logger *logs.Logger, coreURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
+	return &Adapter{logger: logger, coreURL: coreURL, serviceAccountManager: serviceAccountManager}
 }
 
 // RetrieveCoreUserAccount retrieves Core user account
