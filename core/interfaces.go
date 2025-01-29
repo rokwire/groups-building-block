@@ -602,5 +602,11 @@ type Calendar interface {
 // Social exposes Social BB APIs for the driver adapters
 type Social interface {
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
-	//InvokePostsOperation(operation string, post model.Post) (*model.Post, error)
+	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
+	GetUserPostCount(clientID string, userID string) (*int64, error)
+	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
+	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
+	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
+	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 }

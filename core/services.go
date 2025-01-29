@@ -394,14 +394,23 @@ func (app *Application) getPosts(clientID string, current *model.User, filter mo
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.GetPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+	}
 	return app.storage.FindPost(nil, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
 func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.GetUserPostCount(clientID, userID)
+	}
 	return app.storage.GetUserPostCount(clientID, userID)
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.CreatePost(clientID, current, post, group)
+	}
 
 	post, err := app.storage.CreatePost(clientID, current, post)
 	if err != nil {
@@ -552,10 +561,17 @@ func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, 
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.UpdatePost(clientID, current, group, post)
+	}
 	return app.storage.UpdatePost(clientID, current.ID, post)
 }
 
 func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.ReactToPost(clientID, current, groupID, postID, reaction)
+	}
+
 	transaction := func(context storage.TransactionContext) error {
 		post, err := app.storage.FindPost(context, clientID, &current.ID, groupID, postID, true, false)
 		if err != nil {
@@ -588,6 +604,9 @@ func (app *Application) reactToPost(clientID string, current *model.User, groupI
 }
 
 func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.ReportPostAsAbuse(clientID, current, group, post, comment, sendToDean, sendToGroupAdmins)
+	}
 
 	if !sendToDean && !sendToGroupAdmins {
 		sendToDean = true
@@ -662,6 +681,9 @@ Reported comment: %s
 }
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
+	if app.postsMigrationConfig.Migrated {
+		return app.social.DeletePost(clientID, userID, groupID, postID, force)
+	}
 	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
 }
 

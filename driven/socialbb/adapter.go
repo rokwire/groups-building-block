@@ -41,9 +41,7 @@ func NewSocialAdapter(socialURL string, serviceAccountManager *authservice.Servi
 
 // GetPosts retrieves posts from the social BB
 func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
-	result, err := a.invokePostsOperation("get_posts", current, map[string]interface{}{
-		"client_id":            clientID,
-		"current_user":         current,
+	result, err := a.invokePostsOperation("get_posts", &current.ID, &filter.GroupID, map[string]interface{}{
 		"filter":               filter,
 		"filter_private_posts": filterPrivatePostsValue,
 		"filter_by_to_members": filterByToMembers,
@@ -67,47 +65,111 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 	return posts.Posts, posts.Error
 }
 
-func (a *Adapter) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+// GetPost retrieves a post from the social BB
+func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	result, err := a.invokePostsOperation("get_post", userID, &groupID, map[string]interface{}{
+		"post_id":               postID,
+		"skip_membership_check": skipMembershipCheck,
+		"filter_by_to_members":  filterByToMembers,
+	})
+	if err != nil {
+		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+	}
+
+	type postsResponse struct {
+		Post  model.Post `json:"post"`
+		Error error      `json:"error"`
+	}
+
+	var post postsResponse
+	err = json.Unmarshal(result, &post)
+	if err != nil {
+		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		return nil, err
+	}
+
+	return &post.Post, post.Error
+}
+
+// GetUserPostCount retrieves the number of posts for a user
+func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, error) {
+	result, err := a.invokePostsOperation("get_user_post_count", &userID, nil, map[string]interface{}{})
+	if err != nil {
+		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+	}
+
+	type responseData struct {
+		Count *int64 `json:"count"`
+		Error error  `json:"error"`
+	}
+
+	var response responseData
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		return nil, err
+	}
+
+	return response.Count, response.Error
+}
+
+// CreatePost creates a post
+func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+	result, err := a.invokePostsOperation("create_post", &current.ID, nil, map[string]interface{}{})
+	if err != nil {
+		a.logger.Errorf("social.getPosts: error invoking posts operation - %s", err)
+	}
+
+	type responseData struct {
+		Post  *model.Post `json:"count"`
+		Error error       `json:"error"`
+	}
+
+	var response responseData
+	err = json.Unmarshal(result, &response)
+	if err != nil {
+		a.logger.Errorf("social.getPosts: error unmarshalling posts - %s", err)
+		return nil, err
+	}
+
+	return response.Post, response.Error
+}
+
+// UpdatePost updates a post
+func (a *Adapter) UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
 	return nil, nil
 }
 
-func (a *Adapter) getUserPostCount(clientID string, userID string) (*int64, error) {
-	return nil, nil
-}
-
-func (a *Adapter) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-	return nil, nil
-}
-
-func (a *Adapter) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	return nil, nil
-}
-
-func (a *Adapter) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
+// ReactToPost reacts to a post
+func (a *Adapter) ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
 	return nil
 }
 
-func (a *Adapter) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+// ReportPostAsAbuse reports a post as abuse
+func (a *Adapter) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
 	return nil
 }
 
-func (a *Adapter) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
+// DeletePost deletes a post
+func (a *Adapter) DeletePost(clientID string, userID string, groupID string, postID string, force bool) error {
 	return nil
 }
 
 // InvokePostsOperation invokes the posts operation
-func (a *Adapter) invokePostsOperation(operation string, current *model.User, data map[string]interface{}) ([]byte, error) {
+func (a *Adapter) invokePostsOperation(operation string, userID *string, groupID *string, data map[string]interface{}) ([]byte, error) {
 
 	if a.serviceAccountManager == nil {
 		a.logger.Errorf("InvokePostsOperation: service account manager is nil")
 		return nil, errors.New("InvokePostsOperation: service account manager is nil")
 	}
 
-	url := fmt.Sprintf("%s/bbs/posts-proxy", a.socialURL)
+	url := fmt.Sprintf("%s/bbs/legacy-proxy", a.socialURL)
 
 	bodyMap := map[string]interface{}{
-		"operation": operation,
-		"data":      data,
+		"operation":          operation,
+		"current_account_id": userID,
+		"group_id":           groupID,
+		"data":               data,
 	}
 
 	bodyBytes, err := json.Marshal(bodyMap)
@@ -123,7 +185,7 @@ func (a *Adapter) invokePostsOperation(operation string, current *model.User, da
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := a.serviceAccountManager.MakeRequest(req, current.AppID, current.OrgID)
+	resp, err := a.serviceAccountManager.MakeRequest(req, "all", "all")
 	if err != nil {
 		a.logger.Errorf("InvokePostsOperation: error sending request - %s", err)
 		return nil, err
