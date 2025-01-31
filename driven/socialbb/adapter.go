@@ -251,7 +251,7 @@ func (a *Adapter) invokePostsOperation(operation string, userID *string, groupID
 		return nil, errors.New("InvokePostsOperation: service account manager is nil")
 	}
 
-	url := fmt.Sprintf("%s/bbs/legacy-proxy", a.socialURL)
+	url := fmt.Sprintf("%s/api/bbs/legacy-proxy", a.socialURL)
 
 	bodyMap := map[string]interface{}{
 		"operation":          operation,
