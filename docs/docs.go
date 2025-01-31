@@ -5021,17 +5021,6 @@ const docTemplate = `{
                 }
             }
         },
-        "EventResponse": {
-            "type": "object",
-            "properties": {
-                "event_id": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
         "GetGroupMembershipsResponse": {
             "type": "object",
             "properties": {
@@ -5284,25 +5273,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "GroupMembershipResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
-                }
-            }
-        },
-        "GroupResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
                     "type": "string"
                 }
             }
@@ -5704,17 +5674,6 @@ const docTemplate = `{
                 },
                 "can_send_post_to_specific_members": {
                     "type": "boolean"
-                }
-            }
-        },
-        "PostResponse": {
-            "type": "object",
-            "properties": {
-                "id": {
-                    "type": "string"
-                },
-                "user_id": {
-                    "type": "string"
                 }
             }
         },
@@ -6363,25 +6322,25 @@ const docTemplate = `{
                 "events": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/EventResponse"
+                        "$ref": "#/definitions/Event"
                     }
                 },
                 "group_memberships": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/GroupMembershipResponse"
+                        "$ref": "#/definitions/GroupMembership"
                     }
                 },
                 "groups": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/GroupResponse"
+                        "$ref": "#/definitions/Group"
                     }
                 },
                 "posts": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/PostResponse"
+                        "$ref": "#/definitions/model.Post"
                     }
                 }
             }
