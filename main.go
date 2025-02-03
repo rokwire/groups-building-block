@@ -22,6 +22,7 @@ import (
 	"groups/driven/corebb"
 	"groups/driven/notifications"
 	"groups/driven/rewards"
+	"groups/driven/socialbb"
 	storage "groups/driven/storage"
 	web "groups/driver/web"
 	"log"
@@ -137,7 +138,7 @@ func main() {
 	authmanAdapter := authman.NewAuthmanAdapter(authmanBaseURL, authmanUsername, authmanPassword)
 
 	// Core adapter
-	coreAdapter := corebb.NewCoreAdapter(coreBBHost, serviceAccountManager)
+	coreAdapter := corebb.NewCoreAdapter(logger, coreBBHost, serviceAccountManager)
 
 	// Rewards adapter
 	rewardsServiceReg, err := serviceRegManager.GetServiceReg("rewards")
@@ -156,9 +157,12 @@ func main() {
 		OrgID:                     orgID,
 	}
 
+	socialBaseURL := getEnvKey("GR_SOCIAL_BASE_URL", true)
+	social := socialbb.NewSocialAdapter(logger, socialBaseURL, serviceAccountManager)
+
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, calendarAdapter, serviceID, logger, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, social, serviceID, logger, config)
 	application.Start()
 
 	//web adapter

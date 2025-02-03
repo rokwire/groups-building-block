@@ -319,7 +319,7 @@ func (sa *Adapter) GetEventByUserID(userID string) ([]model.Event, error) {
 	return events, nil
 }
 
-// GetEventByUserID Find group membership by userID
+// GetGroupMembershipByUserID Find group membership by userID
 func (sa *Adapter) GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error) {
 	filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
 

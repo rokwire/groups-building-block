@@ -29,7 +29,7 @@ func (app *Application) getPostsMigrationConfig() model.PostsMigrationConfig {
 func (app *Application) savePostsMigrationConfig(config model.PostsMigrationConfig) error {
 	err := app.storage.SavePostsMigrationConfig(nil, config)
 	if err != nil {
-		app.logger.Errorf("failed to save posts migration config", err)
+		app.logger.Errorf("failed to save posts migration config: %s", err)
 		return err
 	}
 	app.postsMigrationConfig = config
