@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
-## [1.57.0] - 2025-02-03
+## [1.57.1] - 2025-02-03
 ### Changed
 - Fix consolidate the information, and make it accessible with a single API call [#538](https://github.com/rokwire/groups-building-block/issues/538)
 ### Fixed
