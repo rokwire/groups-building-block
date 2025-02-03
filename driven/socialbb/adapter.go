@@ -53,7 +53,7 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 
 	type postsResponse struct {
 		Posts []model.Post `json:"posts"`
-		Error error        `json:"error"`
+		Error *string      `json:"error"`
 	}
 
 	var posts postsResponse
@@ -63,7 +63,12 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 		return nil, err
 	}
 
-	return posts.Posts, posts.Error
+	var respErr error
+	if posts.Error != nil {
+		respErr = errors.New(*posts.Error)
+	}
+
+	return posts.Posts, respErr
 }
 
 // GetPost retrieves a post from the social BB
