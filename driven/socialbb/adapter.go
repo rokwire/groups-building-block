@@ -69,6 +69,7 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 	}
 
 	return posts.Posts, respErr
+
 }
 
 // GetPost retrieves a post from the social BB
@@ -85,7 +86,7 @@ func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postI
 
 	type postsResponse struct {
 		Post  model.Post `json:"post"`
-		Error error      `json:"error"`
+		Error *string    `json:"error"`
 	}
 
 	var post postsResponse
@@ -95,7 +96,12 @@ func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postI
 		return nil, err
 	}
 
-	return &post.Post, post.Error
+	var respErr error
+	if post.Error != nil {
+		respErr = errors.New(*post.Error)
+	}
+
+	return &post.Post, respErr
 }
 
 // GetUserPostCount retrieves the number of posts for a user
@@ -107,8 +113,8 @@ func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, erro
 	}
 
 	type responseData struct {
-		Count *int64 `json:"count"`
-		Error error  `json:"error"`
+		Count *int64  `json:"count"`
+		Error *string `json:"error"`
 	}
 
 	var response responseData
@@ -118,7 +124,11 @@ func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, erro
 		return nil, err
 	}
 
-	return response.Count, response.Error
+	if response.Error != nil {
+		err = errors.New(*response.Error)
+	}
+
+	return response.Count, err
 }
 
 // CreatePost creates a post
@@ -133,7 +143,7 @@ func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.P
 
 	type responseData struct {
 		Post  *model.Post `json:"post"`
-		Error error       `json:"error"`
+		Error *string     `json:"error"`
 	}
 
 	var response responseData
@@ -143,7 +153,11 @@ func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.P
 		return nil, err
 	}
 
-	return response.Post, response.Error
+	if response.Error != nil {
+		err = errors.New(*response.Error)
+	}
+
+	return response.Post, err
 }
 
 // UpdatePost updates a post
@@ -158,7 +172,7 @@ func (a *Adapter) UpdatePost(clientID string, current *model.User, group *model.
 
 	type responseData struct {
 		Post  *model.Post `json:"post"`
-		Error error       `json:"error"`
+		Error *string     `json:"error"`
 	}
 
 	var response responseData
@@ -168,7 +182,11 @@ func (a *Adapter) UpdatePost(clientID string, current *model.User, group *model.
 		return nil, err
 	}
 
-	return response.Post, response.Error
+	if response.Error != nil {
+		err = errors.New(*response.Error)
+	}
+
+	return response.Post, err
 }
 
 // ReactToPost reacts to a post
@@ -183,7 +201,7 @@ func (a *Adapter) ReactToPost(clientID string, current *model.User, groupID stri
 	}
 
 	type responseData struct {
-		Error error `json:"error"`
+		Error *string `json:"error"`
 	}
 
 	var response responseData
@@ -193,7 +211,11 @@ func (a *Adapter) ReactToPost(clientID string, current *model.User, groupID stri
 		return err
 	}
 
-	return response.Error
+	if response.Error != nil {
+		err = errors.New(*response.Error)
+	}
+
+	return err
 }
 
 // ReportPostAsAbuse reports a post as abuse
@@ -210,7 +232,7 @@ func (a *Adapter) ReportPostAsAbuse(clientID string, current *model.User, group 
 	}
 
 	type responseData struct {
-		Error error `json:"error"`
+		Error *string `json:"error"`
 	}
 
 	var response responseData
@@ -220,7 +242,11 @@ func (a *Adapter) ReportPostAsAbuse(clientID string, current *model.User, group 
 		return err
 	}
 
-	return response.Error
+	if response.Error != nil {
+		err = errors.New(*response.Error)
+	}
+
+	return err
 }
 
 // DeletePost deletes a post
@@ -235,7 +261,7 @@ func (a *Adapter) DeletePost(clientID string, userID string, groupID string, pos
 	}
 
 	type responseData struct {
-		Error error `json:"error"`
+		Error *string `json:"error"`
 	}
 
 	var response responseData
@@ -245,7 +271,11 @@ func (a *Adapter) DeletePost(clientID string, userID string, groupID string, pos
 		return err
 	}
 
-	return response.Error
+	if response.Error != nil {
+		err = errors.New(*response.Error)
+	}
+
+	return err
 }
 
 // InvokePostsOperation invokes the posts operation
