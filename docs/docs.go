@@ -2144,7 +2144,7 @@ const docTemplate = `{
                 "tags": [
                     "BBS"
                 ],
-                "operationId": "BBSPutPostsMigrationDataFlag",
+                "operationId": "BBSPutPostsMigrationFlag",
                 "parameters": [
                     {
                         "description": "body data",
@@ -4842,14 +4842,36 @@ const docTemplate = `{
                 }
             }
         },
-        "/group/{group-id}/members": {
-            "put": {
+        "/authman/synchronize": {
+            "post": {
                 "security": [
                     {
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Updates a membership. Only the status can be changed.",
+                "description": "Synchronizes Authman groups membership",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "InternalSynchronizeAuthman",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/group/{group-id}/members": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Create multiple members in group with desired status",
                 "consumes": [
                     "application/json"
                 ],
@@ -4859,7 +4881,7 @@ const docTemplate = `{
                 "tags": [
                     "Admin"
                 ],
-                "operationId": "AdminCreateMemberships",
+                "operationId": "MultiCreateMembers",
                 "parameters": [
                     {
                         "type": "string",
@@ -4874,10 +4896,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/model.MembershipStatus"
-                            }
+                            "$ref": "#/definitions/rest.createMembershipsRequest"
                         }
                     },
                     {
@@ -5788,6 +5807,9 @@ const docTemplate = `{
                 "image_url": {
                     "type": "string"
                 },
+                "members": {
+                    "$ref": "#/definitions/model.DefaultMembershipConfig"
+                },
                 "membership_questions": {
                     "type": "array",
                     "items": {
@@ -6202,6 +6224,29 @@ const docTemplate = `{
                 }
             }
         },
+        "model.DefaultMembershipConfig": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "net_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "member",
+                        "pending",
+                        "rejected"
+                    ]
+                }
+            }
+        },
         "model.MembershipStatus": {
             "type": "object",
             "properties": {
@@ -6494,6 +6539,17 @@ const docTemplate = `{
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/ToMember"
+                    }
+                }
+            }
+        },
+        "rest.createMembershipsRequest": {
+            "type": "object",
+            "properties": {
+                "members": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MembershipStatus"
                     }
                 }
             }

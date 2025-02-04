@@ -19,60 +19,6 @@ import (
 	"groups/driven/storage"
 )
 
-func (app *Application) adminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
-	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		membership, _ := app.storage.FindGroupMembershipWithContext(context, clientID, groupID, current.ID)
-
-		if membership != nil && membership.IsAdmin() {
-
-			group, err := app.storage.FindGroup(context, clientID, groupID, &current.ID)
-			if err != nil {
-				return err
-			}
-
-			netIDs := membershipStatuses.GetAllNetIDs()
-			netIDAccounts, err := app.corebb.GetAllCoreAccountsWithNetIDs(netIDs, &current.AppID, &current.OrgID)
-			if err != nil {
-				return err
-			}
-
-			existingMemberships, err := app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
-				GroupIDs: []string{groupID},
-				NetIDs:   netIDs,
-			})
-			if err != nil {
-				return err
-			}
-
-			var memberships []model.GroupMembership
-			mapping := membershipStatuses.GetAllNetIDStatusMapping()
-			if len(netIDAccounts) > 0 {
-				for _, account := range netIDAccounts {
-					if status, ok := mapping[account.GetNetID()]; ok {
-						if existingMemberships.GetMembershipBy(func(membership model.GroupMembership) bool {
-							return membership.NetID == account.GetNetID()
-						}) == nil {
-							memberships = append(memberships, account.ToMembership(groupID, status))
-						}
-					}
-				}
-				if len(memberships) > 0 {
-					err := app.storage.CreateMemberships(context, clientID, current, group, memberships)
-					if err != nil {
-						return err
-					}
-				}
-			}
-
-			return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
-		}
-
-		return nil
-	})
-
-	return err
-}
-
 func (app *Application) adminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
 
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {

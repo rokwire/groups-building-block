@@ -37,6 +37,26 @@ type ApisHandler struct {
 	app *core.Application
 }
 
+// SynchronizeAuthman Synchronizes Authman groups membership
+// @Description Synchronizes Authman groups membership
+// @Tags Client
+// @ID InternalSynchronizeAuthman
+// @Accept json
+// @Success 200
+// @Security AppUserAuth
+// @Router /authman/synchronize [post]
+func (h *ApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.SynchronizeAuthman(clientID)
+	if err != nil {
+		log.Printf("Error during Authman synchronization: %s", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+}
+
 // Version gives the service version
 // @Description Gives the service version.
 // @ID Version
@@ -74,6 +94,7 @@ type createGroupRequest struct {
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
+	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
 } //@name createGroupRequest
 
 type userGroupShortDetail struct {
@@ -157,7 +178,7 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
-	}, nil)
+	}, requestData.MembersConfig)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -1209,6 +1230,78 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 	err = h.app.Services.CreateMembership(clientID, current, group, &member)
 	if err != nil {
 		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+}
+
+// createMembershipsRequest is the request body for creating multiple group memberships
+type createMembershipsRequest struct {
+	Members []model.MembershipStatus `json:"members"`
+}
+
+//@name createMembershipsRequest
+
+// MultiCreateMembers create multiple group memberships.
+// @Description Create multiple members in group with desired status
+// @ID MultiCreateMembers
+// @Tags Admin
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body createMembershipsRequest true "body data"
+// @Param group-id path string true "Group ID"
+// @Success 200
+// @Security AppUserAuth
+// @Router /group/{group-id}/members [post]
+func (h *ApisHandler) MultiCreateMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	//validate input
+	params := mux.Vars(r)
+	groupID := params["group-id"]
+	if len(groupID) <= 0 {
+		log.Println("apis.MultiUpdateMembers() Error on Group id is required")
+		http.Error(w, "Group id is required", http.StatusBadRequest)
+		return
+	}
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("apis.MultiUpdateMembers() Error on read request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var requestData createMembershipsRequest
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("apis.MultiUpdateMembers() Error on unmarshal request data - %s\n", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	validate := validator.New()
+	for _, item := range requestData.Members {
+		err = validate.Struct(item)
+		if err != nil {
+			log.Printf("apis.MultiUpdateMembers() Error on validating request data - %s\n", err.Error())
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+
+	//check if allowed to see the events for this group
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	if group == nil || group.CurrentMember == nil || !hasPermission {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+
+	err = h.app.Services.CreateMembershipsStatuses(clientID, current, groupID, model.MembershipStatuses(requestData.Members))
+	if err != nil {
+		log.Printf("apis.MultiUpdateMembers() Error - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
