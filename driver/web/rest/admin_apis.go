@@ -672,7 +672,7 @@ type adminCreateMembershipsRequest []model.MembershipStatus
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /group/{group-id}/members [put]
+// @Router /group/{group-id}/members [post]
 func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -715,7 +715,7 @@ func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.Use
 		return
 	}
 
-	err = h.app.Admin.AdminAddGroupMemberships(clientID, current, groupID, model.MembershipStatuses(requestData))
+	err = h.app.Services.CreateMembershipsStatuses(clientID, current, groupID, model.MembershipStatuses(requestData))
 	if err != nil {
 		log.Printf("adminapis.CreateMemberships() Error - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
