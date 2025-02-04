@@ -1240,7 +1240,7 @@ func (h *ApisHandler) CreateMember(clientID string, current *model.User, w http.
 
 // createMembershipsRequest is the request body for creating multiple group memberships
 type createMembershipsRequest struct {
-	Members []model.MembershipStatus `json:"members_status_list"`
+	Members []model.MembershipStatus `json:"members"`
 }
 
 //@name createMembershipsRequest
