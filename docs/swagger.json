@@ -6543,7 +6543,7 @@
         "rest.createMembershipsRequest": {
             "type": "object",
             "properties": {
-                "members_status_list": {
+                "members": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/model.MembershipStatus"

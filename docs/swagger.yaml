@@ -1047,7 +1047,7 @@ definitions:
     type: object
   rest.createMembershipsRequest:
     properties:
-      members_status_list:
+      members:
         items:
           $ref: '#/definitions/model.MembershipStatus'
         type: array
