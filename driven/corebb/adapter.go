@@ -370,27 +370,24 @@ func (a *Adapter) LoadDeletedMemberships() ([]model.DeletedUserData, error) {
 func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
 	var allFerpaAccounts []string
 	var batch []string
-	var batchSize int
 
 	// https://github.com/rokwire/groups-building-block/issues/542
 	// This workaround on blind is to avoid the 4000 character limit on the URL
 	// Otherwise it will fail due to query string being too long
 	for _, id := range ids {
-		if batchSize+len(id)+1 > 4000 {
-			ferpaAccounts, err := a.retrieveFerpaAccounts(batch)
+		if len(batch) > 100 {
+			ferpaAccounts, err := a.retrieveFerpaAccounts(strings.Join(batch, ","))
 			if err != nil {
 				return nil, err
 			}
 			allFerpaAccounts = append(allFerpaAccounts, ferpaAccounts...)
 			batch = []string{}
-			batchSize = 0
 		}
 		batch = append(batch, id)
-		batchSize += len(id) + 1
 	}
 
 	if len(batch) > 0 {
-		ferpaAccounts, err := a.retrieveFerpaAccounts(batch)
+		ferpaAccounts, err := a.retrieveFerpaAccounts(strings.Join(batch, ","))
 		if err != nil {
 			return nil, err
 		}
@@ -401,9 +398,9 @@ func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
 }
 
 // RetrieveFerpaAccounts retrieves ferpa accounts
-func (a *Adapter) retrieveFerpaAccounts(ids []string) ([]string, error) {
+func (a *Adapter) retrieveFerpaAccounts(ids string) ([]string, error) {
 	if len(ids) > 0 {
-		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, strings.Join(ids, ","))
+		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, ids)
 
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
