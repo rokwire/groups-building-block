@@ -399,9 +399,9 @@ func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
 }
 
 // RetrieveFerpaAccounts retrieves ferpa accounts
-func (a *Adapter) retrieveFerpaAccounts(ids string) ([]string, error) {
-	if len(ids) > 0 {
-		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, ids)
+func (a *Adapter) retrieveFerpaAccounts(commaSeparatedIDs string) ([]string, error) {
+	if len(commaSeparatedIDs) > 0 {
+		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, commaSeparatedIDs)
 
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
