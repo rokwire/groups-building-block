@@ -372,8 +372,9 @@ func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
 	var batch []string
 
 	// https://github.com/rokwire/groups-building-block/issues/542
-	// This workaround on blind is to avoid the 4000 character limit on the URL
+	// This workaround on blind is to limit the number of ids to 100 (roughly)
 	// Otherwise it will fail due to query string being too long
+	// TBD: This should be fixed by a post method instead of get
 	for _, id := range ids {
 		if len(batch) > 100 {
 			ferpaAccounts, err := a.retrieveFerpaAccounts(strings.Join(batch, ","))
