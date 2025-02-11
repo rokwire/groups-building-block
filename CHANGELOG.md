@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Added
+- Customization options to choose group modules: Polls, Direct Messaging, Posts, Events [#545](https://github.com/rokwire/groups-building-block/issues/545)
+
 ## [1.58.1] - 2025-02-10
 ### Fixed
 - Members fail to load for some groups on prod [#542](https://github.com/rokwire/groups-building-block/issues/542)
