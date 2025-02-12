@@ -6,7 +6,7 @@ p, get_groups, /gr/api/admin/v2/groups, (GET)|(POST), Get all groups
 p, get_groups, /gr/api/admin/user/groups, (GET), Get my groups
 p, get_groups, /gr/api/admin/v2/user/groups, (GET)|(POST), Get my groups
 
-p, get_all_groups, /gr/api/admin/v2/groups, (GET)|(POST), Get all groups
+p, get_all_private_groups, /gr/api/admin/v2/groups, (GET)|(POST), Get all private and hidden groups 
 
 p, create_groups, /gr/api/admin/groups, (POST), Create groups
 p, update_groups, /gr/api/admin/groups/{group-id}, (PUT), Update groups

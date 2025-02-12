@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.59.1] - 2025-02-12
+### Changed
+- Additional fix: Load all groups [#536](https://github.com/rokwire/groups-building-block/issues/536)
+
 ## [1.59.0] - 2025-02-12
 ### Changed
 - Load all groups [#536](https://github.com/rokwire/groups-building-block/issues/536)
