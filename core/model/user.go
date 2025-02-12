@@ -59,6 +59,11 @@ func (u *User) HasPermission(name string) bool {
 	return false
 }
 
+// IsGroupsBBAdministrator Checks if the user is a group administrator (through Admin App)
+func (u *User) IsGroupsBBAdministrator() bool {
+	return u.HasPermission("all_admin_groups") || u.HasPermission("get_all_private_groups")
+}
+
 // CoreAccount wraps the account structure from the Core BB
 // @name CoreAccount
 type CoreAccount struct {

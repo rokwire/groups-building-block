@@ -160,7 +160,7 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 }
 
 func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getGroups(clientID, current, filter)
+	return s.app.getGroups(clientID, current, filter, false)
 }
 
 func (s *servicesImpl) GetAllGroupsUnsecured() ([]model.Group, error) {
@@ -417,11 +417,20 @@ func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.Us
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
+	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error
 }
 
 type administrationImpl struct {
 	app *Application
+}
+
+func (s *administrationImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	skipMembershipCheck := false
+	if current != nil {
+		skipMembershipCheck = current.IsGroupsBBAdministrator()
+	}
+	return s.app.getGroups(clientID, current, filter, skipMembershipCheck)
 }
 
 func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
@@ -457,7 +466,7 @@ type Storage interface {
 	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroups(clientID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error)
 	FindAllGroupsUnsecured() ([]model.Group, error)
 	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)

@@ -480,20 +480,29 @@ func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w h
 
 	//check if allowed to update
 	group, err := h.app.Services.GetGroup(clientID, current, id)
-	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
-		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could update a group", current.Email, group.Title)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+	if err != nil {
+		log.Printf("Error on getting group - %s\n", err)
+		http.Error(w, utils.NewNotFoundError().JSONErrorString(), http.StatusNotFound)
 		return
 	}
-	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
-		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-		return
-	}
-	if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
-		log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-		return
+
+	// all_admin_groups has permission to update group settings
+	if current != nil && !current.IsGroupsBBAdministrator() {
+		if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+			log.Printf("%s is not allowed to update group settings '%s'. Only group admin or all_admin_groups permission could update a group", current.Email, group.Title)
+			http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+			return
+		}
+		if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
+			log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
+			http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+			return
+		}
+		if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
+			log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
+			http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+			return
+		}
 	}
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
