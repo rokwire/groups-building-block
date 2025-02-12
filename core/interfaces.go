@@ -426,11 +426,11 @@ type administrationImpl struct {
 }
 
 func (s *administrationImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	isAdministrator := false
+	skipMembershipCheck := false
 	if current != nil {
-		isAdministrator = current.IsGroupsBBAdministrator()
+		skipMembershipCheck = current.IsGroupsBBAdministrator()
 	}
-	return s.app.getGroups(clientID, current, filter, isAdministrator)
+	return s.app.getGroups(clientID, current, filter, skipMembershipCheck)
 }
 
 func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
@@ -466,7 +466,7 @@ type Storage interface {
 	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, filter model.GroupsFilter, isAdministrator bool) ([]model.Group, error)
+	FindGroups(clientID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error)
 	FindAllGroupsUnsecured() ([]model.Group, error)
 	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
