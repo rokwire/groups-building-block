@@ -65,7 +65,6 @@ type Services interface {
 	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
 	GetUserData(userID string) (*model.UserDataResponse, error)
 
-	GetAllPostsUnsecured() ([]model.Post, error)
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
@@ -85,9 +84,6 @@ type Services interface {
 
 	GetSyncConfig(clientID string) (*model.SyncConfig, error)
 	UpdateSyncConfig(config model.SyncConfig) error
-
-	GetPostsMigrationConfig() model.PostsMigrationConfig
-	UpdatePostsMigrationConfig(config model.PostsMigrationConfig) error
 
 	// V3
 	CheckUserGroupMembershipPermission(clientID string, current *model.User, groupID string) (*model.Group, bool)
@@ -245,10 +241,6 @@ func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, erro
 	return s.app.getUserData(userID)
 }
 
-func (s *servicesImpl) GetAllPostsUnsecured() ([]model.Post, error) {
-	return s.app.getAllPostsUnsecured()
-}
-
 func (s *servicesImpl) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
 	return s.app.getPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 }
@@ -311,14 +303,6 @@ func (s *servicesImpl) GetSyncConfig(clientID string) (*model.SyncConfig, error)
 
 func (s *servicesImpl) UpdateSyncConfig(config model.SyncConfig) error {
 	return s.app.updateSyncConfig(config)
-}
-
-func (s *servicesImpl) GetPostsMigrationConfig() model.PostsMigrationConfig {
-	return s.app.getPostsMigrationConfig()
-}
-
-func (s *servicesImpl) UpdatePostsMigrationConfig(config model.PostsMigrationConfig) error {
-	return s.app.savePostsMigrationConfig(config)
 }
 
 // V3
@@ -451,9 +435,6 @@ type Storage interface {
 	FindSyncTimes(context storage.TransactionContext, clientID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	FindPostMigrationConfig(context storage.TransactionContext) model.PostsMigrationConfig
-	SavePostsMigrationConfig(context storage.TransactionContext, config model.PostsMigrationConfig) error
-
 	GetUserPostCount(clientID string, userID string) (*int64, error)
 	DeleteUser(clientID string, userID string) error
 
@@ -488,23 +469,6 @@ type Storage interface {
 	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)
 
 	ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error
-	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
-
-	FindAllPostsUnsecured() ([]model.Post, error)
-	FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
-	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
-	FindPostsByParentID(context storage.TransactionContext, clientID string, userID *string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]model.Post, error)
-	GetPostsByUserID(userID string) ([]model.Post, error)
-
-	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
-	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
-	DeletePostsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
-	PullMembersFromPostsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
-
-	FindScheduledPosts(context storage.TransactionContext) ([]model.Post, error)
-	UpdateDateNotifiedForPostIDs(context storage.TransactionContext, ids []string, dateNotified time.Time) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
@@ -560,7 +524,6 @@ type storageListenerImpl struct {
 
 func (a *storageListenerImpl) OnConfigsChanged() {
 	a.app.setupCronTimer()
-	a.app.reloadPostsMigrationConfig()
 }
 
 // Notifications exposes Notifications BB APIs for the driver adapters

@@ -69,13 +69,6 @@ func (app *Application) getUserData(userID string) (*model.UserDataResponse, err
 		groupMemberships, membershipsErr = app.storage.GetGroupMembershipByUserID(userID)
 	}()
 
-	// Fetch posts asynchronously
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		posts, postsErr = app.storage.GetPostsByUserID(userID)
-	}()
-
 	// Wait for group memberships to be fetched, then fetch groups
 	wg.Add(1)
 	go func() {

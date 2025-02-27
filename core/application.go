@@ -51,7 +51,6 @@ type Application struct {
 	social        Social
 
 	authmanSyncInProgress bool
-	postsMigrationConfig  model.PostsMigrationConfig
 
 	//synchronize managed groups timer
 	scheduler *cron.Cron
@@ -65,7 +64,6 @@ func (app *Application) Start() {
 	app.storage.RegisterStorageListener(&storageListener)
 
 	app.setupCronTimer()
-	app.reloadPostsMigrationConfig()
 }
 
 func (app *Application) setupCronTimer() {
@@ -95,8 +93,6 @@ func (app *Application) setupCronTimer() {
 		}
 	}
 
-	app.startScheduledPostTask()
-
 	app.startCoreCleanupTask()
 
 	app.scheduler.Start()
@@ -112,21 +108,6 @@ func (app *Application) startCoreCleanupTask() {
 		log.Printf("error on running core account cleanup task: %s", err)
 	}
 	log.Printf("successful running of core account cleanup scheduling task")
-}
-
-func (app *Application) startScheduledPostTask() {
-	// TBD: Implement CRUD APIs for config and load them from DB
-	_, err := app.scheduler.AddFunc("* * * * *", func() {
-		log.Println("run scheduled core cleanup tick")
-		err := app.processScheduledPosts()
-		if err != nil {
-			log.Printf("error processing scheduled prosts: %s", err)
-		}
-	})
-	if err != nil {
-		log.Printf("error on running post scheduling task: %s", err)
-	}
-	log.Printf("successful running of post scheduling task")
 }
 
 // NewApplication creates new Application

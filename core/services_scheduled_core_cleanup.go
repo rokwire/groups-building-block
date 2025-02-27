@@ -21,28 +21,11 @@ import (
 	"fmt"
 	"groups/core/model"
 	"groups/driven/storage"
-	"time"
 )
 
 func (app Application) processCoreAccountsCleanup() {
 	app.logger.Infof("processCoreAccountsCleanup:BEGIN")
 	defer app.logger.Infof("processCoreAccountsCleanup:END")
-
-	startTime := time.Now()
-	syncKey := "scheduled_core_cleanup"
-
-	//in transaction
-	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		err := app.checkForConcurentRun(context, startTime, syncKey)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		app.logger.Infof("cancel concurent run attempt")
-		return
-	}
 
 	//load deleted accounts
 	deletedMemberships, err := app.corebb.LoadDeletedMemberships()
@@ -78,12 +61,6 @@ func (app Application) deleteAppOrgUsersData(accountsIDs []string) {
 			return err
 		}
 
-		err = app.storage.PullMembersFromPostsByUserIDs(nil, nil, accountsIDs)
-		if err != nil {
-			app.logger.Errorf("error deleting  members from event by account ID - %s", err)
-			return err
-		}
-
 		// delete the group memberships
 		err = app.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
 		if err != nil {
@@ -98,12 +75,6 @@ func (app Application) deleteAppOrgUsersData(accountsIDs []string) {
 			return err
 		}
 
-		// delete posts
-		err = app.storage.DeletePostsByAccountsIDs(nil, nil, accountsIDs)
-		if err != nil {
-			app.logger.Errorf("error deleting posts by account ID - %s", err)
-			return err
-		}
 		return nil
 	})
 
