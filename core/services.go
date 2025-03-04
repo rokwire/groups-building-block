@@ -435,310 +435,36 @@ func (app *Application) reportGroupAsAbuse(clientID string, current *model.User,
 	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 }
 
-func (app *Application) getAllPostsUnsecured() ([]model.Post, error) {
-	return app.storage.FindAllPostsUnsecured()
-}
-
 func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.GetPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
-	}
-	return app.storage.FindPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
-
+	return app.social.GetPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
 }
 
 func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.GetPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
-	}
-	return app.storage.FindPost(nil, clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+	return app.social.GetPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
 func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.GetUserPostCount(clientID, userID)
-	}
-	return app.storage.GetUserPostCount(clientID, userID)
+	return app.social.GetUserPostCount(clientID, userID)
 }
 
 func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.CreatePost(clientID, current, post, group)
-	}
-
-	post, err := app.storage.CreatePost(clientID, current, post)
-	if err != nil {
-		return nil, err
-	}
-
-	handleRewardsAsync := func(clientID, userID string) {
-		count, grErr := app.storage.GetUserPostCount(clientID, current.ID)
-		if grErr != nil {
-			log.Printf("Error createPost(): %s", grErr)
-		} else if count != nil {
-			if *count > 1 {
-				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserSubmittedPost, "")
-			} else if *count == 1 {
-				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserSubmittedFirstPost, "")
-			}
-		}
-	}
-	go handleRewardsAsync(clientID, current.ID)
-
-	go app.sendGroupNotificationForNewPost(clientID, &current.ID, &current.Name, group, post)
-
-	return post, nil
-}
-
-func (app *Application) sendGroupNotificationForNewPost(clientID string, currentUserID *string, currentUserName *string, group *model.Group, post *model.Post) error {
-	now := time.Now()
-	if post.DateScheduled == nil || now.After(*post.DateScheduled) {
-
-		recipientsUserIDs, _ := app.getPostNotificationRecipientsAsUserIDs(clientID, post, currentUserID)
-
-		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-			GroupIDs: []string{group.ID},
-			UserIDs:  recipientsUserIDs,
-			Statuses: []string{"member", "admin"},
-		})
-		var recipients []notifications.Recipient
-		if post.ParentID == nil {
-			recipients = result.GetMembersAsNotificationRecipients(func(member model.GroupMembership) (bool, bool) {
-				return member.IsAdminOrMember() && (*currentUserID != member.UserID),
-					member.NotificationsPreferences.OverridePreferences &&
-						(member.NotificationsPreferences.PostsMuted || member.NotificationsPreferences.AllMute)
-			})
-		} else {
-			parentPost, err := app.storage.FindPost(nil, clientID, nil, group.ID, *post.ParentID, true, false)
-			if err != nil {
-				log.Printf("error app.sendGroupNotificationForNewPost() - %s", err)
-				return fmt.Errorf("error app.sendGroupNotificationForNewPost() - %s", err)
-			}
-			if parentPost != nil {
-				recipients = append(recipients, notifications.Recipient{
-					UserID: parentPost.Creator.UserID,
-				})
-			}
-		}
-
-		if len(recipients) > 0 {
-			groupStr := "Group"
-			if group.ResearchGroup {
-				groupStr = "Research Project"
-			}
-
-			title := fmt.Sprintf("%s - %s", groupStr, group.Title)
-			operation := "messaged you"
-			if len(post.ToMembersList) == 0 {
-				operation = "posted"
-				if post.ParentID != nil {
-					operation = "replied"
-				}
-			}
-			if currentUserName == nil && currentUserID != nil {
-				coreUsers, err := app.corebb.GetAccountsWithIDs([]string{*currentUserID}, nil, nil, nil, nil)
-				if err != nil {
-					log.Printf("error app.sendGroupNotificationForNewPost() - %s", err)
-				}
-				if len(coreUsers) > 0 {
-					val := coreUsers[0].GetFullName()
-					currentUserName = &val
-				}
-			}
-			if currentUserName == nil || *currentUserName == "" {
-				val := "User"
-				currentUserName = &val
-			}
-
-			notificationBody := post.Body
-			if len(notificationBody) > 250 {
-				notificationBody = notificationBody[:250] + "..."
-			}
-			body := fmt.Sprintf("%s %s \"%s\"", *currentUserName, operation, notificationBody)
-			if post.UseAsNotification {
-				title = post.Subject
-				body = post.Body
-			}
-
-			topic := "group.posts"
-			return app.notifications.SendNotification(
-				recipients,
-				&topic,
-				title,
-				body,
-				map[string]string{
-					"type":         "group",
-					"operation":    "post_created",
-					"entity_type":  "group",
-					"entity_id":    group.ID,
-					"entity_name":  group.Title,
-					"post_id":      post.ID,
-					"post_subject": post.Subject,
-					"post_body":    post.Body,
-				},
-				app.config.AppID,
-				app.config.OrgID,
-				nil,
-			)
-		}
-	}
-	return nil
-}
-
-func (app *Application) getPostNotificationRecipientsAsUserIDs(clientID string, post *model.Post, skipUserID *string) ([]string, error) {
-	if post == nil {
-		return nil, nil
-	}
-
-	if len(post.ToMembersList) > 0 {
-		return post.GetMembersAsUserIDs(skipUserID), nil
-	}
-
-	var err error
-	for {
-		if post.ParentID == nil {
-			break
-		}
-
-		post, err = app.storage.FindPost(nil, clientID, nil, post.GroupID, *post.ParentID, true, false)
-		if err != nil {
-			log.Printf("error app.getPostToMemberList() - %s", err)
-			return nil, fmt.Errorf("error app.getPostToMemberList() - %s", err)
-		}
-
-		if post != nil && len(post.ToMembersList) > 0 {
-			return post.GetMembersAsUserIDs(skipUserID), nil
-		}
-	}
-
-	return nil, nil
+	return app.social.CreatePost(clientID, current, post, group)
 }
 
 func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.UpdatePost(clientID, current, group, post)
-	}
-	return app.storage.UpdatePost(clientID, current.ID, post)
+	return app.social.UpdatePost(clientID, current, group, post)
 }
 
 func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.ReactToPost(clientID, current, groupID, postID, reaction)
-	}
-
-	transaction := func(context storage.TransactionContext) error {
-		post, err := app.storage.FindPost(context, clientID, &current.ID, groupID, postID, true, false)
-		if err != nil {
-			return fmt.Errorf("error finding post: %v", err)
-		}
-		if post == nil {
-			return fmt.Errorf("missing post for id %s", postID)
-		}
-
-		for _, userID := range post.Reactions[reaction] {
-			if current.ID == userID {
-				err = app.storage.ReactToPost(context, current.ID, postID, reaction, false)
-				if err != nil {
-					return fmt.Errorf("error removing reaction: %v", err)
-				}
-
-				return nil
-			}
-		}
-
-		err = app.storage.ReactToPost(context, current.ID, postID, reaction, true)
-		if err != nil {
-			return fmt.Errorf("error adding reaction: %v", err)
-		}
-
-		return nil
-	}
-
-	return app.storage.PerformTransaction(transaction)
+	return app.social.ReactToPost(clientID, current, groupID, postID, reaction)
 }
 
 func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.ReportPostAsAbuse(clientID, current, group, post, comment, sendToDean, sendToGroupAdmins)
-	}
-
-	if !sendToDean && !sendToGroupAdmins {
-		sendToDean = true
-	}
-
-	err := app.storage.ReportPostAsAbuse(clientID, current.ID, group, post)
-	if err != nil {
-		log.Printf("error while reporting an abuse post: %s", err)
-		return fmt.Errorf("error while reporting an abuse post: %s", err)
-	}
-
-	subject := ""
-	if sendToDean && !sendToGroupAdmins {
-		subject = "Report violation of Student Code to Dean of Students"
-	} else if !sendToDean && sendToGroupAdmins {
-		subject = "Report of Obscene, Harassing, or Threatening Content to Group Administrators"
-	} else {
-		subject = "Report violation of Student Code to Dean of Students and obscene, threatening, or harassing content to Group Administrators"
-	}
-
-	subject = fmt.Sprintf("%s %s", subject, post.DateCreated.Format(time.RFC850))
-
-	if sendToDean {
-		body := fmt.Sprintf(`
-<div>Violation by: %s %s\n</div>
-<div>Group title: %s\n</div>
-<div>Post Title: %s\n</div>
-<div>Post Body: %s\n</div>
-<div>Reported by: %s %s\n</div>
-<div>Reported comment: %s\n</div>
-	`, current.ExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
-			current.ExternalID, current.Name, comment)
-		body = strings.ReplaceAll(body, `\n`, "\n")
-		app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
-	}
-	if sendToGroupAdmins {
-		result, _ := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
-			GroupIDs: []string{group.ID},
-			Statuses: []string{"admin"},
-		})
-		toMembers := result.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
-			return membership.UserID != current.ID, false
-		})
-
-		body := fmt.Sprintf(`
-Violation by: %s %s
-Group title: %s
-Post Title: %s
-Post Body: %s
-Reported by: %s %s
-Reported comment: %s
-	`, current.ExternalID, post.Creator.Name, group.Title, post.Subject, post.Body,
-			current.ExternalID, current.Name, comment)
-
-		return app.notifications.SendNotification(toMembers, nil, subject, body, map[string]string{
-			"type":         "group",
-			"operation":    "report_abuse_post",
-			"entity_type":  "group",
-			"entity_id":    group.ID,
-			"entity_name":  group.Title,
-			"post_id":      post.ID,
-			"post_subject": post.Subject,
-			"post_body":    post.Body,
-		},
-			current.AppID,
-			current.OrgID,
-			nil,
-		)
-	}
-
-	return nil
+	return app.social.ReportPostAsAbuse(clientID, current, group, post, comment, sendToDean, sendToGroupAdmins)
 }
 
 func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	if app.postsMigrationConfig.Migrated {
-		return app.social.DeletePost(clientID, userID, groupID, postID, force)
-	}
-	return app.storage.DeletePost(nil, clientID, userID, groupID, postID, force)
+	return app.social.DeletePost(clientID, userID, groupID, postID, force)
 }
 
 func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {

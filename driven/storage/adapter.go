@@ -217,36 +217,6 @@ func (sa *Adapter) SaveSyncTimes(context TransactionContext, times model.SyncTim
 	return nil
 }
 
-// FindPostMigrationConfig finds the post migration config
-func (sa *Adapter) FindPostMigrationConfig(context TransactionContext) model.PostsMigrationConfig {
-	config := model.PostsMigrationConfig{
-		Type: model.ConfigTypePostsMigration,
-	}
-	err := sa.db.configs.FindOneWithContext(context, bson.D{{Key: "type", Value: model.ConfigTypePostsMigration}}, &config, nil)
-	if err != nil {
-		log.Printf("error on find posts migration config - %s", err.Error())
-	}
-
-	return config
-}
-
-// SavePostsMigrationConfig saves the provided posts migration config fields
-func (sa *Adapter) SavePostsMigrationConfig(context TransactionContext, config model.PostsMigrationConfig) error {
-	filter := bson.M{"type": model.ConfigTypePostsMigration}
-
-	config.Type = model.ConfigTypePostsMigration
-
-	upsert := true
-	opts := options.ReplaceOptions{Upsert: &upsert}
-	err := sa.db.configs.ReplaceOneWithContext(context, filter, config, &opts)
-	if err != nil {
-		log.Printf("error on save posts migration config - %s", err.Error())
-		return err
-	}
-
-	return nil
-}
-
 type getUserPostCountResult struct {
 	Count int64 `json:"posts_count" bson:"posts_count"`
 }

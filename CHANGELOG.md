@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Cleanup and remove the legacy posts logic [#549](https://github.com/rokwire/groups-building-block/issues/549)
+
 ## [1.59.1] - 2025-02-12
 ### Changed
 - Additional fix: Load all groups [#536](https://github.com/rokwire/groups-building-block/issues/536)
