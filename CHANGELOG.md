@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Only the delete managed group operation should require managed_group_admin permission [#553](https://github.com/rokwire/groups-building-block/issues/553)
+
 ## [1.60.0] - 2025-03-04
 ### Changed
 - Cleanup and remove the legacy posts logic [#549](https://github.com/rokwire/groups-building-block/issues/549)

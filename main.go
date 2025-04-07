@@ -204,7 +204,7 @@ func getEnvKey(key string, required bool) string {
 		if required {
 			log.Fatal("No provided environment variable for " + key)
 		} else {
-			log.Printf("No provided environment variable for " + key)
+			log.Print("No provided environment variable for " + key)
 		}
 	}
 	printEnvVar(key, value)
