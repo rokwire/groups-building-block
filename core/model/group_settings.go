@@ -2,8 +2,9 @@ package model
 
 // GroupSettings wraps group settings and flags as a separate unit
 type GroupSettings struct {
-	MemberInfoPreferences MemberInfoPreferences `json:"member_info_preferences" bson:"member_info_preferences"`
-	PostPreferences       PostPreferences       `json:"post_preferences" bson:"post_preferences"`
+	MemberInfoPreferences MemberInfoPreferences    `json:"member_info_preferences" bson:"member_info_preferences"`
+	PostPreferences       PostPreferences          `json:"post_preferences" bson:"post_preferences"`
+	ContentItems          []map[string]interface{} `json:"content_items" bson:"content_items"`
 } // @name GroupSettings
 
 // DefaultGroupSettings Returns default settings
@@ -24,6 +25,7 @@ func DefaultGroupSettings() GroupSettings {
 			CanSendPostReplies:           true,
 			CanSendPostReactions:         true,
 		},
+		ContentItems: []map[string]interface{}{},
 	}
 }
 

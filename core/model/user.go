@@ -59,6 +59,11 @@ func (u *User) HasPermission(name string) bool {
 	return false
 }
 
+// IsGroupsBBAdministrator Checks if the user is a group administrator (through Admin App)
+func (u *User) IsGroupsBBAdministrator() bool {
+	return u.HasPermission("all_admin_groups")
+}
+
 // CoreAccount wraps the account structure from the Core BB
 // @name CoreAccount
 type CoreAccount struct {
@@ -162,31 +167,8 @@ type DeletedMembership struct {
 
 // UserDataResponse defines the user data
 type UserDataResponse struct {
-	EventResponse            []EventResponse           `json:"events"`
-	GroupMembershipsResponse []GroupMembershipResponse `json:"group_memberships"`
-	GroupResponse            []GroupResponse           `json:"groups"`
-	PostResponse             []PostResponse            `json:"posts"`
+	EventResponse            []Event           `json:"events"`
+	GroupMembershipsResponse []GroupMembership `json:"group_memberships"`
+	GroupResponse            []Group           `json:"groups"`
+	PostResponse             []Post            `json:"posts"`
 }
-
-// EventResponse represents event entity
-type EventResponse struct {
-	UserID  string `json:"user_id" bson:"user_id"`
-	EventID string `json:"event_id" bson:"event_id"`
-} // @name EventResponse
-
-// GroupMembershipResponse represents the membership of a user to a given group
-type GroupMembershipResponse struct {
-	ID     string `json:"id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
-} //@name GroupMembershipResponse
-
-// GroupResponse represents the user groups
-type GroupResponse struct {
-	ID string `json:"id" bson:"_id"`
-} //@name GroupResponse
-
-// PostResponse  represents the user posts
-type PostResponse struct {
-	ID     string `json:"id" bson:"_id"`
-	UserID string `json:"user_id" bson:"user_id"`
-} //@name PostResponse

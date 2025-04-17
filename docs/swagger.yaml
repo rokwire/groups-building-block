@@ -39,13 +39,6 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
-  EventResponse:
-    properties:
-      event_id:
-        type: string
-      user_id:
-        type: string
-    type: object
   GetGroupMembershipsResponse:
     properties:
       group_id:
@@ -213,18 +206,6 @@ definitions:
         description: ID of sync that last updated this membership
         type: string
       user_id:
-        type: string
-    type: object
-  GroupMembershipResponse:
-    properties:
-      id:
-        type: string
-      user_id:
-        type: string
-    type: object
-  GroupResponse:
-    properties:
-      id:
         type: string
     type: object
   GroupSettings:
@@ -501,13 +482,6 @@ definitions:
       can_send_post_to_specific_members:
         type: boolean
     type: object
-  PostResponse:
-    properties:
-      id:
-        type: string
-      user_id:
-        type: string
-    type: object
   Sender:
     properties:
       type:
@@ -579,6 +553,8 @@ definitions:
         type: boolean
       image_url:
         type: string
+      members:
+        $ref: '#/definitions/model.DefaultMembershipConfig'
       membership_questions:
         items:
           type: string
@@ -736,6 +712,17 @@ definitions:
       web_url:
         type: string
     type: object
+  getPostsMigrationResponseData:
+    properties:
+      groups:
+        items:
+          $ref: '#/definitions/Group'
+        type: array
+      posts:
+        items:
+          $ref: '#/definitions/model.Post'
+        type: array
+    type: object
   getPutAdminGroupIDsForEventIDRequestAndResponse:
     properties:
       group_ids:
@@ -844,6 +831,22 @@ definitions:
     required:
     - approve
     type: object
+  model.DefaultMembershipConfig:
+    properties:
+      net_ids:
+        items:
+          type: string
+        type: array
+      status:
+        enum:
+        - admin
+        - member
+        - pending
+        - rejected
+        type: string
+    required:
+    - status
+    type: object
   model.MembershipStatus:
     properties:
       net_id:
@@ -927,20 +930,25 @@ definitions:
     properties:
       events:
         items:
-          $ref: '#/definitions/EventResponse'
+          $ref: '#/definitions/Event'
         type: array
       group_memberships:
         items:
-          $ref: '#/definitions/GroupMembershipResponse'
+          $ref: '#/definitions/GroupMembership'
         type: array
       groups:
         items:
-          $ref: '#/definitions/GroupResponse'
+          $ref: '#/definitions/Group'
         type: array
       posts:
         items:
-          $ref: '#/definitions/PostResponse'
+          $ref: '#/definitions/model.Post'
         type: array
+    type: object
+  postsMigrationFlagData:
+    properties:
+      migrated:
+        type: boolean
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -1037,15 +1045,11 @@ definitions:
           $ref: '#/definitions/ToMember'
         type: array
     type: object
-  rest.getPostsMigrationResponseData:
+  rest.createMembershipsRequest:
     properties:
-      groups:
+      members:
         items:
-          $ref: '#/definitions/Group'
-        type: array
-      posts:
-        items:
-          $ref: '#/definitions/model.Post'
+          $ref: '#/definitions/model.MembershipStatus'
         type: array
     type: object
   rest.updateCalendarEventSingleGroupData:
@@ -2566,9 +2570,40 @@ paths:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/rest.getPostsMigrationResponseData'
-            type: array
+            $ref: '#/definitions/getPostsMigrationResponseData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+    put:
+      description: Sets a configuration flag that the posts migration process is successfull
+        and all related APIs to be redirected to Social BB
+      operationId: BBSPutPostsMigrationFlag
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/postsMigrationFlagData'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/postsMigrationFlagData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/posts-migration-flag:
+    get:
+      description: Gets all groups and all posts without any restrictions
+      operationId: BBSGetPostsMigrationFlag
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/postsMigrationFlagData'
       security:
       - AppUserAuth: []
       tags:
@@ -4310,12 +4345,25 @@ paths:
       - APIKeyAuth: []
       tags:
       - Client
-  /group/{group-id}/members:
-    put:
+  /authman/synchronize:
+    post:
       consumes:
       - application/json
-      description: Updates a membership. Only the status can be changed.
-      operationId: AdminCreateMemberships
+      description: Synchronizes Authman groups membership
+      operationId: InternalSynchronizeAuthman
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /group/{group-id}/members:
+    post:
+      consumes:
+      - application/json
+      description: Create multiple members in group with desired status
+      operationId: MultiCreateMembers
       parameters:
       - description: APP
         in: header
@@ -4327,9 +4375,7 @@ paths:
         name: data
         required: true
         schema:
-          items:
-            $ref: '#/definitions/model.MembershipStatus'
-          type: array
+          $ref: '#/definitions/rest.createMembershipsRequest'
       - description: Group ID
         in: path
         name: group-id

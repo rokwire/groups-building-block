@@ -19,6 +19,7 @@ import (
 	"groups/driven/calendar"
 	"groups/driven/corebb"
 	"groups/driven/rewards"
+	"groups/driven/socialbb"
 	"log"
 	"time"
 
@@ -47,6 +48,7 @@ type Application struct {
 	corebb        Core
 	rewards       Rewards
 	calendar      Calendar
+	social        Social
 
 	authmanSyncInProgress bool
 
@@ -91,8 +93,6 @@ func (app *Application) setupCronTimer() {
 		}
 	}
 
-	app.startScheduledPostTask()
-
 	app.startCoreCleanupTask()
 
 	app.scheduler.Start()
@@ -110,24 +110,9 @@ func (app *Application) startCoreCleanupTask() {
 	log.Printf("successful running of core account cleanup scheduling task")
 }
 
-func (app *Application) startScheduledPostTask() {
-	// TBD: Implement CRUD APIs for config and load them from DB
-	_, err := app.scheduler.AddFunc("* * * * *", func() {
-		log.Println("run scheduled core cleanup tick")
-		err := app.processScheduledPosts()
-		if err != nil {
-			log.Printf("error processing scheduled prosts: %s", err)
-		}
-	})
-	if err != nil {
-		log.Printf("error on running post scheduling task: %s", err)
-	}
-	log.Printf("successful running of post scheduling task")
-}
-
 // NewApplication creates new Application
 func NewApplication(version string, build string, storage Storage, notifications Notifications, authman Authman, core *corebb.Adapter,
-	rewards *rewards.Adapter, calendar *calendar.Adapter, serviceID string, logger *logs.Logger, config *model.ApplicationConfig) *Application {
+	rewards *rewards.Adapter, calendar *calendar.Adapter, social *socialbb.Adapter, serviceID string, logger *logs.Logger, config *model.ApplicationConfig) *Application {
 
 	scheduler := cron.New(cron.WithLocation(time.UTC))
 	application := Application{version: version,
@@ -138,6 +123,7 @@ func NewApplication(version string, build string, storage Storage, notifications
 		corebb:        core,
 		rewards:       rewards,
 		calendar:      calendar,
+		social:        social,
 		config:        config,
 		scheduler:     scheduler,
 		logger:        logger,

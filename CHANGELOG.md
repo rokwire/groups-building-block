@@ -5,9 +5,51 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
-## [1.56.0] - 2024-01-23
+## [1.62.0] - 2025-04-17
+### Changed
+- Support Google Trust Services as CA [#558](https://github.com/rokwire/groups-building-block/issues/558)
+
+## [1.61.0] - 2025-04-07
+### Changed
+- Only the delete managed group operation should require managed_group_admin permission [#553](https://github.com/rokwire/groups-building-block/issues/553)
+
+## [1.60.0] - 2025-03-04
+### Changed
+- Cleanup and remove the legacy posts logic [#549](https://github.com/rokwire/groups-building-block/issues/549)
+
+## [1.59.1] - 2025-02-12
+### Changed
+- Additional fix: Load all groups [#536](https://github.com/rokwire/groups-building-block/issues/536)
+
+## [1.59.0] - 2025-02-12
+### Changed
+- Load all groups [#536](https://github.com/rokwire/groups-building-block/issues/536)
+
+
+## [1.58.2] - 2025-02-11
 ### Added
-- Create migration api for Social BB [#527](https://github.com/rokwire/groups-building-block/issues/524)
+- Customization options to choose group modules: Polls, Direct Messaging, Posts, Events [#545](https://github.com/rokwire/groups-building-block/issues/545)
+
+## [1.58.1] - 2025-02-10
+### Fixed
+- Members fail to load for some groups on prod [#542](https://github.com/rokwire/groups-building-block/issues/542)
+
+
+## [1.58.0] - 2025-02-04
+### Added
+- Client APIs to provide Admin functionality [#541](https://github.com/rokwire/groups-building-block/issues/541)
+
+
+## [1.57.1] - 2025-02-03
+### Changed
+- Fix consolidate the information, and make it accessible with a single API call [#538](https://github.com/rokwire/groups-building-block/issues/538)
+### Fixed
+- Fix migration data permission [#531](https://github.com/rokwire/groups-building-block/issues/531)
+- Create posts migration api for switching the datasource to Social BB [#529](https://github.com/rokwire/groups-building-block/issues/529)
+
+## [1.56.0] - 2025-01-23
+### Added
+- Create migration api for Social BB [#527](https://github.com/rokwire/groups-building-block/issues/527)
 - Consolidate the information, and make it accessible with a single API call [#519](https://github.com/rokwire/groups-building-block/issues/519)
 - Implement GET /v2/groups API via http POST method [#524](https://github.com/rokwire/groups-building-block/issues/524)
 

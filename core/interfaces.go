@@ -51,6 +51,7 @@ type Services interface {
 
 	ApplyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error
 	UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
+	CreateMembershipsStatuses(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
 	UpdateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error
 
 	GetEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
@@ -64,7 +65,6 @@ type Services interface {
 	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
 	GetUserData(userID string) (*model.UserDataResponse, error)
 
-	GetAllPostsUnsecured() ([]model.Post, error)
 	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
 	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
 	GetUserPostCount(clientID string, userID string) (*int64, error)
@@ -156,7 +156,7 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 }
 
 func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
-	return s.app.getGroups(clientID, current, filter)
+	return s.app.getGroups(clientID, current, filter, false)
 }
 
 func (s *servicesImpl) GetAllGroupsUnsecured() ([]model.Group, error) {
@@ -193,6 +193,10 @@ func (s *servicesImpl) ApplyMembershipApproval(clientID string, current *model.U
 
 func (s *servicesImpl) UpdateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
 	return s.app.updateMembership(clientID, current, membershipID, status, dateAttended, notificationsPreferences)
+}
+
+func (s *servicesImpl) CreateMembershipsStatuses(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
+	return s.app.createMembershipsStatuses(clientID, current, groupID, membershipStatuses)
 }
 
 func (s *servicesImpl) UpdateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error {
@@ -235,10 +239,6 @@ func (s *servicesImpl) GetGroupsByGroupIDs(groupIDs []string) ([]model.Group, er
 
 func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, error) {
 	return s.app.getUserData(userID)
-}
-
-func (s *servicesImpl) GetAllPostsUnsecured() ([]model.Post, error) {
-	return s.app.getAllPostsUnsecured()
 }
 
 func (s *servicesImpl) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
@@ -401,7 +401,7 @@ func (s *servicesImpl) GetGroupCalendarEvents(clientID string, current *model.Us
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	AdminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
+	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error
 }
 
@@ -409,8 +409,12 @@ type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) AdminAddGroupMemberships(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
-	return s.app.adminAddGroupMemberships(clientID, current, groupID, membershipStatuses)
+func (s *administrationImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+	skipMembershipCheck := false
+	if current != nil {
+		skipMembershipCheck = current.IsGroupsBBAdministrator()
+	}
+	return s.app.getGroups(clientID, current, filter, skipMembershipCheck)
 }
 
 func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
@@ -443,7 +447,7 @@ type Storage interface {
 	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroups(clientID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error)
 	FindAllGroupsUnsecured() ([]model.Group, error)
 	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
@@ -465,23 +469,6 @@ type Storage interface {
 	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)
 
 	ReportGroupAsAbuse(clientID string, userID string, group *model.Group) error
-	ReportPostAsAbuse(clientID string, userID string, group *model.Group, post *model.Post) error
-
-	FindAllPostsUnsecured() ([]model.Post, error)
-	FindPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
-	FindPost(context storage.TransactionContext, clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
-	FindPostsByParentID(context storage.TransactionContext, clientID string, userID *string, groupID string, parentID string, skipMembershipCheck bool, filterByToMembers bool, recursive bool, order *string) ([]model.Post, error)
-	GetPostsByUserID(userID string) ([]model.Post, error)
-
-	CreatePost(clientID string, current *model.User, post *model.Post) (*model.Post, error)
-	UpdatePost(clientID string, userID string, post *model.Post) (*model.Post, error)
-	ReactToPost(context storage.TransactionContext, userID string, postID string, reaction string, on bool) error
-	DeletePost(ctx storage.TransactionContext, clientID string, userID string, groupID string, postID string, force bool) error
-	DeletePostsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
-	PullMembersFromPostsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
-
-	FindScheduledPosts(context storage.TransactionContext) ([]model.Post, error)
-	UpdateDateNotifiedForPostIDs(context storage.TransactionContext, ids []string, dateNotified time.Time) error
 
 	FindAuthmanGroups(clientID string) ([]model.Group, error)
 	FindAuthmanGroupByKey(clientID string, authmanGroupKey string) (*model.Group, error)
@@ -582,4 +569,16 @@ type Calendar interface {
 	GetGroupCalendarEvents(currentAccountIdentifier model.AccountIdentifiers, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
 	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
+}
+
+// Social exposes Social BB APIs for the driver adapters
+type Social interface {
+	GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
+	GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
+	GetUserPostCount(clientID string, userID string) (*int64, error)
+	CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
+	UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
+	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
+	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
+	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 }

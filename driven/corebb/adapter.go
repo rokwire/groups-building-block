@@ -33,12 +33,12 @@ import (
 type Adapter struct {
 	coreURL               string
 	serviceAccountManager *authservice.ServiceAccountManager
-	logger                logs.Logger
+	logger                *logs.Logger
 }
 
 // NewCoreAdapter creates a new adapter for Core API
-func NewCoreAdapter(coreURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
-	return &Adapter{coreURL: coreURL, serviceAccountManager: serviceAccountManager}
+func NewCoreAdapter(logger *logs.Logger, coreURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
+	return &Adapter{logger: logger, coreURL: coreURL, serviceAccountManager: serviceAccountManager}
 }
 
 // RetrieveCoreUserAccount retrieves Core user account
@@ -368,8 +368,40 @@ func (a *Adapter) LoadDeletedMemberships() ([]model.DeletedUserData, error) {
 
 // RetrieveFerpaAccounts retrieves ferpa accounts
 func (a *Adapter) RetrieveFerpaAccounts(ids []string) ([]string, error) {
-	if len(ids) > 0 {
-		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, strings.Join(ids, ","))
+	var allFerpaAccounts []string
+	var batch []string
+
+	// https://github.com/rokwire/groups-building-block/issues/542
+	// This workaround on blind is to limit the number of ids to 100 (roughly)
+	// Otherwise it will fail due to query string being too long
+	// TBD: This should be fixed by a post method instead of get
+	for _, id := range ids {
+		if len(batch) > 100 {
+			ferpaAccounts, err := a.retrieveFerpaAccounts(strings.Join(batch, ","))
+			if err != nil {
+				return nil, err
+			}
+			allFerpaAccounts = append(allFerpaAccounts, ferpaAccounts...)
+			batch = []string{}
+		}
+		batch = append(batch, id)
+	}
+
+	if len(batch) > 0 {
+		ferpaAccounts, err := a.retrieveFerpaAccounts(strings.Join(batch, ","))
+		if err != nil {
+			return nil, err
+		}
+		allFerpaAccounts = append(allFerpaAccounts, ferpaAccounts...)
+	}
+
+	return allFerpaAccounts, nil
+}
+
+// RetrieveFerpaAccounts retrieves ferpa accounts
+func (a *Adapter) retrieveFerpaAccounts(commaSeparatedIDs string) ([]string, error) {
+	if len(commaSeparatedIDs) > 0 {
+		url := fmt.Sprintf("%s/bbs/accounts/ferpa?ids=%s", a.coreURL, commaSeparatedIDs)
 
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {

@@ -373,12 +373,6 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	if requestData.AuthmanEnabled && !current.HasPermission("managed_group_admin") {
-		log.Printf("Only managed_group_admin could create a managed group")
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-		return
-	}
-
 	if requestData.ResearchGroup && !current.HasPermission("research_group_admin") {
 		log.Printf("'%s' is not allowed to create research group '%s'. Only user with research_group_admin permission can create research group", current.Email, requestData.Title)
 		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
@@ -480,20 +474,24 @@ func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w h
 
 	//check if allowed to update
 	group, err := h.app.Services.GetGroup(clientID, current, id)
-	if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
-		log.Printf("%s is not allowed to update group settings '%s'. Only group admin could update a group", current.Email, group.Title)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+	if err != nil {
+		log.Printf("Error on getting group - %s\n", err)
+		http.Error(w, utils.NewNotFoundError().JSONErrorString(), http.StatusNotFound)
 		return
 	}
-	if (requestData.AuthmanEnabled || group.AuthmanEnabled) && !current.HasPermission("managed_group_admin") {
-		log.Printf("%s is not allowed to update group settings '%s'. Only group admin with managed_group_admin permission could update a managed group", current.Email, group.Title)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-		return
-	}
-	if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
-		log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
-		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
-		return
+
+	// all_admin_groups has permission to update group settings
+	if current != nil && !current.IsGroupsBBAdministrator() {
+		if group.CurrentMember == nil || !group.CurrentMember.IsAdmin() {
+			log.Printf("%s is not allowed to update group settings '%s'. Only group admin or all_admin_groups permission could update a group", current.Email, group.Title)
+			http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+			return
+		}
+		if (requestData.ResearchGroup || group.ResearchGroup) && !current.HasPermission("research_group_admin") {
+			log.Printf("'%s' is not allowed to update research group '%s'. Only user with research_group_admin permission can update research group", current.Email, group.Title)
+			http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+			return
+		}
 	}
 
 	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
@@ -672,7 +670,7 @@ type adminCreateMembershipsRequest []model.MembershipStatus
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /group/{group-id}/members [put]
+// @Router /group/{group-id}/members [post]
 func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
@@ -715,7 +713,7 @@ func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.Use
 		return
 	}
 
-	err = h.app.Admin.AdminAddGroupMemberships(clientID, current, groupID, model.MembershipStatuses(requestData))
+	err = h.app.Services.CreateMembershipsStatuses(clientID, current, groupID, model.MembershipStatuses(requestData))
 	if err != nil {
 		log.Printf("adminapis.CreateMemberships() Error - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

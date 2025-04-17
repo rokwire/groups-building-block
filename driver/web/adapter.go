@@ -140,6 +140,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 
 	//V1 Client APIs
+	restSubrouter.HandleFunc("/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchronizeAuthman)).Methods("POST")
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
@@ -158,6 +159,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{group-id}/members/v2", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupMembersV2)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.CreateMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/members", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMember)).Methods("DELETE")
+	restSubrouter.HandleFunc("/group/{group-id}/members/multi-create", we.idTokenAuthWrapFunc(we.apisHandler.MultiCreateMembers)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{group-id}/members/multi-update", we.idTokenAuthWrapFunc(we.apisHandler.MultiUpdateMembers)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{group-id}/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchAuthmanGroup)).Methods("POST")
 	restSubrouter.HandleFunc("/memberships/{membership-id}/approval", we.idTokenAuthWrapFunc(we.apisHandler.MembershipApproval)).Methods("PUT")
@@ -206,7 +208,6 @@ func (we *Adapter) Start() {
 	bbsSubrouter.HandleFunc("/groups/{group_id}/group-memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMembershipsByGroupID, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups", we.wrapFunc(we.bbsAPIHandler.GetGroupsByGroupIDs, we.auth2.bbs.Permissions)).Methods("GET")
-	bbsSubrouter.HandleFunc("/posts-migration-data", we.wrapFunc(we.bbsAPIHandler.GetPostsMigrationData, we.auth2.bbs.Permissions)).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
