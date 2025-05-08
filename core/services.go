@@ -180,6 +180,158 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	return groupID, nil
 }
 
+func (app *Application) createGroupV3(clientID string, current *model.User, group *model.Group, membersRefs []model.MembershipRef) (*string, *utils.GroupError) {
+
+	var groupError *utils.GroupError
+	var groupID *string
+	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		var err error
+
+		// Create intitial members if need
+		var members []model.GroupMembership
+		accountIDs := []string{}
+		accountIDMapping := map[string]model.MembershipRef{}
+		netIDs := []string{}
+		netIDMapping := map[string]model.MembershipRef{}
+
+		accountIDsMapping := map[string]bool{}
+
+		for _, memberRef := range membersRefs {
+			if memberRef.AccountID != nil {
+				accountIDs = append(accountIDs, *memberRef.AccountID)
+				accountIDMapping[*memberRef.AccountID] = memberRef
+			} else if memberRef.NetID != nil {
+				netIDs = append(netIDs, *memberRef.NetID)
+				netIDMapping[*memberRef.NetID] = memberRef
+			}
+		}
+
+		if len(accountIDs) > 0 {
+			accounts, err := app.corebb.GetAccountsWithIDs(accountIDs, &current.AppID, &current.OrgID, nil, nil)
+			if err != nil {
+				return nil
+			}
+
+			for _, account := range accounts {
+				if _, ok := accountIDsMapping[account.ID]; ok {
+					continue
+				}
+
+				accountIDsMapping[account.ID] = true
+
+				externalID := account.GetExternalID()
+				fullName := account.GetFullName()
+				netID := account.GetNetID()
+				status := accountIDMapping[account.ID].Status
+
+				members = append(members, model.GroupMembership{
+					ClientID:   clientID,
+					GroupID:    group.ID,
+					UserID:     account.ID,
+					ExternalID: externalID,
+					NetID:      netID,
+					Name:       fullName,
+					Email:      account.Profile.Email,
+					Status:     status,
+				})
+			}
+		}
+
+		if len(netIDs) > 0 {
+			accounts, err := app.corebb.GetAccounts(map[string]interface{}{
+				"external_ids.net_id": netIDs,
+			}, &current.AppID, &current.OrgID, nil, nil)
+			if err != nil {
+				return nil
+			}
+
+			for _, account := range accounts {
+				if _, ok := accountIDsMapping[account.ID]; ok {
+					continue
+				}
+
+				accountIDsMapping[account.ID] = true
+
+				externalID := account.GetExternalID()
+				fullName := account.GetFullName()
+				netID := account.GetNetID()
+				status := accountIDMapping[account.ID].Status
+
+				members = append(members, model.GroupMembership{
+					ClientID:   clientID,
+					GroupID:    group.ID,
+					UserID:     account.ID,
+					ExternalID: externalID,
+					NetID:      netID,
+					Name:       fullName,
+					Email:      account.Profile.Email,
+					Status:     status,
+				})
+
+			}
+		}
+
+		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, members)
+		if groupError != nil {
+			return err
+		}
+
+		if group.ResearchGroup {
+			searchParams := app.formatCoreAccountSearchParams(group.ResearchProfile)
+
+			list := []notifications.Recipient{}
+			account, err := app.corebb.GetAccounts(searchParams, &current.AppID, &current.OrgID, nil, nil)
+			if err != nil {
+				return nil
+			}
+			for _, u := range account {
+				id := u.ID
+				mute := false
+				ne := notifications.Recipient{UserID: id, Mute: mute}
+				list = append(list, ne)
+			}
+
+			app.notifications.SendNotification(list, nil, "A new research project is available", fmt.Sprintf("%s by %s", group.Title, current.Name),
+				map[string]string{
+					"type":        "group",
+					"operation":   "research_group",
+					"entity_type": "group",
+					"entity_id":   group.ID,
+					"entity_name": group.Title,
+				},
+				current.AppID,
+				current.OrgID,
+				nil,
+			)
+
+		}
+
+		return nil
+	})
+
+	handleRewardsAsync := func(clientID, userID string) {
+		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
+		if grErr != nil {
+			log.Printf("Error createGroup(): %s", grErr)
+		} else {
+			if count != nil && *count == 1 {
+				app.rewards.CreateUserReward(current.ID, rewards.GroupsUserCreatedFirstGroup, "")
+			}
+		}
+	}
+	go handleRewardsAsync(clientID, current.ID)
+
+	if groupError != nil {
+		return nil, groupError
+	}
+	if err != nil {
+		log.Printf("app.createGroup() error %s", err)
+		return nil, utils.NewServerError()
+	}
+
+	return groupID, nil
+}
+
 func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
 
 	err := app.storage.UpdateGroup(nil, clientID, current, group)

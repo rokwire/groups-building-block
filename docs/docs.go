@@ -2113,81 +2113,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/bbs/posts-migration-data": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all groups and all posts without any restrictions",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSGetPostsMigrationData",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/getPostsMigrationResponseData"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSPutPostsMigrationFlag",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/postsMigrationFlagData"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/postsMigrationFlagData"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bbs/posts-migration-flag": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all groups and all posts without any restrictions",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSGetPostsMigrationFlag",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/postsMigrationFlagData"
-                        }
-                    }
-                }
-            }
-        },
         "/api/group/events/v3": {
             "post": {
                 "security": [
@@ -4842,6 +4767,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v3/groups": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a group. Title must be a unique. Category must be one of the categories list. Privacy can be public or private",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "CreateGroupV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/createGroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/createResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/authman/synchronize": {
             "post": {
                 "security": [
@@ -5299,6 +5270,13 @@ const docTemplate = `{
         "GroupSettings": {
             "type": "object",
             "properties": {
+                "content_items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
                 "member_info_preferences": {
                     "$ref": "#/definitions/MemberInfoPreferences"
                 },
@@ -5808,7 +5786,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "members": {
-                    "$ref": "#/definitions/model.DefaultMembershipConfig"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.MembershipRef"
+                    }
                 },
                 "membership_questions": {
                     "type": "array",
@@ -6045,23 +6026,6 @@ const docTemplate = `{
                 }
             }
         },
-        "getPostsMigrationResponseData": {
-            "type": "object",
-            "properties": {
-                "groups": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Group"
-                    }
-                },
-                "posts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Post"
-                    }
-                }
-            }
-        },
         "getPutAdminGroupIDsForEventIDRequestAndResponse": {
             "type": "object",
             "properties": {
@@ -6247,6 +6211,29 @@ const docTemplate = `{
                 }
             }
         },
+        "model.MembershipRef": {
+            "type": "object",
+            "required": [
+                "status"
+            ],
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string",
+                    "enum": [
+                        "admin",
+                        "member",
+                        "pending",
+                        "rejected"
+                    ]
+                }
+            }
+        },
         "model.MembershipStatus": {
             "type": "object",
             "properties": {
@@ -6387,14 +6374,6 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.Post"
                     }
-                }
-            }
-        },
-        "postsMigrationFlagData": {
-            "type": "object",
-            "properties": {
-                "migrated": {
-                    "type": "boolean"
                 }
             }
         },
