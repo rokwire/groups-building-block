@@ -197,9 +197,9 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 		accountIDsMapping := map[string]bool{}
 
 		for _, memberRef := range membersRefs {
-			if memberRef.AccountID != nil {
-				accountIDs = append(accountIDs, *memberRef.AccountID)
-				accountIDMapping[*memberRef.AccountID] = memberRef
+			if memberRef.UserID != nil {
+				accountIDs = append(accountIDs, *memberRef.UserID)
+				accountIDMapping[*memberRef.UserID] = memberRef
 			} else if memberRef.NetID != nil {
 				netIDs = append(netIDs, *memberRef.NetID)
 				netIDMapping[*memberRef.NetID] = memberRef
@@ -516,36 +516,72 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 			}
 
 			netIDs := membershipStatuses.GetAllNetIDs()
-			netIDAccounts, err := app.corebb.GetAllCoreAccountsWithNetIDs(netIDs, &current.AppID, &current.OrgID)
-			if err != nil {
-				return err
+			var netIDAccounts []model.CoreAccount
+			if len(netIDs) > 0 {
+				netIDAccounts, err = app.corebb.GetAllCoreAccountsWithNetIDs(netIDs, &current.AppID, &current.OrgID)
+				if err != nil {
+					return err
+				}
 			}
 
-			existingMemberships, err := app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
-				GroupIDs: []string{groupID},
-				NetIDs:   netIDs,
-			})
-			if err != nil {
-				return err
+			userIDs := membershipStatuses.GetAllUserIDs()
+			var userIDAccounts []model.CoreAccount
+			if len(userIDs) > 0 {
+				userIDAccounts, err = app.corebb.GetAccountsWithIDs(userIDs, &current.AppID, &current.OrgID, nil, nil)
+				if err != nil {
+					return err
+				}
 			}
 
 			var memberships []model.GroupMembership
-			mapping := membershipStatuses.GetAllNetIDStatusMapping()
-			if len(netIDAccounts) > 0 {
-				for _, account := range netIDAccounts {
-					if status, ok := mapping[account.GetNetID()]; ok {
-						if existingMemberships.GetMembershipBy(func(membership model.GroupMembership) bool {
-							return membership.NetID == account.GetNetID()
-						}) == nil {
-							memberships = append(memberships, account.ToMembership(groupID, status))
+			existingIDs := map[string]bool{}
+			for _, membership := range membershipStatuses {
+				found := false
+				for _, account := range userIDAccounts {
+					if membership.NetID == account.GetNetID() {
+						if _, ok := existingIDs[account.ID]; !ok {
+							existingIDs[account.ID] = true
+							memberships = append(memberships, model.GroupMembership{
+								ClientID:   clientID,
+								GroupID:    group.ID,
+								UserID:     account.ID,
+								ExternalID: account.GetExternalID(),
+								NetID:      membership.NetID,
+								Name:       account.GetFullName(),
+								Email:      account.Profile.Email,
+								Status:     membership.Status,
+							})
+							break
 						}
 					}
 				}
-				if len(memberships) > 0 {
-					err := app.storage.CreateMemberships(context, clientID, current, group, memberships)
-					if err != nil {
-						return err
+
+				if !found {
+					for _, account := range netIDAccounts {
+						if membership.NetID == account.GetNetID() {
+							if _, ok := existingIDs[account.ID]; !ok {
+								existingIDs[account.ID] = true
+								memberships = append(memberships, model.GroupMembership{
+									ClientID:   clientID,
+									GroupID:    group.ID,
+									UserID:     account.ID,
+									ExternalID: account.GetExternalID(),
+									NetID:      membership.NetID,
+									Name:       account.GetFullName(),
+									Email:      account.Profile.Email,
+									Status:     membership.Status,
+								})
+								break
+							}
+						}
 					}
+				}
+			}
+
+			if len(memberships) > 0 {
+				err := app.storage.CreateMemberships(context, clientID, current, group, memberships)
+				if err != nil {
+					return err
 				}
 			}
 

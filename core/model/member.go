@@ -177,7 +177,7 @@ type DefaultMembershipConfig struct {
 
 // MembershipRef represents a reference to a member
 type MembershipRef struct {
-	AccountID *string `json:"account_id"`
-	NetID     *string `json:"net_id"`
-	Status    string  `json:"status" validate:"required,oneof=admin member pending rejected"`
+	UserID *string `json:"user_id"`
+	NetID  *string `json:"net_id"`
+	Status string  `json:"status" validate:"required,oneof=admin member pending rejected"`
 } // @nane MembershipRef
