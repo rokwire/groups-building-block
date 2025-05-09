@@ -180,7 +180,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	return groupID, nil
 }
 
-func (app *Application) createGroupV3(clientID string, current *model.User, group *model.Group, membersRefs []model.MembershipRef) (*string, *utils.GroupError) {
+func (app *Application) createGroupV3(clientID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError) {
 
 	var groupError *utils.GroupError
 	var groupID *string
@@ -190,19 +190,19 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 		// Create intitial members if need
 		var members []model.GroupMembership
 		accountIDs := []string{}
-		accountIDMapping := map[string]model.MembershipRef{}
+		accountIDMapping := map[string]model.MembershipStatus{}
 		netIDs := []string{}
-		netIDMapping := map[string]model.MembershipRef{}
+		netIDMapping := map[string]model.MembershipStatus{}
 
 		accountIDsMapping := map[string]bool{}
 
-		for _, memberRef := range membersRefs {
-			if memberRef.UserID != nil {
-				accountIDs = append(accountIDs, *memberRef.UserID)
-				accountIDMapping[*memberRef.UserID] = memberRef
-			} else if memberRef.NetID != nil {
-				netIDs = append(netIDs, *memberRef.NetID)
-				netIDMapping[*memberRef.NetID] = memberRef
+		for _, memberRef := range membershipStatuses {
+			if memberRef.UserID != "" {
+				accountIDs = append(accountIDs, memberRef.UserID)
+				accountIDMapping[memberRef.UserID] = memberRef
+			} else if memberRef.NetID != "" {
+				netIDs = append(netIDs, memberRef.NetID)
+				netIDMapping[memberRef.NetID] = memberRef
 			}
 		}
 
@@ -538,7 +538,7 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 			for _, membership := range membershipStatuses {
 				found := false
 				for _, account := range userIDAccounts {
-					if membership.NetID == account.GetNetID() {
+					if membership.UserID == account.ID {
 						if _, ok := existingIDs[account.ID]; !ok {
 							existingIDs[account.ID] = true
 							memberships = append(memberships, model.GroupMembership{
@@ -546,7 +546,7 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 								GroupID:    group.ID,
 								UserID:     account.ID,
 								ExternalID: account.GetExternalID(),
-								NetID:      membership.NetID,
+								NetID:      account.GetNetID(),
 								Name:       account.GetFullName(),
 								Email:      account.Profile.Email,
 								Status:     membership.Status,
@@ -566,7 +566,7 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 									GroupID:    group.ID,
 									UserID:     account.ID,
 									ExternalID: account.GetExternalID(),
-									NetID:      membership.NetID,
+									NetID:      account.GetNetID(),
 									Name:       account.GetFullName(),
 									Email:      account.Profile.Email,
 									Status:     membership.Status,

@@ -221,7 +221,7 @@ type createGroupV3Request struct {
 	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
-	MembershipRefs           []model.MembershipRef          `json:"members,omitempty"`
+	MembershipStatuses       model.MembershipStatuses       `json:"members,omitempty"`
 } //@name createGroupRequest
 
 // CreateGroupV3 Creates a group
@@ -290,7 +290,7 @@ func (h *ApisHandler) CreateGroupV3(clientID string, current *model.User, w http
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
-	}, requestData.MembershipRefs)
+	}, requestData.MembershipStatuses)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)

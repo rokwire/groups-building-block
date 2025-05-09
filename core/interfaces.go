@@ -34,7 +34,7 @@ type Services interface {
 	IsGroupAdmin(clientID string, groupID string, userID string) (bool, error)
 
 	CreateGroup(clientID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError)
-	CreateGroupV3(clientID string, current *model.User, group *model.Group, membershipRefs []model.MembershipRef) (*string, *utils.GroupError)
+	CreateGroupV3(clientID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError)
 	UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError
 	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
@@ -144,8 +144,8 @@ func (s *servicesImpl) CreateGroup(clientID string, current *model.User, group *
 	return s.app.createGroup(clientID, current, group, membersConfig)
 }
 
-func (s *servicesImpl) CreateGroupV3(clientID string, current *model.User, group *model.Group, membersRefs []model.MembershipRef) (*string, *utils.GroupError) {
-	return s.app.createGroupV3(clientID, current, group, membersRefs)
+func (s *servicesImpl) CreateGroupV3(clientID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError) {
+	return s.app.createGroupV3(clientID, current, group, membershipStatuses)
 }
 
 func (s *servicesImpl) UpdateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {

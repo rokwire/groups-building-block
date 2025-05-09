@@ -499,7 +499,6 @@ func (sa *Adapter) CreateMemberships(context TransactionContext, clientID string
 					"$set": bson.M{
 						"date_updated": now,
 						"status":       memberships[index].Status,
-						"email":        memberships[index].Email,
 					},
 				},
 				Upsert: &upsert,
