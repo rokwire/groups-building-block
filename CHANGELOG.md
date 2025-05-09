@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Improve PUT group/{group-id}/members/multi-create [#562](https://github.com/rokwire/groups-building-block/issues/562)
 ### Added
 - Improve POST api/groups [#561](https://github.com/rokwire/groups-building-block/issues/561)
 
