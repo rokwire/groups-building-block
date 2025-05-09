@@ -5628,6 +5628,21 @@ const docTemplate = `{
                 }
             }
         },
+        "MembershipStatus": {
+            "type": "object",
+            "properties": {
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "NotificationsPreferences": {
             "type": "object",
             "properties": {
@@ -5788,7 +5803,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.MembershipRef"
+                        "$ref": "#/definitions/MembershipStatus"
                     }
                 },
                 "membership_questions": {
@@ -6211,41 +6226,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.MembershipRef": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "account_id": {
-                    "type": "string"
-                },
-                "net_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "admin",
-                        "member",
-                        "pending",
-                        "rejected"
-                    ]
-                }
-            }
-        },
-        "model.MembershipStatus": {
-            "type": "object",
-            "properties": {
-                "net_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "pending, member, admin, rejected",
-                    "type": "string"
-                }
-            }
-        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -6528,7 +6508,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.MembershipStatus"
+                        "$ref": "#/definitions/MembershipStatus"
                     }
                 }
             }

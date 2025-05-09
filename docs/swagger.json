@@ -5625,6 +5625,21 @@
                 }
             }
         },
+        "MembershipStatus": {
+            "type": "object",
+            "properties": {
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "NotificationsPreferences": {
             "type": "object",
             "properties": {
@@ -5785,7 +5800,7 @@
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.MembershipRef"
+                        "$ref": "#/definitions/MembershipStatus"
                     }
                 },
                 "membership_questions": {
@@ -6208,41 +6223,6 @@
                 }
             }
         },
-        "model.MembershipRef": {
-            "type": "object",
-            "required": [
-                "status"
-            ],
-            "properties": {
-                "account_id": {
-                    "type": "string"
-                },
-                "net_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string",
-                    "enum": [
-                        "admin",
-                        "member",
-                        "pending",
-                        "rejected"
-                    ]
-                }
-            }
-        },
-        "model.MembershipStatus": {
-            "type": "object",
-            "properties": {
-                "net_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "pending, member, admin, rejected",
-                    "type": "string"
-                }
-            }
-        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -6525,7 +6505,7 @@
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.MembershipStatus"
+                        "$ref": "#/definitions/MembershipStatus"
                     }
                 }
             }

@@ -457,6 +457,16 @@ definitions:
           type: string
         type: array
     type: object
+  MembershipStatus:
+    properties:
+      net_id:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
   NotificationsPreferences:
     properties:
       all_mute:
@@ -560,7 +570,7 @@ definitions:
         type: string
       members:
         items:
-          $ref: '#/definitions/model.MembershipRef'
+          $ref: '#/definitions/MembershipStatus'
         type: array
       membership_questions:
         items:
@@ -843,30 +853,6 @@ definitions:
     required:
     - status
     type: object
-  model.MembershipRef:
-    properties:
-      account_id:
-        type: string
-      net_id:
-        type: string
-      status:
-        enum:
-        - admin
-        - member
-        - pending
-        - rejected
-        type: string
-    required:
-    - status
-    type: object
-  model.MembershipStatus:
-    properties:
-      net_id:
-        type: string
-      status:
-        description: pending, member, admin, rejected
-        type: string
-    type: object
   model.Post:
     properties:
       body:
@@ -1056,7 +1042,7 @@ definitions:
     properties:
       members:
         items:
-          $ref: '#/definitions/model.MembershipStatus'
+          $ref: '#/definitions/MembershipStatus'
         type: array
     type: object
   rest.updateCalendarEventSingleGroupData:
