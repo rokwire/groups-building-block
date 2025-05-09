@@ -34,7 +34,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			return err
 		}
 
-		time.Now().Unix()
 		if times != nil && times.StartTime != nil {
 			config, err := app.storage.FindSyncConfig(context, clientID)
 			if err != nil {
