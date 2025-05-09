@@ -195,6 +195,124 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 	w.WriteHeader(http.StatusOK)
 }
 
+type createGroupV3Request struct {
+	Title                    string                         `json:"title" validate:"required"`
+	Description              *string                        `json:"description"`
+	Category                 string                         `json:"category"`
+	Tags                     []string                       `json:"tags"`
+	Privacy                  string                         `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool                           `json:"hidden_for_search"`
+	CreatorName              string                         `json:"creator_name"`
+	CreatorEmail             string                         `json:"creator_email"`
+	CreatorPhotoURL          string                         `json:"creator_photo_url"`
+	ImageURL                 *string                        `json:"image_url"`
+	WebURL                   *string                        `json:"web_url"`
+	MembershipQuestions      []string                       `json:"membership_questions"`
+	AuthmanEnabled           bool                           `json:"authman_enabled"`
+	AuthmanGroup             *string                        `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool                           `json:"only_admins_can_create_polls" `
+	CanJoinAutomatically     bool                           `json:"can_join_automatically"`
+	AttendanceGroup          bool                           `json:"attendance_group" `
+	ResearchOpen             bool                           `json:"research_open"`
+	ResearchGroup            bool                           `json:"research_group"`
+	ResearchConsentStatement string                         `json:"research_consent_statement"`
+	ResearchConsentDetails   string                         `json:"research_consent_details"`
+	ResearchDescription      string                         `json:"research_description"`
+	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
+	Settings                 *model.GroupSettings           `json:"settings"`
+	Attributes               map[string]interface{}         `json:"attributes"`
+	MembershipStatuses       model.MembershipStatuses       `json:"members,omitempty"`
+} //@name createGroupRequest
+
+// CreateGroupV3 Creates a group
+// @Description Creates a group. Title must be a unique. Category must be one of the categories list. Privacy can be public or private
+// @ID CreateGroupV3
+// @Tags Client
+// @Accept json
+// @Produce json
+// @Param APP header string true "APP"
+// @Param data body createGroupV3Request true "body data"
+// @Success 200 {object} createResponse
+// @Security AppUserAuth
+// @Router /api/v3/groups [post]
+func (h *ApisHandler) CreateGroupV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on marshal create a group - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	var requestData createGroupV3Request
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		log.Printf("Error on unmarshal the create group data - %s\n", err.Error())
+		http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	//validate
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		log.Printf("Error on validating create group data - %s\n", err.Error())
+		http.Error(w, utils.NewValidationError(err).JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	if requestData.ResearchGroup && !current.HasPermission("research_group_admin") {
+		log.Printf("'%s' is not allowed to create research group '%s'. Only user with research_group_admin permission can create research group", current.Email, requestData.Title)
+		http.Error(w, utils.NewForbiddenError().JSONErrorString(), http.StatusForbidden)
+		return
+	}
+
+	insertedID, groupErr := h.app.Services.CreateGroupV3(clientID, current, &model.Group{
+		Title:                    requestData.Title,
+		Description:              requestData.Description,
+		Category:                 requestData.Category,
+		Tags:                     requestData.Tags,
+		Privacy:                  requestData.Privacy,
+		HiddenForSearch:          requestData.Hidden,
+		ImageURL:                 requestData.ImageURL,
+		WebURL:                   requestData.WebURL,
+		MembershipQuestions:      requestData.MembershipQuestions,
+		AuthmanGroup:             requestData.AuthmanGroup,
+		AuthmanEnabled:           requestData.AuthmanEnabled,
+		OnlyAdminsCanCreatePolls: requestData.OnlyAdminsCanCreatePolls,
+		CanJoinAutomatically:     requestData.CanJoinAutomatically,
+		AttendanceGroup:          requestData.AttendanceGroup,
+		ResearchGroup:            requestData.ResearchGroup,
+		ResearchOpen:             requestData.ResearchOpen,
+		ResearchConsentStatement: requestData.ResearchConsentStatement,
+		ResearchConsentDetails:   requestData.ResearchConsentDetails,
+		ResearchDescription:      requestData.ResearchDescription,
+		ResearchProfile:          requestData.ResearchProfile,
+		Settings:                 requestData.Settings,
+		Attributes:               requestData.Attributes,
+	}, requestData.MembershipStatuses)
+	if groupErr != nil {
+		log.Println(groupErr.Error())
+		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
+		return
+	}
+
+	if insertedID != nil {
+		data, err = json.Marshal(createResponse{InsertedID: *insertedID})
+		if err != nil {
+			log.Println("Error on marshal create group response")
+			http.Error(w, utils.NewBadJSONError().JSONErrorString(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.WriteHeader(http.StatusOK)
+		w.Write(data)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
 type updateGroupRequest struct {
 	Title                      string                         `json:"title" validate:"required"`
 	Description                *string                        `json:"description"`

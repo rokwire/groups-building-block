@@ -34,7 +34,6 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			return err
 		}
 
-		time.Now().Unix()
 		if times != nil && times.StartTime != nil {
 			config, err := app.storage.FindSyncConfig(context, clientID)
 			if err != nil {
@@ -48,7 +47,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
 					log.Println("Another Authman sync process is running for clientID " + clientID)
-					return fmt.Errorf("another Authman sync process is running" + clientID)
+					return fmt.Errorf("another Authman sync process is running %s", clientID)
 				}
 				log.Printf("Authman sync past timeout threshold %d mins for client ID %s\n", timeout, clientID)
 			}

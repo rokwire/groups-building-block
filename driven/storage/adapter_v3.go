@@ -474,19 +474,40 @@ func (sa *Adapter) CreateMembership(clientID string, current *model.User, group 
 // CreateMemberships Created multiple members to a group
 func (sa *Adapter) CreateMemberships(context TransactionContext, clientID string, current *model.User, group *model.Group, memberships []model.GroupMembership) error {
 	now := time.Now()
+	upsert := true
 
-	var objects []interface{}
+	var objects []mongo.WriteModel
 	for index := range memberships {
-		memberships[index].ID = uuid.NewString()
-		memberships[index].ClientID = clientID
-		memberships[index].DateCreated = now
 		if memberships[index].UserID != "" && memberships[index].ExternalID != "" && memberships[index].Email != "" && memberships[index].Status != "" {
-			objects = append(objects, memberships[index])
+			objects = append(objects, &mongo.UpdateOneModel{
+				Filter: bson.M{
+					"group_id": group.ID,
+					"user_id":  memberships[index].UserID,
+				},
+				Update: bson.M{
+					"$setOnInsert": bson.M{
+						"_id":          uuid.NewString(),
+						"client_id":    clientID,
+						"group_id":     group.ID,
+						"user_id":      memberships[index].UserID,
+						"external_id":  memberships[index].ExternalID,
+						"net_id":       memberships[index].NetID,
+						"name":         memberships[index].Name,
+						"email":        memberships[index].Email,
+						"date_created": now,
+					},
+					"$set": bson.M{
+						"date_updated": now,
+						"status":       memberships[index].Status,
+					},
+				},
+				Upsert: &upsert,
+			})
 		}
 	}
 
 	if len(objects) > 0 {
-		_, err := sa.db.groupMemberships.InsertManyWithContext(context, objects, nil)
+		_, err := sa.db.groupMemberships.BulkWriteWithContext(context, objects, nil)
 		return err
 	}
 

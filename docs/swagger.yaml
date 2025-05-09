@@ -210,6 +210,11 @@ definitions:
     type: object
   GroupSettings:
     properties:
+      content_items:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
       member_info_preferences:
         $ref: '#/definitions/MemberInfoPreferences'
       post_preferences:
@@ -452,6 +457,16 @@ definitions:
           type: string
         type: array
     type: object
+  MembershipStatus:
+    properties:
+      net_id:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
   NotificationsPreferences:
     properties:
       all_mute:
@@ -554,7 +569,9 @@ definitions:
       image_url:
         type: string
       members:
-        $ref: '#/definitions/model.DefaultMembershipConfig'
+        items:
+          $ref: '#/definitions/MembershipStatus'
+        type: array
       membership_questions:
         items:
           type: string
@@ -712,17 +729,6 @@ definitions:
       web_url:
         type: string
     type: object
-  getPostsMigrationResponseData:
-    properties:
-      groups:
-        items:
-          $ref: '#/definitions/Group'
-        type: array
-      posts:
-        items:
-          $ref: '#/definitions/model.Post'
-        type: array
-    type: object
   getPutAdminGroupIDsForEventIDRequestAndResponse:
     properties:
       group_ids:
@@ -847,14 +853,6 @@ definitions:
     required:
     - status
     type: object
-  model.MembershipStatus:
-    properties:
-      net_id:
-        type: string
-      status:
-        description: pending, member, admin, rejected
-        type: string
-    type: object
   model.Post:
     properties:
       body:
@@ -944,11 +942,6 @@ definitions:
         items:
           $ref: '#/definitions/model.Post'
         type: array
-    type: object
-  postsMigrationFlagData:
-    properties:
-      migrated:
-        type: boolean
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -1049,7 +1042,7 @@ definitions:
     properties:
       members:
         items:
-          $ref: '#/definitions/model.MembershipStatus'
+          $ref: '#/definitions/MembershipStatus'
         type: array
     type: object
   rest.updateCalendarEventSingleGroupData:
@@ -2558,52 +2551,6 @@ paths:
                 $ref: '#/definitions/GetGroupsEvents'
               type: array
             type: array
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-  /api/bbs/posts-migration-data:
-    get:
-      description: Gets all groups and all posts without any restrictions
-      operationId: BBSGetPostsMigrationData
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/getPostsMigrationResponseData'
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-    put:
-      description: Sets a configuration flag that the posts migration process is successfull
-        and all related APIs to be redirected to Social BB
-      operationId: BBSPutPostsMigrationFlag
-      parameters:
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/postsMigrationFlagData'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/postsMigrationFlagData'
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-  /api/bbs/posts-migration-flag:
-    get:
-      description: Gets all groups and all posts without any restrictions
-      operationId: BBSGetPostsMigrationFlag
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/postsMigrationFlagData'
       security:
       - AppUserAuth: []
       tags:
@@ -4343,6 +4290,36 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client
+  /api/v3/groups:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group. Title must be a unique. Category must be one of
+        the categories list. Privacy can be public or private
+      operationId: CreateGroupV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
       tags:
       - Client
   /authman/synchronize:

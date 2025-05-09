@@ -267,6 +267,19 @@ type NotificationsPreferences struct {
 	PollsMuted          bool `json:"polls_mute" bson:"polls_mute"`
 } // @name NotificationsPreferences
 
+// MembershipStatus short membership status
+type MembershipStatus struct {
+	UserID string `json:"user_id" bson:"user_id"`
+	NetID  string `json:"net_id" bson:"net_id"`
+	Status string `json:"status" bson:"status"` //pending, member, admin, rejected
+} // @name MembershipStatus
+
+// IsValid Checks if the membership status is valid
+func (m *MembershipStatus) IsValid() bool {
+	return (m.Status == "rejected" || m.Status == "pending" || m.Status == "member" || m.Status == "admin") &&
+		(m.NetID != "" || m.UserID != "")
+}
+
 // MembershipStatuses list of membership statuses
 type MembershipStatuses []MembershipStatus
 
@@ -277,6 +290,19 @@ func (m MembershipStatuses) GetAllNetIDs() []string {
 	for _, status := range m {
 		if status.IsValid() && status.NetID != "" {
 			list = append(list, status.NetID)
+		}
+	}
+
+	return list
+}
+
+// GetAllUserIDs returns all core account ids
+func (m MembershipStatuses) GetAllUserIDs() []string {
+	var list []string
+
+	for _, status := range m {
+		if status.IsValid() && status.UserID != "" {
+			list = append(list, status.UserID)
 		}
 	}
 
@@ -295,17 +321,3 @@ func (m MembershipStatuses) GetAllNetIDStatusMapping() map[string]string {
 
 	return mapping
 }
-
-// MembershipStatus short membership status
-type MembershipStatus struct {
-	NetID  string `json:"net_id" bson:"net_id"`
-	Status string `json:"status" bson:"status"` //pending, member, admin, rejected
-}
-
-// IsValid Checks if the membership status is valid
-func (m *MembershipStatus) IsValid() bool {
-	return (m.Status == "rejected" || m.Status == "pending" || m.Status == "member" || m.Status == "admin") &&
-		(len(m.NetID) > 0)
-}
-
-// @name MembershipStatus
