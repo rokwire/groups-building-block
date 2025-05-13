@@ -1932,40 +1932,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/bbs/event/{event_id}/aggregated-users": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all related group users linked for the described event id",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSGetEventUsers",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Event ID",
-                        "name": "event_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/getEventUserIDsResponse"
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/api/bbs/groups": {
             "get": {
                 "security": [
@@ -1973,32 +1939,32 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Gets all related groups by groupIDs",
+                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
                 "tags": [
                     "BBS"
                 ],
-                "operationId": "GetGroupsbyGroupsIDs",
+                "operationId": "OnGroupUpdated",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "comma separated groupIDs query",
-                        "name": "group-ids",
-                        "in": "query",
+                        "description": "group id",
+                        "name": "group-id",
+                        "in": "path",
                         "required": true
+                    },
+                    {
+                        "description": "Event type. Supported values: event_update, poll_update, social_update",
+                        "name": "group-id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "type": "array",
-                                "items": {
-                                    "$ref": "#/definitions/Group"
-                                }
-                            }
-                        }
+                        "description": "OK"
                     }
                 }
             }
@@ -4885,6 +4851,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/groups/{group_id}/updated": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related group users linked for the described event id",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "BBSGetEventUsers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getEventUserIDsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/int/authman/synchronize": {
             "post": {
                 "security": [
@@ -5076,10 +5076,19 @@ const docTemplate = `{
                 "date_created": {
                     "type": "string"
                 },
+                "date_events_updated": {
+                    "type": "string"
+                },
                 "date_managed_membership_updated": {
                     "type": "string"
                 },
                 "date_membership_updated": {
+                    "type": "string"
+                },
+                "date_polls_updated": {
+                    "type": "string"
+                },
+                "date_posts_updated": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -5339,6 +5348,9 @@ const docTemplate = `{
                 "category": {
                     "description": "group category",
                     "type": "string"
+                },
+                "days_inactive": {
+                    "type": "integer"
                 },
                 "exclude_my_groups": {
                     "description": "Exclude My groups",
@@ -6354,6 +6366,22 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/model.Post"
                     }
+                }
+            }
+        },
+        "onGroupUpdatedRequestBody": {
+            "type": "object",
+            "required": [
+                "operation"
+            ],
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "enum": [
+                        "event_update",
+                        "poll_update",
+                        "social_update"
+                    ]
                 }
             }
         },
