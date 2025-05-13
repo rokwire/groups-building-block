@@ -1701,6 +1701,33 @@ func (sa *Adapter) UpdateDateNotifiedForPostIDs(context TransactionContext, ids 
 	return err
 }
 
+// OnUpdatedGroupExternalEntity updates the group with the date of the last update by the linked external BBs
+func (sa *Adapter) OnUpdatedGroupExternalEntity(context TransactionContext, groupID string, operation model.ExternalOperation) error {
+	innerUpdate := bson.D{}
+	now := time.Now()
+
+	switch operation {
+	case model.ExternalOperationEventUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_events_updated", Value: now})
+	case model.ExternalOperationPollUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_polls_updated", Value: now})
+	case model.ExternalOperationSocialUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_social_updated", Value: now})
+	}
+	innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: now})
+
+	// update the group
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: groupID},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: innerUpdate},
+	}
+
+	_, err := sa.db.groups.UpdateOneWithContext(context, filter, update, nil)
+	return err
+}
+
 // UpdateGroupStats set the updated date to the current date time (now)
 func (sa *Adapter) UpdateGroupStats(context TransactionContext, clientID string, id string, resetUpdateDate, resetMembershipUpdateDate, resetManagedMembershipUpdateDate, resetStats bool) error {
 

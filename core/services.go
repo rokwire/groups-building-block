@@ -733,3 +733,7 @@ func (app *Application) formatCoreAccountSearchParams(researchProfile map[string
 
 	return searchParams
 }
+
+func (app *Application) onUpdatedGroupExternalEntity(groupID string, operation model.ExternalOperation) error {
+	return app.storage.OnUpdatedGroupExternalEntity(nil, groupID, operation)
+}

@@ -5,12 +5,14 @@ import (
 	"errors"
 	"groups/core"
 	"groups/core/model"
+	"io"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/rokwire/logging-library-go/v2/logs"
 	"github.com/rokwire/logging-library-go/v2/logutils"
+	"gopkg.in/go-playground/validator.v9"
 )
 
 // BBSApisHandler handles the rest BBS APIs implementation
@@ -30,7 +32,7 @@ type getEventUserIDsResponse struct {
 // @Param event_id path string true "Event ID"
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
-// @Router /api/bbs/event/{event_id}/aggregated-users [get]
+// @Router /groups/{group_id}/updated [put]
 func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	eventID := params["event_id"]
@@ -162,4 +164,63 @@ func (h *BBSApisHandler) GetGroupsByGroupIDs(log *logs.Log, req *http.Request, u
 	}
 
 	return log.HTTPResponseSuccessJSON(data)
+}
+
+// onGroupUpdatedRequestBody response
+type onGroupUpdatedRequestBody struct {
+	Operation string `json:"operation" validate:"required,oneof=event_update poll_update social_update"`
+} // @name onGroupUpdatedRequestBody
+
+// OnGroupUpdated Recieves a callback notification from other BBS that group related resource has been updated
+// @Description Recieves a callback notification from other BBS that group related resource has been updated
+// @ID OnGroupUpdated
+// @Tags BBS
+// @Param group-id path string true "group id"
+// @Param group-id body onGroupUpdatedRequestBody true "Event type. Supported values: event_update, poll_update, social_update"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/bbs/groups [get]
+func (h *BBSApisHandler) OnGroupUpdated(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
+	groupID := params["group_id"]
+	if len(groupID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("missing group_id"), http.StatusBadRequest, false)
+	}
+
+	data, err := io.ReadAll(req.Body)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unable to read request body"), http.StatusBadRequest, false)
+	}
+
+	var requestData onGroupUpdatedRequestBody
+	err = json.Unmarshal(data, &requestData)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unable to unmarshal request body"), http.StatusBadRequest, false)
+	}
+
+	//validate
+	validate := validator.New()
+	err = validate.Struct(requestData)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unable to validate request body"), http.StatusBadRequest, false)
+	}
+
+	var operationType model.ExternalOperation
+	switch requestData.Operation {
+	case "event_update":
+		operationType = model.ExternalOperationEventUpdate
+	case "poll_update":
+		operationType = model.ExternalOperationPollUpdate
+	case "social_update":
+		operationType = model.ExternalOperationSocialUpdate
+	default:
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unsupported operation"), http.StatusBadRequest, false)
+	}
+
+	err = h.app.BBS.OnUpdatedGroupExternalEntity(groupID, operationType)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccess()
 }

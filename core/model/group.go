@@ -43,6 +43,9 @@ type Group struct {
 
 	DateCreated                  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                  *time.Time `json:"date_updated" bson:"date_updated"`
+	DatePostsUpdated             *time.Time `json:"date_posts_updated" bson:"date_posts_updated"`
+	DateEventsUpdated            *time.Time `json:"date_events_updated" bson:"date_events_updated"`
+	DatePollsUpdated             *time.Time `json:"date_polls_updated" bson:"date_polls_updated"`
 	DateMembershipUpdated        *time.Time `json:"date_membership_updated" bson:"date_membership_updated"`
 	DateManagedMembershipUpdated *time.Time `json:"date_managed_membership_updated" bson:"date_managed_membership_updated"`
 
