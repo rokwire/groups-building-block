@@ -351,6 +351,7 @@ func (app *Application) updateGroupDateUpdated(clientID string, groupID string) 
 }
 
 func (app *Application) deleteGroup(clientID string, current *model.User, id string, inactive bool) error {
+	inactive = true
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
 		group, err := app.storage.FindGroup(context, clientID, id, nil)
 		if err != nil {
@@ -358,13 +359,16 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 			return err
 		}
 
-		admins, err := app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
-			GroupIDs: []string{id},
-			Statuses: []string{"admin"},
-		})
-		if err != nil {
-			log.Printf("error finding group admins: %s", err)
-			return err
+		var admins model.MembershipCollection
+		if inactive {
+			admins, err = app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+				GroupIDs: []string{id},
+				Statuses: []string{"admin"},
+			})
+			if err != nil {
+				log.Printf("error finding group admins: %s", err)
+				return err
+			}
 		}
 
 		err = app.storage.DeleteGroup(nil, clientID, id)
@@ -372,13 +376,15 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 			return err
 		}
 
-		if len(admins.Items) > 0 {
-			app.notifications.SendNotification(
-				admins.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
-					return membership.IsAdmin(), true
-				}),
-				nil,
-				fmt.Sprintf("Your Group, \"%s\", has been removed due to inactivity.", group.Title), "", nil, current.AppID, current.OrgID, nil)
+		if inactive {
+			if len(admins.Items) > 0 {
+				app.notifications.SendNotification(
+					admins.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
+						return membership.IsAdmin(), false
+					}),
+					nil,
+					fmt.Sprintf("Your Group, \"%s\", has been removed due to inactivity.", group.Title), "", nil, current.AppID, current.OrgID, nil)
+			}
 		}
 
 		return nil
