@@ -1478,6 +1478,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
                         "name": "include_hidden",
                         "in": "query"
@@ -1554,6 +1560,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
                         "in": "query"
                     },
                     {

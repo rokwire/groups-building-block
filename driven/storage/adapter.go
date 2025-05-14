@@ -808,7 +808,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		})
 	}
 	if groupsFilter.DaysInactive != nil {
-		pastTime := time.Now().Add(-time.Duration(*groupsFilter.DaysInactive) * 24 * time.Hour)
+		pastTime := time.Now().Add(time.Duration(*groupsFilter.DaysInactive) * -24 * time.Hour)
 		filter = append(filter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
 	}
 

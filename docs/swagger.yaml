@@ -2144,6 +2144,10 @@ paths:
         in: query
         name: limit
         type: string
+      - description: Deprecated - Filter by number of days inactive
+        in: query
+        name: days_inactive
+        type: string
       - description: Deprecated - instead use request body filter! include_hidden
           - Includes hidden groups if a search by title is performed. Possible value
           is true. Default false.
@@ -2203,6 +2207,10 @@ paths:
           result
         in: query
         name: limit
+        type: string
+      - description: Deprecated - Filter by number of days inactive
+        in: query
+        name: days_inactive
         type: string
       - description: Deprecated - instead use request body filter! include_hidden
           - Includes hidden groups if a search by title is performed. Possible value
