@@ -32,6 +32,7 @@ type analyticsGetGroupsResponse struct {
 	ID              string           `json:"id"`
 	ClientID        string           `json:"client_id"`
 	Title           string           `json:"title"`
+	Description     string           `json:"description"`
 	Privacy         string           `json:"privacy"`
 	Category        string           `json:"category"`
 	HiddenForSearch bool             `json:"hidden_for_search"`
@@ -98,11 +99,16 @@ func (h *AnalyticsApisHandler) AnalyticsGetGroups(clientID string, w http.Respon
 			val := group.GetNewCategory()
 			category = *val
 		}
+		var description string
+		if group.Description != nil {
+			description = *group.Description
+		}
 		reponse[i] = analyticsGetGroupsResponse{
 			ID:              group.ID,
 			ClientID:        group.ClientID,
 			Title:           group.Title,
 			Privacy:         group.Privacy,
+			Description:     description,
 			Category:        category,
 			HiddenForSearch: group.HiddenForSearch,
 			AuthmanEnabled:  group.AuthmanEnabled,

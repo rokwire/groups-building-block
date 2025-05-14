@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 
 ### Added
+- Add a description field to the /gr/api/analytics/groups analytics API [#567](https://github.com/rokwire/groups-building-block/issues/567)
 - Inactive Groups [#552](https://github.com/rokwire/groups-building-block/issues/552)
 
 ## [1.63.0] - 2025-05-09
