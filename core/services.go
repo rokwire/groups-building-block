@@ -351,7 +351,6 @@ func (app *Application) updateGroupDateUpdated(clientID string, groupID string) 
 }
 
 func (app *Application) deleteGroup(clientID string, current *model.User, id string, inactive bool) error {
-	inactive = true
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
 		group, err := app.storage.FindGroup(context, clientID, id, nil)
 		if err != nil {
