@@ -122,6 +122,7 @@ type Services interface {
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
 	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
+	DeleteGroup(clientID string, current *model.User, id string, inactive bool) error
 	AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error
 }
 

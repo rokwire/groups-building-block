@@ -30,6 +30,10 @@ func (s *administrationImpl) GetGroups(clientID string, current *model.User, fil
 	return s.app.getGroups(clientID, current, filter, skipMembershipCheck)
 }
 
+func (s *administrationImpl) DeleteGroup(clientID string, current *model.User, id string, inactive bool) error {
+	return s.app.deleteGroup(clientID, current, id, inactive)
+}
+
 func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
 	return s.app.adminDeleteMembershipsByID(clientID, current, groupID, accountIDs)
 }

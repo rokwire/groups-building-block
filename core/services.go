@@ -15,6 +15,7 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"groups/driven/rewards"
 	"groups/driven/storage"
@@ -349,11 +350,44 @@ func (app *Application) updateGroupDateUpdated(clientID string, groupID string) 
 	return nil
 }
 
-func (app *Application) deleteGroup(clientID string, current *model.User, id string) error {
-	err := app.storage.DeleteGroup(nil, clientID, id)
+func (app *Application) deleteGroup(clientID string, current *model.User, id string, inactive bool) error {
+	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
+		group, err := app.storage.FindGroup(context, clientID, id, nil)
+		if err != nil {
+			log.Printf("error finding group: %s", err)
+			return err
+		}
+
+		admins, err := app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+			GroupIDs: []string{id},
+			Statuses: []string{"admin"},
+		})
+		if err != nil {
+			log.Printf("error finding group admins: %s", err)
+			return err
+		}
+
+		err = app.storage.DeleteGroup(nil, clientID, id)
+		if err != nil {
+			return err
+		}
+
+		if len(admins.Items) > 0 {
+			app.notifications.SendNotification(
+				admins.GetMembersAsRecipients(func(membership model.GroupMembership) (bool, bool) {
+					return membership.IsAdmin(), true
+				}),
+				nil,
+				fmt.Sprintf("Your Group, \"%s\", has been removed due to inactivity.", group.Title), "", nil, current.AppID, current.OrgID, nil)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return err
+		log.Printf("error deleting group: %s", err)
+		return errors.New("error deleting group: " + err.Error())
 	}
+
 	return nil
 }
 

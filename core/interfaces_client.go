@@ -58,7 +58,7 @@ func (s *servicesImpl) UpdateGroupDateUpdated(clientID string, groupID string) e
 }
 
 func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id string) error {
-	return s.app.deleteGroup(clientID, current, id)
+	return s.app.deleteGroup(clientID, current, id, false)
 }
 
 func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
