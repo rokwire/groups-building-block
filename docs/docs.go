@@ -6448,6 +6448,9 @@ const docTemplate = `{
                 "date_updated": {
                     "type": "string"
                 },
+                "description": {
+                    "type": "string"
+                },
                 "hidden_for_search": {
                     "type": "boolean"
                 },
