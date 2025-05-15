@@ -807,6 +807,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 			{Key: "title", Value: 1},
 		})
 	}
+	if groupsFilter.DaysInactive != nil {
+		pastTime := time.Now().Add(time.Duration(*groupsFilter.DaysInactive) * -24 * time.Hour)
+		filter = append(filter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
+	}
+
 	if groupsFilter.Limit != nil {
 		findOptions.SetLimit(*groupsFilter.Limit)
 	}
@@ -1698,6 +1703,33 @@ func (sa *Adapter) UpdateDateNotifiedForPostIDs(context TransactionContext, ids 
 		bson.D{{Key: "$set", Value: bson.D{{Key: "date_notified", Value: dateNotified}}}},
 		nil)
 
+	return err
+}
+
+// OnUpdatedGroupExternalEntity updates the group with the date of the last update by the linked external BBs
+func (sa *Adapter) OnUpdatedGroupExternalEntity(context TransactionContext, groupID string, operation model.ExternalOperation) error {
+	innerUpdate := bson.D{}
+	now := time.Now()
+
+	switch operation {
+	case model.ExternalOperationEventUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_events_updated", Value: now})
+	case model.ExternalOperationPollUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_polls_updated", Value: now})
+	case model.ExternalOperationSocialUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_social_updated", Value: now})
+	}
+	innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: now})
+
+	// update the group
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: groupID},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: innerUpdate},
+	}
+
+	_, err := sa.db.groups.UpdateOneWithContext(context, filter, update, nil)
 	return err
 }
 

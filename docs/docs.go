@@ -1478,6 +1478,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
                         "name": "include_hidden",
                         "in": "query"
@@ -1554,6 +1560,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
                         "in": "query"
                     },
                     {
@@ -2035,6 +2047,43 @@ const docTemplate = `{
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/bbs/groups/{group_id}/date-updated": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "OnGroupDateUpdated",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Event type. Supported values: event_update, poll_update, social_update",
+                        "name": "group-id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -5076,10 +5125,19 @@ const docTemplate = `{
                 "date_created": {
                     "type": "string"
                 },
+                "date_events_updated": {
+                    "type": "string"
+                },
                 "date_managed_membership_updated": {
                     "type": "string"
                 },
                 "date_membership_updated": {
+                    "type": "string"
+                },
+                "date_polls_updated": {
+                    "type": "string"
+                },
+                "date_posts_updated": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -5339,6 +5397,9 @@ const docTemplate = `{
                 "category": {
                     "description": "group category",
                     "type": "string"
+                },
+                "days_inactive": {
+                    "type": "integer"
                 },
                 "exclude_my_groups": {
                     "description": "Exclude My groups",
@@ -6357,6 +6418,22 @@ const docTemplate = `{
                 }
             }
         },
+        "onGroupUpdatedRequestBody": {
+            "type": "object",
+            "required": [
+                "operation"
+            ],
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "enum": [
+                        "event_update",
+                        "poll_update",
+                        "social_update"
+                    ]
+                }
+            }
+        },
         "reportAbuseGroupPostRequestBody": {
             "type": "object",
             "properties": {
@@ -6418,6 +6495,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "date_updated": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "hidden_for_search": {

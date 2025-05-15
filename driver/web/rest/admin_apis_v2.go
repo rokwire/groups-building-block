@@ -37,6 +37,7 @@ import (
 // @Param privacy query string false "Deprecated - instead use request body filter! privacy - filter by privacy"
 // @Param offset query string false "Deprecated - instead use request body filter! offset - skip number of records"
 // @Param limit query string false "Deprecated - instead use request body filter! limit - limit the result"
+// @Param days_inactive query string false "Deprecated - Filter by number of days inactive"
 // @Param include_hidden query string false "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false."
 // @Param data body model.GroupsFilter true "body data"
 // @Success 200 {array} model.Group
@@ -87,6 +88,14 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		if strings.ToLower(hiddens[0]) == "true" {
 			val := true
 			groupsFilter.IncludeHidden = &val
+		}
+	}
+
+	inactive, ok := r.URL.Query()["days_inactive"]
+	if ok && len(inactive[0]) > 0 {
+		val, err := strconv.ParseInt(inactive[0], 0, 64)
+		if err == nil {
+			groupsFilter.DaysInactive = &val
 		}
 	}
 

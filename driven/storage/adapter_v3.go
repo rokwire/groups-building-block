@@ -135,6 +135,12 @@ func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, fil
 			{Key: "title", Value: 1},
 		})
 	}
+
+	if filter.DaysInactive != nil {
+		pastTime := time.Now().Add(-time.Duration(*filter.DaysInactive) * 24 * time.Hour)
+		groupFilter = append(groupFilter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
+	}
+
 	if filter.Limit != nil {
 		findOptions.SetLimit(*filter.Limit)
 	}

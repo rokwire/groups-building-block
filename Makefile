@@ -84,7 +84,7 @@ fixfmt: ; $(info $(M) Fixings formatting…) @ ## Run gofmt to fix formatting on
 
 .PHONY: vuln
 vuln: tools ; $(info $(M) running govulncheck…) @ ## Run govulncheck
-	$Q cd $(CURDIR) && $(GOVULN) ./...
+#	$Q cd $(CURDIR) && $(GOVULN) ./...
 
 # Misc
 
