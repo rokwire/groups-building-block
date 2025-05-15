@@ -2514,6 +2514,30 @@ paths:
       - AppUserAuth: []
       tags:
       - BBS
+  /api/bbs/groups/{group_id}/date-updated:
+    put:
+      description: Recieves a callback notification from other BBS that group related
+        resource has been updated
+      operationId: OnGroupDateUpdated
+      parameters:
+      - description: group id
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: 'Event type. Supported values: event_update, poll_update, social_update'
+        in: body
+        name: group-id
+        required: true
+        schema:
+          $ref: '#/definitions/onGroupUpdatedRequestBody'
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
   /api/bbs/groups/{group_id}/group-memberships:
     get:
       description: Gets all related group memberships status and group title using
@@ -2534,30 +2558,6 @@ paths:
                 type: string
               type: array
             type: array
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-  /api/bbs/groups/{group_id}/updated:
-    put:
-      description: Recieves a callback notification from other BBS that group related
-        resource has been updated
-      operationId: OnGroupUpdated
-      parameters:
-      - description: group id
-        in: path
-        name: group-id
-        required: true
-        type: string
-      - description: 'Event type. Supported values: event_update, poll_update, social_update'
-        in: body
-        name: group-id
-        required: true
-        schema:
-          $ref: '#/definitions/onGroupUpdatedRequestBody'
-      responses:
-        "200":
-          description: OK
       security:
       - AppUserAuth: []
       tags:

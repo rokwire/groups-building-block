@@ -2051,6 +2051,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups/{group_id}/date-updated": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "OnGroupDateUpdated",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Event type. Supported values: event_update, poll_update, social_update",
+                        "name": "group-id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/bbs/groups/{group_id}/group-memberships": {
             "get": {
                 "security": [
@@ -2084,43 +2121,6 @@ const docTemplate = `{
                                 }
                             }
                         }
-                    }
-                }
-            }
-        },
-        "/api/bbs/groups/{group_id}/updated": {
-            "put": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "OnGroupUpdated",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "group id",
-                        "name": "group-id",
-                        "in": "path",
-                        "required": true
-                    },
-                    {
-                        "description": "Event type. Supported values: event_update, poll_update, social_update",
-                        "name": "group-id",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK"
                     }
                 }
             }

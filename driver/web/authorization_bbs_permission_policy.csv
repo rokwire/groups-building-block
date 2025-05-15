@@ -6,4 +6,4 @@ p, get_user_membership, /gr/api/bbs/groups/*/group-memberships, (GET), Gets all 
 p, get_groups_events, /gr/api/bbs/groups/events*, (GET), Gets all related eventID and groupID using eventIDs
 p, posts_migration, /gr/api/bbs/posts-migration-data, (GET), Gets posts migration data
 p, posts_migration, /gr/api/bbs/posts-migration-flag, (GET)|(PUT), Gets and uptadts posts migration data
-p, group_resource_update, /gr/api/bbs/groups/*/updated,  (PUT), Updates the group updated mofdified date
+p, group_resource_update, /gr/api/bbs/groups/*/date-updated,  (PUT), Updates the group updated mofdified date

@@ -171,16 +171,16 @@ type onGroupUpdatedRequestBody struct {
 	Operation string `json:"operation" validate:"required,oneof=event_update poll_update social_update"`
 } // @name onGroupUpdatedRequestBody
 
-// OnGroupUpdated Recieves a callback notification from other BBS that group related resource has been updated
+// OnGroupDateUpdated Recieves a callback notification from other BBS that group related resource has been updated
 // @Description Recieves a callback notification from other BBS that group related resource has been updated
-// @ID OnGroupUpdated
+// @ID OnGroupDateUpdated
 // @Tags BBS
 // @Param group-id path string true "group id"
 // @Param group-id body onGroupUpdatedRequestBody true "Event type. Supported values: event_update, poll_update, social_update"
 // @Success 200
 // @Security AppUserAuth
-// @Router /api/bbs/groups/{group_id}/updated [put]
-func (h *BBSApisHandler) OnGroupUpdated(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+// @Router /api/bbs/groups/{group_id}/date-updated [put]
+func (h *BBSApisHandler) OnGroupDateUpdated(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	groupID := params["group_id"]
 	if len(groupID) <= 0 {
