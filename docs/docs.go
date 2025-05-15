@@ -1944,6 +1944,40 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/event/{event_id}/aggregated-users": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets all related group users linked for the described event id",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "BBSGetEventUsers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event ID",
+                        "name": "event_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/getEventUserIDsResponse"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/bbs/groups": {
             "get": {
                 "security": [
@@ -1951,32 +1985,32 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
+                "description": "Gets all related groups by groupIDs",
                 "tags": [
                     "BBS"
                 ],
-                "operationId": "OnGroupUpdated",
+                "operationId": "GetGroupsbyGroupsIDs",
                 "parameters": [
                     {
                         "type": "string",
-                        "description": "group id",
-                        "name": "group-id",
-                        "in": "path",
+                        "description": "comma separated groupIDs query",
+                        "name": "group-ids",
+                        "in": "query",
                         "required": true
-                    },
-                    {
-                        "description": "Event type. Supported values: event_update, poll_update, social_update",
-                        "name": "group-id",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
-                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK"
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/definitions/Group"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -2050,6 +2084,43 @@ const docTemplate = `{
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/api/bbs/groups/{group_id}/updated": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "OnGroupUpdated",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Event type. Supported values: event_update, poll_update, social_update",
+                        "name": "group-id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
                     }
                 }
             }
@@ -4859,40 +4930,6 @@ const docTemplate = `{
                 "responses": {
                     "200": {
                         "description": "OK"
-                    }
-                }
-            }
-        },
-        "/groups/{group_id}/updated": {
-            "put": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all related group users linked for the described event id",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSGetEventUsers",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Event ID",
-                        "name": "event_id",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/getEventUserIDsResponse"
-                            }
-                        }
                     }
                 }
             }

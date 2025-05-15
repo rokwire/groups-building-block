@@ -2470,26 +2470,46 @@ paths:
       - IntAPIKeyAuth: []
       tags:
       - Analytics
-  /api/bbs/groups:
+  /api/bbs/event/{event_id}/aggregated-users:
     get:
-      description: Recieves a callback notification from other BBS that group related
-        resource has been updated
-      operationId: OnGroupUpdated
+      description: Gets all related group users linked for the described event id
+      operationId: BBSGetEventUsers
       parameters:
-      - description: group id
+      - description: Event ID
         in: path
-        name: group-id
+        name: event_id
         required: true
         type: string
-      - description: 'Event type. Supported values: event_update, poll_update, social_update'
-        in: body
-        name: group-id
-        required: true
-        schema:
-          $ref: '#/definitions/onGroupUpdatedRequestBody'
       responses:
         "200":
           description: OK
+          schema:
+            items:
+              $ref: '#/definitions/getEventUserIDsResponse'
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/groups:
+    get:
+      description: Gets all related groups by groupIDs
+      operationId: GetGroupsbyGroupsIDs
+      parameters:
+      - description: comma separated groupIDs query
+        in: query
+        name: group-ids
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              items:
+                $ref: '#/definitions/Group'
+              type: array
+            type: array
       security:
       - AppUserAuth: []
       tags:
@@ -2514,6 +2534,30 @@ paths:
                 type: string
               type: array
             type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/groups/{group_id}/updated:
+    put:
+      description: Recieves a callback notification from other BBS that group related
+        resource has been updated
+      operationId: OnGroupUpdated
+      parameters:
+      - description: group id
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: 'Event type. Supported values: event_update, poll_update, social_update'
+        in: body
+        name: group-id
+        required: true
+        schema:
+          $ref: '#/definitions/onGroupUpdatedRequestBody'
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -4376,27 +4420,6 @@ paths:
       - AppUserAuth: []
       tags:
       - Admin
-  /groups/{group_id}/updated:
-    put:
-      description: Gets all related group users linked for the described event id
-      operationId: BBSGetEventUsers
-      parameters:
-      - description: Event ID
-        in: path
-        name: event_id
-        required: true
-        type: string
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/getEventUserIDsResponse'
-            type: array
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
   /int/authman/synchronize:
     post:
       consumes:

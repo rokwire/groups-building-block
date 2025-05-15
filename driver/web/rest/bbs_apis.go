@@ -32,7 +32,7 @@ type getEventUserIDsResponse struct {
 // @Param event_id path string true "Event ID"
 // @Success 200 {array} getEventUserIDsResponse
 // @Security AppUserAuth
-// @Router /groups/{group_id}/updated [put]
+// @Router /api/bbs/event/{event_id}/aggregated-users [get]
 func (h *BBSApisHandler) GetEventUserIDs(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	eventID := params["event_id"]
@@ -179,7 +179,7 @@ type onGroupUpdatedRequestBody struct {
 // @Param group-id body onGroupUpdatedRequestBody true "Event type. Supported values: event_update, poll_update, social_update"
 // @Success 200
 // @Security AppUserAuth
-// @Router /api/bbs/groups [get]
+// @Router /api/bbs/groups/{group_id}/updated [put]
 func (h *BBSApisHandler) OnGroupUpdated(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
 	groupID := params["group_id"]
@@ -214,7 +214,7 @@ func (h *BBSApisHandler) OnGroupUpdated(log *logs.Log, req *http.Request, user *
 	case "social_update":
 		operationType = model.ExternalOperationSocialUpdate
 	default:
-		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unsupported operation"), http.StatusBadRequest, false)
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unsupported operation. Expected: operation one of: event_update, poll_update, social_update"), http.StatusBadRequest, false)
 	}
 
 	err = h.app.BBS.OnUpdatedGroupExternalEntity(groupID, operationType)
