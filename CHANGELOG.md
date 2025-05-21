@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.64.1] - 2025-05-21
 ### Fixed
 - Rename param name to post_update in UpdateGroupDateUpdated api [#569](https://github.com/rokwire/groups-building-block/issues/569)
 
