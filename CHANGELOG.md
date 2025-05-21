@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Fix documentation issue [#572](https://github.com/rokwire/groups-building-block/issues/572)
+
+
 ## [1.64.2] - 2025-05-21
 ### Fixed
 - Additional fix on validation [#569](https://github.com/rokwire/groups-building-block/issues/569)

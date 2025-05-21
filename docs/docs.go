@@ -2072,7 +2072,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Event type. Supported values: event_update, poll_update, social_update",
+                        "description": "Event type. Supported values: event_update, poll_update, post_update",
                         "name": "group-id",
                         "in": "body",
                         "required": true,
@@ -6429,7 +6429,7 @@ const docTemplate = `{
                     "enum": [
                         "event_update",
                         "poll_update",
-                        "social_update"
+                        "post_update"
                     ]
                 }
             }
