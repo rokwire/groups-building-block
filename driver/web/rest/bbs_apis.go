@@ -168,7 +168,7 @@ func (h *BBSApisHandler) GetGroupsByGroupIDs(log *logs.Log, req *http.Request, u
 
 // onGroupUpdatedRequestBody response
 type onGroupUpdatedRequestBody struct {
-	Operation string `json:"operation" validate:"required,oneof=event_update poll_update social_update"`
+	Operation string `json:"operation" validate:"required,oneof=event_update poll_update post_update"`
 } // @name onGroupUpdatedRequestBody
 
 // OnGroupDateUpdated Recieves a callback notification from other BBS that group related resource has been updated
