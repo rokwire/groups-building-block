@@ -1716,8 +1716,8 @@ func (sa *Adapter) OnUpdatedGroupExternalEntity(context TransactionContext, grou
 		innerUpdate = append(innerUpdate, primitive.E{Key: "date_events_updated", Value: now})
 	case model.ExternalOperationPollUpdate:
 		innerUpdate = append(innerUpdate, primitive.E{Key: "date_polls_updated", Value: now})
-	case model.ExternalOperationSocialUpdate:
-		innerUpdate = append(innerUpdate, primitive.E{Key: "date_social_updated", Value: now})
+	case model.ExternalOperationPostUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_posts_updated", Value: now})
 	}
 	innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: now})
 

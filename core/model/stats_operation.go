@@ -21,8 +21,8 @@ const (
 	// ExternalOperationEventUpdate constant
 	ExternalOperationEventUpdate ExternalOperation = "event_update"
 
-	// ExternalOperationSocialUpdate constant
-	ExternalOperationSocialUpdate ExternalOperation = "social_update"
+	// ExternalOperationPostUpdate constant
+	ExternalOperationPostUpdate ExternalOperation = "post_update"
 
 	// ExternalOperationPollUpdate constant
 	ExternalOperationPollUpdate ExternalOperation = "poll_update"

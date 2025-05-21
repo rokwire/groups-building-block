@@ -211,10 +211,10 @@ func (h *BBSApisHandler) OnGroupDateUpdated(log *logs.Log, req *http.Request, us
 		operationType = model.ExternalOperationEventUpdate
 	case "poll_update":
 		operationType = model.ExternalOperationPollUpdate
-	case "social_update":
-		operationType = model.ExternalOperationSocialUpdate
+	case "post_update":
+		operationType = model.ExternalOperationPostUpdate
 	default:
-		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unsupported operation. Expected: operation one of: event_update, poll_update, social_update"), http.StatusBadRequest, false)
+		return log.HTTPResponseErrorAction(logutils.ActionUpdate, logutils.TypePathParam, nil, errors.New("unsupported operation. Expected: operation one of: event_update, poll_update, post_update"), http.StatusBadRequest, false)
 	}
 
 	err = h.app.BBS.OnUpdatedGroupExternalEntity(groupID, operationType)
