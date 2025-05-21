@@ -957,7 +957,7 @@ definitions:
         enum:
         - event_update
         - poll_update
-        - social_update
+        - post_update
         type: string
     required:
     - operation
@@ -2525,7 +2525,7 @@ paths:
         name: group-id
         required: true
         type: string
-      - description: 'Event type. Supported values: event_update, poll_update, social_update'
+      - description: 'Event type. Supported values: event_update, poll_update, post_update'
         in: body
         name: group-id
         required: true

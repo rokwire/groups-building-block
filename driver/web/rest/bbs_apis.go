@@ -176,7 +176,7 @@ type onGroupUpdatedRequestBody struct {
 // @ID OnGroupDateUpdated
 // @Tags BBS
 // @Param group-id path string true "group id"
-// @Param group-id body onGroupUpdatedRequestBody true "Event type. Supported values: event_update, poll_update, social_update"
+// @Param group-id body onGroupUpdatedRequestBody true "Event type. Supported values: event_update, poll_update, post_update"
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/bbs/groups/{group_id}/date-updated [put]
