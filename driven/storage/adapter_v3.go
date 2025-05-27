@@ -286,7 +286,7 @@ func (sa *Adapter) CreatePendingMembership(clientID string, user *model.User, gr
 			case "pending":
 				return errors.New("the user is pending for the group")
 			case "rejected":
-				return errors.New("the user is rejected for the group")
+				return errors.New("the user is denied for the group")
 			default:
 				return errors.New("error creating a pending user")
 			}

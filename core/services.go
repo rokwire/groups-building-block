@@ -493,7 +493,7 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 				},
 				&topic,
 				fmt.Sprintf("%s - %s", groupStr, group.Title),
-				fmt.Sprintf("Your membership in '%s' %s has been rejected with a reason: %s", group.Title, strings.ToLower(groupStr), rejectReason),
+				fmt.Sprintf("Your membership in '%s' %s has been denied with a reason: %s", group.Title, strings.ToLower(groupStr), rejectReason),
 				map[string]string{
 					"type":        "group",
 					"operation":   "membership_reject",
