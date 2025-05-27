@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.64.3] - 2025-05-27
 ### Fixed
 - Group Membership - Rejected vs Denied and display discrepancy [#574](https://github.com/rokwire/groups-building-block/issues/574)
 - Fix documentation issue [#572](https://github.com/rokwire/groups-building-block/issues/572)
