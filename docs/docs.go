@@ -5390,6 +5390,9 @@ const docTemplate = `{
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attributes": {
                     "type": "object",
                     "additionalProperties": true

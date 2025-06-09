@@ -257,6 +257,8 @@ definitions:
     type: object
   GroupsFilter:
     properties:
+      administrative:
+        type: boolean
       attributes:
         additionalProperties: true
         type: object
