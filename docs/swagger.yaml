@@ -553,6 +553,8 @@ definitions:
     type: object
   createGroupRequest:
     properties:
+      administrative:
+        type: boolean
       attendance_group:
         type: boolean
       attributes:

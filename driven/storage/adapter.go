@@ -330,6 +330,11 @@ func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, curr
 			group.Attributes = map[string]interface{}{}
 		}
 
+		if group.Administrative == nil {
+			falseValue := false
+			group.Administrative = &falseValue
+		}
+
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
