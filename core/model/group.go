@@ -63,8 +63,9 @@ type Group struct {
 	ResearchDescription      string                         `json:"research_description" bson:"research_description"`
 	ResearchProfile          map[string]map[string][]string `json:"research_profile" bson:"research_profile"`
 
-	SyncStartTime *time.Time `json:"sync_start_time" bson:"sync_start_time"`
-	SyncEndTime   *time.Time `json:"sync_end_time" bson:"sync_end_time"`
+	SyncStartTime  *time.Time `json:"sync_start_time" bson:"sync_start_time"`
+	SyncEndTime    *time.Time `json:"sync_end_time" bson:"sync_end_time"`
+	Administrative *bool      `json:"administrative"`
 } // @name Group
 
 // GetGroupMembershipsResponse response

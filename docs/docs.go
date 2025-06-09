@@ -5088,6 +5088,9 @@ const docTemplate = `{
         "Group": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },
