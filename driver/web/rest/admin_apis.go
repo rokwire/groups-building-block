@@ -334,6 +334,7 @@ type adminCreateGroupRequest struct {
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
 	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
+	Administrative           *bool                          `json:"administrative"`
 } //@name adminCreateGroupRequest
 
 // CreateGroup creates a group
@@ -402,6 +403,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
+		Administrative:           requestData.Administrative,
 	}
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, groupData, requestData.MembersConfig)

@@ -5085,6 +5085,9 @@
         "Group": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },
@@ -5384,6 +5387,9 @@
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attributes": {
                     "type": "object",
                     "additionalProperties": true
@@ -5821,6 +5827,9 @@
                 "title"
             ],
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },

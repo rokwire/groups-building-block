@@ -5088,6 +5088,9 @@ const docTemplate = `{
         "Group": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },
@@ -5387,6 +5390,9 @@ const docTemplate = `{
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attributes": {
                     "type": "object",
                     "additionalProperties": true
@@ -5824,6 +5830,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },

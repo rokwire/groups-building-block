@@ -37,6 +37,7 @@ type GroupsFilter struct {
 	Offset           *int64                         `json:"offset"` // result offset
 	Limit            *int64                         `json:"limit"`  // result limit
 	DaysInactive     *int64                         `json:"days_inactive"`
+	Administrative   *bool                          `json:"administrative"`
 } // @name GroupsFilter
 
 // PostsFilter Wraps all possible filters for getting group post call

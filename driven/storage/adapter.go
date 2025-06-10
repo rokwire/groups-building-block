@@ -330,6 +330,11 @@ func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, curr
 			group.Attributes = map[string]interface{}{}
 		}
 
+		if group.Administrative == nil {
+			falseValue := false
+			group.Administrative = &falseValue
+		}
+
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
@@ -749,6 +754,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	if groupsFilter.Privacy != nil {
 		filter = append(filter, primitive.E{Key: "privacy", Value: groupsFilter.Privacy})
 	}
+
+	if groupsFilter.Administrative != nil {
+		filter = append(filter, primitive.E{Key: "administrative", Value: groupsFilter.Administrative})
+	}
+
 	if groupsFilter.ResearchOpen != nil {
 		if *groupsFilter.ResearchOpen {
 			filter = append(filter, primitive.E{Key: "research_open", Value: true})
@@ -909,6 +919,10 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	if groupsFilter.Privacy != nil {
 		mongoFilter["privacy"] = groupsFilter.Privacy
 	}
+	if groupsFilter.Administrative != nil {
+		mongoFilter["administrative"] = *groupsFilter.Administrative
+	}
+
 	if groupsFilter.ResearchOpen != nil {
 		if *groupsFilter.ResearchOpen {
 			mongoFilter["research_open"] = true
