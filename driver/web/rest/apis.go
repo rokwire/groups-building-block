@@ -95,7 +95,6 @@ type createGroupRequest struct {
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
 	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
-	Administrative           *bool                          `json:"administrative"`
 } //@name createGroupRequest
 
 type userGroupShortDetail struct {
@@ -173,7 +172,6 @@ func (h *ApisHandler) CreateGroup(clientID string, current *model.User, w http.R
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
-		Administrative:           requestData.Administrative,
 	}, requestData.MembersConfig)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
