@@ -1478,6 +1478,12 @@ const docTemplate = `{
                     },
                     {
                         "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
                         "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
                         "name": "include_hidden",
                         "in": "query"
@@ -1554,6 +1560,12 @@ const docTemplate = `{
                         "type": "string",
                         "description": "Deprecated - instead use request body filter! limit - limit the result",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
                         "in": "query"
                     },
                     {
@@ -2039,6 +2051,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/bbs/groups/{group_id}/date-updated": {
+            "put": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Recieves a callback notification from other BBS that group related resource has been updated",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "OnGroupDateUpdated",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "group id",
+                        "name": "group-id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Event type. Supported values: event_update, poll_update, post_update",
+                        "name": "group-id",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/onGroupUpdatedRequestBody"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/bbs/groups/{group_id}/group-memberships": {
             "get": {
                 "security": [
@@ -2108,81 +2157,6 @@ const docTemplate = `{
                                     "$ref": "#/definitions/GetGroupMembershipsResponse"
                                 }
                             }
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bbs/posts-migration-data": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all groups and all posts without any restrictions",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSGetPostsMigrationData",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/getPostsMigrationResponseData"
-                        }
-                    }
-                }
-            },
-            "put": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Sets a configuration flag that the posts migration process is successfull and all related APIs to be redirected to Social BB",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSPutPostsMigrationFlag",
-                "parameters": [
-                    {
-                        "description": "body data",
-                        "name": "data",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/postsMigrationFlagData"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/postsMigrationFlagData"
-                        }
-                    }
-                }
-            }
-        },
-        "/api/bbs/posts-migration-flag": {
-            "get": {
-                "security": [
-                    {
-                        "AppUserAuth": []
-                    }
-                ],
-                "description": "Gets all groups and all posts without any restrictions",
-                "tags": [
-                    "BBS"
-                ],
-                "operationId": "BBSGetPostsMigrationFlag",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/postsMigrationFlagData"
                         }
                     }
                 }
@@ -4842,6 +4816,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v3/groups": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Creates a group. Title must be a unique. Category must be one of the categories list. Privacy can be public or private",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "CreateGroupV3",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/createGroupRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/createResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/authman/synchronize": {
             "post": {
                 "security": [
@@ -5068,6 +5088,9 @@ const docTemplate = `{
         "Group": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },
@@ -5105,10 +5128,19 @@ const docTemplate = `{
                 "date_created": {
                     "type": "string"
                 },
+                "date_events_updated": {
+                    "type": "string"
+                },
                 "date_managed_membership_updated": {
                     "type": "string"
                 },
                 "date_membership_updated": {
+                    "type": "string"
+                },
+                "date_polls_updated": {
+                    "type": "string"
+                },
+                "date_posts_updated": {
                     "type": "string"
                 },
                 "date_updated": {
@@ -5299,6 +5331,13 @@ const docTemplate = `{
         "GroupSettings": {
             "type": "object",
             "properties": {
+                "content_items": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": true
+                    }
+                },
                 "member_info_preferences": {
                     "$ref": "#/definitions/MemberInfoPreferences"
                 },
@@ -5351,6 +5390,9 @@ const docTemplate = `{
         "GroupsFilter": {
             "type": "object",
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attributes": {
                     "type": "object",
                     "additionalProperties": true
@@ -5361,6 +5403,9 @@ const docTemplate = `{
                 "category": {
                     "description": "group category",
                     "type": "string"
+                },
+                "days_inactive": {
+                    "type": "integer"
                 },
                 "exclude_my_groups": {
                     "description": "Exclude My groups",
@@ -5650,6 +5695,21 @@ const docTemplate = `{
                 }
             }
         },
+        "MembershipStatus": {
+            "type": "object",
+            "properties": {
+                "net_id": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "pending, member, admin, rejected",
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "string"
+                }
+            }
+        },
         "NotificationsPreferences": {
             "type": "object",
             "properties": {
@@ -5770,6 +5830,9 @@ const docTemplate = `{
                 "title"
             ],
             "properties": {
+                "administrative": {
+                    "type": "boolean"
+                },
                 "attendance_group": {
                     "type": "boolean"
                 },
@@ -5808,7 +5871,10 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "members": {
-                    "$ref": "#/definitions/model.DefaultMembershipConfig"
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/MembershipStatus"
+                    }
                 },
                 "membership_questions": {
                     "type": "array",
@@ -6045,23 +6111,6 @@ const docTemplate = `{
                 }
             }
         },
-        "getPostsMigrationResponseData": {
-            "type": "object",
-            "properties": {
-                "groups": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/Group"
-                    }
-                },
-                "posts": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.Post"
-                    }
-                }
-            }
-        },
         "getPutAdminGroupIDsForEventIDRequestAndResponse": {
             "type": "object",
             "properties": {
@@ -6247,18 +6296,6 @@ const docTemplate = `{
                 }
             }
         },
-        "model.MembershipStatus": {
-            "type": "object",
-            "properties": {
-                "net_id": {
-                    "type": "string"
-                },
-                "status": {
-                    "description": "pending, member, admin, rejected",
-                    "type": "string"
-                }
-            }
-        },
         "model.Post": {
             "type": "object",
             "properties": {
@@ -6390,11 +6427,19 @@ const docTemplate = `{
                 }
             }
         },
-        "postsMigrationFlagData": {
+        "onGroupUpdatedRequestBody": {
             "type": "object",
+            "required": [
+                "operation"
+            ],
             "properties": {
-                "migrated": {
-                    "type": "boolean"
+                "operation": {
+                    "type": "string",
+                    "enum": [
+                        "event_update",
+                        "poll_update",
+                        "post_update"
+                    ]
                 }
             }
         },
@@ -6459,6 +6504,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "date_updated": {
+                    "type": "string"
+                },
+                "description": {
                     "type": "string"
                 },
                 "hidden_for_search": {
@@ -6549,7 +6597,7 @@ const docTemplate = `{
                 "members": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/model.MembershipStatus"
+                        "$ref": "#/definitions/MembershipStatus"
                     }
                 }
             }

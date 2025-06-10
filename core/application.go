@@ -41,6 +41,7 @@ type Application struct {
 
 	Services Services
 	Admin    Administration
+	BBS      BBS
 
 	storage       Storage
 	notifications Notifications
@@ -132,6 +133,7 @@ func NewApplication(version string, build string, storage Storage, notifications
 	//add the drivers ports/interfaces
 	application.Services = &servicesImpl{app: &application}
 	application.Admin = &administrationImpl{app: &application}
+	application.BBS = &bbsImpl{app: &application}
 
 	return &application
 }

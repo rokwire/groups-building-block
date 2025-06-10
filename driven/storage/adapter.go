@@ -330,6 +330,11 @@ func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, curr
 			group.Attributes = map[string]interface{}{}
 		}
 
+		if group.Administrative == nil {
+			falseValue := false
+			group.Administrative = &falseValue
+		}
+
 		// insert the group and the admin member
 		group.ID = insertedID
 		group.ClientID = clientID
@@ -749,6 +754,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	if groupsFilter.Privacy != nil {
 		filter = append(filter, primitive.E{Key: "privacy", Value: groupsFilter.Privacy})
 	}
+
+	if groupsFilter.Administrative != nil {
+		filter = append(filter, primitive.E{Key: "administrative", Value: groupsFilter.Administrative})
+	}
+
 	if groupsFilter.ResearchOpen != nil {
 		if *groupsFilter.ResearchOpen {
 			filter = append(filter, primitive.E{Key: "research_open", Value: true})
@@ -807,6 +817,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 			{Key: "title", Value: 1},
 		})
 	}
+	if groupsFilter.DaysInactive != nil {
+		pastTime := time.Now().Add(time.Duration(*groupsFilter.DaysInactive) * -24 * time.Hour)
+		filter = append(filter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
+	}
+
 	if groupsFilter.Limit != nil {
 		findOptions.SetLimit(*groupsFilter.Limit)
 	}
@@ -904,6 +919,10 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	if groupsFilter.Privacy != nil {
 		mongoFilter["privacy"] = groupsFilter.Privacy
 	}
+	if groupsFilter.Administrative != nil {
+		mongoFilter["administrative"] = *groupsFilter.Administrative
+	}
+
 	if groupsFilter.ResearchOpen != nil {
 		if *groupsFilter.ResearchOpen {
 			mongoFilter["research_open"] = true
@@ -1698,6 +1717,33 @@ func (sa *Adapter) UpdateDateNotifiedForPostIDs(context TransactionContext, ids 
 		bson.D{{Key: "$set", Value: bson.D{{Key: "date_notified", Value: dateNotified}}}},
 		nil)
 
+	return err
+}
+
+// OnUpdatedGroupExternalEntity updates the group with the date of the last update by the linked external BBs
+func (sa *Adapter) OnUpdatedGroupExternalEntity(context TransactionContext, groupID string, operation model.ExternalOperation) error {
+	innerUpdate := bson.D{}
+	now := time.Now()
+
+	switch operation {
+	case model.ExternalOperationEventUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_events_updated", Value: now})
+	case model.ExternalOperationPollUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_polls_updated", Value: now})
+	case model.ExternalOperationPostUpdate:
+		innerUpdate = append(innerUpdate, primitive.E{Key: "date_posts_updated", Value: now})
+	}
+	innerUpdate = append(innerUpdate, primitive.E{Key: "date_updated", Value: now})
+
+	// update the group
+	filter := bson.D{
+		primitive.E{Key: "_id", Value: groupID},
+	}
+	update := bson.D{
+		primitive.E{Key: "$set", Value: innerUpdate},
+	}
+
+	_, err := sa.db.groups.UpdateOneWithContext(context, filter, update, nil)
 	return err
 }
 

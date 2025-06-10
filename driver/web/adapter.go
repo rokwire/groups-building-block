@@ -139,6 +139,8 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/v2/groups/{id}", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupV2)).Methods("GET")
 	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 
+	restSubrouter.HandleFunc("/v3/group", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupV3)).Methods("POST")
+
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchronizeAuthman)).Methods("POST")
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
@@ -208,7 +210,7 @@ func (we *Adapter) Start() {
 	bbsSubrouter.HandleFunc("/groups/{group_id}/group-memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMembershipsByGroupID, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups", we.wrapFunc(we.bbsAPIHandler.GetGroupsByGroupIDs, we.auth2.bbs.Permissions)).Methods("GET")
-
+	bbsSubrouter.HandleFunc("/groups/{group_id}/date-updated", we.wrapFunc(we.bbsAPIHandler.OnGroupDateUpdated, we.auth2.bbs.Permissions)).Methods("PUT")
 	log.Fatal(http.ListenAndServe(":"+we.port, router))
 }
 

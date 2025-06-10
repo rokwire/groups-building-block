@@ -57,6 +57,8 @@ definitions:
     type: object
   Group:
     properties:
+      administrative:
+        type: boolean
       attendance_group:
         type: boolean
       attributes:
@@ -81,9 +83,15 @@ definitions:
         description: this is indicative and it's not required for update APIs
       date_created:
         type: string
+      date_events_updated:
+        type: string
       date_managed_membership_updated:
         type: string
       date_membership_updated:
+        type: string
+      date_polls_updated:
+        type: string
+      date_posts_updated:
         type: string
       date_updated:
         type: string
@@ -210,6 +218,11 @@ definitions:
     type: object
   GroupSettings:
     properties:
+      content_items:
+        items:
+          additionalProperties: true
+          type: object
+        type: array
       member_info_preferences:
         $ref: '#/definitions/MemberInfoPreferences'
       post_preferences:
@@ -244,6 +257,8 @@ definitions:
     type: object
   GroupsFilter:
     properties:
+      administrative:
+        type: boolean
       attributes:
         additionalProperties: true
         type: object
@@ -252,6 +267,8 @@ definitions:
       category:
         description: group category
         type: string
+      days_inactive:
+        type: integer
       exclude_my_groups:
         description: Exclude My groups
         type: boolean
@@ -452,6 +469,16 @@ definitions:
           type: string
         type: array
     type: object
+  MembershipStatus:
+    properties:
+      net_id:
+        type: string
+      status:
+        description: pending, member, admin, rejected
+        type: string
+      user_id:
+        type: string
+    type: object
   NotificationsPreferences:
     properties:
       all_mute:
@@ -528,6 +555,8 @@ definitions:
     type: object
   createGroupRequest:
     properties:
+      administrative:
+        type: boolean
       attendance_group:
         type: boolean
       attributes:
@@ -554,7 +583,9 @@ definitions:
       image_url:
         type: string
       members:
-        $ref: '#/definitions/model.DefaultMembershipConfig'
+        items:
+          $ref: '#/definitions/MembershipStatus'
+        type: array
       membership_questions:
         items:
           type: string
@@ -712,17 +743,6 @@ definitions:
       web_url:
         type: string
     type: object
-  getPostsMigrationResponseData:
-    properties:
-      groups:
-        items:
-          $ref: '#/definitions/Group'
-        type: array
-      posts:
-        items:
-          $ref: '#/definitions/model.Post'
-        type: array
-    type: object
   getPutAdminGroupIDsForEventIDRequestAndResponse:
     properties:
       group_ids:
@@ -847,14 +867,6 @@ definitions:
     required:
     - status
     type: object
-  model.MembershipStatus:
-    properties:
-      net_id:
-        type: string
-      status:
-        description: pending, member, admin, rejected
-        type: string
-    type: object
   model.Post:
     properties:
       body:
@@ -945,10 +957,16 @@ definitions:
           $ref: '#/definitions/model.Post'
         type: array
     type: object
-  postsMigrationFlagData:
+  onGroupUpdatedRequestBody:
     properties:
-      migrated:
-        type: boolean
+      operation:
+        enum:
+        - event_update
+        - poll_update
+        - post_update
+        type: string
+    required:
+    - operation
     type: object
   reportAbuseGroupPostRequestBody:
     properties:
@@ -990,6 +1008,8 @@ definitions:
       date_created:
         type: string
       date_updated:
+        type: string
+      description:
         type: string
       hidden_for_search:
         type: boolean
@@ -1049,7 +1069,7 @@ definitions:
     properties:
       members:
         items:
-          $ref: '#/definitions/model.MembershipStatus'
+          $ref: '#/definitions/MembershipStatus'
         type: array
     type: object
   rest.updateCalendarEventSingleGroupData:
@@ -2130,6 +2150,10 @@ paths:
         in: query
         name: limit
         type: string
+      - description: Deprecated - Filter by number of days inactive
+        in: query
+        name: days_inactive
+        type: string
       - description: Deprecated - instead use request body filter! include_hidden
           - Includes hidden groups if a search by title is performed. Possible value
           is true. Default false.
@@ -2189,6 +2213,10 @@ paths:
           result
         in: query
         name: limit
+        type: string
+      - description: Deprecated - Filter by number of days inactive
+        in: query
+        name: days_inactive
         type: string
       - description: Deprecated - instead use request body filter! include_hidden
           - Includes hidden groups if a search by title is performed. Possible value
@@ -2492,6 +2520,30 @@ paths:
       - AppUserAuth: []
       tags:
       - BBS
+  /api/bbs/groups/{group_id}/date-updated:
+    put:
+      description: Recieves a callback notification from other BBS that group related
+        resource has been updated
+      operationId: OnGroupDateUpdated
+      parameters:
+      - description: group id
+        in: path
+        name: group-id
+        required: true
+        type: string
+      - description: 'Event type. Supported values: event_update, poll_update, post_update'
+        in: body
+        name: group-id
+        required: true
+        schema:
+          $ref: '#/definitions/onGroupUpdatedRequestBody'
+      responses:
+        "200":
+          description: OK
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
   /api/bbs/groups/{group_id}/group-memberships:
     get:
       description: Gets all related group memberships status and group title using
@@ -2558,52 +2610,6 @@ paths:
                 $ref: '#/definitions/GetGroupsEvents'
               type: array
             type: array
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-  /api/bbs/posts-migration-data:
-    get:
-      description: Gets all groups and all posts without any restrictions
-      operationId: BBSGetPostsMigrationData
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/getPostsMigrationResponseData'
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-    put:
-      description: Sets a configuration flag that the posts migration process is successfull
-        and all related APIs to be redirected to Social BB
-      operationId: BBSPutPostsMigrationFlag
-      parameters:
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/postsMigrationFlagData'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/postsMigrationFlagData'
-      security:
-      - AppUserAuth: []
-      tags:
-      - BBS
-  /api/bbs/posts-migration-flag:
-    get:
-      description: Gets all groups and all posts without any restrictions
-      operationId: BBSGetPostsMigrationFlag
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/postsMigrationFlagData'
       security:
       - AppUserAuth: []
       tags:
@@ -4343,6 +4349,36 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Client
+  /api/v3/groups:
+    post:
+      consumes:
+      - application/json
+      description: Creates a group. Title must be a unique. Category must be one of
+        the categories list. Privacy can be public or private
+      operationId: CreateGroupV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/createGroupRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
       tags:
       - Client
   /authman/synchronize:

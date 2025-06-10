@@ -334,6 +334,7 @@ type adminCreateGroupRequest struct {
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
 	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
+	Administrative           *bool                          `json:"administrative"`
 } //@name adminCreateGroupRequest
 
 // CreateGroup creates a group
@@ -402,6 +403,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		ResearchProfile:          requestData.ResearchProfile,
 		Settings:                 requestData.Settings,
 		Attributes:               requestData.Attributes,
+		Administrative:           requestData.Administrative,
 	}
 
 	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, groupData, requestData.MembersConfig)
@@ -901,6 +903,16 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 
+	inactive := false
+	inactiveParam, ok := r.URL.Query()["inactive"]
+	if ok && len(inactiveParam[0]) > 0 {
+		val, err := strconv.ParseBool(inactiveParam[0])
+		if err != nil {
+			log.Printf("Invalid value for inactive parameter: %s", err.Error())
+		}
+		inactive = val
+	}
+
 	group, err := h.app.Services.GetGroupEntity(clientID, id)
 	if err != nil {
 		log.Println(err.Error())
@@ -913,7 +925,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Services.DeleteGroup(clientID, current, id)
+	err = h.app.Admin.DeleteGroup(clientID, current, id, inactive)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
