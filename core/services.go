@@ -624,7 +624,7 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 				}
 			}
 
-			return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
+			return app.storage.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
 		}
 
 		return nil

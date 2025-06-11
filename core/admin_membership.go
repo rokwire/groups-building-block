@@ -32,7 +32,7 @@ func (app *Application) adminDeleteMembershipsByID(clientID string, current *mod
 			}
 		}
 
-		return app.storage.UpdateGroupStats(context, clientID, groupID, true, true, false, true)
+		return app.storage.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
 	})
 
 	return err

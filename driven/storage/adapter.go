@@ -385,7 +385,7 @@ func (sa *Adapter) CreateGroup(context TransactionContext, clientID string, curr
 			}
 		}
 
-		err = sa.UpdateGroupStats(context, clientID, group.ID, false, false, false, true)
+		err = sa.UpdateGroupStats(context, clientID, group.ID, true, false, false, true)
 		if err != nil {
 			return err
 		}
