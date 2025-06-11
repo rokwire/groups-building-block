@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+
+### Changed
+- Changed the code owner of the repo.
+
 ### Fixed
 - Additional fix. Don't update group's date_updated field on a membership update event. [#566](https://github.com/rokwire/groups-building-block/issues/566)
 
