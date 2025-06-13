@@ -535,7 +535,8 @@ func (sa *Adapter) updateGroup(context TransactionContext, clientID string, curr
 			}
 		}
 
-		err = sa.UpdateGroupStats(context, clientID, group.ID, true, len(memberships) > 0, false, true)
+		// Don't the date_updated field of the group (https://github.com/rokwire/illinois-app/issues/5119#issuecomment-2967421259)
+		err = sa.UpdateGroupStats(context, clientID, group.ID, false, len(memberships) > 0, false, true)
 		if err != nil {
 			return err
 		}
