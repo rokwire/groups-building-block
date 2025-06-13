@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.65.3] - 2025-06-13
 ### Fixed
 - Additional fix. Don't update group's date_updated field on group settings update. [#566](https://github.com/rokwire/groups-building-block/issues/566)
 
