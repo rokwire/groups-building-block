@@ -829,6 +829,11 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		findOptions.SetSkip(*groupsFilter.Offset)
 	}
 
+	findOptions.SetCollation(&options.Collation{
+		Locale:   "en",
+		Strength: 1, // Case and diacritic insensitive
+	})
+
 	var list []model.Group
 	err = sa.db.groups.Find(filter, &list, findOptions)
 	if err != nil {
@@ -984,6 +989,10 @@ func (sa *Adapter) FindUserGroups(clientID string, userID string, groupsFilter m
 	if groupsFilter.Offset != nil {
 		findOptions.SetSkip(*groupsFilter.Offset)
 	}
+	findOptions.SetCollation(&options.Collation{
+		Locale:   "en",
+		Strength: 1, // Case and diacritic insensitive
+	})
 
 	var list []model.Group
 	err = sa.db.groups.Find(mongoFilter, &list, findOptions)
