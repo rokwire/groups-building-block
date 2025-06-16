@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Update groups sort order [#584](https://github.com/rokwire/groups-building-block/issues/584)
+
+
 ## [1.65.4] - 2025-06-16
 ### Fixed
 - Additional minor fix on group's date_updated field. [#566](https://github.com/rokwire/groups-building-block/issues/566)
