@@ -438,7 +438,6 @@ func (sa *Adapter) updateGroup(context TransactionContext, clientID string, curr
 			primitive.E{Key: "image_url", Value: group.ImageURL},
 			primitive.E{Key: "web_url", Value: group.WebURL},
 			primitive.E{Key: "membership_questions", Value: group.MembershipQuestions},
-			primitive.E{Key: "date_updated", Value: time.Now()},
 			primitive.E{Key: "authman_enabled", Value: group.AuthmanEnabled},
 			primitive.E{Key: "authman_group", Value: group.AuthmanGroup},
 			primitive.E{Key: "only_admins_can_create_polls", Value: group.OnlyAdminsCanCreatePolls},
