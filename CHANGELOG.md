@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.66.0] - 2025-06-24
 ### Changed
 - Update auth library and resolve the active vulnerability [#564](https://github.com/rokwire/groups-building-block/issues/564)
 
