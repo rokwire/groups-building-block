@@ -21,7 +21,7 @@ import (
 	"groups/utils"
 	"time"
 
-	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
 )
 
 // Services exposes APIs for the driver adapters

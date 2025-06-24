@@ -24,12 +24,12 @@ import (
 	"strings"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/v2/authorization"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
-	"github.com/rokwire/logging-library-go/v2/errors"
-	"github.com/rokwire/logging-library-go/v2/logs"
-	"github.com/rokwire/logging-library-go/v2/logutils"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/authorization"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/tokenauth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
 
 	"github.com/gorilla/mux"
 
@@ -397,7 +397,7 @@ func (we Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) 
 	}
 }
 
-func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*tokenauth.StandardHandler, error) {
+func newBBsStandardHandler(serviceRegManager *auth.ServiceRegManager) (*tokenauth.StandardHandler, error) {
 	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/authorization_bbs_permission_policy.csv")
 	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
 	if err != nil {
@@ -416,8 +416,8 @@ func newBBsStandardHandler(serviceRegManager *authservice.ServiceRegManager) (*t
 		return http.StatusOK, nil
 	}
 
-	auth := tokenauth.NewStandardHandler(*bbsTokenAuth, check)
-	return &auth, nil
+	auth := tokenauth.NewStandardHandler(bbsTokenAuth, check)
+	return auth, nil
 }
 
 // END BBs auth //////////
@@ -441,7 +441,7 @@ func (we Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResp
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
 	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
-	internalAPIKey string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
+	internalAPIKey string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
 	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,

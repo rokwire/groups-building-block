@@ -24,13 +24,13 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
 )
 
 // Adapter implements the Notifications interface
 type Adapter struct {
 	baseURL               string
-	serviceAccountManager *authservice.ServiceAccountManager
+	serviceAccountManager *auth.ServiceAccountManager
 }
 
 // Recipient struct
@@ -41,7 +41,7 @@ type Recipient struct {
 }
 
 // NewNotificationsAdapter creates a new Notifications BB adapter instance
-func NewNotificationsAdapter(baseURL string, serviceAccountManager *authservice.ServiceAccountManager) (*Adapter, error) {
+func NewNotificationsAdapter(baseURL string, serviceAccountManager *auth.ServiceAccountManager) (*Adapter, error) {
 	if serviceAccountManager == nil {
 		log.Println("service account manager is nil")
 		return nil, errors.New("service account manager is nil")
