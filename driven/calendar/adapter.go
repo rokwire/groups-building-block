@@ -24,17 +24,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
 )
 
 // Adapter implements the Notifications interface
 type Adapter struct {
 	baseURL               string
-	serviceAccountManager *authservice.ServiceAccountManager
+	serviceAccountManager *auth.ServiceAccountManager
 }
 
 // NewCalendarAdapter creates a new Calendar BB adapter instance
-func NewCalendarAdapter(baseURL string, serviceAccountManager *authservice.ServiceAccountManager) (*Adapter, error) {
+func NewCalendarAdapter(baseURL string, serviceAccountManager *auth.ServiceAccountManager) (*Adapter, error) {
 	if serviceAccountManager == nil {
 		log.Println("service account manager is nil")
 		return nil, errors.New("service account manager is nil")

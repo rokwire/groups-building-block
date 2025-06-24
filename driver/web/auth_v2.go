@@ -15,12 +15,12 @@
 package web
 
 import (
-	"github.com/rokwire/logging-library-go/v2/errors"
-	"github.com/rokwire/logging-library-go/v2/logs"
-	"github.com/rokwire/logging-library-go/v2/logutils"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/tokenauth"
 )
 
 // Auth2 handler
@@ -38,7 +38,7 @@ func (auth *Auth2) Start() error {
 }
 
 // NewAuth2 creates new auth handler
-func NewAuth2(serviceRegManager *authservice.ServiceRegManager, logger *logs.Logger) (*Auth2, error) {
+func NewAuth2(serviceRegManager *auth.ServiceRegManager, logger *logs.Logger) (*Auth2, error) {
 
 	bbsStandardHandler, err := newBBsStandardHandler(serviceRegManager)
 	if err != nil {

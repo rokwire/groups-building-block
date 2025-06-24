@@ -23,19 +23,19 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/logging-library-go/v2/logs"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
 )
 
 // Adapter implements the SocialBB interface
 type Adapter struct {
 	socialURL             string
-	serviceAccountManager *authservice.ServiceAccountManager
+	serviceAccountManager *auth.ServiceAccountManager
 	logger                *logs.Logger
 }
 
 // NewSocialAdapter creates a new adapter for Core API
-func NewSocialAdapter(logger *logs.Logger, socialURL string, serviceAccountManager *authservice.ServiceAccountManager) *Adapter {
+func NewSocialAdapter(logger *logs.Logger, socialURL string, serviceAccountManager *auth.ServiceAccountManager) *Adapter {
 	return &Adapter{logger: logger, socialURL: socialURL, serviceAccountManager: serviceAccountManager}
 }
 

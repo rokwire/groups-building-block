@@ -29,10 +29,10 @@ import (
 	"golang.org/x/sync/syncmap"
 
 	"github.com/casbin/casbin"
-	"github.com/rokwire/core-auth-library-go/v2/authorization"
-	"github.com/rokwire/core-auth-library-go/v2/authservice"
-	"github.com/rokwire/core-auth-library-go/v2/authutils"
-	"github.com/rokwire/core-auth-library-go/v2/tokenauth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/authorization"
+	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/tokenauth"
+	"github.com/rokwire/rokwire-building-block-sdk-go/utils/rokwireutils"
 )
 
 // Auth handler
@@ -186,7 +186,7 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 // NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *authservice.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if serviceRegManager != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -222,7 +222,7 @@ func (auth *APIKeysAuth) check(apiKey *string, r *http.Request) bool {
 	//check if there is api key in the header
 	if apiKey == nil || len(*apiKey) == 0 {
 		if auth.coreTokenAuth != nil {
-			_, err := auth.coreTokenAuth.CheckRequestTokens(r)
+			_, err := auth.coreTokenAuth.CheckRequestToken(r)
 			if err == nil {
 				return true
 			}
@@ -320,7 +320,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && (allowAnonymousCoreToken || !claims.Anonymous) {
 			err := auth.coreTokenAuth.AuthorizeRequestScope(claims, r)
 			if err != nil {
@@ -375,7 +375,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 
 		validAud := false
 		if data.Aud != nil {
-			validAud = authutils.ContainsString(allowedClientIDs, *data.Aud)
+			validAud = rokwireutils.ContainsString(allowedClientIDs, *data.Aud)
 		}
 		if !validAud {
 			log.Printf("invalid audience in token: expected %v, got %s\n", allowedClientIDs, *data.Aud)
@@ -497,7 +497,7 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
-		claims, coreErr = auth.coreTokenAuth.CheckRequestTokens(r)
+		claims, coreErr = auth.coreTokenAuth.CheckRequestToken(r)
 		if coreErr == nil && claims != nil && !claims.Anonymous {
 			err := auth.coreTokenAuth.AuthorizeRequestPermissions(claims, r)
 			if err != nil {
