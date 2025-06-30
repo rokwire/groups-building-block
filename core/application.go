@@ -50,6 +50,7 @@ type Application struct {
 	rewards       Rewards
 	calendar      Calendar
 	social        Social
+	polls         Polls
 
 	authmanSyncInProgress bool
 

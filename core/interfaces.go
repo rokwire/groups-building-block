@@ -296,3 +296,8 @@ type Social interface {
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
 }
+
+// Polls exposes Polls BB APIs for the driver adapters
+type Polls interface {
+	DeleteGroupPolls(orgID string, appID string, groupID string) error
+}
