@@ -164,11 +164,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("error finding polls v2 service reg: %s", err)
 	}
-	polls.NewPollsAdapter(pollsServiceReg.Host, serviceAccountManager)
+	pollsAdapter, err := polls.NewPollsAdapter(pollsServiceReg.Host, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("error instancing polls v2 adaptor: %s", err)
+	}
 
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, calendarAdapter, social, serviceID, logger, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, social, pollsAdapter, serviceID, logger, config)
 	application.Start()
 
 	//web adapter
