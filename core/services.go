@@ -370,6 +370,16 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 			}
 		}
 
+		err = app.polls.DeleteGroupPolls(app.config.OrgID, id)
+		if err != nil {
+			return err
+		}
+
+		err = app.calendar.DeleteGroupEvents(app.config.OrgID, id)
+		if err != nil {
+			return err
+		}
+
 		err = app.storage.DeleteGroup(nil, clientID, id)
 		if err != nil {
 			return err

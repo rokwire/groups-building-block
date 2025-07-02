@@ -283,6 +283,7 @@ type Calendar interface {
 	GetGroupCalendarEvents(currentAccountIdentifier model.AccountIdentifiers, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
 	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
+	DeleteGroupEvents(orgID, groupID string) error
 }
 
 // Social exposes Social BB APIs for the driver adapters
@@ -299,5 +300,5 @@ type Social interface {
 
 // Polls exposes Polls BB APIs for the driver adapters
 type Polls interface {
-	DeleteGroupPolls(orgID string, appID string, groupID string) error
+	DeleteGroupPolls(orgID, groupID string) error
 }

@@ -41,7 +41,7 @@ func NewPollsAdapter(baseURL string, serviceAccountManager *auth.ServiceAccountM
 }
 
 // DeleteGroupPolls deletes all polls for a group
-func (a *Adapter) DeleteGroupPolls(orgID string, appID string, groupID string) error {
+func (a *Adapter) DeleteGroupPolls(orgID, groupID string) error {
 
 	url := fmt.Sprintf("%s/api/bbs/group/%s/polls", a.baseURL, groupID)
 	req, err := http.NewRequest("DELETE", url, nil)
@@ -51,7 +51,7 @@ func (a *Adapter) DeleteGroupPolls(orgID string, appID string, groupID string) e
 	}
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := a.serviceAccountManager.MakeRequest(req, appID, orgID)
+	resp, err := a.serviceAccountManager.MakeRequest(req, "all", orgID)
 	if err != nil {
 		log.Printf("DeleteGroupPolls: error sending request - %s", err)
 		return err
