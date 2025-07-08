@@ -332,7 +332,7 @@ func (a *Adapter) invokePostsOperation(operation string, userID *string, groupID
 // DeleteGroupPosts deletes all posts for a group
 func (a *Adapter) DeleteGroupPosts(orgID, groupID string) error {
 
-	url := fmt.Sprintf("%s/api/bbs/posts/delete", "http://10.0.1.20:81/social") //a.socialURL)
+	url := fmt.Sprintf("%s/api/bbs/posts/delete", a.socialURL)
 
 	body := map[string]any{
 		"operation": "and",
