@@ -296,6 +296,7 @@ type Social interface {
 	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+	DeleteGroupPosts(orgID, groupID string) error
 }
 
 // Polls exposes Polls BB APIs for the driver adapters
