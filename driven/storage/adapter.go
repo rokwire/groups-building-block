@@ -267,36 +267,10 @@ func (sa *Adapter) DeleteUser(clientID string, userID string) error {
 		}
 		for _, membership := range memberships.Items {
 
-			admins, err := sa.FindGroupMembershipsWithContext(sessionContext, clientID, model.MembershipFilter{
-				GroupIDs: []string{membership.GroupID},
-				Statuses: []string{"admin"},
-			})
+			err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID, true)
 			if err != nil {
 				log.Printf("error deleting user membership - %s", err.Error())
 				return err
-			}
-			deleteMembership := false
-			if len(admins.Items) == 1 {
-				if admins.Items[0].UserID == userID {
-					log.Printf("delete group %s, because, user %s is the only admin", admins.Items[0].GroupID, userID)
-					err := sa.DeleteGroup(sessionContext, clientID, membership.GroupID)
-					if err != nil {
-						log.Printf("error deleting user membership and the whole group - %s", err.Error())
-						return err
-					}
-				} else {
-					deleteMembership = true
-				}
-			} else {
-				deleteMembership = true
-			}
-			if deleteMembership {
-				err = sa.DeleteMembershipWithContext(sessionContext, clientID, membership.GroupID, membership.UserID)
-				if err != nil {
-					log.Printf("error deleting user membership - %s", err.Error())
-					// Check the count of admins
-					return err
-				}
 			}
 		}
 

@@ -611,24 +611,26 @@ func (sa *Adapter) UpdateMemberships(clientID string, user *model.User, groupID 
 
 // DeleteMembership deletes a member membership from a specific group
 func (sa *Adapter) DeleteMembership(clientID string, groupID string, userID string) error {
-	return sa.DeleteMembershipWithContext(nil, clientID, groupID, userID)
+	return sa.DeleteMembershipWithContext(nil, clientID, groupID, userID, false)
 }
 
 // DeleteMembershipWithContext deletes a member membership from a specific group with context
-func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID string, groupID string, userID string) error {
+func (sa *Adapter) DeleteMembershipWithContext(ctx TransactionContext, clientID string, groupID string, userID string, forsed bool) error {
 
 	deleteWrapper := func(context TransactionContext) error {
 		currentMembership, _ := sa.FindGroupMembershipWithContext(context, clientID, groupID, userID)
 		if currentMembership != nil {
 
-			if currentMembership.IsAdmin() {
-				adminMemberships, _ := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
-					GroupIDs: []string{groupID},
-					Statuses: []string{"admin"},
-				})
-				if len(adminMemberships.Items) <= 1 {
-					log.Printf("sa.DeleteMembership() - there must be at least two admins in order to delete ")
-					return fmt.Errorf("there must be at least two admins in order to delete ")
+			if !forsed {
+				if currentMembership.IsAdmin() {
+					adminMemberships, _ := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+						GroupIDs: []string{groupID},
+						Statuses: []string{"admin"},
+					})
+					if len(adminMemberships.Items) <= 1 {
+						log.Printf("sa.DeleteMembership() - there must be at least two admins in order to delete ")
+						return fmt.Errorf("there must be at least two admins in order to delete ")
+					}
 				}
 			}
 
