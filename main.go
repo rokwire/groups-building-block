@@ -21,6 +21,7 @@ import (
 	"groups/driven/calendar"
 	"groups/driven/corebb"
 	"groups/driven/notifications"
+	"groups/driven/polls"
 	"groups/driven/rewards"
 	"groups/driven/socialbb"
 	storage "groups/driven/storage"
@@ -79,7 +80,7 @@ func main() {
 		AuthBaseURL: coreBBHost,
 	}
 
-	serviceRegLoader, err := auth.NewRemoteServiceRegLoader(&authService, []string{"rewards"})
+	serviceRegLoader, err := auth.NewRemoteServiceRegLoader(&authService, []string{"rewards", "polls-v2"})
 	if err != nil {
 		logger.Fatalf("Error initializing remote service registration loader: %v", err)
 	}
@@ -159,9 +160,18 @@ func main() {
 	socialBaseURL := getEnvKey("GR_SOCIAL_BASE_URL", true)
 	social := socialbb.NewSocialAdapter(logger, socialBaseURL, serviceAccountManager)
 
+	pollsServiceReg, err := serviceRegManager.GetServiceReg("polls-v2")
+	if err != nil {
+		log.Fatalf("error finding polls v2 service reg: %s", err)
+	}
+	pollsAdapter, err := polls.NewPollsAdapter(pollsServiceReg.Host, serviceAccountManager)
+	if err != nil {
+		log.Fatalf("error instancing polls v2 adaptor: %s", err)
+	}
+
 	//application
 	application := core.NewApplication(Version, Build, storageAdapter, notificationsAdapter, authmanAdapter,
-		coreAdapter, rewardsAdapter, calendarAdapter, social, serviceID, logger, config)
+		coreAdapter, rewardsAdapter, calendarAdapter, social, pollsAdapter, serviceID, logger, config)
 	application.Start()
 
 	//web adapter

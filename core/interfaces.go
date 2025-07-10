@@ -283,6 +283,7 @@ type Calendar interface {
 	GetGroupCalendarEvents(currentAccountIdentifier model.AccountIdentifiers, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
 	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
+	DeleteGroupEvents(orgID, groupID string) error
 }
 
 // Social exposes Social BB APIs for the driver adapters
@@ -295,4 +296,10 @@ type Social interface {
 	ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error
 	ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
 	DeletePost(clientID string, userID string, groupID string, postID string, force bool) error
+	DeleteGroupPosts(orgID, groupID string) error
+}
+
+// Polls exposes Polls BB APIs for the driver adapters
+type Polls interface {
+	DeleteGroupPolls(orgID, groupID string) error
 }

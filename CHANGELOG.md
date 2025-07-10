@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Fixed
+- Accidental group deletion [#592](https://github.com/rokwire/groups-building-block/issues/564)
+
+## [1.67.0] - 2025-07-08
+### Added
+- Delete group should delete linked data in other BBs like messages, polls, events as well [#565](https://github.com/rokwire/groups-building-block/issues/564)
+
 ## [1.66.1] - 2025-07-10
 ### Fixed
 - Accidental group deletion [#592](https://github.com/rokwire/groups-building-block/issues/564)

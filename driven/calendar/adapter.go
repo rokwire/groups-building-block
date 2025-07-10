@@ -320,3 +320,50 @@ func (a *Adapter) RemovePeopleFromCalendarEvent(people []string, eventID string,
 	}
 	return nil
 }
+
+// DeleteGroupEvents deletes all events for a group
+func (a *Adapter) DeleteGroupEvents(orgID, groupID string) error {
+
+	url := fmt.Sprintf("%s/api/bbs/events/delete", a.baseURL)
+
+	body := map[string]any{
+		"org_id": orgID,
+		"context": map[string]any{
+			"items": []map[string]any{{
+				"identifier": groupID,
+				"name":       "groups-bb_group",
+			}},
+		},
+	}
+	data, err := json.Marshal(body)
+	if err != nil {
+		log.Printf("DeleteGroupEvents: unable to marshal request body: %s", err)
+		return fmt.Errorf("DeleteGroupEvents: unable to marshal request body: %s", err)
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
+	if err != nil {
+		log.Printf("DeleteGroupEvents:error creating event  request - %s", err)
+		return err
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	resp, err := a.serviceAccountManager.MakeRequest(req, "all", orgID)
+	if err != nil {
+		log.Printf("DeleteGroupEvents: error sending request - %s", err)
+		return err
+	}
+	defer resp.Body.Close()
+
+	responseData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Printf("DeleteGroupEvents: unable to read response json: %s", err)
+		return fmt.Errorf("DeleteGroupEvents: unable to parse response json: %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		log.Printf("DeleteGroupEvents: error with response code - %d, Response: %s", resp.StatusCode, responseData)
+		return fmt.Errorf("DeleteGroupEvents:error with response code != 200")
+	}
+	return nil
+}
