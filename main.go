@@ -93,7 +93,7 @@ func main() {
 	serviceAccountID := getEnvKey("GR_SERVICE_ACCOUNT_ID", false)
 	privKeyRaw := getEnvKey("GR_PRIV_KEY", true)
 	privKeyRaw = strings.ReplaceAll(privKeyRaw, "\\n", "\n")
-	privKey, err := keys.NewPrivKey(keys.PS256, privKeyRaw)
+	privKey, err := keys.NewPrivKey(keys.RS256, privKeyRaw)
 	if err != nil {
 		log.Fatalf("Error parsing priv key: %v", err)
 	}
