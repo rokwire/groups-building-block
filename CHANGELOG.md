@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.68.1] - 2025-07-11
 ### Fixed
 - Broken env auth algorithm [#595](https://github.com/rokwire/groups-building-block/issues/595)
 
