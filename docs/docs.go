@@ -2215,6 +2215,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/group/stats": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets groups filter stats",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetGroupsFilterStats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/StatsFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/group/{group-id}/authman/synchronize": {
             "post": {
                 "security": [
@@ -5792,6 +5832,20 @@ const docTemplate = `{
                 },
                 "user_id": {
                     "type": "string"
+                }
+            }
+        },
+        "StatsFilter": {
+            "type": "object",
+            "properties": {
+                "base_filter": {
+                    "$ref": "#/definitions/GroupsFilter"
+                },
+                "sub_filters": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "$ref": "#/definitions/GroupsFilter"
+                    }
                 }
             }
         },

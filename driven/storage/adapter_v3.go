@@ -166,6 +166,11 @@ func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, fil
 	return list, nil
 }
 
+// CalculateGroupFilterStats Generates the stats for a given filter
+func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
+	return nil, nil
+}
+
 // FindGroupMemberships finds the group membership for a given group
 func (sa *Adapter) FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error) {
 	return sa.FindGroupMembershipsWithContext(nil, clientID, filter)

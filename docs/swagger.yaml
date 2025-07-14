@@ -535,6 +535,15 @@ definitions:
       user_id:
         type: string
     type: object
+  StatsFilter:
+    properties:
+      base_filter:
+        $ref: '#/definitions/GroupsFilter'
+      sub_filters:
+        additionalProperties:
+          $ref: '#/definitions/GroupsFilter'
+        type: object
+    type: object
   ToMember:
     properties:
       email:
@@ -3410,6 +3419,31 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rest.createCalendarEventMultiGroupData'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/group/stats:
+    post:
+      consumes:
+      - application/json
+      description: Gets groups filter stats
+      operationId: GetGroupsFilterStats
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/StatsFilter'
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       tags:

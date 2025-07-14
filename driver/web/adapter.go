@@ -154,6 +154,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{id}/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
+	restSubrouter.HandleFunc("/group/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsFilterStats)).Methods("POST")
 
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
