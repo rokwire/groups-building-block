@@ -32,5 +32,5 @@ type StatsFilter struct {
 
 // StatsResult represents the result of an event statistics query.
 type StatsResult struct {
-	Stats map[string]int `json:"stats" bson:"stats"`
+	Stats map[string]int64 `json:"stats" bson:"stats"`
 } //@name StatsResult

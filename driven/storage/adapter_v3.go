@@ -18,14 +18,48 @@ import (
 
 // FindGroupsV3 finds groups with filter
 func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, filter model.GroupsFilter) ([]model.Group, error) {
-	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
-	var groupIDs []string
 	var err error
 	var memberships model.MembershipCollection
+	findOptions := options.Find()
+
+	groupFilter, err := sa.buildGroupsFilter(clientID, context, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if filter.Order != nil && "desc" == *filter.Order {
+		findOptions.SetSort(bson.D{
+			{Key: "title", Value: -1},
+		})
+	} else {
+		findOptions.SetSort(bson.D{
+			{Key: "title", Value: 1},
+		})
+	}
+
+	var list []model.Group
+	err = sa.db.groups.FindWithContext(context, groupFilter, &list, findOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	for index, group := range list {
+		group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+			return membership.GroupID == group.ID
+		})
+		if group.CurrentMember != nil {
+			list[index] = group
+		}
+	}
+
+	return list, nil
+}
+
+func (sa *Adapter) buildGroupsFilter(clientID string, context TransactionContext, filter model.GroupsFilter) (bson.D, error) {
+	var groupIDs []string
 
 	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
-	findOptions := options.Find()
 
 	groupIDMap := map[string]bool{}
 	if len(filter.GroupIDs) > 0 {
@@ -38,7 +72,7 @@ func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, fil
 	// Credits to Ryan Oberlander suggest
 	if filter.MemberUserID != nil || filter.MemberID != nil || filter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+		memberships, err := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 			ID:         filter.MemberID,
 			UserID:     filter.MemberUserID,
 			ExternalID: filter.MemberExternalID,
@@ -126,49 +160,119 @@ func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, fil
 		}
 	}
 
-	if filter.Order != nil && "desc" == *filter.Order {
-		findOptions.SetSort(bson.D{
-			{Key: "title", Value: -1},
-		})
-	} else {
-		findOptions.SetSort(bson.D{
-			{Key: "title", Value: 1},
-		})
-	}
-
 	if filter.DaysInactive != nil {
 		pastTime := time.Now().Add(-time.Duration(*filter.DaysInactive) * 24 * time.Hour)
 		groupFilter = append(groupFilter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
 	}
 
-	if filter.Limit != nil {
-		findOptions.SetLimit(*filter.Limit)
-	}
-	if filter.Offset != nil {
-		findOptions.SetSkip(*filter.Offset)
-	}
-
-	var list []model.Group
-	err = sa.db.groups.FindWithContext(context, groupFilter, &list, findOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	for index, group := range list {
-		group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
-			return membership.GroupID == group.ID
-		})
-		if group.CurrentMember != nil {
-			list[index] = group
-		}
-	}
-
-	return list, nil
+	return groupFilter, nil
 }
 
 // CalculateGroupFilterStats Generates the stats for a given filter
 func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
-	return nil, nil
+	var result *model.StatsResult
+	err := sa.PerformTransaction(func(ctx TransactionContext) error {
+		baseFilter, err := sa.buildGroupsFilter(clientID, ctx, filter.BaseFilter)
+		if err != nil {
+			return err
+		}
+
+		pipeline := bson.A{bson.D{{Key: "$match", Value: baseFilter}}}
+
+		subFilters := bson.D{}
+		for key, value := range filter.SubFilters {
+			innerSubFilter := bson.A{}
+			filter, err := sa.buildGroupsFilter(clientID, ctx, value)
+			if err != nil {
+				return err
+			}
+			if len(filter) > 0 {
+				innerSubFilter = append(innerSubFilter, bson.D{{Key: "$match", Value: filter}})
+			}
+			innerSubFilter = append(innerSubFilter, bson.D{
+				{Key: "$group",
+					Value: bson.D{
+						{Key: "_id", Value: primitive.Null{}},
+						{Key: "count", Value: bson.D{{Key: "$sum", Value: 1}}},
+					},
+				},
+			})
+			subFilter := bson.E{Key: key,
+				Value: innerSubFilter,
+			}
+			subFilters = append(subFilters, subFilter)
+		}
+		pipeline = append(pipeline, bson.D{{Key: "$facet", Value: subFilters}})
+
+		project := bson.D{}
+		for key := range filter.SubFilters {
+			project = append(project, bson.E{Key: key,
+				Value: bson.D{
+					{Key: "$ifNull",
+						Value: bson.A{
+							bson.D{
+								{Key: "$arrayElemAt",
+									Value: bson.A{
+										fmt.Sprintf("$%s", key),
+										0,
+									},
+								},
+							},
+							bson.D{{Key: "count", Value: 0}},
+						},
+					},
+				},
+			})
+		}
+		pipeline = append(pipeline, bson.D{
+			{Key: "$project", Value: project},
+		})
+
+		project = bson.D{}
+		for key := range filter.SubFilters {
+			project = append(project, bson.E{Key: key, Value: fmt.Sprintf("$%s.count", key)})
+		}
+		pipeline = append(pipeline, bson.D{
+			{Key: "$project", Value: project},
+		})
+
+		for key := range filter.SubFilters {
+			pipeline = append(pipeline, bson.D{{Key: "$unwind", Value: bson.D{{Key: "path", Value: fmt.Sprintf("$%s", key)}}}})
+		}
+
+		//str, _ := json.Marshal(pipeline) // To ensure the pipeline is valid
+		//fmt.Printf("events stats aggregation pipeline: %s", string(str))
+
+		var aggrResult []map[string]int64
+		var statsResult map[string]int64
+		err = sa.db.groups.AggregateWithContext(ctx, pipeline, &aggrResult, nil)
+		if err != nil {
+			return nil
+		}
+
+		if len(aggrResult) > 0 {
+			statsResult = aggrResult[0]
+		} else {
+			statsResult = make(map[string]int64)
+		}
+
+		for key := range filter.SubFilters {
+			if _, ok := statsResult[key]; !ok {
+				statsResult[key] = 0 // Ensure all keys are present in the result
+			}
+		}
+
+		result = &model.StatsResult{
+			Stats: statsResult,
+		}
+		return nil
+	})
+	if err != nil {
+		log.Printf("error calculating group filter stats: %v", err)
+		return nil, err
+	}
+
+	return result, nil
 }
 
 // FindGroupMemberships finds the group membership for a given group
