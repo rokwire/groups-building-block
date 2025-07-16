@@ -89,6 +89,10 @@ func (s *servicesImpl) GetGroup(clientID string, current *model.User, id string)
 	return s.app.getGroup(clientID, current, id)
 }
 
+func (s *servicesImpl) GetGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
+	return s.app.getGroupFilterStats(clientID, current, filter)
+}
+
 func (s *servicesImpl) GetGroupStats(clientID string, id string) (*model.GroupStats, error) {
 	return s.app.storage.GetGroupMembershipStats(nil, clientID, id)
 }

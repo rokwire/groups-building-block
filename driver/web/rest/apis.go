@@ -2801,6 +2801,61 @@ func (h *ApisHandler) GetResearchProfileUserCount(clientID string, current *mode
 	w.Write(data)
 }
 
+// GetGroupsFilterStats Gets groups filter stats
+// @Description Gets groups filter stats
+// @ID GetGroupsFilterStats
+// @Tags Client
+// @Accept  json
+// @Param APP header string true "APP"
+// @Param data body model.StatsFilter true "body data"
+// @Success 200
+// @Security AppUserAuth
+// @Router /api/group/stats [post]
+func (h *ApisHandler) GetGroupsFilterStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("Error on read GetGroupsFilterStats - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	var filter model.StatsFilter
+	err = json.Unmarshal(data, &filter)
+	if err != nil {
+		log.Printf("error on unmarshal GetGroupsFilterStats() - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	stats, err := h.app.Services.GetGroupFilterStats(clientID, current, filter)
+	if err != nil {
+		log.Println(err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var result map[string]int64
+	if stats != nil {
+		result = stats.Stats
+	} else {
+		result = make(map[string]int64)
+		log.Println("no stats found for the provided filter")
+		http.Error(w, "no stats found for the provided filter", http.StatusNotFound)
+		return
+	}
+
+	data, err = json.Marshal(result)
+	if err != nil {
+		log.Printf("error on marshal GetGroupsFilterStats - %s", err.Error())
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
 // reportAbuseGroupRequestBody request body for report abuse group API call
 type reportAbuseGroupRequestBody struct {
 	Comment string `json:"comment"`
