@@ -270,8 +270,24 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	if groupID == "" {
 		return errors.New("Missing group ID")
 	}
+
 	var group *model.Group
 	var err error
+
+	finishAuthmanSync := func() {
+		if group != nil {
+			endTime := time.Now()
+			group.SyncEndTime = &endTime
+			err = app.storage.UpdateGroupSyncTimes(nil, clientID, group)
+			if err != nil {
+				log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
+				return
+			}
+		}
+		log.Printf("Authman synchronization for group %s finished", *group.AuthmanGroup)
+	}
+	defer finishAuthmanSync()
+
 	group, err = app.checkGroupSyncTimes(clientID, groupID)
 	if err != nil {
 		return err
@@ -285,17 +301,6 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	}
 
 	app.authmanSyncInProgress = true
-	finishAuthmanSync := func() {
-		endTime := time.Now()
-		group.SyncEndTime = &endTime
-		err = app.storage.UpdateGroupSyncTimes(nil, clientID, group)
-		if err != nil {
-			log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
-			return
-		}
-		log.Printf("Authman synchronization for group %s finished", *group.AuthmanGroup)
-	}
-	defer finishAuthmanSync()
 
 	err = app.syncAuthmanGroupMemberships(clientID, group, authmanExternalIDs)
 	if err != nil {
