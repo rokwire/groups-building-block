@@ -283,8 +283,8 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 				log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
 				return
 			}
-			log.Printf("Authman synchronization for group %s finished", *group.AuthmanGroup)
 		}
+		log.Printf("Authman synchronization for group %s finished", *group.AuthmanGroup)
 	}
 	defer finishAuthmanSync()
 
