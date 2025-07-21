@@ -47,7 +47,7 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			log.Printf("RetrieveAuthmanGroupMembers: error creating load user data request - %s", err)
-			return nil, err
+			return nil, fmt.Errorf("RetrieveAuthmanGroupMembers: error creating load user data request - %s", err)
 		}
 
 		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
@@ -55,18 +55,17 @@ func (a *Adapter) RetrieveAuthmanGroupMembers(groupName string) ([]string, error
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("RetrieveAuthmanGroupMembers: error loading user data - %s", err)
-			return nil, err
+			return nil, fmt.Errorf("RetrieveAuthmanGroupMembers: error loading user data - %s", err)
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			log.Printf("RetrieveAuthmanGroupMembersError: error with response code - %d", resp.StatusCode)
-			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: error with response code != 200")
-		}
 
 		data, err := io.ReadAll(resp.Body)
 		if err != nil {
 			log.Printf("RetrieveAuthmanGroupMembersError: unable to read json: %s", err)
 			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: unable to parse json: %s", err)
+		} else if resp.StatusCode != 200 {
+			log.Printf("RetrieveAuthmanGroupMembersError: error with response code - %d: %s", resp.StatusCode, string(data))
+			return nil, fmt.Errorf("RetrieveAuthmanGroupMembersError: error with response code != 200")
 		}
 
 		var authmanData model.AuthmanGroupResponse
@@ -96,7 +95,7 @@ func (a *Adapter) AddAuthmanMemberToGroup(groupName string, uin string) error {
 		req, err := http.NewRequest("PUT", url, nil)
 		if err != nil {
 			log.Printf("AddAuthmanMemberToGroup: error creating load user data request - %s", err)
-			return err
+			return fmt.Errorf("AddAuthmanMemberToGroup: error creating load user data request - %s", err)
 		}
 
 		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
@@ -104,11 +103,16 @@ func (a *Adapter) AddAuthmanMemberToGroup(groupName string, uin string) error {
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("AddAuthmanMemberToGroup: error loading user data - %s", err)
-			return err
+			return fmt.Errorf("AddAuthmanMemberToGroup: error loading user data - %s", err)
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			log.Printf("RetrieveAuthmanGroupMembersError: error with response code - %d", resp.StatusCode)
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("AddAuthmanMemberToGroup: unable to read json: %s", err)
+			return fmt.Errorf("AddAuthmanMemberToGroup: unable to parse json: %s", err)
+		} else if resp.StatusCode != 200 {
+			log.Printf("AddAuthmanMemberToGroup: error with response code - %d: %s", resp.StatusCode, string(data))
 			return fmt.Errorf("AddAuthmanMemberToGroup: error with response code != 200")
 		}
 
@@ -124,21 +128,26 @@ func (a *Adapter) RemoveAuthmanMemberFromGroup(groupName string, uin string) err
 		client := &http.Client{}
 		req, err := http.NewRequest("DELETE", url, nil)
 		if err != nil {
-			log.Printf("AddAuthmanMemberToGroup: error creating load user data request - %s", err)
-			return err
+			log.Printf("RemoveAuthmanMemberFromGroup: error creating load user data request - %s", err)
+			return fmt.Errorf("RemoveAuthmanMemberFromGroup: error creating load user data request - %s", err)
 		}
 
 		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
 
 		resp, err := client.Do(req)
 		if err != nil {
-			log.Printf("AddAuthmanMemberToGroup: error loading user data - %s", err)
-			return err
+			log.Printf("RemoveAuthmanMemberFromGroup: error loading user data - %s", err)
+			return fmt.Errorf("RemoveAuthmanMemberFromGroup: error loading user data - %s", err)
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			log.Printf("RetrieveAuthmanGroupMembersError: error with response code - %d", resp.StatusCode)
-			return fmt.Errorf("AddAuthmanMemberToGroup: error with response code != 200")
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			log.Printf("RemoveAuthmanMemberFromGroup: unable to read json: %s", err)
+			return fmt.Errorf("RemoveAuthmanMemberFromGroup: unable to parse json: %s", err)
+		} else if resp.StatusCode != 200 {
+			log.Printf("RemoveAuthmanMemberFromGroup: error with response code - %d: %s", resp.StatusCode, string(data))
+			return fmt.Errorf("RemoveAuthmanMemberFromGroup: error with response code != 200")
 		}
 
 		return nil
@@ -167,7 +176,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 		reqBody, err := json.Marshal(requestBodyStruct)
 		if err != nil {
 			log.Printf("RetrieveAuthmanUsers: marshal request body - %s", err)
-			return nil, err
+			return nil, fmt.Errorf("RetrieveAuthmanUsers: marshal request body - %s", err)
 		}
 
 		url := fmt.Sprintf("%s/subjects", a.authmanBaseURL)
@@ -175,7 +184,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 		req, err := http.NewRequest("GET", url, strings.NewReader(string(reqBody)))
 		if err != nil {
 			log.Printf("RetrieveAuthmanUsers: error creating load user data request - %s", err)
-			return nil, err
+			return nil, fmt.Errorf("RetrieveAuthmanUsers: error creating load user data request - %s", err)
 		}
 
 		req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
@@ -184,7 +193,7 @@ func (a *Adapter) RetrieveAuthmanUsers(externalIDs []string) (map[string]model.A
 		resp, err := client.Do(req)
 		if err != nil {
 			log.Printf("RetrieveAuthmanUsers: error loading user data - %s", err)
-			return nil, err
+			return nil, fmt.Errorf("RetrieveAuthmanUsers: error loading user data - %s", err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
@@ -237,7 +246,7 @@ func (a *Adapter) RetrieveAuthmanStemGroups(stemName string) (*model.АuthmanGro
 	req, err := http.NewRequest("POST", url, strings.NewReader(requestBody))
 	if err != nil {
 		log.Printf("RetrieveAuthmanStemGroups: error creating load user data request - %s", err)
-		return nil, err
+		return nil, fmt.Errorf("RetrieveAuthmanStemGroups: error creating load user data request - %s", err)
 	}
 
 	req.SetBasicAuth(a.authmanUsername, a.authmanPassword)
