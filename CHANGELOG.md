@@ -6,6 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.79.0] - 2025-07-21
 ### Fixed
 - Fix and improve Authman sync logs [#598](https://github.com/rokwire/groups-building-block/issues/598)
 
