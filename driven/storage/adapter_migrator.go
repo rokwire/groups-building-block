@@ -1,0 +1,97 @@
+// Copyright 2022 Board of Trustees of the University of Illinois.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package storage
+
+import (
+	"log"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) error {
+	filter := bson.D{
+		{Key: "$or",
+			Value: bson.A{
+				bson.D{{Key: "org_id", Value: primitive.Null{}}},
+				bson.D{{Key: "org_id", Value: bson.D{{Key: "$exists", Value: false}}}},
+				bson.D{{Key: "org_id", Value: ""}},
+			},
+		},
+	}
+	update := bson.D{
+		{Key: "$set", Value: bson.M{"org_id": defaultOrgID}},
+		{Key: "$unset", Value: bson.M{"client_id": ""}},
+	}
+	log.Printf("Starting migration for org_id %s", defaultOrgID)
+	defer log.Printf("Finished migration for org_id %s", defaultOrgID)
+	err := sa.PerformTransaction(func(ctx TransactionContext) error {
+
+		result, err := sa.db.configs.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("configs: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		result, err = sa.db.enums.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("enums: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		result, err = sa.db.events.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("events: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		result, err = sa.db.groups.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("groups: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		result, err = sa.db.posts.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("posts: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		result, err = sa.db.syncTimes.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("syncTimes: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		result, err = sa.db.users.UpdateManyWithContext(ctx, filter, update, nil)
+		if err != nil {
+			return err
+		}
+		log.Printf("users: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		return nil
+	})
+	if err != nil {
+		log.Printf("error migrating groups for org_id %s: %s", defaultOrgID, err)
+		return err
+	}
+
+	result, err := sa.db.groupMemberships.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("groupMemberships: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	return nil
+}

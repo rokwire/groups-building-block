@@ -139,6 +139,8 @@ type Storage interface {
 
 	PerformTransaction(transaction func(context storage.TransactionContext) error) error
 
+	MigrateGroups(context storage.TransactionContext, defaultOrgID string) error
+
 	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
 	FindSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
 	FindSyncConfig(context storage.TransactionContext, orgID string) (*model.SyncConfig, error)
