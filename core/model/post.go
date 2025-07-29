@@ -22,7 +22,7 @@ import (
 // Post represents group posts
 type Post struct {
 	ID                string              `json:"id" bson:"_id"`
-	ClientID          string              `json:"client_id" bson:"client_id"`
+	OrgID             string              `json:"org_id" bson:"org_id"`
 	GroupID           string              `json:"group_id" bson:"group_id"`
 	ParentID          *string             `json:"parent_id" bson:"parent_id"`
 	TopParentID       *string             `json:"top_parent_id" bson:"top_parent_id"`

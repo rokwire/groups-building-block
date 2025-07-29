@@ -82,17 +82,17 @@ func (app *Application) setupCronTimer() {
 
 		if config.CRON != "" {
 			sync := func() {
-				log.Println("syncManagedGroups for clientID " + config.ClientID)
-				err := app.synchronizeAuthman(config.ClientID, true)
+				log.Println("syncManagedGroups for orgID " + config.OrgID)
+				err := app.synchronizeAuthman(config.OrgID, true)
 				if err != nil {
-					log.Printf("error syncing Authman groups for clientID %s: %s\n", config.ClientID, err.Error())
+					log.Printf("error syncing Authman groups for orgID %s: %s\n", config.OrgID, err.Error())
 				}
 			}
 			_, err := app.scheduler.AddFunc(config.CRON, sync)
 			if err != nil {
-				log.Printf("error scheduling managed group sync for clientID %s: %s\n", config.ClientID, err)
+				log.Printf("error scheduling managed group sync for orgID %s: %s\n", config.OrgID, err)
 			}
-			log.Printf("sync managed group task scheduled for clientID=%s at %s\n", config.ClientID, config.CRON)
+			log.Printf("sync managed group task scheduled for orgID=%s at %s\n", config.OrgID, config.CRON)
 		}
 	}
 

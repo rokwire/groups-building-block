@@ -41,7 +41,7 @@ func NewSocialAdapter(logger *logs.Logger, socialURL string, serviceAccountManag
 }
 
 // GetPosts retrieves posts from the social BB
-func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
+func (a *Adapter) GetPosts(orgID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
 	result, err := a.invokePostsOperation("get_posts", &current.ID, &filter.GroupID, map[string]interface{}{
 		"filter":               filter,
 		"filter_private_posts": filterPrivatePostsValue,
@@ -74,7 +74,7 @@ func (a *Adapter) GetPosts(clientID string, current *model.User, filter model.Po
 }
 
 // GetPost retrieves a post from the social BB
-func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+func (a *Adapter) GetPost(orgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
 	result, err := a.invokePostsOperation("get_post", userID, &groupID, map[string]interface{}{
 		"post_id":               postID,
 		"skip_membership_check": skipMembershipCheck,
@@ -106,7 +106,7 @@ func (a *Adapter) GetPost(clientID string, userID *string, groupID string, postI
 }
 
 // GetUserPostCount retrieves the number of posts for a user
-func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, error) {
+func (a *Adapter) GetUserPostCount(orgID string, userID string) (*int64, error) {
 	result, err := a.invokePostsOperation("get_user_post_count", &userID, nil, map[string]interface{}{})
 	if err != nil {
 		a.logger.Errorf("social.GetUserPostCount: error invoking posts operation - %s", err)
@@ -133,7 +133,7 @@ func (a *Adapter) GetUserPostCount(clientID string, userID string) (*int64, erro
 }
 
 // CreatePost creates a post
-func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+func (a *Adapter) CreatePost(orgID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
 	result, err := a.invokePostsOperation("create_post", &current.ID, &post.GroupID, map[string]interface{}{
 		"post": post,
 	})
@@ -162,7 +162,7 @@ func (a *Adapter) CreatePost(clientID string, current *model.User, post *model.P
 }
 
 // UpdatePost updates a post
-func (a *Adapter) UpdatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+func (a *Adapter) UpdatePost(orgID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
 	result, err := a.invokePostsOperation("update_post", &current.ID, &post.GroupID, map[string]interface{}{
 		"post": post,
 	})
@@ -191,7 +191,7 @@ func (a *Adapter) UpdatePost(clientID string, current *model.User, group *model.
 }
 
 // ReactToPost reacts to a post
-func (a *Adapter) ReactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
+func (a *Adapter) ReactToPost(orgID string, current *model.User, groupID string, postID string, reaction string) error {
 	result, err := a.invokePostsOperation("react_to_post", &current.ID, &groupID, map[string]interface{}{
 		"post_id":  postID,
 		"reaction": reaction,
@@ -220,7 +220,7 @@ func (a *Adapter) ReactToPost(clientID string, current *model.User, groupID stri
 }
 
 // ReportPostAsAbuse reports a post as abuse
-func (a *Adapter) ReportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+func (a *Adapter) ReportPostAsAbuse(orgID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
 	result, err := a.invokePostsOperation("report_abuse_post", &current.ID, &post.GroupID, map[string]interface{}{
 		"post_id":              post.ID,
 		"comment":              comment,
@@ -251,7 +251,7 @@ func (a *Adapter) ReportPostAsAbuse(clientID string, current *model.User, group 
 }
 
 // DeletePost deletes a post
-func (a *Adapter) DeletePost(clientID string, userID string, groupID string, postID string, force bool) error {
+func (a *Adapter) DeletePost(orgID string, userID string, groupID string, postID string, force bool) error {
 	result, err := a.invokePostsOperation("delete_post", &userID, &groupID, map[string]interface{}{
 		"post_id": postID,
 		"force":   force,

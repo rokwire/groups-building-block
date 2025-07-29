@@ -45,58 +45,58 @@ type Auth struct {
 	supportedClients []string
 }
 
-func (auth *Auth) clientIDCheck(r *http.Request) (bool, string) {
-	clientID := r.Header.Get("APP")
-	if len(clientID) == 0 {
-		clientID = "edu.illinois.rokwire"
+func (auth *Auth) orgIDCheck(r *http.Request) (bool, string) {
+	orgID := r.Header.Get("APP")
+	if len(orgID) == 0 {
+		orgID = "edu.illinois.rokwire"
 	}
 
 	//check if supported
 	for _, s := range auth.supportedClients {
-		if s == clientID {
-			return true, clientID
+		if s == orgID {
+			return true, orgID
 		}
 	}
 	return false, ""
 }
 
 func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
+	orgIDOK, orgID := auth.orgIDCheck(r)
+	if !orgIDOK {
 		return "", false
 	}
 
 	apiKey := auth.getAPIKey(r)
 	authenticated := auth.apiKeysAuth.check(apiKey, r)
 
-	return clientID, authenticated
+	return orgID, authenticated
 }
 
 func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
+	orgIDOK, orgID := auth.orgIDCheck(r)
+	if !orgIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, allowAnonymousCoreToken, nil, r)
-	return clientID, user
+	user := auth.idTokenAuth.check(idToken, allowAnonymousCoreToken, nil, r)
+	return orgID, user
 }
 
-func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCClientIDs []string) (string, *model.User) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
+func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCOrgIDs []string) (string, *model.User) {
+	orgIDOK, orgID := auth.orgIDCheck(r)
+	if !orgIDOK {
 		return "", nil
 	}
 
 	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(clientID, idToken, false, allowedOIDCClientIDs, r)
-	return clientID, user
+	user := auth.idTokenAuth.check(idToken, false, allowedOIDCOrgIDs, r)
+	return orgID, user
 }
 
 func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
+	orgIDOK, orgID := auth.orgIDCheck(r)
+	if !orgIDOK {
 		log.Printf("%s %s error - missing or bad APP header", r.Method, r.URL.Path)
 		return "", false
 	}
@@ -104,13 +104,13 @@ func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (str
 	internalAuthKey := auth.getInternalAPIKey(r)
 	authenticated := auth.internalAuth.check(internalAuthKey, w)
 
-	return clientID, authenticated
+	return orgID, authenticated
 }
 
 func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
 	//get client ID
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
+	orgIDOK, orgID := auth.orgIDCheck(r)
+	if !orgIDOK {
 		return "", false, nil
 	}
 
@@ -118,30 +118,30 @@ func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
 	idToken := auth.getIDToken(r)
 	if idToken != nil && len(*idToken) > 0 {
 		authenticated := false
-		user := auth.idTokenAuth.check(clientID, idToken, true, nil, r)
+		user := auth.idTokenAuth.check(idToken, true, nil, r)
 		if user != nil {
 			authenticated = true
 		}
-		return clientID, authenticated, user
+		return orgID, authenticated, user
 	}
 
 	//check api key
 	apiKey := auth.getAPIKey(r)
 	if apiKey != nil && len(*apiKey) > 0 {
 		authenticated := auth.apiKeysAuth.check(apiKey, r)
-		return clientID, authenticated, nil
+		return orgID, authenticated, nil
 	}
-	return clientID, false, nil
+	return orgID, false, nil
 }
 
 func (auth *Auth) adminCheck(r *http.Request) (string, *model.User, bool) {
-	clientIDOK, clientID := auth.clientIDCheck(r)
-	if !clientIDOK {
+	orgIDOK, orgID := auth.orgIDCheck(r)
+	if !orgIDOK {
 		return "", nil, false
 	}
 
-	user, forbidden := auth.adminAuth.check(clientID, r)
-	return clientID, user, forbidden
+	user, forbidden := auth.adminAuth.check(r)
+	return orgID, user, forbidden
 }
 
 func (auth *Auth) getAPIKey(r *http.Request) *string {
@@ -185,8 +185,8 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 }
 
 // NewAuth creates new auth handler
-func NewAuth(app *core.Application, host string, supportedClientIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcClientID string, oidcExtendedClientIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+func NewAuth(app *core.Application, host string, supportedOrgIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcOrgID string, oidcExtendedOrgIDs string,
+	oidcAdminOrgID string, oidcAdminWebOrgID string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
 	var tokenAuth *tokenauth.TokenAuth
 	if serviceRegManager != nil {
 		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
@@ -201,11 +201,11 @@ func NewAuth(app *core.Application, host string, supportedClientIDs []string, ap
 	}
 
 	apiKeysAuth := newAPIKeysAuth(appKeys, tokenAuth)
-	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcClientID, oidcExtendedClientIDs, tokenAuth)
+	idTokenAuth := newIDTokenAuth(app, oidcProvider, oidcOrgID, oidcExtendedOrgIDs, tokenAuth)
 	internalAuth := newInternalAuth(internalAPIKey)
-	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
+	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminOrgID, oidcAdminWebOrgID, tokenAuth, adminAuthorization)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedClientIDs}
+	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedOrgIDs}
 	return &auth
 }
 
@@ -302,9 +302,9 @@ func newInternalAuth(internalAPIKey string) *InternalAuth {
 type IDTokenAuth struct {
 	app *core.Application
 
-	idTokenVerifier   *oidc.IDTokenVerifier
-	appClientIDs      []string
-	extendedClientIDs []string
+	idTokenVerifier *oidc.IDTokenVerifier
+	appOrgIDs       []string
+	extendedOrgIDs  []string
 
 	coreTokenAuth *tokenauth.TokenAuth
 
@@ -313,7 +313,7 @@ type IDTokenAuth struct {
 	cachedUsersLockMapping map[string]*sync.Mutex
 }
 
-func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCoreToken bool, allowedClientIDs []string, r *http.Request) *model.User {
+func (auth *IDTokenAuth) check(token *string, allowAnonymousCoreToken bool, allowedOrgIDs []string, r *http.Request) *model.User {
 	var data *userData
 	var isCoreUser = false
 	var isAnonymous = false
@@ -369,16 +369,16 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 			return nil
 		}
 
-		if allowedClientIDs == nil {
-			allowedClientIDs = auth.appClientIDs
+		if allowedOrgIDs == nil {
+			allowedOrgIDs = auth.appOrgIDs
 		}
 
 		validAud := false
 		if data.Aud != nil {
-			validAud = rokwireutils.ContainsString(allowedClientIDs, *data.Aud)
+			validAud = rokwireutils.ContainsString(allowedOrgIDs, *data.Aud)
 		}
 		if !validAud {
-			log.Printf("invalid audience in token: expected %v, got %s\n", allowedClientIDs, *data.Aud)
+			log.Printf("invalid audience in token: expected %v, got %s\n", allowedOrgIDs, *data.Aud)
 			return nil
 		}
 
@@ -418,7 +418,7 @@ func (auth *IDTokenAuth) check(clientID string, token *string, allowAnonymousCor
 		netID = *data.NetID
 	}
 	return &model.User{
-		ID: userID, AppID: appID, OrgID: orgID, ClientID: clientID, ExternalID: externalID, NetID: netID,
+		ID: userID, AppID: appID, OrgID: orgID, ExternalID: externalID, NetID: netID,
 		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
 		Permissions: data.Permissions,
 	}
@@ -446,7 +446,7 @@ func (auth *IDTokenAuth) responseInternalServerError(w http.ResponseWriter) {
 }
 
 // newIDTokenAuth creates new id token auth
-func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs string, extendedClientIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
+func newIDTokenAuth(app *core.Application, oidcProvider string, appOrgIDs string, extendedOrgIDs string, coreTokenAuth *tokenauth.TokenAuth) *IDTokenAuth {
 	var idTokenVerifier *oidc.IDTokenVerifier
 	if len(oidcProvider) > 0 {
 		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
@@ -459,11 +459,11 @@ func newIDTokenAuth(app *core.Application, oidcProvider string, appClientIDs str
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
-	appClientIDList := strings.Split(appClientIDs, ",")
-	extendedClientIDList := strings.Split(extendedClientIDs, ",")
+	appOrgIDList := strings.Split(appOrgIDs, ",")
+	extendedOrgIDList := strings.Split(extendedOrgIDs, ",")
 
 	auth := IDTokenAuth{app: app, idTokenVerifier: idTokenVerifier, coreTokenAuth: coreTokenAuth,
-		appClientIDs: appClientIDList, extendedClientIDs: extendedClientIDList,
+		appOrgIDs: appOrgIDList, extendedOrgIDs: extendedOrgIDList,
 		cachedUsers: cacheUsers, cachedUsersLock: lock}
 	return &auth
 }
@@ -475,9 +475,9 @@ type AdminAuth struct {
 	app *core.Application
 
 	appVerifier    *oidc.IDTokenVerifier
-	appClientID    string
+	appOrgID       string
 	webAppVerifier *oidc.IDTokenVerifier
-	webAppClientID string
+	webAppOrgID    string
 
 	authorization *casbin.Enforcer
 
@@ -491,7 +491,7 @@ func (auth *AdminAuth) start() {
 
 }
 
-func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, bool) {
+func (auth *AdminAuth) check(r *http.Request) (*model.User, bool) {
 	var data *userData
 	var isCoreUser = false
 	var coreErr error
@@ -590,7 +590,6 @@ func (auth *AdminAuth) check(clientID string, r *http.Request) (*model.User, boo
 		ID:          userID,
 		AppID:       appID,
 		OrgID:       orgID,
-		ClientID:    clientID,
 		ExternalID:  externalID,
 		Email:       email,
 		Name:        name,
@@ -671,7 +670,7 @@ func (auth *AdminAuth) responseInternalServerError(w http.ResponseWriter) {
 	w.Write([]byte("Internal Server Error"))
 }
 
-func newAdminAuth(app *core.Application, oidcProvider string, appClientID string, webAppClientID string, coreTokenAuth *tokenauth.TokenAuth, authorization *casbin.Enforcer) *AdminAuth {
+func newAdminAuth(app *core.Application, oidcProvider string, appOrgID string, webAppOrgID string, coreTokenAuth *tokenauth.TokenAuth, authorization *casbin.Enforcer) *AdminAuth {
 	var appVerifier *oidc.IDTokenVerifier
 	var webAppVerifier *oidc.IDTokenVerifier
 	if len(oidcProvider) > 0 {
@@ -679,15 +678,15 @@ func newAdminAuth(app *core.Application, oidcProvider string, appClientID string
 		if err != nil {
 			log.Fatalln(err)
 		}
-		appVerifier = provider.Verifier(&oidc.Config{ClientID: appClientID})
-		webAppVerifier = provider.Verifier(&oidc.Config{ClientID: webAppClientID})
+		appVerifier = provider.Verifier(&oidc.Config{OrgID: appOrgID})
+		webAppVerifier = provider.Verifier(&oidc.Config{OrgID: webAppOrgID})
 	}
 
 	cacheUsers := &syncmap.Map{}
 	lock := &sync.RWMutex{}
 
-	auth := AdminAuth{app: app, appVerifier: appVerifier, appClientID: appClientID,
-		webAppVerifier: webAppVerifier, webAppClientID: webAppClientID, coreTokenAuth: coreTokenAuth,
+	auth := AdminAuth{app: app, appVerifier: appVerifier, appOrgID: appOrgID,
+		webAppVerifier: webAppVerifier, webAppOrgID: webAppOrgID, coreTokenAuth: coreTokenAuth,
 		cachedUsers: cacheUsers, cachedUsersLock: lock, authorization: authorization}
 	return &auth
 }

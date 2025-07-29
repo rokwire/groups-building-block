@@ -147,12 +147,12 @@ func main() {
 	}
 	rewardsAdapter := rewards.NewRewardsAdapter(rewardsServiceReg.Host, intrernalAPIKey)
 
-	supportedClientIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
+	supportedOrgIDs := []string{"edu.illinois.rokwire", "edu.illinois.covid"}
 
 	config := &model.ApplicationConfig{
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SupportedClientIDs:        supportedClientIDs,
+		SupportedOrgIDs:           supportedOrgIDs,
 		AppID:                     appID,
 		OrgID:                     orgID,
 	}
@@ -182,13 +182,13 @@ func main() {
 		port = "80"
 	}
 	oidcProvider := getEnvKey("GR_OIDC_PROVIDER", true)
-	oidcClientID := getEnvKey("GR_OIDC_CLIENT_ID", true)
-	oidcExtendedClientIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
-	oidcAdminClientID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
-	oidcAdminWebClientID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
+	oidcOrgID := getEnvKey("GR_OIDC_CLIENT_ID", true)
+	oidcExtendedOrgIDs := getEnvKey("GR_OIDC_EXTENDED_CLIENT_IDS", false)
+	oidcAdminOrgID := getEnvKey("GR_OIDC_ADMIN_CLIENT_ID", true)
+	oidcAdminWebOrgID := getEnvKey("GR_OIDC_ADMIN_WEB_CLIENT_ID", true)
 
-	webAdapter := web.NewWebAdapter(application, host, port, supportedClientIDs, apiKeys, oidcProvider,
-		oidcClientID, oidcExtendedClientIDs, oidcAdminClientID, oidcAdminWebClientID,
+	webAdapter := web.NewWebAdapter(application, host, port, supportedOrgIDs, apiKeys, oidcProvider,
+		oidcOrgID, oidcExtendedOrgIDs, oidcAdminOrgID, oidcAdminWebOrgID,
 		intrernalAPIKey, serviceRegManager, groupServiceURL, logger)
 	webAdapter.Start()
 }

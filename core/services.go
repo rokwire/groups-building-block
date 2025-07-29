@@ -56,24 +56,24 @@ func (app *Application) getVersion() string {
 	return app.version
 }
 
-func (app *Application) getGroupEntity(clientID string, id string) (*model.Group, error) {
-	group, err := app.storage.FindGroup(nil, clientID, id, nil)
+func (app *Application) getGroupEntity(orgID string, id string) (*model.Group, error) {
+	group, err := app.storage.FindGroup(nil, orgID, id, nil)
 	if err != nil {
 		return nil, err
 	}
 	return group, nil
 }
 
-func (app *Application) getGroupEntityByTitle(clientID string, title string) (*model.Group, error) {
-	group, err := app.storage.FindGroupByTitle(clientID, title)
+func (app *Application) getGroupEntityByTitle(orgID string, title string) (*model.Group, error) {
+	group, err := app.storage.FindGroupByTitle(orgID, title)
 	if err != nil {
 		return nil, err
 	}
 	return group, nil
 }
 
-func (app *Application) isGroupAdmin(clientID string, groupID string, userID string) (bool, error) {
-	membership, err := app.storage.FindGroupMembership(clientID, groupID, userID)
+func (app *Application) isGroupAdmin(orgID string, groupID string, userID string) (bool, error) {
+	membership, err := app.storage.FindGroupMembership(orgID, groupID, userID)
 	if err != nil {
 		return false, err
 	}
@@ -84,7 +84,7 @@ func (app *Application) isGroupAdmin(clientID string, groupID string, userID str
 	return true, nil
 }
 
-func (app *Application) createGroup(clientID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError) {
+func (app *Application) createGroup(orgID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError) {
 
 	var groupError *utils.GroupError
 	var groupID *string
@@ -107,7 +107,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 				netID := account.GetNetID()
 				if externalID != "" && fullName != "" && netID != "" && netID != current.NetID {
 					members = append(members, model.GroupMembership{
-						ClientID:   clientID,
+						OrgID:      orgID,
 						GroupID:    group.ID,
 						UserID:     account.ID,
 						ExternalID: externalID,
@@ -120,7 +120,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 			}
 		}
 
-		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, members)
+		groupID, groupError = app.storage.CreateGroup(context, orgID, current, group, members)
 		if groupError != nil {
 			return err
 		}
@@ -158,8 +158,8 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 		return nil
 	})
 
-	handleRewardsAsync := func(clientID, userID string) {
-		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
+	handleRewardsAsync := func(orgID, userID string) {
+		count, grErr := app.storage.FindUserGroupsCount(orgID, current.ID)
 		if grErr != nil {
 			log.Printf("Error createGroup(): %s", grErr)
 		} else {
@@ -168,7 +168,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 			}
 		}
 	}
-	go handleRewardsAsync(clientID, current.ID)
+	go handleRewardsAsync(orgID, current.ID)
 
 	if groupError != nil {
 		return nil, groupError
@@ -181,7 +181,7 @@ func (app *Application) createGroup(clientID string, current *model.User, group 
 	return groupID, nil
 }
 
-func (app *Application) createGroupV3(clientID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError) {
+func (app *Application) createGroupV3(orgID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError) {
 
 	var groupError *utils.GroupError
 	var groupID *string
@@ -226,7 +226,7 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 				status := accountIDMapping[account.ID].Status
 
 				members = append(members, model.GroupMembership{
-					ClientID:   clientID,
+					OrgID:      orgID,
 					GroupID:    group.ID,
 					UserID:     account.ID,
 					ExternalID: externalID,
@@ -259,7 +259,7 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 				status := accountIDMapping[account.ID].Status
 
 				members = append(members, model.GroupMembership{
-					ClientID:   clientID,
+					OrgID:      orgID,
 					GroupID:    group.ID,
 					UserID:     account.ID,
 					ExternalID: externalID,
@@ -272,7 +272,7 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 			}
 		}
 
-		groupID, groupError = app.storage.CreateGroup(context, clientID, current, group, members)
+		groupID, groupError = app.storage.CreateGroup(context, orgID, current, group, members)
 		if groupError != nil {
 			return err
 		}
@@ -310,8 +310,8 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 		return nil
 	})
 
-	handleRewardsAsync := func(clientID, userID string) {
-		count, grErr := app.storage.FindUserGroupsCount(clientID, current.ID)
+	handleRewardsAsync := func(orgID, userID string) {
+		count, grErr := app.storage.FindUserGroupsCount(orgID, current.ID)
 		if grErr != nil {
 			log.Printf("Error createGroup(): %s", grErr)
 		} else {
@@ -320,7 +320,7 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 			}
 		}
 	}
-	go handleRewardsAsync(clientID, current.ID)
+	go handleRewardsAsync(orgID, current.ID)
 
 	if groupError != nil {
 		return nil, groupError
@@ -333,26 +333,26 @@ func (app *Application) createGroupV3(clientID string, current *model.User, grou
 	return groupID, nil
 }
 
-func (app *Application) updateGroup(clientID string, current *model.User, group *model.Group) *utils.GroupError {
+func (app *Application) updateGroup(orgID string, current *model.User, group *model.Group) *utils.GroupError {
 
-	err := app.storage.UpdateGroup(nil, clientID, current, group)
+	err := app.storage.UpdateGroup(nil, orgID, current, group)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) updateGroupDateUpdated(clientID string, groupID string) error {
-	err := app.storage.UpdateGroupDateUpdated(clientID, groupID)
+func (app *Application) updateGroupDateUpdated(orgID string, groupID string) error {
+	err := app.storage.UpdateGroupDateUpdated(orgID, groupID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) deleteGroup(clientID string, current *model.User, id string, inactive bool) error {
+func (app *Application) deleteGroup(orgID string, current *model.User, id string, inactive bool) error {
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		group, err := app.storage.FindGroup(context, clientID, id, nil)
+		group, err := app.storage.FindGroup(context, orgID, id, nil)
 		if err != nil {
 			log.Printf("error finding group: %s", err)
 			return err
@@ -360,7 +360,7 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 
 		var admins model.MembershipCollection
 		if inactive {
-			admins, err = app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+			admins, err = app.storage.FindGroupMembershipsWithContext(context, orgID, model.MembershipFilter{
 				GroupIDs: []string{id},
 				Statuses: []string{"admin"},
 			})
@@ -388,7 +388,7 @@ func (app *Application) deleteGroup(clientID string, current *model.User, id str
 			//return err // Do not block group deletion if events cannot be deleted
 		}
 
-		err = app.storage.DeleteGroup(nil, clientID, id)
+		err = app.storage.DeleteGroup(nil, orgID, id)
 		if err != nil {
 			return err
 		}
@@ -418,13 +418,13 @@ func (app *Application) getAllGroupsUnsecured() ([]model.Group, error) {
 	return app.storage.FindAllGroupsUnsecured()
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error) {
+func (app *Application) getGroups(orgID string, current *model.User, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error) {
 	var userID *string
 	if current != nil {
 		userID = &current.ID
 	}
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, userID, filter, skipMembershipCheck)
+	groups, err := app.storage.FindGroups(orgID, userID, filter, skipMembershipCheck)
 	if err != nil {
 		return nil, err
 	}
@@ -432,9 +432,9 @@ func (app *Application) getGroups(clientID string, current *model.User, filter m
 	return groups, nil
 }
 
-func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
+func (app *Application) getAllGroups(orgID string) ([]model.Group, error) {
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, model.GroupsFilter{}, false)
+	groups, err := app.storage.FindGroups(orgID, nil, model.GroupsFilter{}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -442,9 +442,9 @@ func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
 	return groups, nil
 }
 
-func (app *Application) getUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+func (app *Application) getUserGroups(orgID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
 	// find the user groups
-	groups, err := app.storage.FindUserGroups(clientID, current.ID, filter)
+	groups, err := app.storage.FindUserGroups(orgID, current.ID, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -452,18 +452,18 @@ func (app *Application) getUserGroups(clientID string, current *model.User, filt
 	return groups, nil
 }
 
-func (app *Application) deleteUser(clientID string, current *model.User) error {
-	return app.storage.DeleteUser(clientID, current.ID)
+func (app *Application) deleteUser(orgID string, current *model.User) error {
+	return app.storage.DeleteUser(orgID, current.ID)
 }
 
-func (app *Application) getGroup(clientID string, current *model.User, id string) (*model.Group, error) {
+func (app *Application) getGroup(orgID string, current *model.User, id string) (*model.Group, error) {
 	// find the group
 	var userID *string
 	if current != nil {
 		userID = &current.ID
 	}
 
-	group, err := app.storage.FindGroup(nil, clientID, id, userID)
+	group, err := app.storage.FindGroup(nil, orgID, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -471,17 +471,17 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return group, nil
 }
 
-func (app *Application) getGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
-	return app.storage.CalculateGroupFilterStats(clientID, current, filter)
+func (app *Application) getGroupFilterStats(orgID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
+	return app.storage.CalculateGroupFilterStats(orgID, current, filter)
 }
 
-func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
-	membership, err := app.storage.ApplyMembershipApproval(clientID, membershipID, approve, rejectReason)
+func (app *Application) applyMembershipApproval(orgID string, current *model.User, membershipID string, approve bool, rejectReason string) error {
+	membership, err := app.storage.ApplyMembershipApproval(orgID, membershipID, approve, rejectReason)
 	if err != nil {
 		return fmt.Errorf("error applying membership approval: %s", err)
 	}
 	if err == nil && membership != nil {
-		group, _ := app.storage.FindGroup(nil, clientID, membership.GroupID, nil)
+		group, _ := app.storage.FindGroup(nil, orgID, membership.GroupID, nil)
 		topic := "group.invitations"
 		groupStr := "Group"
 		if group.ResearchGroup {
@@ -543,8 +543,8 @@ func (app *Application) applyMembershipApproval(clientID string, current *model.
 	return nil
 }
 
-func (app *Application) updateMembership(clientID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
-	membership, _ := app.storage.FindGroupMembershipByID(clientID, membershipID)
+func (app *Application) updateMembership(orgID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error {
+	membership, _ := app.storage.FindGroupMembershipByID(orgID, membershipID)
 	if membership != nil {
 		if status != nil && membership.Status != *status {
 			membership.Status = *status
@@ -556,7 +556,7 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 			membership.NotificationsPreferences = *notificationsPreferences
 		}
 
-		err := app.storage.UpdateMembership(clientID, current, membershipID, membership)
+		err := app.storage.UpdateMembership(orgID, current, membershipID, membership)
 		if err != nil {
 			return err
 		}
@@ -565,13 +565,13 @@ func (app *Application) updateMembership(clientID string, current *model.User, m
 	return nil
 }
 
-func (app *Application) createMembershipsStatuses(clientID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
+func (app *Application) createMembershipsStatuses(orgID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error {
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		membership, _ := app.storage.FindGroupMembershipWithContext(context, clientID, groupID, current.ID)
+		membership, _ := app.storage.FindGroupMembershipWithContext(context, orgID, groupID, current.ID)
 
 		if membership != nil && membership.IsAdmin() {
 
-			group, err := app.storage.FindGroup(context, clientID, groupID, &current.ID)
+			group, err := app.storage.FindGroup(context, orgID, groupID, &current.ID)
 			if err != nil {
 				return err
 			}
@@ -603,7 +603,7 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 						if _, ok := existingIDs[account.ID]; !ok {
 							existingIDs[account.ID] = true
 							memberships = append(memberships, model.GroupMembership{
-								ClientID:   clientID,
+								OrgID:      orgID,
 								GroupID:    group.ID,
 								UserID:     account.ID,
 								ExternalID: account.GetExternalID(),
@@ -623,7 +623,7 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 							if _, ok := existingIDs[account.ID]; !ok {
 								existingIDs[account.ID] = true
 								memberships = append(memberships, model.GroupMembership{
-									ClientID:   clientID,
+									OrgID:      orgID,
 									GroupID:    group.ID,
 									UserID:     account.ID,
 									ExternalID: account.GetExternalID(),
@@ -640,13 +640,13 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 			}
 
 			if len(memberships) > 0 {
-				err := app.storage.CreateMemberships(context, clientID, current, group, memberships)
+				err := app.storage.CreateMemberships(context, orgID, current, group, memberships)
 				if err != nil {
 					return err
 				}
 			}
 
-			return app.storage.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
+			return app.storage.UpdateGroupStats(context, orgID, groupID, false, true, false, true)
 		}
 
 		return nil
@@ -655,9 +655,9 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 	return err
 }
 
-func (app *Application) updateMemberships(clientID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error {
+func (app *Application) updateMemberships(orgID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error {
 	if group != nil && group.CurrentMember != nil && group.CurrentMember.IsAdmin() {
-		err := app.storage.UpdateMemberships(clientID, user, group.ID, operation)
+		err := app.storage.UpdateMemberships(orgID, user, group.ID, operation)
 		if err != nil {
 			return err
 		}
@@ -665,9 +665,9 @@ func (app *Application) updateMemberships(clientID string, user *model.User, gro
 	return nil
 }
 
-func (app *Application) reportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error {
+func (app *Application) reportGroupAsAbuse(orgID string, current *model.User, group *model.Group, comment string) error {
 
-	err := app.storage.ReportGroupAsAbuse(clientID, current.ID, group)
+	err := app.storage.ReportGroupAsAbuse(orgID, current.ID, group)
 	if err != nil {
 		log.Printf("error while reporting an abuse group: %s", err)
 		return fmt.Errorf("error while reporting an abuse group: %s", err)
@@ -684,45 +684,45 @@ func (app *Application) reportGroupAsAbuse(clientID string, current *model.User,
 	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 }
 
-func (app *Application) getPosts(clientID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
-	return app.social.GetPosts(clientID, current, filter, filterPrivatePostsValue, filterByToMembers)
+func (app *Application) getPosts(orgID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
+	return app.social.GetPosts(orgID, current, filter, filterPrivatePostsValue, filterByToMembers)
 }
 
-func (app *Application) getPost(clientID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return app.social.GetPost(clientID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
+func (app *Application) getPost(orgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
+	return app.social.GetPost(orgID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
 }
 
-func (app *Application) getUserPostCount(clientID string, userID string) (*int64, error) {
-	return app.social.GetUserPostCount(clientID, userID)
+func (app *Application) getUserPostCount(orgID string, userID string) (*int64, error) {
+	return app.social.GetUserPostCount(orgID, userID)
 }
 
-func (app *Application) createPost(clientID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-	return app.social.CreatePost(clientID, current, post, group)
+func (app *Application) createPost(orgID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
+	return app.social.CreatePost(orgID, current, post, group)
 }
 
-func (app *Application) updatePost(clientID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	return app.social.UpdatePost(clientID, current, group, post)
+func (app *Application) updatePost(orgID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
+	return app.social.UpdatePost(orgID, current, group, post)
 }
 
-func (app *Application) reactToPost(clientID string, current *model.User, groupID string, postID string, reaction string) error {
-	return app.social.ReactToPost(clientID, current, groupID, postID, reaction)
+func (app *Application) reactToPost(orgID string, current *model.User, groupID string, postID string, reaction string) error {
+	return app.social.ReactToPost(orgID, current, groupID, postID, reaction)
 }
 
-func (app *Application) reportPostAsAbuse(clientID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-	return app.social.ReportPostAsAbuse(clientID, current, group, post, comment, sendToDean, sendToGroupAdmins)
+func (app *Application) reportPostAsAbuse(orgID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
+	return app.social.ReportPostAsAbuse(orgID, current, group, post, comment, sendToDean, sendToGroupAdmins)
 }
 
-func (app *Application) deletePost(clientID string, userID string, groupID string, postID string, force bool) error {
-	return app.social.DeletePost(clientID, userID, groupID, postID, force)
+func (app *Application) deletePost(orgID string, userID string, groupID string, postID string, force bool) error {
+	return app.social.DeletePost(orgID, userID, groupID, postID, force)
 }
 
-func (app *Application) sendGroupNotification(clientID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
+func (app *Application) sendGroupNotification(orgID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
 	memberStatuses := notification.MemberStatuses
 	if len(memberStatuses) == 0 {
 		memberStatuses = []string{"admin", "member"}
 	}
 
-	members, err := app.findGroupMemberships(nil, clientID, model.MembershipFilter{
+	members, err := app.findGroupMemberships(nil, orgID, model.MembershipFilter{
 		GroupIDs: []string{notification.GroupID},
 		UserIDs:  notification.Members.ToUserIDs(),
 		Statuses: memberStatuses,
@@ -742,8 +742,8 @@ func (app *Application) sendNotification(recipients []notifications.Recipient, t
 	app.notifications.SendNotification(recipients, topic, title, text, data, appID, orgID, nil)
 }
 
-func (app *Application) getManagedGroupConfigs(clientID string) ([]model.ManagedGroupConfig, error) {
-	return app.storage.FindManagedGroupConfigs(clientID)
+func (app *Application) getManagedGroupConfigs(orgID string) ([]model.ManagedGroupConfig, error) {
+	return app.storage.FindManagedGroupConfigs(orgID)
 }
 
 func (app *Application) createManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error) {
@@ -758,23 +758,23 @@ func (app *Application) updateManagedGroupConfig(config model.ManagedGroupConfig
 	return app.storage.UpdateManagedGroupConfig(config)
 }
 
-func (app *Application) deleteManagedGroupConfig(id string, clientID string) error {
-	return app.storage.DeleteManagedGroupConfig(id, clientID)
+func (app *Application) deleteManagedGroupConfig(id string, orgID string) error {
+	return app.storage.DeleteManagedGroupConfig(id, orgID)
 }
 
-func (app *Application) getSyncConfig(clientID string) (*model.SyncConfig, error) {
-	return app.storage.FindSyncConfig(nil, clientID)
+func (app *Application) getSyncConfig(orgID string) (*model.SyncConfig, error) {
+	return app.storage.FindSyncConfig(nil, orgID)
 }
 
 func (app *Application) updateSyncConfig(config model.SyncConfig) error {
 	return app.storage.SaveSyncConfig(nil, config)
 }
 
-func (app *Application) findGroupMembership(clientID string, groupID string, userID string) (*model.GroupMembership, error) {
-	return app.storage.FindGroupMembership(clientID, groupID, userID)
+func (app *Application) findGroupMembership(orgID string, groupID string, userID string) (*model.GroupMembership, error) {
+	return app.storage.FindGroupMembership(orgID, groupID, userID)
 }
 
-func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+func (app *Application) getResearchProfileUserCount(orgID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
 	searchParams := app.formatCoreAccountSearchParams(researchProfile)
 	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
 }

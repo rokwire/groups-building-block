@@ -99,7 +99,7 @@ func (c *MembershipCollection) GetMembersAsNotificationRecipients(predicate Mute
 // GroupMembership represents the membership of a user to a given group
 type GroupMembership struct {
 	ID         string `json:"id" bson:"_id"`
-	ClientID   string `json:"client_id" bson:"client_id"`
+	OrgID      string `json:"org_id" bson:"org_id"`
 	GroupID    string `json:"group_id" bson:"group_id"`
 	UserID     string `json:"user_id" bson:"user_id"`
 	ExternalID string `json:"external_id" bson:"external_id"`

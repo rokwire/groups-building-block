@@ -43,7 +43,7 @@ import (
 // @Security AppUserAuth
 // @Router /api/v2/groups [get]
 // @Router /api/v2/groups [post]
-func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupsV2(orgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	var groupsFilter model.GroupsFilter
 
@@ -111,7 +111,7 @@ func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.R
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	groups, err := h.app.Services.GetGroups(orgID, current, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -152,7 +152,7 @@ func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.R
 // @Security APIKeyAuth
 // @Router /api/v2/user/groups [get]
 // @Router /api/v2/user/groups [post]
-func (h *ApisHandler) GetUserGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetUserGroupsV2(orgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
 	catogies, ok := r.URL.Query()["category"]
@@ -211,7 +211,7 @@ func (h *ApisHandler) GetUserGroupsV2(clientID string, current *model.User, w ht
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Services.GetUserGroups(clientID, current, groupsFilter)
+	groups, err := h.app.Services.GetUserGroups(orgID, current, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetUserGroupsV2() error getting user groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -244,7 +244,7 @@ func (h *ApisHandler) GetUserGroupsV2(clientID string, current *model.User, w ht
 // @Success 200 {object} model.Group
 // @Security AppUserAuth
 // @Router /api/v2/groups/{id} [get]
-func (h *ApisHandler) GetGroupV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *ApisHandler) GetGroupV2(orgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	if len(id) <= 0 {
@@ -253,7 +253,7 @@ func (h *ApisHandler) GetGroupV2(clientID string, current *model.User, w http.Re
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(orgID, current, id)
 	if err != nil {
 		log.Printf("apis.GetGroupV2() error on getting group %s - %s", id, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
