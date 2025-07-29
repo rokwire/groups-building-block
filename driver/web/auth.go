@@ -315,7 +315,6 @@ type IDTokenAuth struct {
 
 func (auth *IDTokenAuth) check(token *string, allowAnonymousCoreToken bool, allowedOrgIDs []string, r *http.Request) *model.User {
 	var data *userData
-	var isCoreUser = false
 	var isAnonymous = false
 	var coreErr error
 	if auth.coreTokenAuth != nil {
@@ -338,7 +337,6 @@ func (auth *IDTokenAuth) check(token *string, allowAnonymousCoreToken bool, allo
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID, NetID: netID}
-			isCoreUser = true
 			isAnonymous = claims.Anonymous
 		}
 	}
@@ -419,7 +417,7 @@ func (auth *IDTokenAuth) check(token *string, allowAnonymousCoreToken bool, allo
 	}
 	return &model.User{
 		ID: userID, AppID: appID, OrgID: orgID, ExternalID: externalID, NetID: netID,
-		Email: email, Name: name, IsCoreUser: isCoreUser, IsAnonymous: isAnonymous,
+		Email: email, Name: name, IsAnonymous: isAnonymous,
 		Permissions: data.Permissions,
 	}
 }
@@ -493,7 +491,6 @@ func (auth *AdminAuth) start() {
 
 func (auth *AdminAuth) check(r *http.Request) (*model.User, bool) {
 	var data *userData
-	var isCoreUser = false
 	var coreErr error
 	if auth.coreTokenAuth != nil {
 		var claims *tokenauth.Claims
@@ -507,7 +504,6 @@ func (auth *AdminAuth) check(r *http.Request) (*model.User, bool) {
 			permissions := strings.Split(claims.Permissions, ",")
 			data = &userData{Sub: &claims.Subject, AppID: &claims.AppID, OrgID: &claims.OrgID, Email: &claims.Email, Name: &claims.Name,
 				Permissions: permissions, UIuceduUIN: &claims.UID}
-			isCoreUser = true
 		}
 	}
 
@@ -593,7 +589,6 @@ func (auth *AdminAuth) check(r *http.Request) (*model.User, bool) {
 		ExternalID:  externalID,
 		Email:       email,
 		Name:        name,
-		IsCoreUser:  isCoreUser,
 		Permissions: data.Permissions,
 	}, false
 }
@@ -674,12 +669,12 @@ func newAdminAuth(app *core.Application, oidcProvider string, appOrgID string, w
 	var appVerifier *oidc.IDTokenVerifier
 	var webAppVerifier *oidc.IDTokenVerifier
 	if len(oidcProvider) > 0 {
-		provider, err := oidc.NewProvider(context.Background(), oidcProvider)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		appVerifier = provider.Verifier(&oidc.Config{OrgID: appOrgID})
-		webAppVerifier = provider.Verifier(&oidc.Config{OrgID: webAppOrgID})
+		//provider, err := oidc.NewProvider(context.Background(), oidcProvider)
+		//if err != nil {
+		//	log.Fatalln(err)
+		//}
+		//appVerifier = provider.Verifier(&oidc.Config{OrgID: appOrgID})
+		//webAppVerifier = provider.Verifier(&oidc.Config{OrgID: webAppOrgID})
 	}
 
 	cacheUsers := &syncmap.Map{}

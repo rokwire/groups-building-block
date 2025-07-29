@@ -25,7 +25,9 @@ import (
 
 // Auth2 handler
 type Auth2 struct {
-	bbs tokenauth.Handlers
+	services tokenauth.Handlers
+	admin    tokenauth.Handlers
+	bbs      tokenauth.Handlers
 
 	logger *logs.Logger
 }
@@ -40,6 +42,18 @@ func (auth *Auth2) Start() error {
 // NewAuth2 creates new auth handler
 func NewAuth2(serviceRegManager *auth.ServiceRegManager, logger *logs.Logger) (*Auth2, error) {
 
+	servicesStandardHandler, err := newServicesStandardHandler(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "client auth", nil, err)
+	}
+	servicesHandlers := tokenauth.NewHandlers(servicesStandardHandler) //add permissions, user and authenticated
+
+	adminStandardHandler, err := newAdminStandardHandler(serviceRegManager)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionCreate, "admin auth", nil, err)
+	}
+	adminHandlers := tokenauth.NewHandlers(adminStandardHandler) //add permissions, user and authenticated
+
 	bbsStandardHandler, err := newBBsStandardHandler(serviceRegManager)
 	if err != nil {
 		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs auth", nil, err)
@@ -47,8 +61,10 @@ func NewAuth2(serviceRegManager *auth.ServiceRegManager, logger *logs.Logger) (*
 	bbsHandlers := tokenauth.NewHandlers(bbsStandardHandler) //add permissions, user and authenticated
 
 	auth := Auth2{
-		bbs:    bbsHandlers,
-		logger: logger,
+		services: servicesHandlers,
+		admin:    adminHandlers,
+		bbs:      bbsHandlers,
+		logger:   logger,
 	}
 	return &auth, nil
 }

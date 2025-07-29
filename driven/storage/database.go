@@ -125,12 +125,6 @@ func (m *database) start() error {
 		return err
 	}
 
-	//apply multi-tenant
-	err = m.applyMultiTenantChecks(client, users, groups, events)
-	if err != nil {
-		return err
-	}
-
 	// apply membership transition
 	err = m.ApplyMembershipTransition(client, groups, groupMemberships)
 	if err != nil {
@@ -726,114 +720,6 @@ func (m *database) applyManagedGroupConfigsChecks(managedGroupConfigs *collectio
 	//TODO: Set up indexes
 
 	log.Println("managed group configs checks passed")
-	return nil
-}
-
-func (m *database) applyMultiTenantChecks(client *mongo.Client, users *collectionWrapper, groups *collectionWrapper, events *collectionWrapper) error {
-	log.Println("apply multi-tenant checks.....")
-
-	// transaction
-	err := client.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-		err := sessionContext.StartTransaction()
-		if err != nil {
-			log.Printf("error starting a transaction - %s", err)
-			return err
-		}
-
-		//apply users collection
-		var usersList []model.User
-		err = users.FindWithContext(sessionContext, bson.D{}, &usersList, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if len(usersList) > 0 {
-			for _, u := range usersList {
-				if len(u.OrgID) == 0 {
-					log.Printf("USERS - SET CLIENT ID for %s", u.Email)
-
-					_, err = users.UpdateOneWithContext(sessionContext,
-						bson.D{primitive.E{Key: "_id", Value: u.ID}},
-						bson.D{
-							primitive.E{Key: "$set", Value: bson.D{
-								primitive.E{Key: "org_id", Value: "edu.illinois.rokwire"}},
-							}},
-						nil)
-					if err != nil {
-						abortTransaction(sessionContext)
-						return err
-					}
-				}
-			}
-		}
-
-		//apply groups collection
-		var groupsList []model.Group
-		err = groups.FindWithContext(sessionContext, bson.D{}, &groupsList, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if len(groupsList) > 0 {
-			for _, gr := range groupsList {
-				if len(gr.OrgID) == 0 {
-					log.Printf("GROUPS - SET CLIENT ID for %s", gr.Title)
-
-					_, err = groups.UpdateOneWithContext(sessionContext,
-						bson.D{primitive.E{Key: "_id", Value: gr.ID}},
-						bson.D{
-							primitive.E{Key: "$set", Value: bson.D{
-								primitive.E{Key: "org_id", Value: "edu.illinois.rokwire"}},
-							}},
-						nil)
-					if err != nil {
-						abortTransaction(sessionContext)
-						return err
-					}
-				}
-			}
-		}
-
-		//apply events collection
-		var eventsList []model.Event
-		err = events.FindWithContext(sessionContext, bson.D{}, &eventsList, nil)
-		if err != nil {
-			abortTransaction(sessionContext)
-			return err
-		}
-		if len(eventsList) > 0 {
-			for _, ev := range eventsList {
-				if len(ev.OrgID) == 0 {
-					log.Printf("EVENTS - SET CLIENT ID for %s", ev.EventID)
-
-					_, err = events.UpdateOneWithContext(sessionContext,
-						bson.D{primitive.E{Key: "event_id", Value: ev.EventID}},
-						bson.D{
-							primitive.E{Key: "$set", Value: bson.D{
-								primitive.E{Key: "org_id", Value: "edu.illinois.rokwire"}},
-							}},
-						nil)
-					if err != nil {
-						abortTransaction(sessionContext)
-						return err
-					}
-				}
-			}
-		}
-
-		//commit the transaction
-		err = sessionContext.CommitTransaction(sessionContext)
-		if err != nil {
-			fmt.Println(err)
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return err
-	}
-
-	log.Println("multi-tenant checks passed")
 	return nil
 }
 

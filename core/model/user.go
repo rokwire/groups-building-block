@@ -24,7 +24,6 @@ type User struct {
 	AppID         string     `json:"app_id"`
 	OrgID         string     `json:"org_id"`
 	IsAnonymous   bool       `json:"is_anonymous" bson:"is_anonymous"`
-	IsCoreUser    bool       `json:"is_core_user" bson:"is_core_user"`
 	ExternalID    string     `json:"external_id" bson:"external_id"`
 	NetID         string     `json:"net_id" bson:"net_id"`
 	Email         string     `json:"email" bson:"email"`
@@ -35,7 +34,6 @@ type User struct {
 	OriginalToken string
 
 	AuthType string
-	IsBBUser bool
 } // @name User
 
 // ToCreator coverts to Creator
