@@ -41,9 +41,7 @@ type database struct {
 	groups              *collectionWrapper
 	groupMemberships    *collectionWrapper
 	events              *collectionWrapper
-	posts               *collectionWrapper
 	managedGroupConfigs *collectionWrapper
-	users               *collectionWrapper
 
 	listeners []Listener
 }
@@ -107,12 +105,6 @@ func (m *database) start() error {
 		return err
 	}
 
-	posts := &collectionWrapper{database: m, coll: db.Collection("posts")}
-	err = m.applyPostsChecks(posts)
-	if err != nil {
-		return err
-	}
-
 	managedGroupConfigs := &collectionWrapper{database: m, coll: db.Collection("managed_group_configs")}
 	err = m.applyManagedGroupConfigsChecks(managedGroupConfigs)
 	if err != nil {
@@ -146,7 +138,6 @@ func (m *database) start() error {
 	m.groups = groups
 	m.groupMemberships = groupMemberships
 	m.events = events
-	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
 
 	go m.configs.Watch(nil)
@@ -215,51 +206,6 @@ func (m *database) applySyncTimesChecks(syncTimes *collectionWrapper) error {
 	}
 
 	log.Println("sync times checks passed")
-	return nil
-}
-
-func (m *database) applyUsersChecks(users *collectionWrapper) error {
-	log.Println("apply users checks.....")
-
-	indexes, _ := users.ListIndexes()
-	indexMapping := map[string]interface{}{}
-	for _, index := range indexes {
-		name := index["name"].(string)
-		indexMapping[name] = index
-	}
-
-	if indexMapping["external_id_1"] == nil {
-		err := users.AddIndex(
-			bson.D{
-				primitive.E{Key: "external_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["client_id_1"] == nil {
-		err := users.AddIndex(
-			bson.D{
-				primitive.E{Key: "org_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["external_id_1_client_id_1"] == nil {
-		err := users.AddIndex(
-			bson.D{
-				primitive.E{Key: "external_id", Value: 1},
-				primitive.E{Key: "org_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	log.Println("users checks passed")
 	return nil
 }
 
@@ -598,129 +544,6 @@ func (m *database) applyEventsChecks(events *collectionWrapper) error {
 	}
 
 	log.Println("events checks passed")
-	return nil
-}
-
-func (m *database) applyPostsChecks(posts *collectionWrapper) error {
-	log.Println("apply posts checks.....")
-
-	indexes, _ := posts.ListIndexes()
-	indexMapping := map[string]interface{}{}
-
-	for _, index := range indexes {
-		name := index["name"].(string)
-		indexMapping[name] = index
-	}
-
-	if indexMapping["client_id_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "org_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-	if indexMapping["private_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "private", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-	if indexMapping["private_1_client_id_1__id_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "private", Value: 1},
-				primitive.E{Key: "org_id", Value: 1},
-				primitive.E{Key: "_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-	if indexMapping["date_created_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "date_created", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-	if indexMapping["top_parent_id_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "top_parent_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["member.user_id_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "member.user_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["to_members.user_id_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "to_members.user_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["to_members.external_id_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "to_members.external_id", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["to_members.email_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "to_members.email", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["date_scheduled_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "date_scheduled", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	if indexMapping["date_notified_1"] == nil {
-		err := posts.AddIndex(
-			bson.D{
-				primitive.E{Key: "date_notified", Value: 1},
-			}, false)
-		if err != nil {
-			return err
-		}
-	}
-
-	log.Println("posts checks passed")
 	return nil
 }
 

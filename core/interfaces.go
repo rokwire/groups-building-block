@@ -110,7 +110,6 @@ type Services interface {
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
-	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 
 	// Calendar BB
@@ -149,7 +148,6 @@ type Storage interface {
 	FindSyncTimes(context storage.TransactionContext, orgID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	GetUserPostCount(orgID string, userID string) (*int64, error)
 	DeleteUser(orgID string, userID string) error
 
 	CreateGroup(context storage.TransactionContext, orgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
@@ -166,7 +164,6 @@ type Storage interface {
 	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 	FindUserGroups(orgID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindUserGroupsCount(orgID string, userID string) (*int64, error)
-	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindEvents(orgID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
 	CreateEvent(context storage.TransactionContext, orgID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
@@ -228,7 +225,6 @@ type Storage interface {
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
-	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 
 	// Handle external callbacks

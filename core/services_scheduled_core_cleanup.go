@@ -68,22 +68,12 @@ func (app Application) deleteAppOrgUsersData(accountsIDs []string) {
 			return err
 		}
 
-		// delete users
-		err = app.storage.DeleteUsersByAccountsIDs(nil, nil, accountsIDs)
-		if err != nil {
-			app.logger.Errorf("error deleting users by account ID - %s", err)
-			return err
-		}
-
 		return nil
 	})
 
 	if errTr != nil {
 		app.logger.Errorf("error deleting - %s", errTr)
-		return
 	}
-
-	return
 }
 
 func (app Application) getAccountsIDs(memberships []model.DeletedMembership) []string {

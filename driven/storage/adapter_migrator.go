@@ -62,23 +62,11 @@ func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) er
 	}
 	log.Printf("groups: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
 
-	result, err = sa.db.posts.UpdateManyWithContext(ctx, filter, update, nil)
-	if err != nil {
-		return err
-	}
-	log.Printf("posts: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
 	result, err = sa.db.syncTimes.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}
 	log.Printf("syncTimes: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-	result, err = sa.db.users.UpdateManyWithContext(ctx, filter, update, nil)
-	if err != nil {
-		return err
-	}
-	log.Printf("users: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
 
 	result, err = sa.db.groupMemberships.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
