@@ -83,12 +83,6 @@ func (m *database) start() error {
 		return err
 	}
 
-	users := &collectionWrapper{database: m, coll: db.Collection("users")}
-	err = m.applyUsersChecks(users)
-	if err != nil {
-		return err
-	}
-
 	enums := &collectionWrapper{database: m, coll: db.Collection("enums")}
 	err = m.applyEnumsChecks(enums)
 	if err != nil {
@@ -154,7 +148,6 @@ func (m *database) start() error {
 	m.events = events
 	m.posts = posts
 	m.managedGroupConfigs = managedGroupConfigs
-	m.users = users
 
 	go m.configs.Watch(nil)
 	go m.managedGroupConfigs.Watch(nil)
@@ -162,6 +155,23 @@ func (m *database) start() error {
 	m.listeners = []Listener{}
 
 	return nil
+}
+
+func (m *database) DropCollectionIfExists(ctx context.Context, name string) {
+	collections, err := m.db.ListCollectionNames(ctx, bson.D{})
+	if err != nil {
+		log.Printf("error listing collections: %v", err)
+	}
+	for _, collName := range collections {
+		if collName == name {
+			err = m.db.Collection(name).Drop(ctx)
+			if err != nil {
+				log.Printf("error dropping collection %s: %v", name, err)
+			} else {
+				log.Printf("dropped collection %s", name)
+			}
+		}
+	}
 }
 
 func (m *database) applyConfigsChecks(configs *collectionWrapper) error {

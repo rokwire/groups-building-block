@@ -37,58 +37,50 @@ func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) er
 	}
 	log.Printf("Starting migration for org_id %s", defaultOrgID)
 	defer log.Printf("Finished migration for org_id %s", defaultOrgID)
-	err := sa.PerformTransaction(func(ctx TransactionContext) error {
 
-		result, err := sa.db.configs.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("configs: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		result, err = sa.db.enums.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("enums: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		result, err = sa.db.events.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("events: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		result, err = sa.db.groups.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("groups: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		result, err = sa.db.posts.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("posts: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		result, err = sa.db.syncTimes.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("syncTimes: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		result, err = sa.db.users.UpdateManyWithContext(ctx, filter, update, nil)
-		if err != nil {
-			return err
-		}
-		log.Printf("users: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
-
-		return nil
-	})
+	result, err := sa.db.configs.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
-		log.Printf("error migrating groups for org_id %s: %s", defaultOrgID, err)
 		return err
 	}
+	log.Printf("configs: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
 
-	result, err := sa.db.groupMemberships.UpdateManyWithContext(ctx, filter, update, nil)
+	result, err = sa.db.enums.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("enums: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+	result, err = sa.db.events.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("events: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+	result, err = sa.db.groups.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("groups: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+	result, err = sa.db.posts.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("posts: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+	result, err = sa.db.syncTimes.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("syncTimes: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+	result, err = sa.db.users.UpdateManyWithContext(ctx, filter, update, nil)
+	if err != nil {
+		return err
+	}
+	log.Printf("users: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+
+	result, err = sa.db.groupMemberships.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}

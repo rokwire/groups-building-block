@@ -285,10 +285,6 @@ func (s *servicesImpl) AnalyticsFindGroups(startDate *time.Time, endDate *time.T
 	return s.app.analyticsFindGroups(startDate, endDate)
 }
 
-func (s *servicesImpl) AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error) {
-	return s.app.analyticsFindPosts(groupID, startDate, endDate)
-}
-
 func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error) {
 	return s.app.analyticsFindMembers(groupID, startDate, endDate)
 }

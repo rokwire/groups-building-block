@@ -5076,9 +5076,6 @@ const docTemplate = `{
         "Event": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string"
-                },
                 "creator": {
                     "$ref": "#/definitions/Creator"
                 },
@@ -5089,6 +5086,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "group_id": {
+                    "type": "string"
+                },
+                "org_id": {
                     "type": "string"
                 },
                 "to_members": {
@@ -5154,9 +5154,6 @@ const docTemplate = `{
                     "description": "one of the enums categories list",
                     "type": "string"
                 },
-                "client_id": {
-                    "type": "string"
-                },
                 "current_member": {
                     "description": "this is indicative and it's not required for update APIs",
                     "allOf": [
@@ -5215,6 +5212,9 @@ const docTemplate = `{
                 },
                 "only_admins_can_create_polls": {
                     "type": "boolean"
+                },
+                "org_id": {
+                    "type": "string"
                 },
                 "privacy": {
                     "description": "public or private",
@@ -5310,9 +5310,6 @@ const docTemplate = `{
         "GroupMembership": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string"
-                },
                 "date_attended": {
                     "type": "string"
                 },
@@ -5348,6 +5345,9 @@ const docTemplate = `{
                 },
                 "notifications_preferences": {
                     "$ref": "#/definitions/NotificationsPreferences"
+                },
+                "org_id": {
+                    "type": "string"
                 },
                 "photo_url": {
                     "type": "string"
@@ -5554,9 +5554,6 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "client_id": {
-                    "type": "string"
-                },
                 "date_created": {
                     "type": "string"
                 },
@@ -5564,6 +5561,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "org_id": {
                     "type": "string"
                 },
                 "type": {
@@ -6356,9 +6356,6 @@ const docTemplate = `{
                 "body": {
                     "type": "string"
                 },
-                "client_id": {
-                    "type": "string"
-                },
                 "date_created": {
                     "type": "string"
                 },
@@ -6385,6 +6382,9 @@ const docTemplate = `{
                 },
                 "member": {
                     "$ref": "#/definitions/Creator"
+                },
+                "org_id": {
+                    "type": "string"
                 },
                 "parent_id": {
                     "type": "string"
@@ -6429,15 +6429,15 @@ const docTemplate = `{
         "model.SyncConfig": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string"
-                },
                 "cron": {
                     "type": "string"
                 },
                 "group_timeout": {
                     "description": "Time from sync_start_time to be considered a failed run for a single group in minutes",
                     "type": "integer"
+                },
+                "org_id": {
+                    "type": "string"
                 },
                 "time_threshold": {
                     "description": "Threshold from start_time to be considered same run in minutes",
@@ -6522,9 +6522,6 @@ const docTemplate = `{
         "rest.analyticsGetGroupsMembersResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string"
-                },
                 "date_created": {
                     "type": "string"
                 },
@@ -6535,6 +6532,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "org_id": {
                     "type": "string"
                 }
             }
@@ -6551,9 +6551,6 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
-                "client_id": {
-                    "type": "string"
-                },
                 "date_created": {
                     "type": "string"
                 },
@@ -6567,6 +6564,9 @@ const docTemplate = `{
                     "type": "boolean"
                 },
                 "id": {
+                    "type": "string"
+                },
+                "org_id": {
                     "type": "string"
                 },
                 "privacy": {
@@ -6589,9 +6589,6 @@ const docTemplate = `{
         "rest.analyticsGetPostsResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
-                    "type": "string"
-                },
                 "date_created": {
                     "type": "string"
                 },
@@ -6605,6 +6602,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "member_user_id": {
+                    "type": "string"
+                },
+                "org_id": {
                     "type": "string"
                 }
             }

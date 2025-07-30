@@ -204,7 +204,6 @@ func (we *Adapter) Start() {
 	analyticsSubrouter := restSubrouter.PathPrefix("/analytics").Subrouter()
 	analyticsSubrouter.HandleFunc("/groups", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroups)).Methods("GET")
 	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
-	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
 
 	// BB Apis
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
