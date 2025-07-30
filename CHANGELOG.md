@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+### Changed
+- Migrate client_id to org_id & major cleanup [#601](https://github.com/rokwire/groups-building-block/issues/601)
+
 ## [1.70.1] - 2025-07-21
 ### Fixed
 - Fix nil pointer error [#598](https://github.com/rokwire/groups-building-block/issues/598)
