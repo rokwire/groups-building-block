@@ -66,8 +66,12 @@ func (m *database) start() error {
 		return err
 	}
 
-	//apply checks
+	// instance db
 	db := client.Database(m.mongoDBName)
+
+	//drop users and posts collections if exists
+	m.dropCollectionIfExists(db, "users")
+	m.dropCollectionIfExists(db, "posts")
 
 	configs := &collectionWrapper{database: m, coll: db.Collection("configs")}
 	err = m.applyConfigsChecks(configs)
@@ -148,14 +152,14 @@ func (m *database) start() error {
 	return nil
 }
 
-func (m *database) DropCollectionIfExists(ctx context.Context, name string) {
-	collections, err := m.db.ListCollectionNames(ctx, bson.D{})
+func (m *database) dropCollectionIfExists(db *mongo.Database, name string) {
+	collections, err := db.ListCollectionNames(context.Background(), bson.D{})
 	if err != nil {
 		log.Printf("error listing collections: %v", err)
 	}
 	for _, collName := range collections {
 		if collName == name {
-			err = m.db.Collection(name).Drop(ctx)
+			err = db.Collection(name).Drop(context.Background())
 			if err != nil {
 				log.Printf("error dropping collection %s: %v", name, err)
 			} else {
