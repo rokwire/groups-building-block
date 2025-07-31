@@ -180,7 +180,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/report/abuse", we.wrapFunc2(we.apisHandler.ReportAbuseGroupPost, we.auth2.services.User)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.wrapFunc2(we.apisHandler.DeleteGroupPost, we.auth2.services.User)).Methods("DELETE")
 
-	restSubrouter.HandleFunc("/research-profile/user-count", we.adminIDTokenAuthWrapFunc(we.apisHandler.GetResearchProfileUserCount)).Methods("POST")
+	restSubrouter.HandleFunc("/research-profile/user-count", we.wrapFunc2(we.apisHandler.GetResearchProfileUserCount, we.auth2.services.User)).Methods("POST")
 
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.wrapFunc2(we.apisHandler.GetGroups, we.auth2.services.User)).Methods("GET")
@@ -228,76 +228,6 @@ func (we Adapter) serveDocUI() http.Handler {
 
 type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
 
-func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		orgID, authenticated := we.auth.apiKeyCheck(req)
-		if !authenticated {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(orgID, w, req)
-		logObj.RequestComplete()
-	}
-}
-
-type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
-
-func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		orgID, user := we.auth.idTokenCheck(w, req, false)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(orgID, user, w, req)
-		logObj.RequestComplete()
-	}
-}
-
-func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		orgID, user := we.auth.idTokenCheck(w, req, true)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(orgID, user, w, req)
-		logObj.RequestComplete()
-	}
-}
-
-func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		orgID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedOrgIDs)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(orgID, user, w, req)
-		logObj.RequestComplete()
-	}
-}
-
 func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		logObj := we.logger.NewRequestLog(req)
@@ -311,48 +241,6 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		}
 
 		handler(orgID, w, req)
-		logObj.RequestComplete()
-	}
-}
-
-func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		orgID, authenticated, user := we.auth.mixedCheck(req)
-		if !authenticated {
-			log.Printf("Unauthorized - Mixed Check")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		//user can be nil
-		handler(orgID, user, w, req)
-		logObj.RequestComplete()
-	}
-}
-
-type adminAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
-
-func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		orgID, user, forbidden := we.auth.adminCheck(req)
-		if user == nil {
-			if forbidden {
-				log.Printf("Forbidden - Admin")
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				log.Printf("Unauthorized - Admin")
-				w.WriteHeader(http.StatusUnauthorized)
-			}
-			return
-		}
-
-		handler(orgID, user, w, req)
 		logObj.RequestComplete()
 	}
 }
