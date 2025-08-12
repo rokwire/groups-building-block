@@ -42,36 +42,36 @@ func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) er
 	if err != nil {
 		return err
 	}
-	log.Printf("configs: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	log.Printf("configs: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
 
 	result, err = sa.db.enums.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}
-	log.Printf("enums: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	log.Printf("enums: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
 
 	result, err = sa.db.events.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}
-	log.Printf("events: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	log.Printf("events: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
 
 	result, err = sa.db.groups.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}
-	log.Printf("groups: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	log.Printf("groups: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
 
 	result, err = sa.db.syncTimes.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}
-	log.Printf("syncTimes: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	log.Printf("syncTimes: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
 
 	result, err = sa.db.groupMemberships.UpdateManyWithContext(ctx, filter, update, nil)
 	if err != nil {
 		return err
 	}
-	log.Printf("groupMemberships: updated %d groups to org_id %s", result.ModifiedCount, defaultOrgID)
+	log.Printf("groupMemberships: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
 	return nil
 }
