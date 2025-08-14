@@ -774,12 +774,12 @@ func (app *Application) findGroupMembership(clientID string, groupID string, use
 	return app.storage.FindGroupMembership(clientID, groupID, userID)
 }
 
-func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string]any) (int64, error) {
 	searchParams := app.formatCoreAccountSearchParams(researchProfile)
 	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
 }
 
-func (app *Application) formatCoreAccountSearchParams(researchProfile map[string]map[string][]string) map[string]interface{} {
+func (app *Application) formatCoreAccountSearchParams(researchProfile map[string]map[string]any) map[string]interface{} {
 	searchParams := map[string]interface{}{}
 	for k1, v1 := range researchProfile {
 		for k2, v2 := range v1 {
