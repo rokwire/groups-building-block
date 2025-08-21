@@ -116,7 +116,7 @@ func (c *CoreAccount) GetExternalID() string {
 // GetNetID Gets the external id
 func (c *CoreAccount) GetNetID() string {
 	for _, auth := range c.AuthTypes {
-		if auth.Active && len(auth.Identifier) > 0 {
+		if auth.Active && len(auth.Identifier) > 0 && auth.AuthTypeCode == "illinois_oidc" {
 			return auth.Params.User.SystemSpecific.PreferredUsername
 		}
 	}
