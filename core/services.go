@@ -646,11 +646,10 @@ func (app *Application) createMembershipsStatuses(clientID string, current *mode
 				}
 
 				return app.storage.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
-			} else {
-				log.Printf("Unable to find user with the specified details for group %s", groupID)
-				return errors.New("Unable to find user with the specified details")
 			}
 
+			log.Printf("Unable to find user with the specified details for group %s", groupID)
+			return errors.New("Unable to find user with the specified details")
 		}
 
 		return nil
