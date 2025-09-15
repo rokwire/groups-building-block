@@ -265,7 +265,7 @@ func (s *servicesImpl) SendGroupNotification(clientID string, notification model
 	return s.app.sendGroupNotification(clientID, notification, predicate)
 }
 
-func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+func (s *servicesImpl) GetResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string]any) (int64, error) {
 	return s.app.getResearchProfileUserCount(clientID, current, researchProfile)
 }
 

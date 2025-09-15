@@ -6,9 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.72.0] - 2025-09-15
+### Added
+- Change participant age field for participant filtering in research groups feature [#604](https://github.com/rokwire/groups-building-block/issues/604)
+
 ## [1.71.0] - 2025-08-21
 ### Fixed
 - Not able to add a new staff members NetID to be an admin of a group [#606](https://github.com/rokwire/groups-building-block/issues/606)
+
 
 ## [1.70.1] - 2025-07-21
 ### Fixed
