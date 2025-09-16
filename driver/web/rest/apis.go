@@ -91,7 +91,7 @@ type createGroupRequest struct {
 	ResearchConsentStatement string                         `json:"research_consent_statement"`
 	ResearchConsentDetails   string                         `json:"research_consent_details"`
 	ResearchDescription      string                         `json:"research_description"`
-	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
+	ResearchProfile          map[string]map[string]any      `json:"research_profile"`
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
 	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`
@@ -198,33 +198,33 @@ func (h *ApisHandler) CreateGroup(orgID string, current *model.User, w http.Resp
 }
 
 type createGroupV3Request struct {
-	Title                    string                         `json:"title" validate:"required"`
-	Description              *string                        `json:"description"`
-	Category                 string                         `json:"category"`
-	Tags                     []string                       `json:"tags"`
-	Privacy                  string                         `json:"privacy" validate:"required,oneof=public private"`
-	Hidden                   bool                           `json:"hidden_for_search"`
-	CreatorName              string                         `json:"creator_name"`
-	CreatorEmail             string                         `json:"creator_email"`
-	CreatorPhotoURL          string                         `json:"creator_photo_url"`
-	ImageURL                 *string                        `json:"image_url"`
-	WebURL                   *string                        `json:"web_url"`
-	MembershipQuestions      []string                       `json:"membership_questions"`
-	AuthmanEnabled           bool                           `json:"authman_enabled"`
-	AuthmanGroup             *string                        `json:"authman_group"`
-	OnlyAdminsCanCreatePolls bool                           `json:"only_admins_can_create_polls" `
-	CanJoinAutomatically     bool                           `json:"can_join_automatically"`
-	AttendanceGroup          bool                           `json:"attendance_group" `
-	ResearchOpen             bool                           `json:"research_open"`
-	ResearchGroup            bool                           `json:"research_group"`
-	ResearchConsentStatement string                         `json:"research_consent_statement"`
-	ResearchConsentDetails   string                         `json:"research_consent_details"`
-	ResearchDescription      string                         `json:"research_description"`
-	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
-	Settings                 *model.GroupSettings           `json:"settings"`
-	Attributes               map[string]interface{}         `json:"attributes"`
-	MembershipStatuses       model.MembershipStatuses       `json:"members,omitempty"`
-	Administrative           *bool                          `json:"administrative"`
+	Title                    string                    `json:"title" validate:"required"`
+	Description              *string                   `json:"description"`
+	Category                 string                    `json:"category"`
+	Tags                     []string                  `json:"tags"`
+	Privacy                  string                    `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                   bool                      `json:"hidden_for_search"`
+	CreatorName              string                    `json:"creator_name"`
+	CreatorEmail             string                    `json:"creator_email"`
+	CreatorPhotoURL          string                    `json:"creator_photo_url"`
+	ImageURL                 *string                   `json:"image_url"`
+	WebURL                   *string                   `json:"web_url"`
+	MembershipQuestions      []string                  `json:"membership_questions"`
+	AuthmanEnabled           bool                      `json:"authman_enabled"`
+	AuthmanGroup             *string                   `json:"authman_group"`
+	OnlyAdminsCanCreatePolls bool                      `json:"only_admins_can_create_polls" `
+	CanJoinAutomatically     bool                      `json:"can_join_automatically"`
+	AttendanceGroup          bool                      `json:"attendance_group" `
+	ResearchOpen             bool                      `json:"research_open"`
+	ResearchGroup            bool                      `json:"research_group"`
+	ResearchConsentStatement string                    `json:"research_consent_statement"`
+	ResearchConsentDetails   string                    `json:"research_consent_details"`
+	ResearchDescription      string                    `json:"research_description"`
+	ResearchProfile          map[string]map[string]any `json:"research_profile"`
+	Settings                 *model.GroupSettings      `json:"settings"`
+	Attributes               map[string]interface{}    `json:"attributes"`
+	MembershipStatuses       model.MembershipStatuses  `json:"members,omitempty"`
+	Administrative           *bool                     `json:"administrative"`
 } //@name createGroupRequest
 
 // CreateGroupV3 Creates a group
@@ -318,29 +318,29 @@ func (h *ApisHandler) CreateGroupV3(orgID string, current *model.User, w http.Re
 }
 
 type updateGroupRequest struct {
-	Title                      string                         `json:"title" validate:"required"`
-	Description                *string                        `json:"description"`
-	Category                   string                         `json:"category"`
-	Tags                       []string                       `json:"tags"`
-	Privacy                    string                         `json:"privacy" validate:"required,oneof=public private"`
-	Hidden                     bool                           `json:"hidden_for_search"`
-	ImageURL                   *string                        `json:"image_url"`
-	WebURL                     *string                        `json:"web_url"`
-	MembershipQuestions        []string                       `json:"membership_questions"`
-	AuthmanEnabled             bool                           `json:"authman_enabled"`
-	AuthmanGroup               *string                        `json:"authman_group"`
-	OnlyAdminsCanCreatePolls   bool                           `json:"only_admins_can_create_polls"`
-	CanJoinAutomatically       bool                           `json:"can_join_automatically"`
-	BlockNewMembershipRequests bool                           `json:"block_new_membership_requests"`
-	AttendanceGroup            bool                           `json:"attendance_group" `
-	ResearchOpen               bool                           `json:"research_open"`
-	ResearchGroup              bool                           `json:"research_group"`
-	ResearchConsentStatement   string                         `json:"research_consent_statement"`
-	ResearchConsentDetails     string                         `json:"research_consent_details"`
-	ResearchDescription        string                         `json:"research_description"`
-	ResearchProfile            map[string]map[string][]string `json:"research_profile"`
-	Settings                   *model.GroupSettings           `json:"settings"`
-	Attributes                 map[string]interface{}         `json:"attributes"`
+	Title                      string                    `json:"title" validate:"required"`
+	Description                *string                   `json:"description"`
+	Category                   string                    `json:"category"`
+	Tags                       []string                  `json:"tags"`
+	Privacy                    string                    `json:"privacy" validate:"required,oneof=public private"`
+	Hidden                     bool                      `json:"hidden_for_search"`
+	ImageURL                   *string                   `json:"image_url"`
+	WebURL                     *string                   `json:"web_url"`
+	MembershipQuestions        []string                  `json:"membership_questions"`
+	AuthmanEnabled             bool                      `json:"authman_enabled"`
+	AuthmanGroup               *string                   `json:"authman_group"`
+	OnlyAdminsCanCreatePolls   bool                      `json:"only_admins_can_create_polls"`
+	CanJoinAutomatically       bool                      `json:"can_join_automatically"`
+	BlockNewMembershipRequests bool                      `json:"block_new_membership_requests"`
+	AttendanceGroup            bool                      `json:"attendance_group" `
+	ResearchOpen               bool                      `json:"research_open"`
+	ResearchGroup              bool                      `json:"research_group"`
+	ResearchConsentStatement   string                    `json:"research_consent_statement"`
+	ResearchConsentDetails     string                    `json:"research_consent_details"`
+	ResearchDescription        string                    `json:"research_description"`
+	ResearchProfile            map[string]map[string]any `json:"research_profile"`
+	Settings                   *model.GroupSettings      `json:"settings"`
+	Attributes                 map[string]interface{}    `json:"attributes"`
 } //@name updateGroupRequest
 
 // UpdateGroup updates a group
@@ -2774,7 +2774,11 @@ func (h *ApisHandler) DeleteGroupPost(orgID string, current *model.User, w http.
 // @Security AppUserAuth
 // @Router /api/research-profile/user-count [post]
 func (h *ApisHandler) GetResearchProfileUserCount(orgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+<<<<<<< HEAD
 	var researchProfile map[string]map[string][]string
+=======
+	var researchProfile map[string]map[string]any
+>>>>>>> develop
 	err := json.NewDecoder(r.Body).Decode(&researchProfile)
 	if err != nil {
 		log.Printf("error decoding body - %v\n", err)

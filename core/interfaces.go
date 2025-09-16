@@ -102,7 +102,7 @@ type Services interface {
 
 	// Group Notifications
 	SendGroupNotification(orgID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error
-	GetResearchProfileUserCount(orgID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error)
+	GetResearchProfileUserCount(orgID string, current *model.User, researchProfile map[string]map[string]any) (int64, error)
 
 	// Group Events
 	FindAdminGroupsForEvent(orgID string, current *model.User, eventID string) ([]string, error)

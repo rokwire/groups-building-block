@@ -330,7 +330,7 @@ type adminCreateGroupRequest struct {
 	ResearchConsentStatement string                         `json:"research_consent_statement"`
 	ResearchConsentDetails   string                         `json:"research_consent_details"`
 	ResearchDescription      string                         `json:"research_description"`
-	ResearchProfile          map[string]map[string][]string `json:"research_profile"`
+	ResearchProfile          map[string]map[string]any      `json:"research_profile"`
 	Settings                 *model.GroupSettings           `json:"settings"`
 	Attributes               map[string]interface{}         `json:"attributes"`
 	MembersConfig            *model.DefaultMembershipConfig `json:"members,omitempty"`

@@ -644,9 +644,10 @@ func (app *Application) createMembershipsStatuses(orgID string, current *model.U
 				if err != nil {
 					return err
 				}
+
+				return app.storage.UpdateGroupStats(context, orgID, groupID, false, true, false, true)
 			}
 
-			return app.storage.UpdateGroupStats(context, orgID, groupID, false, true, false, true)
 		}
 
 		return nil
@@ -774,12 +775,12 @@ func (app *Application) findGroupMembership(orgID string, groupID string, userID
 	return app.storage.FindGroupMembership(orgID, groupID, userID)
 }
 
-func (app *Application) getResearchProfileUserCount(orgID string, current *model.User, researchProfile map[string]map[string][]string) (int64, error) {
+func (app *Application) getResearchProfileUserCount(clientID string, current *model.User, researchProfile map[string]map[string]any) (int64, error) {
 	searchParams := app.formatCoreAccountSearchParams(researchProfile)
 	return app.corebb.GetAccountsCount(searchParams, &current.AppID, &current.OrgID)
 }
 
-func (app *Application) formatCoreAccountSearchParams(researchProfile map[string]map[string][]string) map[string]interface{} {
+func (app *Application) formatCoreAccountSearchParams(researchProfile map[string]map[string]any) map[string]interface{} {
 	searchParams := map[string]interface{}{}
 	for k1, v1 := range researchProfile {
 		for k2, v2 := range v1 {
