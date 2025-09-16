@@ -2774,11 +2774,8 @@ func (h *ApisHandler) DeleteGroupPost(orgID string, current *model.User, w http.
 // @Security AppUserAuth
 // @Router /api/research-profile/user-count [post]
 func (h *ApisHandler) GetResearchProfileUserCount(orgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-<<<<<<< HEAD
-	var researchProfile map[string]map[string][]string
-=======
 	var researchProfile map[string]map[string]any
->>>>>>> develop
+
 	err := json.NewDecoder(r.Body).Decode(&researchProfile)
 	if err != nil {
 		log.Printf("error decoding body - %v\n", err)
