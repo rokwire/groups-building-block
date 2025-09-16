@@ -21,6 +21,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// MigrateGroups migrates groups and related records to use org_id instead of client_id
 func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) error {
 	filter := bson.D{
 		{Key: "$or",
