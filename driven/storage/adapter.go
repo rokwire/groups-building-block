@@ -647,9 +647,54 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 }
 
 // FindGroups finds groups
-func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error) {
+func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (int64, []model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
 
+	filter, err := sa.buildMainQuery(userID, clientID, groupsFilter, skipMembershipCheck)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var findOptions options.FindOptions
+	if groupsFilter.Limit != nil {
+		findOptions.SetLimit(*groupsFilter.Limit)
+	}
+	if groupsFilter.Offset != nil {
+		findOptions.SetSkip(*groupsFilter.Offset)
+	}
+
+	findOptions.SetCollation(&options.Collation{
+		Locale:   "en",
+		Strength: 1, // Case and diacritic insensitive§
+	})
+
+	count, err := sa.db.groups.CountDocuments(filter)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	var list []model.Group
+	var memberships model.MembershipCollection
+	err = sa.db.groups.Find(filter, &list, &findOptions)
+	if err != nil {
+		return 0, nil, err
+	}
+
+	if userID != nil {
+		for index, group := range list {
+			group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+				return membership.GroupID == group.ID
+			})
+			if group.CurrentMember != nil {
+				list[index] = group
+			}
+		}
+	}
+
+	return count, list, nil
+}
+
+func (sa *Adapter) buildMainQuery(userID *string, clientID string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (bson.D, error) {
 	var err error
 	groupIDs := []string{}
 	var memberships model.MembershipCollection
@@ -795,37 +840,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		pastTime := time.Now().Add(time.Duration(*groupsFilter.DaysInactive) * -24 * time.Hour)
 		filter = append(filter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
 	}
-
-	if groupsFilter.Limit != nil {
-		findOptions.SetLimit(*groupsFilter.Limit)
-	}
-	if groupsFilter.Offset != nil {
-		findOptions.SetSkip(*groupsFilter.Offset)
-	}
-
-	findOptions.SetCollation(&options.Collation{
-		Locale:   "en",
-		Strength: 1, // Case and diacritic insensitive
-	})
-
-	var list []model.Group
-	err = sa.db.groups.Find(filter, &list, findOptions)
-	if err != nil {
-		return nil, err
-	}
-
-	if userID != nil {
-		for index, group := range list {
-			group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
-				return membership.GroupID == group.ID
-			})
-			if group.CurrentMember != nil {
-				list[index] = group
-			}
-		}
-	}
-
-	return list, nil
+	return filter, nil
 }
 
 // FindGroupByID finds one groups by ID and clientID

@@ -119,7 +119,7 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Admin.GetGroups(clientID, current, groupsFilter)
+	_, groups, err := h.app.Admin.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupsV2() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -133,6 +133,71 @@ func (h *AdminApisHandler) GetGroupsV2(clientID string, current *model.User, w h
 	data, err := json.Marshal(groups)
 	if err != nil {
 		log.Println("adminapis.GetGroupsV2() error on marshal the groups items")
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	w.Write(data)
+}
+
+type getGroupsResponseV3 struct {
+	Groups []model.Group `json:"results"`
+	Total  int64         `json:"total_count"`
+} // @name getGroupsResponseV3
+
+// GetGroupsV3 gets groups. It can be filtered by category, title and privacy. V3
+// @Description Gives the groups list. It can be filtered by category, title and privacy. V3
+// @ID AdminGetGroupsV3
+// @Tags Admin
+// @Accept json
+// @Param data body model.GroupsFilter true "body data"
+// @Success 200 {object} getGroupsResponseV3
+// @Security AppUserAuth
+// @Router /api/admin/v2/groups [post]
+func (h *AdminApisHandler) GetGroupsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	var groupsFilter model.GroupsFilter
+
+	requestData, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("adminapis.GetGroupsV3() error on marshal model.GroupsFilter request body - %s\n", err.Error())
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	if len(requestData) > 0 {
+		err = json.Unmarshal(requestData, &groupsFilter)
+		if err != nil {
+			// just log an error and proceed and assume an empty filter
+			log.Printf("adminapis.GetGroupsV3() error on unmarshal model.GroupsFilter request body - %s\n", err.Error())
+		}
+	}
+
+	if groupsFilter.ResearchGroup == nil {
+		b := false
+		groupsFilter.ResearchGroup = &b
+	}
+
+	_, groups, err := h.app.Admin.GetGroups(clientID, current, groupsFilter)
+	if err != nil {
+		log.Printf("adminapis.GetGroupsV3() error getting groups - %s", err.Error())
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if groups == nil {
+		groups = []model.Group{}
+	}
+
+	result := getGroupsResponseV3{
+		Groups: groups,
+		Total:  int64(len(groups)),
+	}
+
+	data, err := json.Marshal(result)
+	if err != nil {
+		log.Println("adminapis.GetGroupsV3() error on marshal the groups items")
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
 	}

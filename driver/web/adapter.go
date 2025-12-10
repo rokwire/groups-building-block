@@ -89,6 +89,9 @@ func (we *Adapter) Start() {
 	adminSubrouter.HandleFunc("/v2/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 	adminSubrouter.HandleFunc("/v2/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupV2)).Methods("GET")
 
+	// Admin V3 APIs
+	adminSubrouter.HandleFunc("/v3/groups/load", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV3)).Methods("POST")
+
 	// Admin V1 APIs
 	adminSubrouter.HandleFunc("/authman/synchronize", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
@@ -140,6 +143,7 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/v2/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupsV2)).Methods("GET", "POST")
 
 	restSubrouter.HandleFunc("/v3/group", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupV3)).Methods("POST")
+	restSubrouter.HandleFunc("/v3/groups/load", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV3)).Methods("POST")
 
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchronizeAuthman)).Methods("POST")

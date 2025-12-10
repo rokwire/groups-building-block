@@ -257,7 +257,7 @@ type GroupStat struct {
 // @Router /int/stats [get]
 func (h *InternalApisHandler) GroupStats(clientID string, w http.ResponseWriter, r *http.Request) {
 
-	groups, err := h.app.Services.GetAllGroups(clientID)
+	_, groups, err := h.app.Services.GetAllGroups(clientID)
 	if err != nil {
 		log.Printf("Error GroupStats(%s): %s", clientID, err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

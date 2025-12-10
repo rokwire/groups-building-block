@@ -1516,64 +1516,15 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Gives the groups list. It can be filtered by category, title and privacy. V2",
+                "description": "Gives the groups list. It can be filtered by category, title and privacy. V3",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "Admin"
                 ],
-                "operationId": "AdminGetGroupsV2",
+                "operationId": "AdminGetGroupsV3",
                 "parameters": [
-                    {
-                        "type": "string",
-                        "description": "APP",
-                        "name": "APP",
-                        "in": "header",
-                        "required": true
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
-                        "name": "title",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! category - filter by category",
-                        "name": "category",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
-                        "name": "privacy",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
-                        "name": "offset",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! limit - limit the result",
-                        "name": "limit",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - Filter by number of days inactive",
-                        "name": "days_inactive",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
-                        "name": "include_hidden",
-                        "in": "query"
-                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -1588,10 +1539,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/Group"
-                            }
+                            "$ref": "#/definitions/getGroupsResponseV3"
                         }
                     }
                 }
@@ -5239,12 +5187,7 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {
                         "type": "object",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
+                        "additionalProperties": {}
                     }
                 },
                 "settings": {
@@ -5965,12 +5908,7 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {
                         "type": "object",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
+                        "additionalProperties": {}
                     }
                 },
                 "settings": {
@@ -6162,6 +6100,20 @@ const docTemplate = `{
                 },
                 "web_url": {
                     "type": "string"
+                }
+            }
+        },
+        "getGroupsResponseV3": {
+            "type": "object",
+            "properties": {
+                "results": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/Group"
+                    }
+                },
+                "total_count": {
+                    "type": "integer"
                 }
             }
         },
@@ -6807,12 +6759,7 @@ const docTemplate = `{
                     "type": "object",
                     "additionalProperties": {
                         "type": "object",
-                        "additionalProperties": {
-                            "type": "array",
-                            "items": {
-                                "type": "string"
-                            }
-                        }
+                        "additionalProperties": {}
                     }
                 },
                 "settings": {

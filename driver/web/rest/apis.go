@@ -603,7 +603,7 @@ func (h *ApisHandler) GetGroups(orgID string, current *model.User, w http.Respon
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Services.GetGroups(orgID, current, groupsFilter)
+	_, groups, err := h.app.Services.GetGroups(orgID, current, groupsFilter)
 	if err != nil {
 		log.Printf("apis.GetGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
