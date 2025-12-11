@@ -649,64 +649,139 @@ func (sa *Adapter) FindGroupByTitle(clientID string, title string) (*model.Group
 // FindGroups finds groups
 func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (int64, []model.Group, error) {
 	// TODO: Merge the filter logic in a common method (FindGroups, FindGroupsV3, FindUserGroups)
-
-	filter, err := sa.buildMainQuery(userID, clientID, groupsFilter, skipMembershipCheck)
-	if err != nil {
-		return 0, nil, err
-	}
-
-	var findOptions options.FindOptions
-	if groupsFilter.Limit != nil {
-		findOptions.SetLimit(*groupsFilter.Limit)
-	}
-	if groupsFilter.Offset != nil {
-		findOptions.SetSkip(*groupsFilter.Offset)
-	}
-
-	findOptions.SetCollation(&options.Collation{
-		Locale:   "en",
-		Strength: 1, // Case and diacritic insensitive§
-	})
-
-	count, err := sa.db.groups.CountDocuments(filter)
-	if err != nil {
-		return 0, nil, err
-	}
-
+	var count int64
 	var list []model.Group
-	var memberships model.MembershipCollection
-	err = sa.db.groups.Find(filter, &list, &findOptions)
-	if err != nil {
-		return 0, nil, err
-	}
+	err := sa.PerformTransaction(func(ctx TransactionContext) error {
+		filter, err := sa.buildMainQuery(ctx, userID, clientID, groupsFilter, skipMembershipCheck)
+		if err != nil {
+			return err
+		}
 
-	if userID != nil {
-		for index, group := range list {
-			group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
-				return membership.GroupID == group.ID
-			})
-			if group.CurrentMember != nil {
-				list[index] = group
+		type rowNumber struct {
+			RowNumber int `json:"_row_number" bson:"_row_number"`
+		}
+
+		var aggrSort bson.D
+		if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
+			aggrSort = bson.D{
+				{Key: "_c_title", Value: -1},
+			}
+		} else {
+			aggrSort = bson.D{
+				{Key: "_c_title", Value: 1},
+			}
+
+		}
+
+		var limitIDRowNumber int
+		if groupsFilter.LimitID != nil {
+			var rowNumbers []rowNumber
+			err := sa.db.groups.AggregateWithContext(ctx, bson.A{
+				bson.D{{Key: "$match", Value: filter}},
+				bson.D{{Key: "$addFields", Value: bson.M{"_c_title": bson.M{"$toUpper": "$title"}}}},
+				bson.D{{Key: "$sort", Value: aggrSort}},
+				//bson.D{{Key: "$skip", Value: skip}},
+				bson.D{
+					{Key: "$setWindowFields",
+						Value: bson.D{
+							{Key: "sortBy", Value: aggrSort},
+							{Key: "output", Value: bson.D{{Key: "_row_number", Value: bson.D{{Key: "$documentNumber", Value: bson.D{}}}}}},
+						},
+					},
+				},
+				bson.D{{Key: "$match", Value: bson.D{{Key: "_id", Value: *groupsFilter.LimitID}}}},
+			}, &rowNumbers, nil)
+			if err != nil {
+				return err
+			}
+
+			if rowNumbers[0].RowNumber != 0 {
+				limitIDRowNumber = rowNumbers[0].RowNumber
 			}
 		}
+
+		offset := int64(0)
+		if groupsFilter.Offset != nil {
+			offset = *groupsFilter.Offset
+		}
+
+		pipeline := bson.A{
+			bson.D{{Key: "$match", Value: filter}},
+			bson.D{{Key: "$addFields", Value: bson.M{"_c_title": bson.M{"$toUpper": "$title"}}}},
+			bson.D{{Key: "$sort", Value: aggrSort}},
+			bson.D{{Key: "$skip", Value: offset}},
+		}
+		if groupsFilter.Limit != nil {
+			if limitIDRowNumber > 0 {
+				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: int64(limitIDRowNumber)}})
+			} else {
+				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: *groupsFilter.Limit}})
+			}
+		}
+
+		count, err = sa.db.groups.CountDocumentsWithContext(ctx, filter)
+		if err != nil {
+			return err
+		}
+
+		var memberships model.MembershipCollection
+
+		//
+		//err = sa.db.groups.FindWithContext(ctx, filter, &list, findOptions)
+		err = sa.db.groups.AggregateWithContext(ctx, pipeline, &list, nil)
+		if err != nil {
+			return err
+		}
+
+		if userID != nil {
+			for index, group := range list {
+				group.CurrentMember = memberships.GetMembershipBy(func(membership model.GroupMembership) bool {
+					return membership.GroupID == group.ID
+				})
+				if group.CurrentMember != nil {
+					list[index] = group
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return 0, nil, err
 	}
 
 	return count, list, nil
 }
 
-func (sa *Adapter) buildMainQuery(userID *string, clientID string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (bson.D, error) {
-	var err error
+func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, clientID string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (bson.D, error) {
+
 	groupIDs := []string{}
-	var memberships model.MembershipCollection
-	if userID != nil {
+	groupIDMap := map[string]bool{}
+	if len(groupsFilter.GroupIDs) > 0 {
+		for _, groupID := range groupsFilter.GroupIDs {
+			groupIDs = append(groupIDs, groupID)
+			groupIDMap[groupID] = true
+		}
+	}
+
+	// Credits to Ryan Oberlander suggest
+	if userID != nil || groupsFilter.MemberID != nil || groupsFilter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err = sa.FindUserGroupMemberships(clientID, *userID)
+		memberships, err := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+			ID:         groupsFilter.MemberID,
+			UserID:     userID,
+			ExternalID: groupsFilter.MemberExternalID,
+			Statuses:   groupsFilter.MemberStatuses,
+		})
 		if err != nil {
 			return nil, err
 		}
 
 		for _, membership := range memberships.Items {
-			groupIDs = append(groupIDs, membership.GroupID)
+			if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
+				groupIDs = append(groupIDs, membership.GroupID)
+				groupIDMap[membership.GroupID] = true
+			}
 		}
 	}
 
@@ -826,16 +901,6 @@ func (sa *Adapter) buildMainQuery(userID *string, clientID string, groupsFilter 
 		}
 	}
 
-	findOptions := options.Find()
-	if groupsFilter.Order != nil && "desc" == *groupsFilter.Order {
-		findOptions.SetSort(bson.D{
-			{Key: "title", Value: -1},
-		})
-	} else {
-		findOptions.SetSort(bson.D{
-			{Key: "title", Value: 1},
-		})
-	}
 	if groupsFilter.DaysInactive != nil {
 		pastTime := time.Now().Add(time.Duration(*groupsFilter.DaysInactive) * -24 * time.Hour)
 		filter = append(filter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})

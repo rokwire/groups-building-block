@@ -23,7 +23,7 @@ func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, fil
 	var memberships model.MembershipCollection
 	findOptions := options.Find()
 
-	groupFilter, err := sa.buildGroupsFilter(clientID, context, filter)
+	groupFilter, err := sa.buildMainQuery(context, nil, clientID, filter, true)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (sa *Adapter) FindGroupsV3(context TransactionContext, clientID string, fil
 	return list, nil
 }
 
-func (sa *Adapter) buildGroupsFilter(clientID string, context TransactionContext, filter model.GroupsFilter) (bson.D, error) {
+func (sa *Adapter) buildGroupsFilter11(clientID string, context TransactionContext, filter model.GroupsFilter) (bson.D, error) {
 	var groupIDs []string
 
 	groupFilter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
@@ -172,7 +172,7 @@ func (sa *Adapter) buildGroupsFilter(clientID string, context TransactionContext
 func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
 	var result *model.StatsResult
 	err := sa.PerformTransaction(func(ctx TransactionContext) error {
-		baseFilter, err := sa.buildGroupsFilter(clientID, ctx, filter.BaseFilter)
+		baseFilter, err := sa.buildMainQuery(ctx, &current.ID, clientID, filter.BaseFilter, false)
 		if err != nil {
 			return err
 		}
@@ -182,7 +182,7 @@ func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.Use
 		subFilters := bson.D{}
 		for key, value := range filter.SubFilters {
 			innerSubFilter := bson.A{}
-			filter, err := sa.buildGroupsFilter(clientID, ctx, value)
+			filter, err := sa.buildMainQuery(ctx, &current.ID, clientID, value, false)
 			if err != nil {
 				return err
 			}
