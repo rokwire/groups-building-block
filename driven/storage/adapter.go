@@ -652,7 +652,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	var count int64
 	var list []model.Group
 	err := sa.PerformTransaction(func(ctx TransactionContext) error {
-		filter, err := sa.buildMainQuery(ctx, userID, clientID, groupsFilter, skipMembershipCheck)
+		filter, memberships, err := sa.buildMainQuery(ctx, userID, clientID, groupsFilter, skipMembershipCheck)
 		if err != nil {
 			return err
 		}
@@ -724,8 +724,6 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 			return err
 		}
 
-		var memberships model.MembershipCollection
-
 		//
 		//err = sa.db.groups.FindWithContext(ctx, filter, &list, findOptions)
 		err = sa.db.groups.AggregateWithContext(ctx, pipeline, &list, nil)
@@ -753,7 +751,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 	return count, list, nil
 }
 
-func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, clientID string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (bson.D, error) {
+func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, clientID string, groupsFilter model.GroupsFilter, skipMembershipCheck bool) (bson.D, model.MembershipCollection, error) {
 
 	groupIDs := []string{}
 	groupIDMap := map[string]bool{}
@@ -764,17 +762,20 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 		}
 	}
 
+	var memberships model.MembershipCollection
+
 	// Credits to Ryan Oberlander suggest
 	if userID != nil || groupsFilter.MemberID != nil || groupsFilter.MemberExternalID != nil {
 		// find group memberships
-		memberships, err := sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+		var err error
+		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 			ID:         groupsFilter.MemberID,
 			UserID:     userID,
 			ExternalID: groupsFilter.MemberExternalID,
 			Statuses:   groupsFilter.MemberStatuses,
 		})
 		if err != nil {
-			return nil, err
+			return nil, model.MembershipCollection{}, err
 		}
 
 		for _, membership := range memberships.Items {
@@ -785,7 +786,10 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 		}
 	}
 
-	filter := bson.D{primitive.E{Key: "client_id", Value: clientID}}
+	filter := bson.D{}
+	if len(groupsFilter.MemberStatuses) > 0 {
+		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupIDs}})
+	}
 	if groupsFilter.GroupIDs != nil {
 		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupsFilter.GroupIDs}})
 	}
@@ -905,7 +909,7 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 		pastTime := time.Now().Add(time.Duration(*groupsFilter.DaysInactive) * -24 * time.Hour)
 		filter = append(filter, primitive.E{Key: "date_updated", Value: bson.M{"$lt": pastTime}})
 	}
-	return filter, nil
+	return filter, memberships, nil
 }
 
 // FindGroupByID finds one groups by ID and clientID
