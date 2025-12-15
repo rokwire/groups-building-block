@@ -102,7 +102,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	_, groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -224,7 +224,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		groupsFilter.ResearchGroup = &b
 	}
 
-	groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
+	_, groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -672,7 +672,7 @@ type adminCreateMembershipsRequest []model.MembershipStatus
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /group/{group-id}/members [post]
+// @Router /api/admin/group/{group-id}/members [post]
 func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)

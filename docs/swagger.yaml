@@ -130,10 +130,7 @@ definitions:
         type: boolean
       research_profile:
         additionalProperties:
-          additionalProperties:
-            items:
-              type: string
-            type: array
+          additionalProperties: {}
           type: object
         type: object
       settings:
@@ -287,12 +284,20 @@ definitions:
       limit:
         description: result limit
         type: integer
+      limit_id:
+        description: limit id
+        type: string
       member_external_id:
         description: member user external id
         type: string
       member_id:
         description: member id
         type: string
+      member_statuses:
+        description: member user status
+        items:
+          type: string
+        type: array
       member_user_id:
         description: member user id
         type: string
@@ -618,10 +623,7 @@ definitions:
         type: boolean
       research_profile:
         additionalProperties:
-          additionalProperties:
-            items:
-              type: string
-            type: array
+          additionalProperties: {}
           type: object
         type: object
       settings:
@@ -751,6 +753,15 @@ definitions:
         type: string
       web_url:
         type: string
+    type: object
+  getGroupsResponseV3:
+    properties:
+      results:
+        items:
+          $ref: '#/definitions/Group'
+        type: array
+      total_count:
+        type: integer
     type: object
   getPutAdminGroupIDsForEventIDRequestAndResponse:
     properties:
@@ -1179,10 +1190,7 @@ definitions:
         type: boolean
       research_profile:
         additionalProperties:
-          additionalProperties:
-            items:
-              type: string
-            type: array
+          additionalProperties: {}
           type: object
         type: object
       settings:
@@ -1433,6 +1441,39 @@ paths:
             items:
               $ref: '#/definitions/GroupMembership'
             type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - Admin
+    post:
+      consumes:
+      - application/json
+      description: Updates a membership. Only the status can be changed.
+      operationId: AdminCreateMemberships
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          items:
+            $ref: '#/definitions/MembershipStatus'
+          type: array
+      - description: Group ID
+        in: path
+        name: group-id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       tags:
@@ -2397,6 +2438,29 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Admin
+  /api/admin/v3/groups/load:
+    post:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V3
+      operationId: AdminGetGroupsV3
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getGroupsResponseV3'
+      security:
+      - AppUserAuth: []
       tags:
       - Admin
   /api/analytics/groups:
@@ -4411,6 +4475,29 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/v3/groups/load:
+    post:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V3
+      operationId: GetGroupsV3
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getGroupsResponseV3'
       security:
       - AppUserAuth: []
       tags:

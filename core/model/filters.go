@@ -21,6 +21,7 @@ type GroupsFilter struct {
 	MemberID         *string                        `json:"member_id"`          // member id
 	MemberUserID     *string                        `json:"member_user_id"`     // member user id
 	MemberExternalID *string                        `json:"member_external_id"` // member user external id
+	MemberStatuses   []string                       `json:"member_statuses"`    // member user status
 	Title            *string                        `json:"title"`              // group title
 	Category         *string                        `json:"category"`           // group category
 	Privacy          *string                        `json:"privacy"`            // group privacy
@@ -33,9 +34,10 @@ type GroupsFilter struct {
 	ResearchGroup    *bool                          `json:"research_group"`
 	ResearchAnswers  map[string]map[string][]string `json:"research_answers"`
 	Attributes       map[string]interface{}         `json:"attributes"`
-	Order            *string                        `json:"order"`  // order by category & name (asc desc)
-	Offset           *int64                         `json:"offset"` // result offset
-	Limit            *int64                         `json:"limit"`  // result limit
+	Order            *string                        `json:"order"`    // order by category & name (asc desc)
+	Offset           *int64                         `json:"offset"`   // result offset
+	Limit            *int64                         `json:"limit"`    // result limit
+	LimitID          *string                        `json:"limit_id"` // limit id
 	DaysInactive     *int64                         `json:"days_inactive"`
 	Administrative   *bool                          `json:"administrative"`
 } // @name GroupsFilter

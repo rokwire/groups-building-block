@@ -22,7 +22,7 @@ type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+func (s *administrationImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error) {
 	skipMembershipCheck := false
 	if current != nil {
 		skipMembershipCheck = current.IsGroupsBBAdministrator()

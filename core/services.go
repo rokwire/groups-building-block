@@ -418,28 +418,17 @@ func (app *Application) getAllGroupsUnsecured() ([]model.Group, error) {
 	return app.storage.FindAllGroupsUnsecured()
 }
 
-func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error) {
+func (app *Application) getGroups(clientID string, current *model.User, filter model.GroupsFilter, skipMembershipCheck bool) (int64, []model.Group, error) {
 	var userID *string
 	if current != nil {
 		userID = &current.ID
 	}
 	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, userID, filter, skipMembershipCheck)
-	if err != nil {
-		return nil, err
-	}
-
-	return groups, nil
+	return app.storage.FindGroups(clientID, userID, filter, skipMembershipCheck)
 }
 
-func (app *Application) getAllGroups(clientID string) ([]model.Group, error) {
-	// find the groups objects
-	groups, err := app.storage.FindGroups(clientID, nil, model.GroupsFilter{}, false)
-	if err != nil {
-		return nil, err
-	}
-
-	return groups, nil
+func (app *Application) getAllGroups(clientID string) (int64, []model.Group, error) {
+	return app.storage.FindGroups(clientID, nil, model.GroupsFilter{}, false)
 }
 
 func (app *Application) getUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {

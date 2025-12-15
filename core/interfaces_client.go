@@ -61,7 +61,7 @@ func (s *servicesImpl) DeleteGroup(clientID string, current *model.User, id stri
 	return s.app.deleteGroup(clientID, current, id, false)
 }
 
-func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error) {
+func (s *servicesImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error) {
 	return s.app.getGroups(clientID, current, filter, false)
 }
 
@@ -69,7 +69,7 @@ func (s *servicesImpl) GetAllGroupsUnsecured() ([]model.Group, error) {
 	return s.app.getAllGroupsUnsecured()
 }
 
-func (s *servicesImpl) GetAllGroups(clientID string) ([]model.Group, error) {
+func (s *servicesImpl) GetAllGroups(clientID string) (int64, []model.Group, error) {
 	return s.app.getAllGroups(clientID)
 }
 

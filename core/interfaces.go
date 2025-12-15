@@ -39,8 +39,8 @@ type Services interface {
 	UpdateGroupDateUpdated(clientID string, groupID string) error
 	DeleteGroup(clientID string, current *model.User, id string) error
 	GetAllGroupsUnsecured() ([]model.Group, error)
-	GetAllGroups(clientID string) ([]model.Group, error)
-	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
+	GetAllGroups(clientID string) (int64, []model.Group, error)
+	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
 	GetGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error)
 	GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
@@ -122,7 +122,7 @@ type Services interface {
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
+	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
 	DeleteGroup(clientID string, current *model.User, id string, inactive bool) error
 	AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error
 }
@@ -159,7 +159,7 @@ type Storage interface {
 	DeleteGroup(ctx storage.TransactionContext, clientID string, id string) error
 	FindGroup(context storage.TransactionContext, clientID string, groupID string, userID *string) (*model.Group, error)
 	FindGroupByTitle(clientID string, title string) (*model.Group, error)
-	FindGroups(clientID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) ([]model.Group, error)
+	FindGroups(clientID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) (int64, []model.Group, error)
 	FindAllGroupsUnsecured() ([]model.Group, error)
 	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 	FindUserGroups(clientID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
