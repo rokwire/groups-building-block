@@ -695,7 +695,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 				return err
 			}
 
-			if rowNumbers[0].RowNumber != 0 {
+			if len(rowNumbers) > 0 && rowNumbers[0].RowNumber != 0 {
 				limitIDRowNumber = rowNumbers[0].RowNumber
 			}
 		}
