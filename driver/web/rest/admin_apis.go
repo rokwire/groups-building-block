@@ -672,7 +672,7 @@ type adminCreateMembershipsRequest []model.MembershipStatus
 // @Param group-id path string true "Group ID"
 // @Success 200
 // @Security AppUserAuth
-// @Router /group/{group-id}/members [post]
+// @Router /api/admin/group/{group-id}/members [post]
 func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
