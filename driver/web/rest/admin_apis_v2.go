@@ -155,7 +155,7 @@ type getGroupsResponseV3 struct {
 // @Param data body model.GroupsFilter true "body data"
 // @Success 200 {object} getGroupsResponseV3
 // @Security AppUserAuth
-// @Router /api/admin/v2/groups [post]
+// @Router /api/admin/v3/groups/load [post]
 func (h *AdminApisHandler) GetGroupsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 

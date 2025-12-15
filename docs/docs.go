@@ -1516,15 +1516,64 @@ const docTemplate = `{
                         "AppUserAuth": []
                     }
                 ],
-                "description": "Gives the groups list. It can be filtered by category, title and privacy. V3",
+                "description": "Gives the groups list. It can be filtered by category, title and privacy. V2",
                 "consumes": [
                     "application/json"
                 ],
                 "tags": [
                     "Admin"
                 ],
-                "operationId": "AdminGetGroupsV3",
+                "operationId": "AdminGetGroupsV2",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "APP",
+                        "name": "APP",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! Filtering by group's title (case-insensitive)",
+                        "name": "title",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! category - filter by category",
+                        "name": "category",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! privacy - filter by privacy",
+                        "name": "privacy",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! offset - skip number of records",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! limit - limit the result",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - Filter by number of days inactive",
+                        "name": "days_inactive",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Deprecated - instead use request body filter! include_hidden - Includes hidden groups if a search by title is performed. Possible value is true. Default false.",
+                        "name": "include_hidden",
+                        "in": "query"
+                    },
                     {
                         "description": "body data",
                         "name": "data",
@@ -1539,7 +1588,10 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/getGroupsResponseV3"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/Group"
+                            }
                         }
                     }
                 }
@@ -1749,6 +1801,42 @@ const docTemplate = `{
                             "items": {
                                 "$ref": "#/definitions/Group"
                             }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/v3/groups/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category, title and privacy. V3",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Admin"
+                ],
+                "operationId": "AdminGetGroupsV3",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/getGroupsResponseV3"
                         }
                     }
                 }
@@ -4850,6 +4938,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/v3/groups/load": {
+            "post": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gives the groups list. It can be filtered by category, title and privacy. V3",
+                "consumes": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Client"
+                ],
+                "operationId": "GetGroupsV3",
+                "parameters": [
+                    {
+                        "description": "body data",
+                        "name": "data",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/GroupsFilter"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/getGroupsResponseV3"
+                        }
+                    }
+                }
+            }
+        },
         "/authman/synchronize": {
             "post": {
                 "security": [
@@ -5413,6 +5537,10 @@ const docTemplate = `{
                     "description": "result limit",
                     "type": "integer"
                 },
+                "limit_id": {
+                    "description": "limit id",
+                    "type": "string"
+                },
                 "member_external_id": {
                     "description": "member user external id",
                     "type": "string"
@@ -5420,6 +5548,13 @@ const docTemplate = `{
                 "member_id": {
                     "description": "member id",
                     "type": "string"
+                },
+                "member_statuses": {
+                    "description": "member user status",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "member_user_id": {
                     "description": "member user id",

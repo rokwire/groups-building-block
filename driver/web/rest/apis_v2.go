@@ -137,12 +137,12 @@ func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.R
 // GetGroupsV3 gets groups. It can be filtered by category, title and privacy. V3
 // @Description Gives the groups list. It can be filtered by category, title and privacy. V3
 // @ID GetGroupsV3
-// @Tags Admin
+// @Tags Client
 // @Accept json
 // @Param data body model.GroupsFilter true "body data"
 // @Success 200 {object} getGroupsResponseV3
 // @Security AppUserAuth
-// @Router /api/admin/v2/groups [post]
+// @Router /api/v3/groups/load [post]
 func (h *ApisHandler) GetGroupsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 

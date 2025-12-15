@@ -284,12 +284,20 @@ definitions:
       limit:
         description: result limit
         type: integer
+      limit_id:
+        description: limit id
+        type: string
       member_external_id:
         description: member user external id
         type: string
       member_id:
         description: member id
         type: string
+      member_statuses:
+        description: member user status
+        items:
+          type: string
+        type: array
       member_user_id:
         description: member user id
         type: string
@@ -2190,9 +2198,49 @@ paths:
       consumes:
       - application/json
       description: Gives the groups list. It can be filtered by category, title and
-        privacy. V3
-      operationId: AdminGetGroupsV3
+        privacy. V2
+      operationId: AdminGetGroupsV2
       parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: Deprecated - instead use request body filter! Filtering by group's
+          title (case-insensitive)
+        in: query
+        name: title
+        type: string
+      - description: Deprecated - instead use request body filter! category - filter
+          by category
+        in: query
+        name: category
+        type: string
+      - description: Deprecated - instead use request body filter! privacy - filter
+          by privacy
+        in: query
+        name: privacy
+        type: string
+      - description: Deprecated - instead use request body filter! offset - skip number
+          of records
+        in: query
+        name: offset
+        type: string
+      - description: Deprecated - instead use request body filter! limit - limit the
+          result
+        in: query
+        name: limit
+        type: string
+      - description: Deprecated - Filter by number of days inactive
+        in: query
+        name: days_inactive
+        type: string
+      - description: Deprecated - instead use request body filter! include_hidden
+          - Includes hidden groups if a search by title is performed. Possible value
+          is true. Default false.
+        in: query
+        name: include_hidden
+        type: string
       - description: body data
         in: body
         name: data
@@ -2203,7 +2251,9 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/getGroupsResponseV3'
+            items:
+              $ref: '#/definitions/Group'
+            type: array
       security:
       - AppUserAuth: []
       tags:
@@ -2355,6 +2405,29 @@ paths:
       security:
       - AppUserAuth: []
       - APIKeyAuth: []
+      tags:
+      - Admin
+  /api/admin/v3/groups/load:
+    post:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V3
+      operationId: AdminGetGroupsV3
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getGroupsResponseV3'
+      security:
+      - AppUserAuth: []
       tags:
       - Admin
   /api/analytics/groups:
@@ -4369,6 +4442,29 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/createResponse'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/v3/groups/load:
+    post:
+      consumes:
+      - application/json
+      description: Gives the groups list. It can be filtered by category, title and
+        privacy. V3
+      operationId: GetGroupsV3
+      parameters:
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/GroupsFilter'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/getGroupsResponseV3'
       security:
       - AppUserAuth: []
       tags:
