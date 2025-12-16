@@ -772,7 +772,7 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 			ID:         groupsFilter.MemberID,
 			UserID:     userID,
 			ExternalID: groupsFilter.MemberExternalID,
-			Statuses:   groupsFilter.MemberStatuses,
+			Statuses:   groupsFilter.MemberStatus,
 		})
 		if err != nil {
 			return nil, model.MembershipCollection{}, err
@@ -787,7 +787,7 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 	}
 
 	filter := bson.D{}
-	if len(groupsFilter.MemberStatuses) > 0 {
+	if len(groupsFilter.MemberStatus) > 0 {
 		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupIDs}})
 	}
 	if groupsFilter.GroupIDs != nil {

@@ -21,7 +21,7 @@ type GroupsFilter struct {
 	MemberID         *string                        `json:"member_id"`          // member id
 	MemberUserID     *string                        `json:"member_user_id"`     // member user id
 	MemberExternalID *string                        `json:"member_external_id"` // member user external id
-	MemberStatuses   []string                       `json:"member_statuses"`    // member user status
+	MemberStatus     []string                       `json:"member_status"`      // member user status
 	Title            *string                        `json:"title"`              // group title
 	Category         *string                        `json:"category"`           // group category
 	Privacy          *string                        `json:"privacy"`            // group privacy

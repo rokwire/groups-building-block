@@ -300,7 +300,6 @@ func (h *ApisHandler) GetUserGroups(orgID string, current *model.User, w http.Re
 // @Security AppUserAuth
 // @Router /api/v2/groups [get]
 // @Router /api/v2/groups [post]
-
 func (h *ApisHandler) GetGroupsV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	var groupsFilter model.GroupsFilter
