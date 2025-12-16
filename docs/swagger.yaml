@@ -3487,31 +3487,6 @@ paths:
       - AppUserAuth: []
       tags:
       - Client
-  /api/group/stats:
-    post:
-      consumes:
-      - application/json
-      description: Gets groups filter stats
-      operationId: GetGroupsFilterStats
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/StatsFilter'
-      responses:
-        "200":
-          description: OK
-      security:
-      - AppUserAuth: []
-      tags:
-      - Client
   /api/groups:
     get:
       consumes:
@@ -4149,8 +4124,8 @@ paths:
       - Client
   /api/user/login:
     get:
-      description: Logs in the user and refactor the user record and linked data if
-        need
+      description: 'Deprecated: Don''t use it! Logs in the user and refactor the user
+        record and linked data if need'
       operationId: LoginUser
       responses:
         "200":
@@ -4175,127 +4150,6 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/getUserStatsResponse'
-      security:
-      - AppUserAuth: []
-      tags:
-      - Client
-  /api/v2/groups:
-    get:
-      consumes:
-      - application/json
-      description: Gives the groups list. It can be filtered by category, title and
-        privacy. V2
-      operationId: GetGroupsV2
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      - description: Deprecated - instead use request body filter! Filtering by group's
-          title (case-insensitive)
-        in: query
-        name: title
-        type: string
-      - description: Deprecated - instead use request body filter! category - filter
-          by category
-        in: query
-        name: category
-        type: string
-      - description: Deprecated - instead use request body filter! privacy - filter
-          by privacy
-        in: query
-        name: privacy
-        type: string
-      - description: Deprecated - instead use request body filter! offset - skip number
-          of records
-        in: query
-        name: offset
-        type: string
-      - description: Deprecated - instead use request body filter! limit - limit the
-          result
-        in: query
-        name: limit
-        type: string
-      - description: Deprecated - instead use request body filter! include_hidden
-          - Includes hidden groups if a search by title is performed. Possible value
-          is true. Default false.
-        in: query
-        name: include_hidden
-        type: string
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/GroupsFilter'
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/Group'
-            type: array
-      security:
-      - AppUserAuth: []
-      tags:
-      - Client
-    post:
-      consumes:
-      - application/json
-      description: Gives the groups list. It can be filtered by category, title and
-        privacy. V2
-      operationId: GetGroupsV2
-      parameters:
-      - description: APP
-        in: header
-        name: APP
-        required: true
-        type: string
-      - description: Deprecated - instead use request body filter! Filtering by group's
-          title (case-insensitive)
-        in: query
-        name: title
-        type: string
-      - description: Deprecated - instead use request body filter! category - filter
-          by category
-        in: query
-        name: category
-        type: string
-      - description: Deprecated - instead use request body filter! privacy - filter
-          by privacy
-        in: query
-        name: privacy
-        type: string
-      - description: Deprecated - instead use request body filter! offset - skip number
-          of records
-        in: query
-        name: offset
-        type: string
-      - description: Deprecated - instead use request body filter! limit - limit the
-          result
-        in: query
-        name: limit
-        type: string
-      - description: Deprecated - instead use request body filter! include_hidden
-          - Includes hidden groups if a search by title is performed. Possible value
-          is true. Default false.
-        in: query
-        name: include_hidden
-        type: string
-      - description: body data
-        in: body
-        name: data
-        required: true
-        schema:
-          $ref: '#/definitions/GroupsFilter'
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/Group'
-            type: array
       security:
       - AppUserAuth: []
       tags:
@@ -4498,6 +4352,31 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/getGroupsResponseV3'
+      security:
+      - AppUserAuth: []
+      tags:
+      - Client
+  /api/v3/groups/stats:
+    post:
+      consumes:
+      - application/json
+      description: Gets groups filter stats
+      operationId: GetGroupsFilterStatsV3
+      parameters:
+      - description: APP
+        in: header
+        name: APP
+        required: true
+        type: string
+      - description: body data
+        in: body
+        name: data
+        required: true
+        schema:
+          $ref: '#/definitions/StatsFilter'
+      responses:
+        "200":
+          description: OK
       security:
       - AppUserAuth: []
       tags:

@@ -6,13 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.73.3] - 2025-12-16
+### Fixed
+- USABILITY UI CleanUp: Group Filters - API improvements. Update version of Golang and the external libraties. Additional fix for api doc [#613](https://github.com/rokwire/groups-building-block/issues/613)
+
 ## [1.73.2] - 2025-12-15
 ### Fixed
-- SABILITY UI CleanUp: Group Filters - API improvements. Fix api doc [#613](https://github.com/rokwire/groups-building-block/issues/613)
+- USABILITY UI CleanUp: Group Filters - API improvements. Fix api doc [#613](https://github.com/rokwire/groups-building-block/issues/613)
 
 ## [1.73.1] - 2025-12-15
 ### Fixed
-- SABILITY UI CleanUp: Group Filters - API improvements. Fix bed array handling [#613](https://github.com/rokwire/groups-building-block/issues/613)
+- USABILITY UI CleanUp: Group Filters - API improvements. Fix bed array handling [#613](https://github.com/rokwire/groups-building-block/issues/613)
 
 ## [1.73.0] - 2025-12-15
 ### Added

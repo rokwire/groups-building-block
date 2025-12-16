@@ -1,4 +1,4 @@
-FROM golang:1.24-bullseye AS builder
+FROM golang:1.25-bookworm AS builder
 
 ENV CGO_ENABLED=0
 
@@ -9,7 +9,7 @@ WORKDIR /groups-app
 COPY . .
 RUN make
 
-FROM alpine:3.22
+FROM alpine:3.23
 
 #we need timezone database + certificates
 RUN apk add --no-cache make tzdata ca-certificates
