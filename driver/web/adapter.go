@@ -144,6 +144,7 @@ func (we *Adapter) Start() {
 
 	restSubrouter.HandleFunc("/v3/group", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupV3)).Methods("POST")
 	restSubrouter.HandleFunc("/v3/groups/load", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV3)).Methods("POST")
+	restSubrouter.HandleFunc("/v3/groups/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsFilterStatsV3)).Methods("POST")
 
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchronizeAuthman)).Methods("POST")
@@ -158,7 +159,6 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/group/{id}/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
-	restSubrouter.HandleFunc("/group/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsFilterStats)).Methods("POST")
 
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.CreatePendingMember)).Methods("POST")
 	restSubrouter.HandleFunc("/group/{group-id}/pending-members", we.idTokenAuthWrapFunc(we.apisHandler.DeletePendingMember)).Methods("DELETE")
