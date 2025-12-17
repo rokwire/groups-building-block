@@ -659,7 +659,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 
 		type rowNumber struct {
-			RowNumber int `json:"_row_number" bson:"_row_number"`
+			RowNumber int64 `json:"_row_number" bson:"_row_number"`
 		}
 
 		var aggrSort bson.D
