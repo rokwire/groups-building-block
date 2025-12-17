@@ -714,8 +714,12 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 		if groupsFilter.Limit != nil {
 			if limitIDRowNumber > 0 {
+				var extraRecords int64 = 0
+				if groupsFilter.LimitIDExtraRecords != nil {
+					extraRecords = *groupsFilter.LimitIDExtraRecords
+				}
 				// Hardcoded for now... 5 extra rows to ensure we get enough results after the limitID offset.
-				limitIDRowNumber = int64(math.Max(float64(limitIDRowNumber+5), float64(*groupsFilter.Limit)))
+				limitIDRowNumber = int64(math.Max(float64(limitIDRowNumber+extraRecords), float64(*groupsFilter.Limit)))
 				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: int64(limitIDRowNumber)}})
 			} else {
 				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: *groupsFilter.Limit}})
