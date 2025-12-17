@@ -764,13 +764,19 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 
 	var memberships model.MembershipCollection
 
+	var userIDFilter *string
+	if userID != nil && !skipMembershipCheck {
+		userIDFilter = userID
+	} else if groupsFilter.MemberUserID != nil {
+		userIDFilter = groupsFilter.MemberUserID
+	}
 	// Credits to Ryan Oberlander suggest
 	if userID != nil || groupsFilter.MemberID != nil || groupsFilter.MemberExternalID != nil {
 		// find group memberships
 		var err error
 		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 			ID:         groupsFilter.MemberID,
-			UserID:     userID,
+			UserID:     userIDFilter,
 			ExternalID: groupsFilter.MemberExternalID,
 			Statuses:   groupsFilter.MemberStatus,
 		})

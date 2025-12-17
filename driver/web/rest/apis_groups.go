@@ -423,7 +423,7 @@ func (h *ApisHandler) GetGroupsV3(clientID string, current *model.User, w http.R
 		groupsFilter.ResearchGroup = &b
 	}
 
-	count, groups, err := h.app.Admin.GetGroups(clientID, current, groupsFilter)
+	count, groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupsV3() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -477,7 +477,7 @@ func (h *ApisHandler) GetGroupsFilterStatsV3(orgID string, current *model.User, 
 		return
 	}
 
-	stats, err := h.app.Services.GetGroupFilterStats(orgID, current, filter)
+	stats, err := h.app.Services.GetGroupFilterStats(orgID, current, filter, false)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
