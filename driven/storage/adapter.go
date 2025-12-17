@@ -21,6 +21,7 @@ import (
 	"groups/core/model"
 	"groups/utils"
 	"log"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -658,7 +659,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 
 		type rowNumber struct {
-			RowNumber int `json:"_row_number" bson:"_row_number"`
+			RowNumber int64 `json:"_row_number" bson:"_row_number"`
 		}
 
 		var aggrSort bson.D
@@ -673,7 +674,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 
 		}
 
-		var limitIDRowNumber int
+		var limitIDRowNumber int64
 		if groupsFilter.LimitID != nil {
 			var rowNumbers []rowNumber
 			err := sa.db.groups.AggregateWithContext(ctx, bson.A{
@@ -713,6 +714,8 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 		}
 		if groupsFilter.Limit != nil {
 			if limitIDRowNumber > 0 {
+				// Hardcoded for now... 5 extra rows to ensure we get enough results after the limitID offset.
+				limitIDRowNumber = int64(math.Max(float64(limitIDRowNumber+5), float64(*groupsFilter.Limit)))
 				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: int64(limitIDRowNumber)}})
 			} else {
 				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: *groupsFilter.Limit}})
@@ -764,15 +767,21 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 
 	var memberships model.MembershipCollection
 
+	var userIDFilter *string
+	if userID != nil && !skipMembershipCheck {
+		userIDFilter = userID
+	} else if groupsFilter.MemberUserID != nil {
+		userIDFilter = groupsFilter.MemberUserID
+	}
 	// Credits to Ryan Oberlander suggest
 	if userID != nil || groupsFilter.MemberID != nil || groupsFilter.MemberExternalID != nil {
 		// find group memberships
 		var err error
 		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
 			ID:         groupsFilter.MemberID,
-			UserID:     userID,
+			UserID:     userIDFilter,
 			ExternalID: groupsFilter.MemberExternalID,
-			Statuses:   groupsFilter.MemberStatuses,
+			Statuses:   groupsFilter.MemberStatus,
 		})
 		if err != nil {
 			return nil, model.MembershipCollection{}, err
@@ -787,7 +796,7 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 	}
 
 	filter := bson.D{}
-	if len(groupsFilter.MemberStatuses) > 0 {
+	if len(groupsFilter.MemberStatus) > 0 {
 		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupIDs}})
 	}
 	if groupsFilter.GroupIDs != nil {

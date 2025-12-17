@@ -41,7 +41,7 @@ type Services interface {
 	GetAllGroupsUnsecured() ([]model.Group, error)
 	GetAllGroups(clientID string) (int64, []model.Group, error)
 	GetGroups(clientID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
-	GetGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error)
+	GetGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error)
 	GetUserGroups(clientID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
 	DeleteUser(clientID string, current *model.User) error
 	ReportGroupAsAbuse(clientID string, current *model.User, group *model.Group, comment string) error
@@ -193,7 +193,7 @@ type Storage interface {
 	DeleteManagedGroupConfig(id string, clientID string) error
 
 	// V3
-	CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error)
+	CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error)
 	FindGroupsV3(context storage.TransactionContext, clientID string, filter model.GroupsFilter) ([]model.Group, error)
 	FindGroupMemberships(clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 	FindGroupMembershipsWithContext(context storage.TransactionContext, clientID string, filter model.MembershipFilter) (model.MembershipCollection, error)

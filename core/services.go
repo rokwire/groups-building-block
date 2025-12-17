@@ -460,8 +460,8 @@ func (app *Application) getGroup(clientID string, current *model.User, id string
 	return group, nil
 }
 
-func (app *Application) getGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
-	return app.storage.CalculateGroupFilterStats(clientID, current, filter)
+func (app *Application) getGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error) {
+	return app.storage.CalculateGroupFilterStats(clientID, current, filter, skipMembershipCheck)
 }
 
 func (app *Application) applyMembershipApproval(clientID string, current *model.User, membershipID string, approve bool, rejectReason string) error {

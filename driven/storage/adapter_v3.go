@@ -168,10 +168,10 @@ func (sa *Adapter) buildGroupsFilter11(clientID string, context TransactionConte
 }
 
 // CalculateGroupFilterStats Generates the stats for a given filter
-func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter) (*model.StatsResult, error) {
+func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error) {
 	var result *model.StatsResult
 	err := sa.PerformTransaction(func(ctx TransactionContext) error {
-		baseFilter, _, err := sa.buildMainQuery(ctx, &current.ID, clientID, filter.BaseFilter, false)
+		baseFilter, _, err := sa.buildMainQuery(ctx, &current.ID, clientID, filter.BaseFilter, skipMembershipCheck)
 		if err != nil {
 			return err
 		}
@@ -181,7 +181,7 @@ func (sa *Adapter) CalculateGroupFilterStats(clientID string, current *model.Use
 		subFilters := bson.D{}
 		for key, value := range filter.SubFilters {
 			innerSubFilter := bson.A{}
-			filter, _, err := sa.buildMainQuery(ctx, &current.ID, clientID, value, false)
+			filter, _, err := sa.buildMainQuery(ctx, &current.ID, clientID, value, skipMembershipCheck)
 			if err != nil {
 				return err
 			}
