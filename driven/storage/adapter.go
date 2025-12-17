@@ -21,6 +21,7 @@ import (
 	"groups/core/model"
 	"groups/utils"
 	"log"
+	"math"
 	"reflect"
 	"strconv"
 	"strings"
@@ -673,7 +674,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 
 		}
 
-		var limitIDRowNumber int
+		var limitIDRowNumber int64
 		if groupsFilter.LimitID != nil {
 			var rowNumbers []rowNumber
 			err := sa.db.groups.AggregateWithContext(ctx, bson.A{
@@ -712,6 +713,7 @@ func (sa *Adapter) FindGroups(clientID string, userID *string, groupsFilter mode
 			bson.D{{Key: "$skip", Value: offset}},
 		}
 		if groupsFilter.Limit != nil {
+			limitIDRowNumber = int64(math.Max(float64(limitIDRowNumber), float64(*groupsFilter.Limit)))
 			if limitIDRowNumber > 0 {
 				pipeline = append(pipeline, bson.D{{Key: "$limit", Value: int64(limitIDRowNumber)}})
 			} else {
