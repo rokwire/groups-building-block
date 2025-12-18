@@ -144,7 +144,7 @@ func (we *Adapter) Start() {
 
 	restSubrouter.HandleFunc("/v3/group", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupV3)).Methods("POST")
 	restSubrouter.HandleFunc("/v3/groups/load", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV3)).Methods("POST")
-	restSubrouter.HandleFunc("/v3/groups/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupsFilterStatsV3)).Methods("POST")
+	restSubrouter.HandleFunc("/v3/groups/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsFilterStatsV3)).Methods("POST")
 
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchronizeAuthman)).Methods("POST")
