@@ -771,6 +771,10 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 
 	var memberships model.MembershipCollection
 
+	adminGroupIDs := []string{}
+	memberGroupIDs := []string{}
+	memberOrAdminGroupIDs := []string{}
+
 	var userIDFilter *string
 	if userID != nil && !skipMembershipCheck {
 		userIDFilter = userID
@@ -793,15 +797,21 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 
 		for _, membership := range memberships.Items {
 			if len(groupIDMap) == 0 || !groupIDMap[membership.GroupID] {
-				groupIDs = append(groupIDs, membership.GroupID)
 				groupIDMap[membership.GroupID] = true
+				if membership.IsAdmin() {
+					adminGroupIDs = append(adminGroupIDs, membership.GroupID)
+				} else if membership.IsAdminOrMember() {
+					memberOrAdminGroupIDs = append(memberOrAdminGroupIDs, membership.GroupID)
+				} else if membership.IsMember() {
+					memberGroupIDs = append(memberGroupIDs, membership.GroupID)
+				}
 			}
 		}
 	}
 
 	filter := bson.D{}
 	if len(groupsFilter.MemberStatus) > 0 {
-		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupIDs}})
+		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": memberOrAdminGroupIDs}})
 	}
 	if groupsFilter.GroupIDs != nil {
 		filter = append(filter, bson.E{Key: "_id", Value: bson.M{"$in": groupsFilter.GroupIDs}})
@@ -816,8 +826,18 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 			}
 		} else {
 			innerOrFilter = []bson.M{
-				{"_id": bson.M{"$in": groupIDs}},
+				{"_id": bson.M{"$in": memberGroupIDs}},
 				{"privacy": bson.M{"$ne": "private"}},
+				{"$and": []bson.M{
+					{"privacy": "private"},
+					{"hidden_for_search": true},
+					{"_id": bson.M{"$in": adminGroupIDs}},
+				}},
+				{"$and": []bson.M{
+					{"privacy": "private"},
+					{"hidden_for_search": false},
+					{"_id": bson.M{"$in": memberOrAdminGroupIDs}},
+				}},
 			}
 		}
 
