@@ -782,7 +782,7 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 		userIDFilter = groupsFilter.MemberUserID
 	}
 	// Credits to Ryan Oberlander suggest
-	if userID != nil || groupsFilter.MemberID != nil || groupsFilter.MemberExternalID != nil {
+	if userIDFilter != nil || groupsFilter.MemberID != nil || groupsFilter.MemberExternalID != nil {
 		// find group memberships
 		var err error
 		memberships, err = sa.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
@@ -800,9 +800,11 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 				groupIDMap[membership.GroupID] = true
 				if membership.IsAdmin() {
 					adminGroupIDs = append(adminGroupIDs, membership.GroupID)
-				} else if membership.IsAdminOrMember() {
+				}
+				if membership.IsAdminOrMember() {
 					memberOrAdminGroupIDs = append(memberOrAdminGroupIDs, membership.GroupID)
-				} else if membership.IsMember() {
+				}
+				if membership.IsMember() {
 					memberGroupIDs = append(memberGroupIDs, membership.GroupID)
 				}
 			}
