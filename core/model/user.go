@@ -31,7 +31,6 @@ type User struct {
 	Name          string     `json:"name" bson:"name"`
 	DateCreated   time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated   *time.Time `json:"date_updated" bson:"date_updated"`
-	ClientID      string     `bson:"client_id"`
 	Permissions   []string   `bson:"permissions"`
 	OriginalToken string
 

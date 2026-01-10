@@ -11,11 +11,11 @@ import (
 )
 
 // FindAdminGroupsForEvent Finds all groups for an event where the user is admin
-func (sa *Adapter) FindAdminGroupsForEvent(context TransactionContext, clientID string, current *model.User, eventID string) ([]string, error) {
+func (sa *Adapter) FindAdminGroupsForEvent(context TransactionContext, OrgID string, current *model.User, eventID string) ([]string, error) {
 	pipeline := bson.A{
 		bson.D{{Key: "$match", Value: bson.D{
 			{Key: "event_id", Value: eventID},
-			{Key: "client_id", Value: clientID},
+			{Key: "org_id", Value: OrgID},
 		}}},
 		bson.D{
 			{Key: "$lookup",
@@ -57,7 +57,7 @@ func (sa *Adapter) FindAdminGroupsForEvent(context TransactionContext, clientID 
 }
 
 // FindAdminGroupsIDs Finds all groups where the current user is admin
-func (sa *Adapter) FindAdminGroupsIDs(context TransactionContext, clientID string, current *model.User) ([]string, error) {
+func (sa *Adapter) FindAdminGroupsIDs(context TransactionContext, OrgID string, current *model.User) ([]string, error) {
 	pipeline := bson.A{
 		bson.D{
 			{Key: "$match",
@@ -95,13 +95,13 @@ func (sa *Adapter) FindAdminGroupsIDs(context TransactionContext, clientID strin
 }
 
 // UpdateGroupMappingsForEvent Updates group mappings for an event
-func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
+func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, OrgID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
 	var result []string
 
 	wrapper := func(context TransactionContext) error {
 		// 1. Construct mappings for lookups
 		adminIDMappings := map[string]bool{}
-		adminGroupIDs, err := sa.FindAdminGroupsIDs(context, clientID, current)
+		adminGroupIDs, err := sa.FindAdminGroupsIDs(context, OrgID, current)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clien
 		}
 
 		currentAdminIDMappings := map[string]bool{}
-		currentAdminGroupIDs, err := sa.FindAdminGroupsForEvent(context, clientID, current, eventID)
+		currentAdminGroupIDs, err := sa.FindAdminGroupsForEvent(context, OrgID, current, eventID)
 		if err != nil {
 			return err
 		}
@@ -140,7 +140,7 @@ func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clien
 			_, err := sa.db.events.DeleteManyWithContext(context, bson.D{
 				{Key: "event_id", Value: eventID},
 				{Key: "group_id", Value: bson.M{"$in": groupIDsForRemove}},
-				{Key: "client_id", Value: clientID},
+				{Key: "org_id", Value: OrgID},
 			}, nil)
 			if err != nil {
 				return err
@@ -152,9 +152,9 @@ func (sa *Adapter) UpdateGroupMappingsForEvent(context TransactionContext, clien
 			if _, ok := currentAdminIDMappings[groupID]; !ok {
 				if _, innerOK := adminIDMappings[groupID]; innerOK {
 					eventsForAdd = append(eventsForAdd, model.Event{
-						ClientID: clientID,
-						GroupID:  groupID,
-						EventID:  eventID,
+						OrgID:   OrgID,
+						GroupID: groupID,
+						EventID: eventID,
 						Creator: &model.Creator{
 							UserID: current.ID,
 							Name:   current.Name,

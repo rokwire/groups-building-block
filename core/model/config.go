@@ -20,7 +20,7 @@ import "time"
 type ApplicationConfig struct {
 	AuthmanAdminUINList       []string
 	ReportAbuseRecipientEmail string
-	SupportedClientIDs        []string
+	SupportedOrgIDs           []string
 	AppID                     string
 	OrgID                     string
 }
@@ -36,7 +36,7 @@ const (
 // SyncConfig defines system configs for managed group sync
 type SyncConfig struct {
 	Type          string `json:"type" bson:"type"`
-	ClientID      string `json:"client_id" bson:"client_id"`
+	OrgID         string `json:"org_id" bson:"org_id"`
 	CRON          string `json:"cron" bson:"cron"`
 	TimeThreshold int    `json:"time_threshold" bson:"time_threshold"` // Threshold from start_time to be considered same run in minutes
 	Timeout       int    `json:"timeout" bson:"timeout"`               // Time from start_time to be considered a failed run in minutes
@@ -53,7 +53,7 @@ type SyncTimes struct {
 // ManagedGroupConfig defines a config for a set of managed groups
 type ManagedGroupConfig struct {
 	ID           string     `json:"id" bson:"_id"`
-	ClientID     string     `json:"client_id" bson:"client_id"`
+	OrgID        string     `json:"org_id" bson:"org_id"`
 	AuthmanStems []string   `json:"authman_stems" bson:"authman_stems"`
 	AdminUINs    []string   `json:"admin_uins" bson:"admin_uins"`
 	Type         string     `json:"type" bson:"type"`

@@ -19,10 +19,10 @@ import (
 	"groups/driven/storage"
 )
 
-func (app *Application) adminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
+func (app *Application) adminDeleteMembershipsByID(OrgID string, current *model.User, groupID string, accountIDs []string) error {
 
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		membership, _ := app.storage.FindGroupMembershipWithContext(context, clientID, groupID, current.ID)
+		membership, _ := app.storage.FindGroupMembershipWithContext(context, OrgID, groupID, current.ID)
 
 		if membership != nil && membership.IsAdmin() {
 
@@ -32,7 +32,7 @@ func (app *Application) adminDeleteMembershipsByID(clientID string, current *mod
 			}
 		}
 
-		return app.storage.UpdateGroupStats(context, clientID, groupID, false, true, false, true)
+		return app.storage.UpdateGroupStats(context, OrgID, groupID, false, true, false, true)
 	})
 
 	return err

@@ -22,18 +22,18 @@ type administrationImpl struct {
 	app *Application
 }
 
-func (s *administrationImpl) GetGroups(clientID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error) {
+func (s *administrationImpl) GetGroups(OrgID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error) {
 	skipMembershipCheck := false
 	if current != nil {
 		skipMembershipCheck = current.IsGroupsBBAdministrator()
 	}
-	return s.app.getGroups(clientID, current, filter, skipMembershipCheck)
+	return s.app.getGroups(OrgID, current, filter, skipMembershipCheck)
 }
 
-func (s *administrationImpl) DeleteGroup(clientID string, current *model.User, id string, inactive bool) error {
-	return s.app.deleteGroup(clientID, current, id, inactive)
+func (s *administrationImpl) DeleteGroup(OrgID string, current *model.User, id string, inactive bool) error {
+	return s.app.deleteGroup(OrgID, current, id, inactive)
 }
 
-func (s *administrationImpl) AdminDeleteMembershipsByID(clientID string, current *model.User, groupID string, accountIDs []string) error {
-	return s.app.adminDeleteMembershipsByID(clientID, current, groupID, accountIDs)
+func (s *administrationImpl) AdminDeleteMembershipsByID(OrgID string, current *model.User, groupID string, accountIDs []string) error {
+	return s.app.adminDeleteMembershipsByID(OrgID, current, groupID, accountIDs)
 }

@@ -50,7 +50,7 @@ type AdminApisHandler struct {
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/user/groups [get]
-func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetUserGroups(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
 	catogies, ok := r.URL.Query()["category"]
@@ -102,7 +102,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		groupsFilter.ResearchGroup = &b
 	}
 
-	_, groups, err := h.app.Services.GetGroups(clientID, current, groupsFilter)
+	_, groups, err := h.app.Services.GetGroups(OrgID, current, groupsFilter)
 	if err != nil {
 		log.Printf("error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -114,7 +114,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(OrgID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
@@ -157,7 +157,7 @@ func (h *AdminApisHandler) GetUserGroups(clientID string, current *model.User, w
 // @Security APIKeyAuth
 // @Security AppUserAuth
 // @Router /api/admin/groups [get]
-func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetAllGroups(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	var groupsFilter model.GroupsFilter
 
 	catogies, ok := r.URL.Query()["category"]
@@ -224,7 +224,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		groupsFilter.ResearchGroup = &b
 	}
 
-	_, groups, err := h.app.Services.GetGroups(clientID, nil, groupsFilter)
+	_, groups, err := h.app.Services.GetGroups(OrgID, nil, groupsFilter)
 	if err != nil {
 		log.Printf("adminapis.GetAllGroups() error getting groups - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -236,7 +236,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 		groupIDs = append(groupIDs, grouop.ID)
 	}
 
-	membershipCollection, err := h.app.Services.FindGroupMemberships(clientID, model.MembershipFilter{
+	membershipCollection, err := h.app.Services.FindGroupMemberships(OrgID, model.MembershipFilter{
 		GroupIDs: groupIDs,
 	})
 	if err != nil {
@@ -272,7 +272,7 @@ func (h *AdminApisHandler) GetAllGroups(clientID string, current *model.User, w 
 // @Success 200 {array} model.GroupStats
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/stats [get]
-func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupStats(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -282,7 +282,7 @@ func (h *AdminApisHandler) GetGroupStats(clientID string, current *model.User, w
 		return
 	}
 
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(OrgID, current, groupID)
 	if err != nil {
 		log.Printf("error getting group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -348,7 +348,7 @@ type adminCreateGroupRequest struct {
 // @Success 200 {object} createResponse
 // @Security AppUserAuth
 // @Router /api/admin/groups [post]
-func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) CreateGroup(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -406,7 +406,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 		Administrative:           requestData.Administrative,
 	}
 
-	insertedID, groupErr := h.app.Services.CreateGroup(clientID, current, groupData, requestData.MembersConfig)
+	insertedID, groupErr := h.app.Services.CreateGroup(OrgID, current, groupData, requestData.MembersConfig)
 	if groupErr != nil {
 		log.Println(groupErr.Error())
 		http.Error(w, groupErr.JSONErrorString(), http.StatusBadRequest)
@@ -441,7 +441,7 @@ func (h *AdminApisHandler) CreateGroup(clientID string, current *model.User, w h
 // @Success 200 {string} Successfully updated
 // @Security AppUserAuth
 // @Router /api/admin/groups/{id} [put]
-func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateGroup(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	id := params["id"]
@@ -475,7 +475,7 @@ func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w h
 	}
 
 	//check if allowed to update
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(OrgID, current, id)
 	if err != nil {
 		log.Printf("Error on getting group - %s\n", err)
 		http.Error(w, utils.NewNotFoundError().JSONErrorString(), http.StatusNotFound)
@@ -496,7 +496,7 @@ func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w h
 		}
 	}
 
-	groupErr := h.app.Services.UpdateGroup(clientID, current, &model.Group{
+	groupErr := h.app.Services.UpdateGroup(OrgID, current, &model.Group{
 		ID:                       id,
 		Title:                    requestData.Title,
 		Description:              requestData.Description,
@@ -543,7 +543,7 @@ func (h *AdminApisHandler) UpdateGroup(clientID string, current *model.User, w h
 // @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/members [get]
-func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupMembers(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -571,7 +571,7 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 	request.GroupIDs = append(request.GroupIDs, groupID)
 
 	//check if allowed to update
-	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	members, err := h.app.Services.FindGroupMemberships(OrgID, request)
 	if err != nil {
 		log.Printf("adminapis.GetGroupMembers()  error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -605,7 +605,7 @@ func (h *AdminApisHandler) GetGroupMembers(clientID string, current *model.User,
 // @Success 200 {array} model.GroupMembership
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/members/v2 [post]
-func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupMembersV2(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -633,7 +633,7 @@ func (h *AdminApisHandler) GetGroupMembersV2(clientID string, current *model.Use
 	request.GroupIDs = append(request.GroupIDs, groupID)
 
 	//check if allowed to update
-	members, err := h.app.Services.FindGroupMemberships(clientID, request)
+	members, err := h.app.Services.FindGroupMemberships(OrgID, request)
 	if err != nil {
 		log.Printf("adminapis.GetGroupMembersV2()  error: %s", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -673,7 +673,7 @@ type adminCreateMembershipsRequest []model.MembershipStatus
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/members [post]
-func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) CreateMemberships(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -709,13 +709,13 @@ func (h *AdminApisHandler) CreateMemberships(clientID string, current *model.Use
 	}
 
 	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(OrgID, current, groupID)
 	if group == nil || group.CurrentMember == nil || !hasPermission {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	err = h.app.Services.CreateMembershipsStatuses(clientID, current, groupID, model.MembershipStatuses(requestData))
+	err = h.app.Services.CreateMembershipsStatuses(OrgID, current, groupID, model.MembershipStatuses(requestData))
 	if err != nil {
 		log.Printf("adminapis.CreateMemberships() Error - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -742,7 +742,7 @@ type adminUpdateMembershipRequest struct {
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/memberships/{membership-id} [put]
-func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateMembership(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -775,7 +775,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(OrgID, membershipID)
 	if err != nil || membership == nil {
 		log.Printf("adminapis.UpdateMembership() Error: Membership %s not found - %s\n", membershipID, err.Error())
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -785,7 +785,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 	var status *string
 	status = requestData.Status
 
-	err = h.app.Services.UpdateMembership(clientID, current, membershipID, status, nil, nil)
+	err = h.app.Services.UpdateMembership(OrgID, current, membershipID, status, nil, nil)
 	if err != nil {
 		log.Printf("adminapis.UpdateMembership() Error on updating membership - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -807,7 +807,7 @@ func (h *AdminApisHandler) UpdateMembership(clientID string, current *model.User
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/memberships/{membership-id} [delete]
-func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteMembership(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	membershipID := params["membership-id"]
@@ -817,7 +817,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 		return
 	}
 
-	membership, err := h.app.Services.FindGroupMembershipByID(clientID, membershipID)
+	membership, err := h.app.Services.FindGroupMembershipByID(OrgID, membershipID)
 	if err != nil {
 		log.Printf("adminapis.DeleteMembership() Error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -827,7 +827,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 	}
 
-	err = h.app.Services.DeleteMembershipByID(clientID, current, membershipID)
+	err = h.app.Services.DeleteMembershipByID(OrgID, current, membershipID)
 	if err != nil {
 		log.Printf("adminapis.DeleteMembership() Error: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -848,7 +848,7 @@ func (h *AdminApisHandler) DeleteMembership(clientID string, current *model.User
 // @Success 200 {array} string
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/events [get]
-func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupEvents(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -858,7 +858,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 		return
 	}
 
-	events, err := h.app.Services.GetEvents(clientID, current, groupID, false)
+	events, err := h.app.Services.GetEvents(OrgID, current, groupID, false)
 	if err != nil {
 		log.Printf("error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -893,7 +893,7 @@ func (h *AdminApisHandler) GetGroupEvents(clientID string, current *model.User, 
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/admin/group/{id} [delete]
-func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteGroup(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	id := params["id"]
@@ -913,7 +913,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		inactive = val
 	}
 
-	group, err := h.app.Services.GetGroupEntity(clientID, id)
+	group, err := h.app.Services.GetGroupEntity(OrgID, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, utils.NewServerError().JSONErrorString(), http.StatusInternalServerError)
@@ -925,7 +925,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 		return
 	}
 
-	err = h.app.Admin.DeleteGroup(clientID, current, id, inactive)
+	err = h.app.Admin.DeleteGroup(OrgID, current, id, inactive)
 	if err != nil {
 		log.Printf("Error on deleting group - %s\n", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -949,7 +949,7 @@ func (h *AdminApisHandler) DeleteGroup(clientID string, current *model.User, w h
 // @Success 200 {string} Successfully deleted
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/event/{event-id} [delete]
-func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteGroupEvent(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -965,7 +965,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 		return
 	}
 
-	err := h.app.Services.DeleteEvent(clientID, current, eventID, groupID)
+	err := h.app.Services.DeleteEvent(OrgID, current, eventID, groupID)
 	if err != nil {
 		log.Printf("Error on deleting an event - %s\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -987,7 +987,7 @@ func (h *AdminApisHandler) DeleteGroupEvent(clientID string, current *model.User
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/group/{groupId}/posts/{postId} [delete]
-func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteGroupPost(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -1003,7 +1003,7 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	err := h.app.Services.DeletePost(clientID, current, groupID, postID, true)
+	err := h.app.Services.DeletePost(OrgID, current, groupID, postID, true)
 	if err != nil {
 		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1023,8 +1023,8 @@ func (h *AdminApisHandler) DeleteGroupPost(clientID string, current *model.User,
 // @Success 200 {array}  model.ManagedGroupConfig
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [get]
-func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Services.GetManagedGroupConfigs(clientID)
+func (h *AdminApisHandler) GetManagedGroupConfigs(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	configs, err := h.app.Services.GetManagedGroupConfigs(OrgID)
 	if err != nil {
 		log.Printf("error getting managed group configs events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1053,7 +1053,7 @@ func (h *AdminApisHandler) GetManagedGroupConfigs(clientID string, current *mode
 // @Success 200 {object} model.ManagedGroupConfig
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [post]
-func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) CreateManagedGroupConfig(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
@@ -1069,7 +1069,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	config.ClientID = clientID
+	config.OrgID = OrgID
 	newConfig, err := h.app.Services.CreateManagedGroupConfig(config)
 	if err != nil {
 		log.Println(err.Error())
@@ -1100,7 +1100,7 @@ func (h *AdminApisHandler) CreateManagedGroupConfig(clientID string, current *mo
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs [put]
-func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateManagedGroupConfig(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create managed group config - %s\n", err.Error())
@@ -1116,7 +1116,7 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	config.ClientID = clientID
+	config.OrgID = OrgID
 	err = h.app.Services.UpdateManagedGroupConfig(config)
 	if err != nil {
 		log.Println(err.Error())
@@ -1137,7 +1137,7 @@ func (h *AdminApisHandler) UpdateManagedGroupConfig(clientID string, current *mo
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/managed-group-configs/{id} [delete]
-func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) DeleteManagedGroupConfig(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
@@ -1147,7 +1147,7 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 		return
 	}
 
-	err := h.app.Services.DeleteManagedGroupConfig(id, clientID)
+	err := h.app.Services.DeleteManagedGroupConfig(id, OrgID)
 	if err != nil {
 		log.Printf("error deleting managed group config for id (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1167,8 +1167,8 @@ func (h *AdminApisHandler) DeleteManagedGroupConfig(clientID string, current *mo
 // @Success 200 {array}  model.SyncConfig
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [get]
-func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	configs, err := h.app.Services.GetSyncConfig(clientID)
+func (h *AdminApisHandler) GetSyncConfig(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	configs, err := h.app.Services.GetSyncConfig(OrgID)
 	if err != nil {
 		log.Printf("error getting sync config - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1197,7 +1197,7 @@ func (h *AdminApisHandler) GetSyncConfig(clientID string, current *model.User, w
 // @Success 200
 // @Security AppUserAuth
 // @Router /api/admin/sync-configs [put]
-func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) SaveSyncConfig(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("Error reading body on create sync config - %s\n", err.Error())
@@ -1213,7 +1213,7 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 		return
 	}
 
-	config.ClientID = clientID
+	config.OrgID = OrgID
 	err = h.app.Services.UpdateSyncConfig(config)
 	if err != nil {
 		log.Println(err.Error())
@@ -1233,8 +1233,8 @@ func (h *AdminApisHandler) SaveSyncConfig(clientID string, current *model.User, 
 // @Success 200
 // @Security AppUserAuth
 // @Router /admin/authman/synchronize [post]
-func (h *AdminApisHandler) SynchronizeAuthman(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	err := h.app.Services.SynchronizeAuthman(clientID)
+func (h *AdminApisHandler) SynchronizeAuthman(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+	err := h.app.Services.SynchronizeAuthman(OrgID)
 	if err != nil {
 		log.Printf("Error during Authman synchronization: %s", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)

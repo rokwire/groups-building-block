@@ -25,9 +25,7 @@ import (
 
 	"github.com/casbin/casbin"
 	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth"
-	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/authorization"
 	"github.com/rokwire/rokwire-building-block-sdk-go/services/core/auth/tokenauth"
-	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logs"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
 
@@ -236,14 +234,14 @@ func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, authenticated := we.auth.apiKeyCheck(req)
+		OrgID, authenticated := we.auth.apiKeyCheck(req)
 		if !authenticated {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, w, req)
+		handler(OrgID, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -255,14 +253,14 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, user := we.auth.idTokenCheck(w, req, false)
+		OrgID, user := we.auth.idTokenCheck(w, req, false)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(OrgID, user, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -272,14 +270,14 @@ func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFun
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, user := we.auth.idTokenCheck(w, req, true)
+		OrgID, user := we.auth.idTokenCheck(w, req, true)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(OrgID, user, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -289,14 +287,14 @@ func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) htt
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedClientIDs)
+		OrgID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedOrgIDs)
 		if user == nil {
 			log.Printf("Unauthorized")
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(OrgID, user, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -306,14 +304,14 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, authenticated := we.auth.internalAuthCheck(w, req)
+		OrgID, authenticated := we.auth.internalAuthCheck(w, req)
 		if !authenticated {
 			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		handler(clientID, w, req)
+		handler(OrgID, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -323,7 +321,7 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, authenticated, user := we.auth.mixedCheck(req)
+		OrgID, authenticated, user := we.auth.mixedCheck(req)
 		if !authenticated {
 			log.Printf("Unauthorized - Mixed Check")
 			w.WriteHeader(http.StatusUnauthorized)
@@ -331,7 +329,7 @@ func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
 		}
 
 		//user can be nil
-		handler(clientID, user, w, req)
+		handler(OrgID, user, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -343,7 +341,7 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		clientID, user, forbidden := we.auth.adminCheck(req)
+		OrgID, user, forbidden := we.auth.adminCheck(req)
 		if user == nil {
 			if forbidden {
 				log.Printf("Forbidden - Admin")
@@ -355,7 +353,7 @@ func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFu
 			return
 		}
 
-		handler(clientID, user, w, req)
+		handler(OrgID, user, w, req)
 		logObj.RequestComplete()
 	}
 }
@@ -402,31 +400,6 @@ func (we Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) 
 	}
 }
 
-func newBBsStandardHandler(serviceRegManager *auth.ServiceRegManager) (*tokenauth.StandardHandler, error) {
-	bbsPermissionAuth := authorization.NewCasbinStringAuthorization("driver/web/authorization_bbs_permission_policy.csv")
-	bbsTokenAuth, err := tokenauth.NewTokenAuth(true, serviceRegManager, bbsPermissionAuth, nil)
-	if err != nil {
-		return nil, errors.WrapErrorAction(logutils.ActionCreate, "bbs token auth", nil, err)
-	}
-
-	check := func(claims *tokenauth.Claims, req *http.Request) (int, error) {
-		if !claims.Service {
-			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "service claim", nil)
-		}
-
-		if !claims.FirstParty {
-			return http.StatusUnauthorized, errors.ErrorData(logutils.StatusInvalid, "first party claim", nil)
-		}
-
-		return http.StatusOK, nil
-	}
-
-	auth := tokenauth.NewStandardHandler(bbsTokenAuth, check)
-	return auth, nil
-}
-
-// END BBs auth //////////
-
 func (we Adapter) getPermissions(claims *tokenauth.Claims) []string {
 	if claims == nil {
 		return []string{}
@@ -444,12 +417,12 @@ func (we Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResp
 }
 
 // NewWebAdapter creates new WebAdapter instance
-func NewWebAdapter(app *core.Application, host string, port string, supportedClientIDs []string, appKeys []string, oidcProvider string, oidcClientID string,
-	oidcExtendedClientIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
+func NewWebAdapter(app *core.Application, host string, port string, supportedOrgIDs []string, appKeys []string, oidcProvider string, oidcOrgID string,
+	oidcExtendedOrgIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
 	internalAPIKey string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, logger *logs.Logger) *Adapter {
 	authorization := casbin.NewEnforcer("driver/web/authorization_model.conf", "driver/web/authorization_policy.csv")
 
-	auth := NewAuth(app, host, supportedClientIDs, appKeys, internalAPIKey, oidcProvider, oidcClientID, oidcExtendedClientIDs, oidcAdminClientID,
+	auth := NewAuth(app, host, supportedOrgIDs, appKeys, internalAPIKey, oidcProvider, oidcOrgID, oidcExtendedOrgIDs, oidcAdminClientID,
 		oidcAdminWebClientID, serviceRegManager, groupServiceURL, authorization)
 
 	auth2, err := NewAuth2(serviceRegManager, logger)

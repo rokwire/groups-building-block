@@ -37,7 +37,7 @@ import (
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/group/{group-id}/events/v3/load [post]
-func (h *AdminApisHandler) GetGroupCalendarEventsV3(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupCalendarEventsV3(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	groupID := params["group-id"]
@@ -64,13 +64,13 @@ func (h *AdminApisHandler) GetGroupCalendarEventsV3(clientID string, current *mo
 	}
 
 	//check if allowed to see the events for this group
-	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(clientID, current, groupID)
+	group, hasPermission := h.app.Services.CheckUserGroupMembershipPermission(OrgID, current, groupID)
 	if group == nil || group.CurrentMember == nil || !hasPermission {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 
-	events, err := h.app.Services.GetGroupCalendarEvents(clientID, current, groupID, nil, filter)
+	events, err := h.app.Services.GetGroupCalendarEvents(OrgID, current, groupID, nil, filter)
 	if err != nil {
 		log.Printf("adminapis.GetGroupCalendarEventsV3() - error getting group events - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -101,7 +101,7 @@ func (h *AdminApisHandler) GetGroupCalendarEventsV3(clientID string, current *mo
 // @Success 200 {object} createCalendarEventMultiGroupData
 // @Security AppUserAuth
 // @Router /api/admin/group/events/v3 [post]
-func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) CreateCalendarEventMultiGroup(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 
 	data, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -153,7 +153,7 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 		}
 	}
 
-	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(clientID, adminIdentifier, current, requestData.Event, requestData.GroupIDs)
+	event, groupIDs, err := h.app.Services.CreateCalendarEventForGroups(OrgID, adminIdentifier, current, requestData.Event, requestData.GroupIDs)
 	if err != nil {
 		log.Printf("adminapis.CreateCalendarEventMultiGroup() - Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -189,7 +189,7 @@ func (h *AdminApisHandler) CreateCalendarEventMultiGroup(clientID string, curren
 // @Success 200 {object} createCalendarEventSingleGroupData
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/events/v3 [post]
-func (h *AdminApisHandler) CreateCalendarEventSingleGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) CreateCalendarEventSingleGroup(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -221,7 +221,7 @@ func (h *AdminApisHandler) CreateCalendarEventSingleGroup(clientID string, curre
 		return
 	}
 
-	membship, err := h.app.Services.FindGroupMembership(clientID, groupID, current.ID)
+	membship, err := h.app.Services.FindGroupMembership(OrgID, groupID, current.ID)
 	if err != nil {
 		log.Printf("adminapis.CreateCalendarEventSingleGroup() - Error retrieving user membership for group %s - %s\n", groupID, err.Error())
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
@@ -234,7 +234,7 @@ func (h *AdminApisHandler) CreateCalendarEventSingleGroup(clientID string, curre
 		return
 	}
 
-	event, member, err := h.app.Services.CreateCalendarEventSingleGroup(clientID, current, requestData.Event, groupID, requestData.ToMembers)
+	event, member, err := h.app.Services.CreateCalendarEventSingleGroup(OrgID, current, requestData.Event, groupID, requestData.ToMembers)
 	if err != nil {
 		log.Printf("adminapis.CreateCalendarEventSingleGroup() - Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -269,7 +269,7 @@ func (h *AdminApisHandler) CreateCalendarEventSingleGroup(clientID string, curre
 // @Success 200 {object} updateCalendarEventSingleGroupData
 // @Security AppUserAuth
 // @Router /api/admin/group/{group-id}/events/v3 [put]
-func (h *AdminApisHandler) UpdateCalendarEventSingleGroup(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateCalendarEventSingleGroup(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["group-id"]
 	if len(groupID) <= 0 {
@@ -301,7 +301,7 @@ func (h *AdminApisHandler) UpdateCalendarEventSingleGroup(clientID string, curre
 		return
 	}
 
-	membship, err := h.app.Services.FindGroupMembership(clientID, groupID, current.ID)
+	membship, err := h.app.Services.FindGroupMembership(OrgID, groupID, current.ID)
 	if err != nil {
 		log.Printf("adminapis.UpdateCalendarEventSingleGroup() - Error retrieving user membership for group %s - %s\n", groupID, err.Error())
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
@@ -314,7 +314,7 @@ func (h *AdminApisHandler) UpdateCalendarEventSingleGroup(clientID string, curre
 		return
 	}
 
-	event, member, err := h.app.Services.UpdateCalendarEventSingleGroup(clientID, current, requestData.Event, groupID, requestData.ToMembers)
+	event, member, err := h.app.Services.UpdateCalendarEventSingleGroup(OrgID, current, requestData.Event, groupID, requestData.ToMembers)
 	if err != nil {
 		log.Printf("adminapis.UpdateCalendarEventSingleGroup() - Error on validating create event data - %s\n", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -345,7 +345,7 @@ func (h *AdminApisHandler) UpdateCalendarEventSingleGroup(clientID string, curre
 // @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
 // @Security AppUserAuth
 // @Router /api/admin/user/event/{event_id}/groups [get]
-func (h *AdminApisHandler) GetAdminGroupIDsForEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetAdminGroupIDsForEventID(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	eventID := params["event-id"]
@@ -356,7 +356,7 @@ func (h *AdminApisHandler) GetAdminGroupIDsForEventID(clientID string, current *
 	}
 
 	//check if allowed to see the events for this group
-	groupIDs, err := h.app.Services.FindAdminGroupsForEvent(clientID, current, eventID)
+	groupIDs, err := h.app.Services.FindAdminGroupsForEvent(OrgID, current, eventID)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return
@@ -388,7 +388,7 @@ func (h *AdminApisHandler) GetAdminGroupIDsForEventID(clientID string, current *
 // @Success 200 {object} getPutAdminGroupIDsForEventIDRequestAndResponse
 // @Security AppUserAuth
 // @Router /api/admin/user/event/{event-id}/groups [get]
-func (h *AdminApisHandler) UpdateGroupMappingsEventID(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateGroupMappingsEventID(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	//validate input
 	params := mux.Vars(r)
 	eventID := params["event-id"]
@@ -414,7 +414,7 @@ func (h *AdminApisHandler) UpdateGroupMappingsEventID(clientID string, current *
 	}
 
 	//check if allowed to see the events for this group
-	groupIDs, err := h.app.Services.UpdateGroupMappingsForEvent(clientID, current, eventID, requestData.GroupIDs)
+	groupIDs, err := h.app.Services.UpdateGroupMappingsForEvent(OrgID, current, eventID, requestData.GroupIDs)
 	if err != nil {
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		return

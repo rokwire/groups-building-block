@@ -86,10 +86,10 @@ func (m *Member) ToNotificationRecipient() notifications.Recipient {
 }
 
 // ToGroupMembership converts the Member model to the GroupMembership model
-func (m Member) ToGroupMembership(clientID string, groupID string) GroupMembership {
+func (m Member) ToGroupMembership(OrgID string, groupID string) GroupMembership {
 	return GroupMembership{
 		ID:            uuid.NewString(),
-		ClientID:      clientID,
+		OrgID:         OrgID,
 		GroupID:       groupID,
 		UserID:        m.UserID,
 		ExternalID:    m.ExternalID,

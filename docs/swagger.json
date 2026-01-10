@@ -5196,7 +5196,7 @@
         "Event": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "creator": {
@@ -5274,7 +5274,7 @@
                     "description": "one of the enums categories list",
                     "type": "string"
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "current_member": {
@@ -5425,7 +5425,7 @@
         "GroupMembership": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_attended": {
@@ -5684,7 +5684,7 @@
                         "type": "string"
                     }
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6495,7 +6495,7 @@
                 "body": {
                     "type": "string"
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6568,7 +6568,7 @@
         "model.SyncConfig": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "cron": {
@@ -6661,7 +6661,7 @@
         "rest.analyticsGetGroupsMembersResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6690,7 +6690,7 @@
                 "category": {
                     "type": "string"
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6728,7 +6728,7 @@
         "rest.analyticsGetPostsResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {

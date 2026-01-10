@@ -152,7 +152,6 @@ func main() {
 	config := &model.ApplicationConfig{
 		AuthmanAdminUINList:       authmanAdminUINList,
 		ReportAbuseRecipientEmail: notificationsReportAbuseEmail,
-		SupportedClientIDs:        supportedClientIDs,
 		AppID:                     appID,
 		OrgID:                     orgID,
 	}

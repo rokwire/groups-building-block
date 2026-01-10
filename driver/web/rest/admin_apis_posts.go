@@ -39,7 +39,7 @@ import (
 // @Success 200 {array} model.Post
 // @Security AppUserAuth
 // @Router /api/admin/group/{groupID}/posts [get]
-func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupPosts(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	var filter model.PostsFilter
 	id := params["group-id"]
@@ -98,7 +98,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 		filter.Order = &orders[0]
 	}
 
-	posts, err := h.app.Services.GetPosts(clientID, current, filter, nil, false)
+	posts, err := h.app.Services.GetPosts(OrgID, current, filter, nil, false)
 	if err != nil {
 		log.Printf("error getting posts for group (%s) - %s", id, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -127,7 +127,7 @@ func (h *AdminApisHandler) GetGroupPosts(clientID string, current *model.User, w
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/group/{groupId}/posts/{postId} [get]
-func (h *AdminApisHandler) GetGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) GetGroupPost(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -144,7 +144,7 @@ func (h *AdminApisHandler) GetGroupPost(clientID string, current *model.User, w 
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(OrgID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -164,7 +164,7 @@ func (h *AdminApisHandler) GetGroupPost(clientID string, current *model.User, w 
 		return
 	}
 
-	post, err := h.app.Services.GetPost(clientID, &current.ID, groupID, postID, true, true)
+	post, err := h.app.Services.GetPost(OrgID, &current.ID, groupID, postID, true, true)
 	if err != nil {
 		log.Printf("error getting post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -194,7 +194,7 @@ func (h *AdminApisHandler) GetGroupPost(clientID string, current *model.User, w 
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/group/{groupId}/posts [post]
-func (h *AdminApisHandler) CreateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) CreateGroupPost(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["groupID"]
 	if len(id) <= 0 {
@@ -219,7 +219,7 @@ func (h *AdminApisHandler) CreateGroupPost(clientID string, current *model.User,
 	}
 
 	// check if allowed to create
-	group, err := h.app.Services.GetGroup(clientID, current, id)
+	group, err := h.app.Services.GetGroup(OrgID, current, id)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -253,7 +253,7 @@ func (h *AdminApisHandler) CreateGroupPost(clientID string, current *model.User,
 
 	post.GroupID = id // Set group id from the query param
 
-	post, err = h.app.Services.CreatePost(clientID, current, post, group)
+	post, err = h.app.Services.CreatePost(OrgID, current, post, group)
 	if err != nil {
 		log.Printf("error getting posts for group - %s", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -282,7 +282,7 @@ func (h *AdminApisHandler) CreateGroupPost(clientID string, current *model.User,
 // @Security AppUserAuth
 // @Security APIKeyAuth
 // @Router /api/admin/group/{groupId}/posts/{postId} [put]
-func (h *AdminApisHandler) UpdateGroupPost(clientID string, current *model.User, w http.ResponseWriter, r *http.Request) {
+func (h *AdminApisHandler) UpdateGroupPost(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	groupID := params["groupID"]
 	if len(groupID) <= 0 {
@@ -320,7 +320,7 @@ func (h *AdminApisHandler) UpdateGroupPost(clientID string, current *model.User,
 	}
 
 	//check if allowed to delete
-	group, err := h.app.Services.GetGroup(clientID, current, groupID)
+	group, err := h.app.Services.GetGroup(OrgID, current, groupID)
 	if err != nil {
 		log.Println(err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -339,7 +339,7 @@ func (h *AdminApisHandler) UpdateGroupPost(clientID string, current *model.User,
 		return
 	}
 
-	post, err = h.app.Services.UpdatePost(clientID, current, group, post)
+	post, err = h.app.Services.UpdatePost(OrgID, current, group, post)
 	if err != nil {
 		log.Printf("error update post (%s) - %s", postID, err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)

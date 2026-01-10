@@ -25,19 +25,19 @@ import (
 	"github.com/google/uuid"
 )
 
-func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool) error {
+func (app *Application) synchronizeAuthman(OrgID string, checkThreshold bool) error {
 	startTime := time.Now()
 	syncKey := "authman"
 	transaction := func(context storage.TransactionContext) error {
-		times, err := app.storage.FindSyncTimes(context, clientID, "authman", true)
+		times, err := app.storage.FindSyncTimes(context, OrgID, "authman", true)
 		if err != nil {
 			return err
 		}
 
 		if times != nil && times.StartTime != nil {
-			config, err := app.storage.FindSyncConfig(context, clientID)
+			config, err := app.storage.FindSyncConfig(context, OrgID)
 			if err != nil {
-				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+				log.Printf("error finding sync configs for OrgID %s: %v", OrgID, err)
 			}
 			timeout := defaultConfigSyncTimeout
 			if config != nil && config.Timeout > 0 {
@@ -46,19 +46,19 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 
 			if times.EndTime == nil {
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(timeout))) {
-					log.Println("Another Authman sync process is running for clientID " + clientID)
-					return fmt.Errorf("another Authman sync process is running %s", clientID)
+					log.Println("Another Authman sync process is running for OrgID " + OrgID)
+					return fmt.Errorf("another Authman sync process is running %s", OrgID)
 				}
-				log.Printf("Authman sync past timeout threshold %d mins for client ID %s\n", timeout, clientID)
+				log.Printf("Authman sync past timeout threshold %d mins for client ID %s\n", timeout, OrgID)
 			}
 			if checkThreshold {
 				if config == nil {
-					log.Printf("missing sync configs for clientID %s", clientID)
-					return fmt.Errorf("missing sync configs for clientID %s: %v", clientID, err)
+					log.Printf("missing sync configs for OrgID %s", OrgID)
+					return fmt.Errorf("missing sync configs for OrgID %s: %v", OrgID, err)
 				}
 				if !startTime.After(times.StartTime.Add(time.Minute * time.Duration(config.TimeThreshold))) {
-					log.Println("Authman has already been synced for clientID " + clientID)
-					return fmt.Errorf("Authman has already been synced for clientID %s", clientID)
+					log.Println("Authman has already been synced for OrgID " + OrgID)
+					return fmt.Errorf("Authman has already been synced for OrgID %s", OrgID)
 				}
 			}
 		}
@@ -71,7 +71,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		return err
 	}
 
-	log.Printf("Global Authman synchronization started for clientID: %s\n", clientID)
+	log.Printf("Global Authman synchronization started for OrgID: %s\n", OrgID)
 
 	app.authmanSyncInProgress = true
 	finishAuthmanSync := func() {
@@ -81,13 +81,13 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 			log.Printf("Error saving sync configs to end sync: %s\n", err)
 			return
 		}
-		log.Printf("Global Authman synchronization finished for clientID: %s\n", clientID)
+		log.Printf("Global Authman synchronization finished for OrgID: %s\n", OrgID)
 	}
 	defer finishAuthmanSync()
 
-	configs, err := app.storage.FindManagedGroupConfigs(clientID)
+	configs, err := app.storage.FindManagedGroupConfigs(OrgID)
 	if err != nil {
-		return fmt.Errorf("error finding managed group configs for clientID %s", clientID)
+		return fmt.Errorf("error finding managed group configs for OrgID %s", OrgID)
 	}
 
 	for _, config := range configs {
@@ -99,7 +99,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 
 			if stemGroups != nil && len(stemGroups.WsFindGroupsResults.GroupResults) > 0 {
 				for _, stemGroup := range stemGroups.WsFindGroupsResults.GroupResults {
-					storedStemGroup, err := app.storage.FindAuthmanGroupByKey(clientID, stemGroup.Name)
+					storedStemGroup, err := app.storage.FindAuthmanGroupByKey(OrgID, stemGroup.Name)
 					if err != nil {
 						return fmt.Errorf("error on requesting Authman for stem groups: %s", err)
 					}
@@ -127,11 +127,11 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 					if storedStemGroup == nil {
 						var memberships []model.GroupMembership
 						if len(constructedAdminUINs) > 0 {
-							memberships = app.buildMembersByExternalIDs(clientID, constructedAdminUINs, "admin")
+							memberships = app.buildMembersByExternalIDs(OrgID, constructedAdminUINs, "admin")
 						}
 
 						emptyText := ""
-						_, err := app.storage.CreateGroup(nil, clientID, nil, &model.Group{
+						_, err := app.storage.CreateGroup(nil, OrgID, nil, &model.Group{
 							Title:                title,
 							Description:          &emptyText,
 							Category:             "Academic", // Hardcoded.
@@ -150,7 +150,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						missedUINs := []string{}
 						groupUpdated := false
 
-						existingAdmins, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+						existingAdmins, err := app.storage.FindGroupMemberships(OrgID, model.MembershipFilter{
 							GroupIDs: []string{storedStemGroup.ID},
 							Statuses: []string{"admin"},
 						})
@@ -181,7 +181,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						if len(missedUINs) > 0 {
-							missedMembers := app.buildMembersByExternalIDs(clientID, missedUINs, "admin")
+							missedMembers := app.buildMembersByExternalIDs(OrgID, missedUINs, "admin")
 							if len(missedMembers) > 0 {
 								membershipsForUpdate = append(membershipsForUpdate, missedMembers...)
 								groupUpdated = true
@@ -199,7 +199,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 						}
 
 						if groupUpdated {
-							err := app.storage.UpdateGroupWithMembership(nil, clientID, nil, storedStemGroup, membershipsForUpdate)
+							err := app.storage.UpdateGroupWithMembership(nil, OrgID, nil, storedStemGroup, membershipsForUpdate)
 							if err != nil {
 								log.Printf("error app.synchronizeAuthmanGroup() - unable to update group admins of '%s' - %s", storedStemGroup.Title, err)
 							}
@@ -210,14 +210,14 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 		}
 	}
 
-	authmanGroups, err := app.storage.FindAuthmanGroups(clientID)
+	authmanGroups, err := app.storage.FindAuthmanGroups(OrgID)
 	if err != nil {
 		return err
 	}
 
 	if len(authmanGroups) > 0 {
 		for _, authmanGroup := range authmanGroups {
-			err := app.synchronizeAuthmanGroup(clientID, authmanGroup.ID)
+			err := app.synchronizeAuthmanGroup(OrgID, authmanGroup.ID)
 			if err != nil {
 				log.Printf("error app.synchronizeAuthmanGroup() '%s' - %s", authmanGroup.Title, err)
 			}
@@ -227,7 +227,7 @@ func (app *Application) synchronizeAuthman(clientID string, checkThreshold bool)
 	return nil
 }
 
-func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs []string, memberStatus string) []model.GroupMembership {
+func (app *Application) buildMembersByExternalIDs(OrgID string, externalIDs []string, memberStatus string) []model.GroupMembership {
 	if len(externalIDs) > 0 {
 		users, _ := app.corebb.GetAllCoreAccountsWithExternalIDs(externalIDs, nil, nil)
 		members := []model.GroupMembership{}
@@ -243,7 +243,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 			if value, ok := userExternalIDmapping[externalID]; ok {
 				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
-					ClientID:    clientID,
+					OrgID:       OrgID,
 					UserID:      value.ID,
 					ExternalID:  externalID,
 					Name:        value.GetFullName(),
@@ -254,7 +254,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 			} else {
 				members = append(members, model.GroupMembership{
 					ID:          uuid.NewString(),
-					ClientID:    clientID,
+					OrgID:       OrgID,
 					ExternalID:  externalID,
 					Status:      memberStatus,
 					DateCreated: time.Now(),
@@ -266,7 +266,7 @@ func (app *Application) buildMembersByExternalIDs(clientID string, externalIDs [
 	return nil
 }
 
-func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string) error {
+func (app *Application) synchronizeAuthmanGroup(OrgID string, groupID string) error {
 	if groupID == "" {
 		return errors.New("Missing group ID")
 	}
@@ -278,7 +278,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 		if group != nil {
 			endTime := time.Now()
 			group.SyncEndTime = &endTime
-			err = app.storage.UpdateGroupSyncTimes(nil, clientID, group)
+			err = app.storage.UpdateGroupSyncTimes(nil, OrgID, group)
 			if err != nil {
 				log.Printf("Error saving group to end sync for Authman %s: %s\n", *group.AuthmanGroup, err)
 				return
@@ -288,7 +288,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	}
 	defer finishAuthmanSync()
 
-	group, err = app.checkGroupSyncTimes(clientID, groupID)
+	group, err = app.checkGroupSyncTimes(OrgID, groupID)
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 
 	app.authmanSyncInProgress = true
 
-	err = app.syncAuthmanGroupMemberships(clientID, group, authmanExternalIDs)
+	err = app.syncAuthmanGroupMemberships(OrgID, group, authmanExternalIDs)
 	if err != nil {
 		return fmt.Errorf("error updating group memberships for Authman %s: %s", *group.AuthmanGroup, err)
 	}
@@ -310,12 +310,12 @@ func (app *Application) synchronizeAuthmanGroup(clientID string, groupID string)
 	return nil
 }
 
-func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*model.Group, error) {
+func (app *Application) checkGroupSyncTimes(OrgID string, groupID string) (*model.Group, error) {
 	var group *model.Group
 	var err error
 	startTime := time.Now()
 	transaction := func(context storage.TransactionContext) error {
-		group, err = app.storage.FindGroup(context, clientID, groupID, nil)
+		group, err = app.storage.FindGroup(context, OrgID, groupID, nil)
 		if err != nil {
 			return fmt.Errorf("error finding group for ID %s: %s", groupID, err)
 		}
@@ -327,9 +327,9 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 		}
 
 		if group.SyncStartTime != nil {
-			config, err := app.storage.FindSyncConfig(context, clientID)
+			config, err := app.storage.FindSyncConfig(context, OrgID)
 			if err != nil {
-				log.Printf("error finding sync configs for clientID %s: %v", clientID, err)
+				log.Printf("error finding sync configs for OrgID %s: %v", OrgID, err)
 			}
 			timeout := defaultConfigSyncTimeout
 			if config != nil && config.GroupTimeout > 0 {
@@ -346,7 +346,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 
 		group.SyncStartTime = &startTime
 		group.SyncEndTime = nil
-		err = app.storage.UpdateGroupSyncTimes(context, clientID, group)
+		err = app.storage.UpdateGroupSyncTimes(context, OrgID, group)
 		if err != nil {
 			return fmt.Errorf("error switching to group memberships for Authman %s: %s", *group.AuthmanGroup, err)
 		}
@@ -361,7 +361,7 @@ func (app *Application) checkGroupSyncTimes(clientID string, groupID string) (*m
 	return group, nil
 }
 
-func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGroup *model.Group, authmanExternalIDs []string) error {
+func (app *Application) syncAuthmanGroupMemberships(OrgID string, authmanGroup *model.Group, authmanExternalIDs []string) error {
 	syncID := uuid.NewString()
 	log.Printf("Sync ID %s for Authman %s...\n", syncID, *authmanGroup.AuthmanGroup)
 
@@ -370,7 +370,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Load existing admins
 	adminExternalIDsMap := map[string]bool{}
-	adminMembers, err := app.storage.FindGroupMemberships(clientID, model.MembershipFilter{
+	adminMembers, err := app.storage.FindGroupMemberships(OrgID, model.MembershipFilter{
 		GroupIDs: []string{authmanGroup.ID},
 		Statuses: []string{"admin"},
 	})
@@ -438,7 +438,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 			}
 		}
 
-		err = app.storage.BulkUpdateGroupMembershipsByExternalID(clientID, authmanGroup.ID, updateOperations, false)
+		err = app.storage.BulkUpdateGroupMembershipsByExternalID(OrgID, authmanGroup.ID, updateOperations, false)
 		if err != nil {
 			log.Printf("Error on bulk saving step: %d, items: %d memberships, core accounts: %d in Authman %s: %s\n", step, len(updateOperations), len(localUsers), *authmanGroup.AuthmanGroup, err)
 		} else {
@@ -459,7 +459,7 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 		var email *string
 		updateExternalIDs = append(updateExternalIDs, externalID)
 		updateOperations = append(updateOperations, storage.SingleMembershipOperation{
-			ClientID:   clientID,
+			OrgID:      OrgID,
 			GroupID:    authmanGroup.ID,
 			ExternalID: externalID,
 			UserID:     userID,
@@ -483,14 +483,14 @@ func (app *Application) syncAuthmanGroupMemberships(clientID string, authmanGrou
 
 	// Delete removed non-admin members
 	log.Printf("Deleting removed members for Authman %s...\n", *authmanGroup.AuthmanGroup)
-	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(clientID, authmanGroup.ID, syncID)
+	deleteCount, err := app.storage.DeleteUnsyncedGroupMemberships(OrgID, authmanGroup.ID, syncID)
 	if err != nil {
 		log.Printf("Error deleting removed memberships in Authman %s\n", *authmanGroup.AuthmanGroup)
 	} else {
 		log.Printf("%d memberships removed from Authman %s\n", deleteCount, *authmanGroup.AuthmanGroup)
 	}
 
-	err = app.storage.UpdateGroupStats(nil, clientID, authmanGroup.ID, false, false, true, true)
+	err = app.storage.UpdateGroupStats(nil, OrgID, authmanGroup.ID, false, false, true, true)
 	if err != nil {
 		log.Printf("Error updating group stats for '%s' - %s", *authmanGroup.AuthmanGroup, err)
 	}

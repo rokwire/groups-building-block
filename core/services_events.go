@@ -24,12 +24,12 @@ import (
 	"sync"
 )
 
-func (app *Application) findAdminGroupsForEvent(clientID string, current *model.User, eventID string) ([]string, error) {
-	return app.storage.FindAdminGroupsForEvent(nil, clientID, current, eventID)
+func (app *Application) findAdminGroupsForEvent(OrgID string, current *model.User, eventID string) ([]string, error) {
+	return app.storage.FindAdminGroupsForEvent(nil, OrgID, current, eventID)
 }
 
-func (app *Application) updateGroupMappingsForEvent(clientID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
-	return app.storage.UpdateGroupMappingsForEvent(nil, clientID, current, eventID, groupIDs)
+func (app *Application) updateGroupMappingsForEvent(OrgID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
+	return app.storage.UpdateGroupMappingsForEvent(nil, OrgID, current, eventID, groupIDs)
 }
 
 func (app *Application) findEventUserIDs(eventID string) ([]string, error) {
@@ -114,16 +114,16 @@ func (app *Application) findGroupsByGroupIDs(groupIDs []string) ([]model.Group, 
 	return app.storage.FindGroupsByGroupIDs(groupIDs)
 }
 
-func (app *Application) getEvents(clientID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
-	events, err := app.storage.FindEvents(clientID, current, groupID, filterByToMembers)
+func (app *Application) getEvents(OrgID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
+	events, err := app.storage.FindEvents(OrgID, current, groupID, filterByToMembers)
 	if err != nil {
 		return nil, err
 	}
 	return events, nil
 }
 
-func (app *Application) getGroupCalendarEvents(clientID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
-	mappings, err := app.storage.FindEvents(clientID, current, groupID, true)
+func (app *Application) getGroupCalendarEvents(OrgID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
+	mappings, err := app.storage.FindEvents(OrgID, current, groupID, true)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +140,7 @@ func (app *Application) getGroupCalendarEvents(clientID string, current *model.U
 	return nil, err
 }
 
-func (app *Application) createEvent(clientID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
+func (app *Application) createEvent(OrgID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
 	var skipUserID *string
 
 	if current != nil && creator == nil {
@@ -156,12 +156,12 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 
 	var event *model.Event
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		_, err := app.storage.CreateEvent(context, clientID, eventID, group.ID, toMemberList, creator)
+		_, err := app.storage.CreateEvent(context, OrgID, eventID, group.ID, toMemberList, creator)
 		if err != nil {
 			return err
 		}
 
-		app.notifyGroupMembersForNewEvent(context, clientID, current, group, nil, skipUserID)
+		app.notifyGroupMembersForNewEvent(context, OrgID, current, group, nil, skipUserID)
 
 		return nil
 	})
@@ -172,12 +172,12 @@ func (app *Application) createEvent(clientID string, current *model.User, eventI
 	return event, nil
 }
 
-func (app *Application) createCalendarEventForGroups(clientID string, adminIdentifiers []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
+func (app *Application) createCalendarEventForGroups(OrgID string, adminIdentifiers []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
 	var mappedGroupIDs []string
 	var createdEvent map[string]interface{}
 
 	app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		memberships, err := app.findGroupMemberships(context, clientID, model.MembershipFilter{
+		memberships, err := app.findGroupMemberships(context, OrgID, model.MembershipFilter{
 			GroupIDs: groupIDs,
 			UserID:   &current.ID,
 			Statuses: []string{"admin"},
@@ -198,7 +198,7 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 				eventID := createdEvent["id"].(string)
 
 				for _, membership := range memberships.Items {
-					mapping, err := app.storage.CreateEvent(context, clientID, eventID, membership.GroupID, nil, &model.Creator{
+					mapping, err := app.storage.CreateEvent(context, OrgID, eventID, membership.GroupID, nil, &model.Creator{
 						UserID: current.ID,
 						Name:   current.Name,
 						Email:  current.Email,
@@ -210,12 +210,12 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 						mappedGroupIDs = append(mappedGroupIDs, mapping.GroupID)
 					}
 
-					group, grErr := app.storage.FindGroup(context, clientID, membership.GroupID, &current.ID)
+					group, grErr := app.storage.FindGroup(context, OrgID, membership.GroupID, &current.ID)
 					if grErr != nil {
 						return grErr
 					}
 
-					app.notifyGroupMembersForNewEvent(context, clientID, current, group, mapping, &current.ID)
+					app.notifyGroupMembersForNewEvent(context, OrgID, current, group, mapping, &current.ID)
 				}
 				return nil
 			}
@@ -226,11 +226,11 @@ func (app *Application) createCalendarEventForGroups(clientID string, adminIdent
 	return createdEvent, mappedGroupIDs, nil
 }
 
-func (app *Application) createCalendarEventForGroupsMembers(clientID string, orgID string, appID string, eventID string, groupIDs []string, members []model.ToMember) error {
+func (app *Application) createCalendarEventForGroupsMembers(OrgID string, orgID string, appID string, eventID string, groupIDs []string, members []model.ToMember) error {
 	for _, groupID := range groupIDs {
 
 		var userIDs []string
-		memberships, err := app.findGroupMemberships(nil, clientID, model.MembershipFilter{
+		memberships, err := app.findGroupMemberships(nil, OrgID, model.MembershipFilter{
 			GroupIDs: []string{groupID},
 			Statuses: []string{"admin", "member"},
 		})
@@ -259,11 +259,11 @@ func (app *Application) createCalendarEventForGroupsMembers(clientID string, org
 	return nil
 }
 
-func (app *Application) createCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
+func (app *Application) createCalendarEventSingleGroup(OrgID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
 	var createdEvent map[string]interface{}
 
 	err := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		memberships, err := app.findGroupMemberships(context, clientID, model.MembershipFilter{
+		memberships, err := app.findGroupMemberships(context, OrgID, model.MembershipFilter{
 			GroupIDs: []string{groupID},
 			UserID:   &current.ID,
 			Statuses: []string{"admin"},
@@ -288,7 +288,7 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 
 				eventID := createdEvent["id"].(string)
 
-				mapping, err := app.storage.CreateEvent(context, clientID, eventID, groupID, members, &model.Creator{
+				mapping, err := app.storage.CreateEvent(context, OrgID, eventID, groupID, members, &model.Creator{
 					UserID: current.ID,
 					Name:   current.Name,
 					Email:  current.Email,
@@ -297,12 +297,12 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 					log.Printf("Error create goup mapping: %s", err)
 				}
 
-				group, grErr := app.storage.FindGroup(context, clientID, groupID, &current.ID)
+				group, grErr := app.storage.FindGroup(context, OrgID, groupID, &current.ID)
 				if grErr != nil {
 					return grErr
 				}
 
-				app.notifyGroupMembersForNewEvent(context, clientID, current, group, mapping, &current.ID)
+				app.notifyGroupMembersForNewEvent(context, OrgID, current, group, mapping, &current.ID)
 			}
 		}
 		return nil
@@ -314,8 +314,8 @@ func (app *Application) createCalendarEventSingleGroup(clientID string, current 
 	return createdEvent, members, nil
 }
 
-func (app *Application) updateCalendarEventSingleGroup(clientID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
-	memberships, err := app.findGroupMemberships(nil, clientID, model.MembershipFilter{
+func (app *Application) updateCalendarEventSingleGroup(OrgID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
+	memberships, err := app.findGroupMemberships(nil, OrgID, model.MembershipFilter{
 		GroupIDs: []string{groupID},
 		UserID:   &current.ID,
 		Statuses: []string{"admin"},
@@ -341,13 +341,13 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 			var mappedGroupIDs []string
 			eventID := createdEvent["id"].(string)
 
-			err := app.storage.UpdateEvent(clientID, eventID, groupID, members)
+			err := app.storage.UpdateEvent(OrgID, eventID, groupID, members)
 			if err != nil {
 				return nil, nil, err
 			}
 
 			for _, groupID := range groupIDs {
-				mapping, err := app.storage.CreateEvent(nil, clientID, eventID, groupID, members, &model.Creator{
+				mapping, err := app.storage.CreateEvent(nil, OrgID, eventID, groupID, members, &model.Creator{
 					UserID: current.ID,
 					Name:   current.Name,
 					Email:  current.Email,
@@ -366,26 +366,26 @@ func (app *Application) updateCalendarEventSingleGroup(clientID string, current 
 	return nil, nil, nil
 }
 
-func (app *Application) updateEvent(clientID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
-	return app.storage.UpdateEvent(clientID, eventID, groupID, toMemberList)
+func (app *Application) updateEvent(OrgID string, _ *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
+	return app.storage.UpdateEvent(OrgID, eventID, groupID, toMemberList)
 }
 
-func (app *Application) deleteEvent(clientID string, _ *model.User, eventID string, groupID string) error {
-	err := app.storage.DeleteEvent(clientID, eventID, groupID)
+func (app *Application) deleteEvent(OrgID string, _ *model.User, eventID string, groupID string) error {
+	err := app.storage.DeleteEvent(OrgID, eventID, groupID)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (app *Application) notifyGroupMembersForNewEvent(context storage.TransactionContext, clientID string, current *model.User, group *model.Group, event *model.Event, skipUserID *string) {
+func (app *Application) notifyGroupMembersForNewEvent(context storage.TransactionContext, OrgID string, current *model.User, group *model.Group, event *model.Event, skipUserID *string) {
 	var userIDs []string
 	var recipients []notifications.Recipient
 	if len(event.ToMembersList) > 0 {
 		userIDs = event.GetMembersAsUserIDs(skipUserID)
 	}
 
-	result, err := app.storage.FindGroupMembershipsWithContext(context, clientID, model.MembershipFilter{
+	result, err := app.storage.FindGroupMembershipsWithContext(context, OrgID, model.MembershipFilter{
 		GroupIDs: []string{group.ID},
 		UserIDs:  userIDs,
 		Statuses: []string{"member", "admin"},

@@ -30,7 +30,7 @@ type AnalyticsApisHandler struct {
 
 type analyticsGetGroupsResponse struct {
 	ID              string           `json:"id"`
-	ClientID        string           `json:"client_id"`
+	OrgID           string           `json:"org_id"`
 	Title           string           `json:"title"`
 	Description     string           `json:"description"`
 	Privacy         string           `json:"privacy"`
@@ -55,7 +55,7 @@ type analyticsGetGroupsResponse struct {
 // @Success 200 {array} analyticsGetGroupsResponse
 // @Security IntAPIKeyAuth
 // @Router /api/analytics/groups [get]
-func (h *AnalyticsApisHandler) AnalyticsGetGroups(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *AnalyticsApisHandler) AnalyticsGetGroups(OrgID string, w http.ResponseWriter, r *http.Request) {
 	var startDate *time.Time
 	startDateStr, ok := r.URL.Query()["start_date"]
 	if ok && len(startDateStr) > 0 && len(startDateStr[0]) > 0 {
@@ -105,7 +105,7 @@ func (h *AnalyticsApisHandler) AnalyticsGetGroups(clientID string, w http.Respon
 		}
 		reponse[i] = analyticsGetGroupsResponse{
 			ID:              group.ID,
-			ClientID:        group.ClientID,
+			OrgID:           group.OrgID,
 			Title:           group.Title,
 			Privacy:         group.Privacy,
 			Description:     description,
@@ -135,7 +135,7 @@ func (h *AnalyticsApisHandler) AnalyticsGetGroups(clientID string, w http.Respon
 
 type analyticsGetPostsResponse struct {
 	ID           string  `json:"id"`
-	ClientID     string  `json:"client_id"`
+	OrgID        string  `json:"org_id"`
 	GroupID      string  `json:"group_id"`
 	MemberUserID string  `json:"member_user_id"`
 	DateCreated  string  `json:"date_created"`
@@ -153,7 +153,7 @@ type analyticsGetPostsResponse struct {
 // @Success 200 {array} analyticsGetPostsResponse
 // @Security IntAPIKeyAuth
 // @Router /api/analytics/posts [get]
-func (h *AnalyticsApisHandler) AnalyticsGetPosts(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *AnalyticsApisHandler) AnalyticsGetPosts(OrgID string, w http.ResponseWriter, r *http.Request) {
 	var groupID *string
 	groupIDStr, ok := r.URL.Query()["group_id"]
 	if ok && len(groupIDStr) > 0 && len(groupIDStr[0]) > 0 {
@@ -201,7 +201,7 @@ func (h *AnalyticsApisHandler) AnalyticsGetPosts(clientID string, w http.Respons
 		}
 		reponse[i] = analyticsGetPostsResponse{
 			ID:           post.ID,
-			ClientID:     post.ClientID,
+			OrgID:        post.OrgID,
 			GroupID:      post.GroupID,
 			MemberUserID: post.Creator.UserID,
 			DateCreated:  post.DateCreated.Format(time.RFC3339),
@@ -223,7 +223,7 @@ func (h *AnalyticsApisHandler) AnalyticsGetPosts(clientID string, w http.Respons
 
 type analyticsGetGroupsMembersResponse struct {
 	ID          string  `json:"id"`
-	ClientID    string  `json:"client_id"`
+	OrgID       string  `json:"org_id"`
 	GroupID     string  `json:"group_id"`
 	DateCreated string  `json:"date_created"`
 	DateUpdated *string `json:"date_updated"`
@@ -240,7 +240,7 @@ type analyticsGetGroupsMembersResponse struct {
 // @Success 200 {array} analyticsGetGroupsMembersResponse
 // @Security IntAPIKeyAuth
 // @Router /api/analytics/members [get]
-func (h *AnalyticsApisHandler) AnalyticsGetGroupsMembers(clientID string, w http.ResponseWriter, r *http.Request) {
+func (h *AnalyticsApisHandler) AnalyticsGetGroupsMembers(OrgID string, w http.ResponseWriter, r *http.Request) {
 	var groupID *string
 	groupIDStr, ok := r.URL.Query()["group_id"]
 	if ok && len(groupIDStr) > 0 && len(groupIDStr[0]) > 0 {
@@ -289,7 +289,7 @@ func (h *AnalyticsApisHandler) AnalyticsGetGroupsMembers(clientID string, w http
 		reponse[i] = analyticsGetGroupsMembersResponse{
 			ID:          member.ID,
 			GroupID:     member.GroupID,
-			ClientID:    member.ClientID,
+			OrgID:       member.OrgID,
 			DateCreated: member.DateCreated.Format(time.RFC3339),
 			DateUpdated: dateUpdated,
 		}
