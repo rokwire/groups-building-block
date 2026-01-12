@@ -676,38 +676,6 @@ func (app *Application) reportGroupAsAbuse(OrgID string, current *model.User, gr
 	return app.notifications.SendMail(app.config.ReportAbuseRecipientEmail, subject, body)
 }
 
-func (app *Application) getPosts(OrgID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
-	return app.social.GetPosts(OrgID, current, filter, filterPrivatePostsValue, filterByToMembers)
-}
-
-func (app *Application) getPost(OrgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return app.social.GetPost(OrgID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
-}
-
-func (app *Application) getUserPostCount(OrgID string, userID string) (*int64, error) {
-	return app.social.GetUserPostCount(OrgID, userID)
-}
-
-func (app *Application) createPost(OrgID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-	return app.social.CreatePost(OrgID, current, post, group)
-}
-
-func (app *Application) updatePost(OrgID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	return app.social.UpdatePost(OrgID, current, group, post)
-}
-
-func (app *Application) reactToPost(OrgID string, current *model.User, groupID string, postID string, reaction string) error {
-	return app.social.ReactToPost(OrgID, current, groupID, postID, reaction)
-}
-
-func (app *Application) reportPostAsAbuse(OrgID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-	return app.social.ReportPostAsAbuse(OrgID, current, group, post, comment, sendToDean, sendToGroupAdmins)
-}
-
-func (app *Application) deletePost(OrgID string, userID string, groupID string, postID string, force bool) error {
-	return app.social.DeletePost(OrgID, userID, groupID, postID, force)
-}
-
 func (app *Application) sendGroupNotification(OrgID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error {
 	memberStatuses := notification.MemberStatuses
 	if len(memberStatuses) == 0 {

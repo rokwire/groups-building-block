@@ -5199,7 +5199,7 @@ const docTemplate = `{
         "Event": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "creator": {
@@ -5277,7 +5277,7 @@ const docTemplate = `{
                     "description": "one of the enums categories list",
                     "type": "string"
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "current_member": {
@@ -5428,7 +5428,7 @@ const docTemplate = `{
         "GroupMembership": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_attended": {
@@ -5687,7 +5687,7 @@ const docTemplate = `{
                         "type": "string"
                     }
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6498,7 +6498,7 @@ const docTemplate = `{
                 "body": {
                     "type": "string"
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6571,7 +6571,7 @@ const docTemplate = `{
         "model.SyncConfig": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "cron": {
@@ -6664,7 +6664,7 @@ const docTemplate = `{
         "rest.analyticsGetGroupsMembersResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6693,7 +6693,7 @@ const docTemplate = `{
                 "category": {
                     "type": "string"
                 },
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {
@@ -6731,7 +6731,7 @@ const docTemplate = `{
         "rest.analyticsGetPostsResponse": {
             "type": "object",
             "properties": {
-                "client_id": {
+                "org_id": {
                     "type": "string"
                 },
                 "date_created": {

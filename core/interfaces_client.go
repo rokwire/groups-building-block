@@ -113,26 +113,6 @@ func (s *servicesImpl) UpdateMemberships(OrgID string, user *model.User, group *
 	return s.app.updateMemberships(OrgID, user, group, operation)
 }
 
-func (s *servicesImpl) GetEvents(OrgID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error) {
-	return s.app.getEvents(OrgID, current, groupID, filterByToMembers)
-}
-
-func (s *servicesImpl) CreateEvent(OrgID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error) {
-	return s.app.createEvent(OrgID, current, eventID, group, toMemberList, creator)
-}
-
-func (s *servicesImpl) UpdateEvent(OrgID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error {
-	return s.app.updateEvent(OrgID, current, eventID, groupID, toMemberList)
-}
-
-func (s *servicesImpl) DeleteEvent(OrgID string, current *model.User, eventID string, groupID string) error {
-	return s.app.deleteEvent(OrgID, current, eventID, groupID)
-}
-
-func (s *servicesImpl) GetEventUserIDs(eventID string) ([]string, error) {
-	return s.app.findEventUserIDs(eventID)
-}
-
 func (s *servicesImpl) GetGroupMembershipsStatusAndGroupTitle(userID string) ([]model.GetGroupMembershipsResponse, error) {
 	return s.app.findGroupMembershipsStatusAndGroupsTitle(userID)
 }
@@ -140,47 +120,12 @@ func (s *servicesImpl) GetGroupMembershipsByGroupID(groupID string) ([]string, e
 	return s.app.findGroupMembershipsByGroupID(groupID)
 }
 
-func (s *servicesImpl) GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
-	return s.app.findGroupsEvents(eventIDs)
-}
 func (s *servicesImpl) GetGroupsByGroupIDs(groupIDs []string) ([]model.Group, error) {
 	return s.app.findGroupsByGroupIDs(groupIDs)
 }
 
 func (s *servicesImpl) GetUserData(userID string) (*model.UserDataResponse, error) {
 	return s.app.getUserData(userID)
-}
-
-func (s *servicesImpl) GetPosts(OrgID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error) {
-	return s.app.getPosts(OrgID, current, filter, filterPrivatePostsValue, filterByToMembers)
-}
-
-func (s *servicesImpl) GetPost(OrgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error) {
-	return s.app.getPost(OrgID, userID, groupID, postID, skipMembershipCheck, filterByToMembers)
-}
-
-func (s *servicesImpl) GetUserPostCount(OrgID string, userID string) (*int64, error) {
-	return s.app.getUserPostCount(OrgID, userID)
-}
-
-func (s *servicesImpl) CreatePost(OrgID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error) {
-	return s.app.createPost(OrgID, current, post, group)
-}
-
-func (s *servicesImpl) UpdatePost(OrgID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error) {
-	return s.app.updatePost(OrgID, current, group, post)
-}
-
-func (s *servicesImpl) ReactToPost(OrgID string, current *model.User, groupID string, postID string, reaction string) error {
-	return s.app.reactToPost(OrgID, current, groupID, postID, reaction)
-}
-
-func (s *servicesImpl) ReportPostAsAbuse(OrgID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error {
-	return s.app.reportPostAsAbuse(OrgID, current, group, post, comment, sendToDean, sendToGroupAdmins)
-}
-
-func (s *servicesImpl) DeletePost(OrgID string, current *model.User, groupID string, postID string, force bool) error {
-	return s.app.deletePost(OrgID, current.ID, groupID, postID, force)
 }
 
 func (s *servicesImpl) SynchronizeAuthman(OrgID string) error {
@@ -269,42 +214,12 @@ func (s *servicesImpl) GetResearchProfileUserCount(OrgID string, current *model.
 	return s.app.getResearchProfileUserCount(OrgID, current, researchProfile)
 }
 
-// Group Events
-
-func (s *servicesImpl) FindAdminGroupsForEvent(OrgID string, current *model.User, eventID string) ([]string, error) {
-	return s.app.findAdminGroupsForEvent(OrgID, current, eventID)
-}
-
-func (s *servicesImpl) UpdateGroupMappingsForEvent(OrgID string, current *model.User, eventID string, groupIDs []string) ([]string, error) {
-	return s.app.updateGroupMappingsForEvent(OrgID, current, eventID, groupIDs)
-}
-
 // Analytics
 
 func (s *servicesImpl) AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error) {
 	return s.app.analyticsFindGroups(startDate, endDate)
 }
 
-func (s *servicesImpl) AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error) {
-	return s.app.analyticsFindPosts(groupID, startDate, endDate)
-}
-
 func (s *servicesImpl) AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error) {
 	return s.app.analyticsFindMembers(groupID, startDate, endDate)
-}
-
-func (s *servicesImpl) CreateCalendarEventForGroups(OrgID string, adminIdentifier []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error) {
-	return s.app.createCalendarEventForGroups(OrgID, adminIdentifier, current, event, groupIDs)
-}
-
-func (s *servicesImpl) CreateCalendarEventSingleGroup(OrgID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
-	return s.app.createCalendarEventSingleGroup(OrgID, current, event, groupID, members)
-}
-
-func (s *servicesImpl) UpdateCalendarEventSingleGroup(OrgID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error) {
-	return s.app.updateCalendarEventSingleGroup(OrgID, current, event, groupID, members)
-}
-
-func (s *servicesImpl) GetGroupCalendarEvents(OrgID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error) {
-	return s.app.getGroupCalendarEvents(OrgID, current, groupID, published, filter)
 }

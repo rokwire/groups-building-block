@@ -93,8 +93,6 @@ func (we *Adapter) Start() {
 	// Admin V1 APIs
 	adminSubrouter.HandleFunc("/authman/synchronize", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
 	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
-	adminSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
-	adminSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
 	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
 	adminSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.CreateGroup)).Methods("POST")
 	adminSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroup)).Methods("PUT")
@@ -104,17 +102,6 @@ func (we *Adapter) Start() {
 
 	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateMemberships)).Methods("POST")
 	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{group-id}/events", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupEvents)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupEvent)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/group/{group-id}/posts", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupPosts)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.adminApisHandler.CreateGroupPost)).Methods("POST")
-	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.GetGroupPost)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroupPost)).Methods("PUT")
-	adminSubrouter.HandleFunc("/group/{group-id}/posts/{postID}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroupPost)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/group/{group-id}/events/v3/load", we.mixedAuthWrapFunc(we.adminApisHandler.GetGroupCalendarEventsV3)).Methods("GET", "POST")
-	adminSubrouter.HandleFunc("/group/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.CreateCalendarEventMultiGroup)).Methods("POST")
-	adminSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.CreateCalendarEventSingleGroup)).Methods("POST")
-	adminSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.adminApisHandler.UpdateCalendarEventSingleGroup)).Methods("PUT")
 	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMembership)).Methods("PUT")
 	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMembership)).Methods("DELETE")
 	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetManagedGroupConfigs)).Methods("GET")
@@ -131,8 +118,6 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.internalApisHandler.SynchronizeAuthman)).Methods("POST")
 	restSubrouter.HandleFunc("/int/stats", we.internalKeyAuthFunc(we.internalApisHandler.GroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/int/group/{group-id}/date_updated", we.internalKeyAuthFunc(we.internalApisHandler.UpdateGroupDateUpdated)).Methods("POST")
-	restSubrouter.HandleFunc("/int/group/{group-id}/events", we.internalKeyAuthFunc(we.internalApisHandler.CreateGroupEvent)).Methods("POST")
-	restSubrouter.HandleFunc("/int/group/{group-id}/events/{event-id}", we.internalKeyAuthFunc(we.internalApisHandler.DeleteGroupEvent)).Methods("DELETE")
 	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// V2 Client APIs
@@ -151,9 +136,6 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/user/login", we.idTokenAuthWrapFunc(we.apisHandler.LoginUser)).Methods("GET")
-	restSubrouter.HandleFunc("/user/stats", we.idTokenAuthWrapFunc(we.apisHandler.GetUserStats)).Methods("GET")
-	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetAdminGroupIDsForEventID)).Methods("GET")
-	restSubrouter.HandleFunc("/user/event/{event-id}/groups", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupMappingsEventID)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}/stats", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupStats)).Methods("GET")
 	restSubrouter.HandleFunc("/group/{id}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/group/{id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroup)).Methods("DELETE")
@@ -171,47 +153,26 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteMembership)).Methods("DELETE")
 	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateMembership)).Methods("PUT")
 
-	restSubrouter.HandleFunc("/group/{group-id}/events", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupEvent)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{group-id}/events", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupEvent)).Methods("PUT")
-	restSubrouter.HandleFunc("/group/{group-id}/event/{event-id}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupEvent)).Methods("DELETE")
 	restSubrouter.HandleFunc("/user-data", we.idTokenAuthWrapFunc(we.apisHandler.GetUserData)).Methods("GET")
 
 	//extended client id token protection (eg. allow event managers)
 	restSubrouter.HandleFunc("/user/group-memberships", we.idTokenExtendedClientAuthWrapFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
-
-	// Client Post APIs
-	restSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupPosts)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{groupID}/posts", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroupPost)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.GetGroupPost)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroupPost)).Methods("PUT")
-	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/reactions", we.idTokenAuthWrapFunc(we.apisHandler.ReactToGroupPost)).Methods("PUT")
-	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}/report/abuse", we.idTokenAuthWrapFunc(we.apisHandler.ReportAbuseGroupPost)).Methods("PUT")
-	restSubrouter.HandleFunc("/group/{groupID}/posts/{postID}", we.idTokenAuthWrapFunc(we.apisHandler.DeleteGroupPost)).Methods("DELETE")
 
 	restSubrouter.HandleFunc("/research-profile/user-count", we.idTokenAuthWrapFunc(we.apisHandler.GetResearchProfileUserCount)).Methods("POST")
 
 	//mixed protection
 	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{group-id}/events/v3/load", we.mixedAuthWrapFunc(we.apisHandler.GetGroupCalendarEventsV3)).Methods("GET", "POST")
-	restSubrouter.HandleFunc("/group/events/v3", we.mixedAuthWrapFunc(we.apisHandler.CreateCalendarEventMultiGroup)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{group-id}/events", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEvents)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{group-id}/events/v2", we.mixedAuthWrapFunc(we.apisHandler.GetGroupEventsV2)).Methods("GET")
-	restSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.apisHandler.CreateCalendarEventSingleGroup)).Methods("POST")
-	restSubrouter.HandleFunc("/group/{group-id}/events/v3", we.mixedAuthWrapFunc(we.apisHandler.UpdateCalendarEventSingleGroup)).Methods("PUT")
 
 	// Analytics
 	analyticsSubrouter := restSubrouter.PathPrefix("/analytics").Subrouter()
 	analyticsSubrouter.HandleFunc("/groups", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroups)).Methods("GET")
 	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
-	analyticsSubrouter.HandleFunc("/posts", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetPosts)).Methods("GET")
 
 	// BB Apis
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
-	bbsSubrouter.HandleFunc("/event/{event_id}/aggregated-users", we.wrapFunc(we.bbsAPIHandler.GetEventUserIDs, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/{user_id}/memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMemberships, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/{group_id}/group-memberships", we.wrapFunc(we.bbsAPIHandler.GetGroupMembershipsByGroupID, we.auth2.bbs.Permissions)).Methods("GET")
-	bbsSubrouter.HandleFunc("/groups/events", we.wrapFunc(we.bbsAPIHandler.GetGroupsEvents, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups", we.wrapFunc(we.bbsAPIHandler.GetGroupsByGroupIDs, we.auth2.bbs.Permissions)).Methods("GET")
 	bbsSubrouter.HandleFunc("/groups/{group_id}/date-updated", we.wrapFunc(we.bbsAPIHandler.OnGroupDateUpdated, we.auth2.bbs.Permissions)).Methods("PUT")
 	log.Fatal(http.ListenAndServe(":"+we.port, router))

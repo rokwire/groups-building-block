@@ -838,50 +838,6 @@ func (h *AdminApisHandler) DeleteMembership(OrgID string, current *model.User, w
 	w.WriteHeader(http.StatusOK)
 }
 
-// GetGroupEvents gives the group events
-// @Description Gives the group events.
-// @ID AdminGetGroupEvents
-// @Tags Admin
-// @Accept json
-// @Param APP header string true "APP"
-// @Param group-id path string true "Group ID"
-// @Success 200 {array} string
-// @Security AppUserAuth
-// @Router /api/admin/group/{group-id}/events [get]
-func (h *AdminApisHandler) GetGroupEvents(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	//validate input
-	params := mux.Vars(r)
-	groupID := params["group-id"]
-	if len(groupID) <= 0 {
-		log.Println("Group id is required")
-		http.Error(w, "Group id is required", http.StatusBadRequest)
-		return
-	}
-
-	events, err := h.app.Services.GetEvents(OrgID, current, groupID, false)
-	if err != nil {
-		log.Printf("error getting group events - %s", err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	result := make([]string, len(events))
-	for i, e := range events {
-		result[i] = e.EventID
-	}
-
-	data, err := json.Marshal(result)
-	if err != nil {
-		log.Println("Error on marshal the group events")
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write(data)
-}
-
 // DeleteGroup deletes a group
 // @Description Deletes a group.
 // @ID AdminDeleteGroup
@@ -935,83 +891,6 @@ func (h *AdminApisHandler) DeleteGroup(OrgID string, current *model.User, w http
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Successfully deleted"))
-}
-
-// DeleteGroupEvent deletes a group event
-// @Description Deletes a group event
-// @ID AdminDeleteGroupEvent
-// @Tags Admin
-// @Accept json
-// @Produce json
-// @Param APP header string true "APP"
-// @Param group-id path string true "Group ID"
-// @Param event-id path string true "Event ID"
-// @Success 200 {string} Successfully deleted
-// @Security AppUserAuth
-// @Router /api/admin/group/{group-id}/event/{event-id} [delete]
-func (h *AdminApisHandler) DeleteGroupEvent(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	//validate input
-	params := mux.Vars(r)
-	groupID := params["group-id"]
-	if len(groupID) <= 0 {
-		log.Println("Group id is required")
-		http.Error(w, "Group id is required", http.StatusBadRequest)
-		return
-	}
-	eventID := params["event-id"]
-	if len(eventID) <= 0 {
-		log.Println("Event id is required")
-		http.Error(w, "Event id is required", http.StatusBadRequest)
-		return
-	}
-
-	err := h.app.Services.DeleteEvent(OrgID, current, eventID, groupID)
-	if err != nil {
-		log.Printf("Error on deleting an event - %s\n", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Successfully deleted"))
-}
-
-// DeleteGroupPost Updates a post within the desired group.
-// @Description Updates a post within the desired group.
-// @ID AdminDeleteGroupPost
-// @Tags Admin
-// @Accept  json
-// @Param APP header string true "APP"
-// @Success 200
-// @Security AppUserAuth
-// @Security APIKeyAuth
-// @Router /api/admin/group/{groupId}/posts/{postId} [delete]
-func (h *AdminApisHandler) DeleteGroupPost(OrgID string, current *model.User, w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-	groupID := params["group-id"]
-	if len(groupID) <= 0 {
-		log.Println("groupID is required")
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
-	postID := params["postID"]
-	if len(postID) <= 0 {
-		log.Println("postID is required")
-		http.Error(w, "id is required", http.StatusBadRequest)
-		return
-	}
-
-	err := h.app.Services.DeletePost(OrgID, current, groupID, postID, true)
-	if err != nil {
-		log.Printf("error deleting posts for post (%s) - %s", postID, err.Error())
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
 }
 
 // GetManagedGroupConfigs gets managed group configs

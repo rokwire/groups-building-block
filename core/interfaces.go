@@ -56,25 +56,10 @@ type Services interface {
 	CreateMembershipsStatuses(OrgID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
 	UpdateMemberships(OrgID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error
 
-	GetEvents(OrgID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(OrgID string, current *model.User, eventID string, group *model.Group, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
-	UpdateEvent(OrgID string, current *model.User, eventID string, groupID string, toMemberList []model.ToMember) error
-	DeleteEvent(OrgID string, current *model.User, eventID string, groupID string) error
-	GetEventUserIDs(eventID string) ([]string, error)
 	GetGroupMembershipsStatusAndGroupTitle(userID string) ([]model.GetGroupMembershipsResponse, error)
 	GetGroupMembershipsByGroupID(groupID string) ([]string, error)
 
-	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
 	GetUserData(userID string) (*model.UserDataResponse, error)
-
-	GetPosts(OrgID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
-	GetPost(OrgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
-	GetUserPostCount(OrgID string, userID string) (*int64, error)
-	CreatePost(OrgID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
-	UpdatePost(OrgID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
-	ReactToPost(OrgID string, current *model.User, groupID string, postID string, reaction string) error
-	ReportPostAsAbuse(OrgID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
-	DeletePost(OrgID string, current *model.User, groupID string, postID string, force bool) error
 
 	SynchronizeAuthman(OrgID string) error
 	SynchronizeAuthmanGroup(OrgID string, groupID string) error
@@ -104,20 +89,9 @@ type Services interface {
 	SendGroupNotification(OrgID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error
 	GetResearchProfileUserCount(OrgID string, current *model.User, researchProfile map[string]map[string]any) (int64, error)
 
-	// Group Events
-	FindAdminGroupsForEvent(OrgID string, current *model.User, eventID string) ([]string, error)
-	UpdateGroupMappingsForEvent(OrgID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
-
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
-	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
-
-	// Calendar BB
-	CreateCalendarEventForGroups(OrgID string, adminIdentifier []model.AccountIdentifiers, current *model.User, event map[string]interface{}, groupIDs []string) (map[string]interface{}, []string, error)
-	CreateCalendarEventSingleGroup(OrgID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
-	UpdateCalendarEventSingleGroup(OrgID string, current *model.User, event map[string]interface{}, groupID string, members []model.ToMember) (map[string]interface{}, []model.ToMember, error)
-	GetGroupCalendarEvents(OrgID string, current *model.User, groupID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
 }
 
 // Administration exposes administration APIs for the driver adapters
@@ -147,7 +121,6 @@ type Storage interface {
 	FindSyncTimes(context storage.TransactionContext, OrgID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	GetUserPostCount(OrgID string, userID string) (*int64, error)
 	DeleteUser(OrgID string, userID string) error
 
 	CreateGroup(context storage.TransactionContext, OrgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
@@ -166,19 +139,9 @@ type Storage interface {
 	FindUserGroupsCount(OrgID string, userID string) (*int64, error)
 	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
-	FindEvents(OrgID string, current *model.User, groupID string, filterByToMembers bool) ([]model.Event, error)
-	CreateEvent(context storage.TransactionContext, OrgID string, eventID string, groupID string, toMemberList []model.ToMember, creator *model.Creator) (*model.Event, error)
-	UpdateEvent(OrgID string, eventID string, groupID string, toMemberList []model.ToMember) error
-	DeleteEvent(OrgID string, eventID string, groupID string) error
-	PullMembersFromEventsByUserIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
-
-	FindEventUserIDs(context storage.TransactionContext, eventID string) ([]string, error)
-	GetEventByUserID(userID string) ([]model.Event, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
 	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
 	GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error)
-
-	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)
 
 	ReportGroupAsAbuse(OrgID string, userID string, group *model.Group) error
 
@@ -220,13 +183,8 @@ type Storage interface {
 
 	GetGroupMembershipStats(context storage.TransactionContext, OrgID string, groupID string) (*model.GroupStats, error)
 
-	// Group Events
-	FindAdminGroupsForEvent(context storage.TransactionContext, OrgID string, current *model.User, eventID string) ([]string, error)
-	UpdateGroupMappingsForEvent(context storage.TransactionContext, OrgID string, current *model.User, eventID string, groupIDs []string) ([]string, error)
-
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
-	AnalyticsFindPosts(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.Post, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 
 	// Handle external callbacks

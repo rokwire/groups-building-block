@@ -55,14 +55,8 @@ func (app Application) deleteAppOrgUsersData(accountsIDs []string) {
 
 	//in transaction
 	errTr := app.storage.PerformTransaction(func(context storage.TransactionContext) error {
-		err := app.storage.PullMembersFromEventsByUserIDs(nil, nil, accountsIDs)
-		if err != nil {
-			app.logger.Errorf("error deleting  members from event by account ID - %s", err)
-			return err
-		}
-
 		// delete the group memberships
-		err = app.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
+		err := app.storage.DeleteGroupMembershipsByAccountsIDs(nil, nil, accountsIDs)
 		if err != nil {
 			app.logger.Errorf("error deleting the group memberships by account ID - %s", err)
 			return err
