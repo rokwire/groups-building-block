@@ -191,7 +191,7 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		status, claims, err := we.auth2.admin.Permissions.Check(req)
+		status, claims, err := we.auth2.services.User.Check(req)
 		if err != nil {
 			logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, status, true))
 			return
@@ -229,7 +229,7 @@ func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFun
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		status, claims, err := we.auth2.admin.Permissions.Check(req)
+		status, claims, err := we.auth2.services.Standard.Check(req)
 		if err != nil {
 			logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, status, true))
 			return
