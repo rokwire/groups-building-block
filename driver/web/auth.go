@@ -36,7 +36,7 @@ import (
 )
 
 // Auth handler
-type Auth struct {
+type Auth1 struct {
 	apiKeysAuth  *APIKeysAuth
 	idTokenAuth  *IDTokenAuth
 	internalAuth *InternalAuth
@@ -45,7 +45,7 @@ type Auth struct {
 	supportedClients []string
 }
 
-func (auth *Auth) OrgIDCheck(r *http.Request) (bool, string) {
+func (auth *Auth1) OrgIDCheck(r *http.Request) (bool, string) {
 	OrgID := r.Header.Get("APP")
 	if len(OrgID) == 0 {
 		OrgID = "edu.illinois.rokwire"
@@ -60,19 +60,7 @@ func (auth *Auth) OrgIDCheck(r *http.Request) (bool, string) {
 	return false, ""
 }
 
-func (auth *Auth) apiKeyCheck(r *http.Request) (string, bool) {
-	OrgIDOK, OrgID := auth.OrgIDCheck(r)
-	if !OrgIDOK {
-		return "", false
-	}
-
-	apiKey := auth.getAPIKey(r)
-	authenticated := auth.apiKeysAuth.check(apiKey, r)
-
-	return OrgID, authenticated
-}
-
-func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
+func (auth *Auth1) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnonymousCoreToken bool) (string, *model.User) {
 	OrgIDOK, OrgID := auth.OrgIDCheck(r)
 	if !OrgIDOK {
 		return "", nil
@@ -83,18 +71,7 @@ func (auth *Auth) idTokenCheck(w http.ResponseWriter, r *http.Request, allowAnon
 	return OrgID, user
 }
 
-func (auth *Auth) customClientTokenCheck(w http.ResponseWriter, r *http.Request, allowedOIDCOrgIDs []string) (string, *model.User) {
-	OrgIDOK, OrgID := auth.OrgIDCheck(r)
-	if !OrgIDOK {
-		return "", nil
-	}
-
-	idToken := auth.getIDToken(r)
-	user := auth.idTokenAuth.check(OrgID, idToken, false, allowedOIDCOrgIDs, r)
-	return OrgID, user
-}
-
-func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
+func (auth *Auth1) internalAuthCheck(w http.ResponseWriter, r *http.Request) (string, bool) {
 	OrgIDOK, OrgID := auth.OrgIDCheck(r)
 	if !OrgIDOK {
 		log.Printf("%s %s error - missing or bad APP header", r.Method, r.URL.Path)
@@ -107,34 +84,7 @@ func (auth *Auth) internalAuthCheck(w http.ResponseWriter, r *http.Request) (str
 	return OrgID, authenticated
 }
 
-func (auth *Auth) mixedCheck(r *http.Request) (string, bool, *model.User) {
-	//get client ID
-	OrgIDOK, OrgID := auth.OrgIDCheck(r)
-	if !OrgIDOK {
-		return "", false, nil
-	}
-
-	//first check for id token
-	idToken := auth.getIDToken(r)
-	if idToken != nil && len(*idToken) > 0 {
-		authenticated := false
-		user := auth.idTokenAuth.check(OrgID, idToken, true, nil, r)
-		if user != nil {
-			authenticated = true
-		}
-		return OrgID, authenticated, user
-	}
-
-	//check api key
-	apiKey := auth.getAPIKey(r)
-	if apiKey != nil && len(*apiKey) > 0 {
-		authenticated := auth.apiKeysAuth.check(apiKey, r)
-		return OrgID, authenticated, nil
-	}
-	return OrgID, false, nil
-}
-
-func (auth *Auth) adminCheck(r *http.Request) (string, *model.User, bool) {
+func (auth *Auth1) adminCheck(r *http.Request) (string, *model.User, bool) {
 	OrgIDOK, OrgID := auth.OrgIDCheck(r)
 	if !OrgIDOK {
 		return "", nil, false
@@ -144,16 +94,8 @@ func (auth *Auth) adminCheck(r *http.Request) (string, *model.User, bool) {
 	return OrgID, user, forbidden
 }
 
-func (auth *Auth) getAPIKey(r *http.Request) *string {
-	apiKey := r.Header.Get("ROKWIRE-API-KEY")
-	if len(apiKey) == 0 {
-		return nil
-	}
-	return &apiKey
-}
-
 // TBD Remove the legacy API key functionality
-func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
+func (auth *Auth1) getInternalAPIKey(r *http.Request) *string {
 	internalAPIKey := r.Header.Get("INTERNAL-API-KEY")
 	if len(internalAPIKey) > 0 {
 		return &internalAPIKey
@@ -166,7 +108,7 @@ func (auth *Auth) getInternalAPIKey(r *http.Request) *string {
 	return nil
 }
 
-func (auth *Auth) getIDToken(r *http.Request) *string {
+func (auth *Auth1) getIDToken(r *http.Request) *string {
 	// get the token from the request
 	authorizationHeader := r.Header.Get("Authorization")
 	if len(authorizationHeader) <= 0 {
@@ -186,11 +128,11 @@ func (auth *Auth) getIDToken(r *http.Request) *string {
 
 // NewAuth creates new auth handler
 func NewAuth(app *core.Application, host string, supportedOrgIDs []string, appKeys []string, internalAPIKey string, oidcProvider string, oidcOrgID string, oidcExtendedOrgIDs string,
-	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth {
+	oidcAdminClientID string, oidcAdminWebClientID string, serviceRegManager *auth.ServiceRegManager, groupServiceURL string, adminAuthorization *casbin.Enforcer) *Auth1 {
 	var tokenAuth *tokenauth.TokenAuth
 	if serviceRegManager != nil {
-		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/permissions_authorization_policy.csv")
-		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/scope_authorization_policy.csv", serviceRegManager.AuthService.ServiceID)
+		permissionAuth := authorization.NewCasbinStringAuthorization("driver/web/authorization_admin_permission_policy.csv")
+		scopeAuth := authorization.NewCasbinScopeAuthorization("driver/web/authorization_services_permission_policy.csv", serviceRegManager.AuthService.ServiceID)
 
 		// Instantiate TokenAuth instance to perform token validation
 		var err error
@@ -205,7 +147,7 @@ func NewAuth(app *core.Application, host string, supportedOrgIDs []string, appKe
 	internalAuth := newInternalAuth(internalAPIKey)
 	adminAuth := newAdminAuth(app, oidcProvider, oidcAdminClientID, oidcAdminWebClientID, tokenAuth, adminAuthorization)
 
-	auth := Auth{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedOrgIDs}
+	auth := Auth1{apiKeysAuth: apiKeysAuth, idTokenAuth: idTokenAuth, internalAuth: internalAuth, adminAuth: adminAuth, supportedClients: supportedOrgIDs}
 	return &auth
 }
 

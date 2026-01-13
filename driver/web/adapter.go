@@ -38,7 +38,7 @@ import (
 type Adapter struct {
 	host  string
 	port  string
-	auth  *Auth
+	auth1 *Auth1
 	auth2 *Auth2
 
 	apisHandler          *rest.ApisHandler
@@ -83,42 +83,42 @@ func (we *Adapter) Start() {
 	adminSubrouter := restSubrouter.PathPrefix("/admin").Subrouter()
 
 	// Admin V2 APIs
-	adminSubrouter.HandleFunc("/v2/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV2)).Methods("GET", "POST")
-	adminSubrouter.HandleFunc("/v2/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroupsV2)).Methods("GET", "POST")
-	adminSubrouter.HandleFunc("/v2/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupV2)).Methods("GET")
+	adminSubrouter.HandleFunc("/v2/groups", we.handleAdminAuth(we.adminApisHandler.GetGroupsV2)).Methods("GET", "POST")
+	adminSubrouter.HandleFunc("/v2/user/groups", we.handleAdminAuth(we.adminApisHandler.GetUserGroupsV2)).Methods("GET", "POST")
+	adminSubrouter.HandleFunc("/v2/group/{id}", we.handleAdminAuth(we.adminApisHandler.GetGroupV2)).Methods("GET")
 
 	// Admin V3 APIs
-	adminSubrouter.HandleFunc("/v3/groups/load", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupsV3)).Methods("POST")
+	adminSubrouter.HandleFunc("/v3/groups/load", we.handleAdminAuth(we.adminApisHandler.GetGroupsV3)).Methods("POST")
 
 	// Admin V1 APIs
-	adminSubrouter.HandleFunc("/authman/synchronize", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
-	adminSubrouter.HandleFunc("/user/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetUserGroups)).Methods("GET")
-	adminSubrouter.HandleFunc("/groups", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetAllGroups)).Methods("GET")
-	adminSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.adminApisHandler.CreateGroup)).Methods("POST")
-	adminSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.adminApisHandler.UpdateGroup)).Methods("PUT")
-	adminSubrouter.HandleFunc("/group/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembers)).Methods("GET")
-	adminSubrouter.HandleFunc("/group/{group-id}/members/v2", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupMembersV2)).Methods("POST")
+	adminSubrouter.HandleFunc("/authman/synchronize", we.handleAdminAuth(we.adminApisHandler.SynchronizeAuthman)).Methods("POST")
+	adminSubrouter.HandleFunc("/user/groups", we.handleAdminAuth(we.adminApisHandler.GetUserGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/groups", we.handleAdminAuth(we.adminApisHandler.GetAllGroups)).Methods("GET")
+	adminSubrouter.HandleFunc("/groups", we.handleAdminAuth(we.adminApisHandler.CreateGroup)).Methods("POST")
+	adminSubrouter.HandleFunc("/groups/{id}", we.handleAdminAuth(we.adminApisHandler.UpdateGroup)).Methods("PUT")
+	adminSubrouter.HandleFunc("/group/{id}", we.handleAdminAuth(we.adminApisHandler.DeleteGroup)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/group/{group-id}/members", we.handleAdminAuth(we.adminApisHandler.GetGroupMembers)).Methods("GET")
+	adminSubrouter.HandleFunc("/group/{group-id}/members/v2", we.handleAdminAuth(we.adminApisHandler.GetGroupMembersV2)).Methods("POST")
 
-	adminSubrouter.HandleFunc("/group/{group-id}/members", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateMemberships)).Methods("POST")
-	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetGroupStats)).Methods("GET")
-	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateMembership)).Methods("PUT")
-	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteMembership)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetManagedGroupConfigs)).Methods("GET")
-	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.CreateManagedGroupConfig)).Methods("POST")
-	adminSubrouter.HandleFunc("/managed-group-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.UpdateManagedGroupConfig)).Methods("PUT")
-	adminSubrouter.HandleFunc("/managed-group-configs/{id}", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.DeleteManagedGroupConfig)).Methods("DELETE")
-	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.GetSyncConfig)).Methods("GET")
-	adminSubrouter.HandleFunc("/sync-configs", we.adminIDTokenAuthWrapFunc(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
+	adminSubrouter.HandleFunc("/group/{group-id}/members", we.handleAdminAuth(we.adminApisHandler.CreateMemberships)).Methods("POST")
+	adminSubrouter.HandleFunc("/group/{group-id}/stats", we.handleAdminAuth(we.adminApisHandler.GetGroupStats)).Methods("GET")
+	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.handleAdminAuth(we.adminApisHandler.UpdateMembership)).Methods("PUT")
+	adminSubrouter.HandleFunc("/memberships/{membership-id}", we.handleAdminAuth(we.adminApisHandler.DeleteMembership)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/managed-group-configs", we.handleAdminAuth(we.adminApisHandler.GetManagedGroupConfigs)).Methods("GET")
+	adminSubrouter.HandleFunc("/managed-group-configs", we.handleAdminAuth(we.adminApisHandler.CreateManagedGroupConfig)).Methods("POST")
+	adminSubrouter.HandleFunc("/managed-group-configs", we.handleAdminAuth(we.adminApisHandler.UpdateManagedGroupConfig)).Methods("PUT")
+	adminSubrouter.HandleFunc("/managed-group-configs/{id}", we.handleAdminAuth(we.adminApisHandler.DeleteManagedGroupConfig)).Methods("DELETE")
+	adminSubrouter.HandleFunc("/sync-configs", we.handleAdminAuth(we.adminApisHandler.GetSyncConfig)).Methods("GET")
+	adminSubrouter.HandleFunc("/sync-configs", we.handleAdminAuth(we.adminApisHandler.SaveSyncConfig)).Methods("PUT")
 
 	// Internal key protection
-	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.internalKeyAuthFunc(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
-	restSubrouter.HandleFunc("/int/group/{identifier}", we.internalKeyAuthFunc(we.internalApisHandler.IntGetGroup)).Methods("GET")
-	restSubrouter.HandleFunc("/int/group/title/{title}/members", we.internalKeyAuthFunc(we.internalApisHandler.IntGetGroupMembersByGroupTitle)).Methods("GET")
-	restSubrouter.HandleFunc("/int/authman/synchronize", we.internalKeyAuthFunc(we.internalApisHandler.SynchronizeAuthman)).Methods("POST")
-	restSubrouter.HandleFunc("/int/stats", we.internalKeyAuthFunc(we.internalApisHandler.GroupStats)).Methods("GET")
-	restSubrouter.HandleFunc("/int/group/{group-id}/date_updated", we.internalKeyAuthFunc(we.internalApisHandler.UpdateGroupDateUpdated)).Methods("POST")
-	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.internalKeyAuthFunc(we.internalApisHandler.SendGroupNotification)).Methods("POST")
+	restSubrouter.HandleFunc("/int/user/{identifier}/groups", we.handleInternalAuth(we.internalApisHandler.IntGetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/int/group/{identifier}", we.handleInternalAuth(we.internalApisHandler.IntGetGroup)).Methods("GET")
+	restSubrouter.HandleFunc("/int/group/title/{title}/members", we.handleInternalAuth(we.internalApisHandler.IntGetGroupMembersByGroupTitle)).Methods("GET")
+	restSubrouter.HandleFunc("/int/authman/synchronize", we.handleInternalAuth(we.internalApisHandler.SynchronizeAuthman)).Methods("POST")
+	restSubrouter.HandleFunc("/int/stats", we.handleInternalAuth(we.internalApisHandler.GroupStats)).Methods("GET")
+	restSubrouter.HandleFunc("/int/group/{group-id}/date_updated", we.handleInternalAuth(we.internalApisHandler.UpdateGroupDateUpdated)).Methods("POST")
+	restSubrouter.HandleFunc("/int/group/{group-id}/notification", we.handleInternalAuth(we.internalApisHandler.SendGroupNotification)).Methods("POST")
 
 	// V2 Client APIs
 	restSubrouter.HandleFunc("/v2/groups", we.anonymousAuthWrapFunc(we.apisHandler.GetGroupsV2)).Methods("GET", "POST")
@@ -131,7 +131,9 @@ func (we *Adapter) Start() {
 
 	//V1 Client APIs
 	restSubrouter.HandleFunc("/authman/synchronize", we.idTokenAuthWrapFunc(we.apisHandler.SynchronizeAuthman)).Methods("POST")
+	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
 	restSubrouter.HandleFunc("/groups", we.idTokenAuthWrapFunc(we.apisHandler.CreateGroup)).Methods("POST")
+	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
 	restSubrouter.HandleFunc("/groups/{id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateGroup)).Methods("PUT")
 	restSubrouter.HandleFunc("/user", we.idTokenAuthWrapFunc(we.apisHandler.DeleteUser)).Methods("DELETE")
 	restSubrouter.HandleFunc("/user/groups", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroups)).Methods("GET")
@@ -154,20 +156,14 @@ func (we *Adapter) Start() {
 	restSubrouter.HandleFunc("/memberships/{membership-id}", we.idTokenAuthWrapFunc(we.apisHandler.UpdateMembership)).Methods("PUT")
 
 	restSubrouter.HandleFunc("/user-data", we.idTokenAuthWrapFunc(we.apisHandler.GetUserData)).Methods("GET")
-
-	//extended client id token protection (eg. allow event managers)
-	restSubrouter.HandleFunc("/user/group-memberships", we.idTokenExtendedClientAuthWrapFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
+	restSubrouter.HandleFunc("/user/group-memberships", we.idTokenAuthWrapFunc(we.apisHandler.GetUserGroupMemberships)).Methods("GET")
 
 	restSubrouter.HandleFunc("/research-profile/user-count", we.idTokenAuthWrapFunc(we.apisHandler.GetResearchProfileUserCount)).Methods("POST")
 
-	//mixed protection
-	restSubrouter.HandleFunc("/groups", we.mixedAuthWrapFunc(we.apisHandler.GetGroups)).Methods("GET")
-	restSubrouter.HandleFunc("/groups/{id}", we.mixedAuthWrapFunc(we.apisHandler.GetGroup)).Methods("GET")
-
 	// Analytics
 	analyticsSubrouter := restSubrouter.PathPrefix("/analytics").Subrouter()
-	analyticsSubrouter.HandleFunc("/groups", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroups)).Methods("GET")
-	analyticsSubrouter.HandleFunc("/members", we.internalKeyAuthFunc(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
+	analyticsSubrouter.HandleFunc("/groups", we.handleInternalAuth(we.analyticsApisHandler.AnalyticsGetGroups)).Methods("GET")
+	analyticsSubrouter.HandleFunc("/members", we.handleInternalAuth(we.analyticsApisHandler.AnalyticsGetGroupsMembers)).Methods("GET")
 
 	// BB Apis
 	bbsSubrouter := restSubrouter.PathPrefix("/bbs").Subrouter()
@@ -188,25 +184,6 @@ func (we Adapter) serveDocUI() http.Handler {
 	return httpSwagger.Handler(httpSwagger.URL(url))
 }
 
-type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
-
-func (we Adapter) apiKeysAuthWrapFunc(handler apiKeyAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		OrgID, authenticated := we.auth.apiKeyCheck(req)
-		if !authenticated {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(OrgID, w, req)
-		logObj.RequestComplete()
-	}
-}
-
 type idTokenAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
 
 func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
@@ -214,16 +191,37 @@ func (we Adapter) idTokenAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc 
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		OrgID, user := we.auth.idTokenCheck(w, req, false)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
+		status, claims, err := we.auth2.admin.Permissions.Check(req)
+		if err != nil {
+			logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, status, true))
 			return
 		}
 
-		handler(OrgID, user, w, req)
+		if claims != nil {
+			logObj.SetContext("account_id", claims.Subject)
+
+			if claims.Anonymous {
+				logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypePermission, nil, fmt.Errorf("token must not be anonymous"), http.StatusForbidden, true))
+				return
+			}
+
+			user := model.User{
+				AppID:       claims.AppID,
+				OrgID:       claims.OrgID,
+				ID:          claims.Subject,
+				AuthType:    claims.AuthType,
+				Email:       claims.Email,
+				Name:        claims.Name,
+				NetID:       we.getNetIDExternalID(claims, "net_id"),
+				ExternalID:  we.getNetIDExternalID(claims, "uin"),
+				IsAnonymous: claims.Anonymous,
+				Permissions: we.getPermissions(claims),
+			}
+			handler(claims.OrgID, &user, w, req)
+		}
 		logObj.RequestComplete()
 	}
+
 }
 
 func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
@@ -231,41 +229,42 @@ func (we Adapter) anonymousAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFun
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		OrgID, user := we.auth.idTokenCheck(w, req, true)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
+		status, claims, err := we.auth2.admin.Permissions.Check(req)
+		if err != nil {
+			logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, status, true))
 			return
 		}
 
-		handler(OrgID, user, w, req)
+		if claims != nil {
+			logObj.SetContext("account_id", claims.Subject)
+
+			user := model.User{
+				AppID:       claims.AppID,
+				OrgID:       claims.OrgID,
+				ID:          claims.Subject,
+				AuthType:    claims.AuthType,
+				Email:       claims.Email,
+				Name:        claims.Name,
+				NetID:       we.getNetIDExternalID(claims, "net_id"),
+				ExternalID:  we.getNetIDExternalID(claims, "uin"),
+				IsAnonymous: claims.Anonymous,
+				Permissions: we.getPermissions(claims),
+			}
+			handler(claims.OrgID, &user, w, req)
+		}
 		logObj.RequestComplete()
 	}
+
 }
 
-func (we Adapter) idTokenExtendedClientAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
+type apiKeyAuthFunc = func(string, http.ResponseWriter, *http.Request)
+
+func (we Adapter) handleInternalAuth(handler apiKeyAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		OrgID, user := we.auth.customClientTokenCheck(w, req, we.auth.idTokenAuth.extendedOrgIDs)
-		if user == nil {
-			log.Printf("Unauthorized")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		handler(OrgID, user, w, req)
-		logObj.RequestComplete()
-	}
-}
-
-func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		OrgID, authenticated := we.auth.internalAuthCheck(w, req)
+		OrgID, authenticated := we.auth1.internalAuthCheck(w, req)
 		if !authenticated {
 			log.Printf("%s %s Unauthorized error - Missing or wrong INTERNAL-API-KEY header", req.Method, req.URL.Path)
 			w.WriteHeader(http.StatusUnauthorized)
@@ -277,46 +276,39 @@ func (we Adapter) internalKeyAuthFunc(handler apiKeyAuthFunc) http.HandlerFunc {
 	}
 }
 
-func (we Adapter) mixedAuthWrapFunc(handler idTokenAuthFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, req *http.Request) {
-		logObj := we.logger.NewRequestLog(req)
-		logObj.RequestReceived()
-
-		OrgID, authenticated, user := we.auth.mixedCheck(req)
-		if !authenticated {
-			log.Printf("Unauthorized - Mixed Check")
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-
-		//user can be nil
-		handler(OrgID, user, w, req)
-		logObj.RequestComplete()
-	}
-}
-
 type adminAuthFunc = func(string, *model.User, http.ResponseWriter, *http.Request)
 
-func (we Adapter) adminIDTokenAuthWrapFunc(handler adminAuthFunc) http.HandlerFunc {
+func (we Adapter) handleAdminAuth(handler adminAuthFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, req *http.Request) {
 		logObj := we.logger.NewRequestLog(req)
 		logObj.RequestReceived()
 
-		OrgID, user, forbidden := we.auth.adminCheck(req)
-		if user == nil {
-			if forbidden {
-				log.Printf("Forbidden - Admin")
-				w.WriteHeader(http.StatusForbidden)
-			} else {
-				log.Printf("Unauthorized - Admin")
-				w.WriteHeader(http.StatusUnauthorized)
-			}
+		status, claims, err := we.auth2.admin.Permissions.Check(req)
+		if err != nil {
+			logObj.SendHTTPResponse(w, logObj.HTTPResponseErrorAction(logutils.ActionValidate, logutils.TypeRequest, nil, err, status, true))
 			return
 		}
 
-		handler(OrgID, user, w, req)
+		if claims != nil {
+			logObj.SetContext("account_id", claims.Subject)
+
+			user := model.User{
+				AppID:       claims.AppID,
+				OrgID:       claims.OrgID,
+				ID:          claims.Subject,
+				AuthType:    claims.AuthType,
+				Email:       claims.Email,
+				Name:        claims.Name,
+				NetID:       we.getNetIDExternalID(claims, "net_id"),
+				ExternalID:  we.getNetIDExternalID(claims, "uin"),
+				IsAnonymous: claims.Anonymous,
+				Permissions: we.getPermissions(claims),
+			}
+			handler(claims.OrgID, &user, w, req)
+		}
 		logObj.RequestComplete()
 	}
+
 }
 
 // BBs auth ///////////
@@ -346,8 +338,11 @@ func (we Adapter) wrapFunc(handler handleFunc, authorization tokenauth.Handler) 
 				OrgID:       claims.OrgID,
 				ID:          claims.Subject,
 				AuthType:    claims.AuthType,
-				IsBBUser:    true,
-				IsCoreUser:  true,
+				Email:       claims.Email,
+				Name:        claims.Name,
+				NetID:       we.getNetIDExternalID(claims, "net_id"),
+				ExternalID:  we.getNetIDExternalID(claims, "uin"),
+				IsAnonymous: claims.Anonymous,
 				Permissions: we.getPermissions(claims),
 			}
 			response = handler(logObj, req, &user)
@@ -377,6 +372,18 @@ func (we Adapter) completeResponse(w http.ResponseWriter, response logs.HTTPResp
 	l.RequestComplete()
 }
 
+func (a Adapter) getNetIDExternalID(claims *tokenauth.Claims, key string) string {
+	externalIDs := claims.ExternalIDs
+	if len(externalIDs) == 0 {
+		return ""
+	}
+	netID := externalIDs[key]
+	if len(netID) == 0 {
+		return ""
+	}
+	return netID
+}
+
 // NewWebAdapter creates new WebAdapter instance
 func NewWebAdapter(app *core.Application, host string, port string, supportedOrgIDs []string, appKeys []string, oidcProvider string, oidcOrgID string,
 	oidcExtendedOrgIDs string, oidcAdminClientID string, oidcAdminWebClientID string,
@@ -397,6 +404,6 @@ func NewWebAdapter(app *core.Application, host string, port string, supportedOrg
 	analyticsApisHandler := rest.NewAnalyticsApisHandler(app)
 	bbApisHandler := rest.NewBBApisHandler(app)
 
-	return &Adapter{host: host, port: port, auth: auth, auth2: auth2, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
+	return &Adapter{host: host, port: port, auth1: auth, auth2: auth2, apisHandler: apisHandler, adminApisHandler: adminApisHandler,
 		internalApisHandler: internalApisHandler, analyticsApisHandler: analyticsApisHandler, bbsAPIHandler: bbApisHandler, logger: logger}
 }
