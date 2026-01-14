@@ -187,6 +187,8 @@ type Storage interface {
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
 	AnalyticsFindMembers(groupID *string, startDate *time.Time, endDate *time.Time) ([]model.GroupMembership, error)
 
+	MigrateGroups(ctx storage.TransactionContext, defaultOrgID string) error
+
 	// Handle external callbacks
 	OnUpdatedGroupExternalEntity(context storage.TransactionContext, groupID string, operation model.ExternalOperation) error
 }
