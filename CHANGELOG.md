@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.73.8] - 2026-01-14
+### Changed
+- Prepare for automatic deploy [#624](https://github.com/rokwire/groups-building-block/issues/624)
+
 ## [1.73.7] - 2025-12-19
 ### Fixed
 - USABILITY UI CleanUp: Group Filters: Additional fix related to privacy and memberships[#613](https://github.com/rokwire/groups-building-block/issues/613)
