@@ -370,22 +370,10 @@ func (app *Application) deleteGroup(OrgID string, current *model.User, id string
 			}
 		}
 
-		err = app.social.DeleteGroupPosts(app.config.OrgID, id)
-		if err != nil {
-			log.Printf("error deleting group posts: %s", err)
-			//return err // Do not block group deletion if posts cannot be deleted
-		}
-
 		err = app.polls.DeleteGroupPolls(app.config.OrgID, id)
 		if err != nil {
 			log.Printf("error deleting group polls: %s", err)
 			//return err // Do not block group deletion if polls cannot be deleted
-		}
-
-		err = app.calendar.DeleteGroupEvents(app.config.OrgID, id)
-		if err != nil {
-			log.Printf("error deleting group events: %s", err)
-			//return err // Do not block group deletion if events cannot be deleted
 		}
 
 		err = app.storage.DeleteGroup(nil, OrgID, id)

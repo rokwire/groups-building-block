@@ -29,65 +29,65 @@ type Services interface {
 	GetVersion() string
 
 	// TODO: Deprecate this method due to missed CurrentMember!
-	GetGroupEntity(OrgID string, id string) (*model.Group, error)
-	GetGroupEntityByTitle(OrgID string, title string) (*model.Group, error)
-	IsGroupAdmin(OrgID string, groupID string, userID string) (bool, error)
+	GetGroupEntity(orgID string, id string) (*model.Group, error)
+	GetGroupEntityByTitle(orgID string, title string) (*model.Group, error)
+	IsGroupAdmin(orgID string, groupID string, userID string) (bool, error)
 
-	CreateGroup(OrgID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError)
-	CreateGroupV3(OrgID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError)
-	UpdateGroup(OrgID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupDateUpdated(OrgID string, groupID string) error
-	DeleteGroup(OrgID string, current *model.User, id string) error
+	CreateGroup(orgID string, current *model.User, group *model.Group, membersConfig *model.DefaultMembershipConfig) (*string, *utils.GroupError)
+	CreateGroupV3(orgID string, current *model.User, group *model.Group, membershipStatuses model.MembershipStatuses) (*string, *utils.GroupError)
+	UpdateGroup(orgID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupDateUpdated(orgID string, groupID string) error
+	DeleteGroup(orgID string, current *model.User, id string) error
 	GetAllGroupsUnsecured() ([]model.Group, error)
-	GetAllGroups(OrgID string) (int64, []model.Group, error)
-	GetGroups(OrgID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
-	GetGroupFilterStats(OrgID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error)
-	GetUserGroups(OrgID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
-	DeleteUser(OrgID string, current *model.User) error
-	ReportGroupAsAbuse(OrgID string, current *model.User, group *model.Group, comment string) error
+	GetAllGroups(orgID string) (int64, []model.Group, error)
+	GetGroups(orgID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
+	GetGroupFilterStats(orgID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error)
+	GetUserGroups(orgID string, current *model.User, filter model.GroupsFilter) ([]model.Group, error)
+	DeleteUser(orgID string, current *model.User) error
+	ReportGroupAsAbuse(orgID string, current *model.User, group *model.Group, comment string) error
 
-	GetGroup(OrgID string, current *model.User, id string) (*model.Group, error)
+	GetGroup(orgID string, current *model.User, id string) (*model.Group, error)
 	GetGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
 
-	GetGroupStats(OrgID string, id string) (*model.GroupStats, error)
+	GetGroupStats(orgID string, id string) (*model.GroupStats, error)
 
-	ApplyMembershipApproval(OrgID string, current *model.User, membershipID string, approve bool, rejectReason string) error
-	UpdateMembership(OrgID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
-	CreateMembershipsStatuses(OrgID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
-	UpdateMemberships(OrgID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error
+	ApplyMembershipApproval(orgID string, current *model.User, membershipID string, approve bool, rejectReason string) error
+	UpdateMembership(orgID string, current *model.User, membershipID string, status *string, dateAttended *time.Time, notificationsPreferences *model.NotificationsPreferences) error
+	CreateMembershipsStatuses(orgID string, current *model.User, groupID string, membershipStatuses model.MembershipStatuses) error
+	UpdateMemberships(orgID string, user *model.User, group *model.Group, operation model.MembershipMultiUpdate) error
 
 	GetGroupMembershipsStatusAndGroupTitle(userID string) ([]model.GetGroupMembershipsResponse, error)
 	GetGroupMembershipsByGroupID(groupID string) ([]string, error)
 
 	GetUserData(userID string) (*model.UserDataResponse, error)
 
-	SynchronizeAuthman(OrgID string) error
-	SynchronizeAuthmanGroup(OrgID string, groupID string) error
+	SynchronizeAuthman(orgID string) error
+	SynchronizeAuthmanGroup(orgID string, groupID string) error
 
-	GetManagedGroupConfigs(OrgID string) ([]model.ManagedGroupConfig, error)
+	GetManagedGroupConfigs(orgID string) ([]model.ManagedGroupConfig, error)
 	CreateManagedGroupConfig(config model.ManagedGroupConfig) (*model.ManagedGroupConfig, error)
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	DeleteManagedGroupConfig(id string, OrgID string) error
+	DeleteManagedGroupConfig(id string, orgID string) error
 
-	GetSyncConfig(OrgID string) (*model.SyncConfig, error)
+	GetSyncConfig(orgID string) (*model.SyncConfig, error)
 	UpdateSyncConfig(config model.SyncConfig) error
 
 	// V3
-	CheckUserGroupMembershipPermission(OrgID string, current *model.User, groupID string) (*model.Group, bool)
-	FindGroupsV3(OrgID string, filter model.GroupsFilter) ([]model.Group, error)
-	FindGroupMemberships(OrgID string, filter model.MembershipFilter) (model.MembershipCollection, error)
-	FindGroupMembership(OrgID string, groupID string, userID string) (*model.GroupMembership, error)
-	FindGroupMembershipByID(OrgID string, id string) (*model.GroupMembership, error)
-	FindUserGroupMemberships(OrgID string, userID string) (model.MembershipCollection, error)
-	CreateMembership(OrgID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
-	CreatePendingMembership(OrgID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
-	DeleteMembership(OrgID string, current *model.User, groupID string) error
-	DeleteMembershipByID(OrgID string, current *model.User, membershipID string) error
-	DeletePendingMembership(OrgID string, current *model.User, groupID string) error
+	CheckUserGroupMembershipPermission(orgID string, current *model.User, groupID string) (*model.Group, bool)
+	FindGroupsV3(orgID string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroupMemberships(orgID string, filter model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMembership(orgID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipByID(orgID string, id string) (*model.GroupMembership, error)
+	FindUserGroupMemberships(orgID string, userID string) (model.MembershipCollection, error)
+	CreateMembership(orgID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
+	CreatePendingMembership(orgID string, current *model.User, group *model.Group, membership *model.GroupMembership) error
+	DeleteMembership(orgID string, current *model.User, groupID string) error
+	DeleteMembershipByID(orgID string, current *model.User, membershipID string) error
+	DeletePendingMembership(orgID string, current *model.User, groupID string) error
 
 	// Group Notifications
-	SendGroupNotification(OrgID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error
-	GetResearchProfileUserCount(OrgID string, current *model.User, researchProfile map[string]map[string]any) (int64, error)
+	SendGroupNotification(orgID string, notification model.GroupNotification, predicate model.MutePreferencePredicate) error
+	GetResearchProfileUserCount(orgID string, current *model.User, researchProfile map[string]map[string]any) (int64, error)
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
@@ -96,9 +96,9 @@ type Services interface {
 
 // Administration exposes administration APIs for the driver adapters
 type Administration interface {
-	GetGroups(OrgID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
-	DeleteGroup(OrgID string, current *model.User, id string, inactive bool) error
-	AdminDeleteMembershipsByID(OrgID string, current *model.User, groupID string, accountIDs []string) error
+	GetGroups(orgID string, current *model.User, filter model.GroupsFilter) (int64, []model.Group, error)
+	DeleteGroup(orgID string, current *model.User, id string, inactive bool) error
+	AdminDeleteMembershipsByID(orgID string, current *model.User, groupID string, accountIDs []string) error
 }
 
 // BBS exposes BBS APIs for the driver adapters
@@ -115,73 +115,73 @@ type Storage interface {
 
 	LoadSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
 	FindSyncConfigs(context storage.TransactionContext) ([]model.SyncConfig, error)
-	FindSyncConfig(context storage.TransactionContext, OrgID string) (*model.SyncConfig, error)
+	FindSyncConfig(context storage.TransactionContext, orgID string) (*model.SyncConfig, error)
 	SaveSyncConfig(context storage.TransactionContext, config model.SyncConfig) error
 
-	FindSyncTimes(context storage.TransactionContext, OrgID string, key string, legacy bool) (*model.SyncTimes, error)
+	FindSyncTimes(context storage.TransactionContext, orgID string, key string, legacy bool) (*model.SyncTimes, error)
 	SaveSyncTimes(context storage.TransactionContext, times model.SyncTimes) error
 
-	DeleteUser(OrgID string, userID string) error
+	DeleteUser(orgID string, userID string) error
 
-	CreateGroup(context storage.TransactionContext, OrgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
-	UpdateGroup(context storage.TransactionContext, OrgID string, current *model.User, group *model.Group) *utils.GroupError
-	UpdateGroupWithMembership(context storage.TransactionContext, OrgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
-	UpdateGroupSyncTimes(context storage.TransactionContext, OrgID string, group *model.Group) error
-	UpdateGroupStats(context storage.TransactionContext, OrgID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
-	UpdateGroupDateUpdated(OrgID string, groupID string) error
-	DeleteGroup(ctx storage.TransactionContext, OrgID string, id string) error
-	FindGroup(context storage.TransactionContext, OrgID string, groupID string, userID *string) (*model.Group, error)
-	FindGroupByTitle(OrgID string, title string) (*model.Group, error)
-	FindGroups(OrgID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) (int64, []model.Group, error)
+	CreateGroup(context storage.TransactionContext, orgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) (*string, *utils.GroupError)
+	UpdateGroup(context storage.TransactionContext, orgID string, current *model.User, group *model.Group) *utils.GroupError
+	UpdateGroupWithMembership(context storage.TransactionContext, orgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) *utils.GroupError
+	UpdateGroupSyncTimes(context storage.TransactionContext, orgID string, group *model.Group) error
+	UpdateGroupStats(context storage.TransactionContext, orgID string, id string, resetUpdateDate bool, resetMembershipUpdateDate bool, resetManagedMembershipUpdateDate bool, resetStats bool) error
+	UpdateGroupDateUpdated(orgID string, groupID string) error
+	DeleteGroup(ctx storage.TransactionContext, orgID string, id string) error
+	FindGroup(context storage.TransactionContext, orgID string, groupID string, userID *string) (*model.Group, error)
+	FindGroupByTitle(orgID string, title string) (*model.Group, error)
+	FindGroups(orgID string, userID *string, filter model.GroupsFilter, skipMembershipCheck bool) (int64, []model.Group, error)
 	FindAllGroupsUnsecured() ([]model.Group, error)
 	FindGroupsByGroupIDs(groupIDs []string) ([]model.Group, error)
-	FindUserGroups(OrgID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
-	FindUserGroupsCount(OrgID string, userID string) (*int64, error)
+	FindUserGroups(orgID string, userID string, filter model.GroupsFilter) ([]model.Group, error)
+	FindUserGroupsCount(orgID string, userID string) (*int64, error)
 	DeleteUsersByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
 	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
 	GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error)
 
-	ReportGroupAsAbuse(OrgID string, userID string, group *model.Group) error
+	ReportGroupAsAbuse(orgID string, userID string, group *model.Group) error
 
-	FindAuthmanGroups(OrgID string) ([]model.Group, error)
-	FindAuthmanGroupByKey(OrgID string, authmanGroupKey string) (*model.Group, error)
+	FindAuthmanGroups(orgID string) ([]model.Group, error)
+	FindAuthmanGroupByKey(orgID string, authmanGroupKey string) (*model.Group, error)
 
 	LoadManagedGroupConfigs() ([]model.ManagedGroupConfig, error)
-	FindManagedGroupConfig(id string, OrgID string) (*model.ManagedGroupConfig, error)
-	FindManagedGroupConfigs(OrgID string) ([]model.ManagedGroupConfig, error)
+	FindManagedGroupConfig(id string, orgID string) (*model.ManagedGroupConfig, error)
+	FindManagedGroupConfigs(orgID string) ([]model.ManagedGroupConfig, error)
 	InsertManagedGroupConfig(config model.ManagedGroupConfig) error
 	UpdateManagedGroupConfig(config model.ManagedGroupConfig) error
-	DeleteManagedGroupConfig(id string, OrgID string) error
+	DeleteManagedGroupConfig(id string, orgID string) error
 
 	// V3
-	CalculateGroupFilterStats(OrgID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error)
-	FindGroupsV3(context storage.TransactionContext, OrgID string, filter model.GroupsFilter) ([]model.Group, error)
-	FindGroupMemberships(OrgID string, filter model.MembershipFilter) (model.MembershipCollection, error)
-	FindGroupMembershipsWithContext(context storage.TransactionContext, OrgID string, filter model.MembershipFilter) (model.MembershipCollection, error)
+	CalculateGroupFilterStats(orgID string, current *model.User, filter model.StatsFilter, skipMembershipCheck bool) (*model.StatsResult, error)
+	FindGroupsV3(context storage.TransactionContext, orgID string, filter model.GroupsFilter) ([]model.Group, error)
+	FindGroupMemberships(orgID string, filter model.MembershipFilter) (model.MembershipCollection, error)
+	FindGroupMembershipsWithContext(context storage.TransactionContext, orgID string, filter model.MembershipFilter) (model.MembershipCollection, error)
 
-	FindGroupMembership(OrgID string, groupID string, userID string) (*model.GroupMembership, error)
-	FindGroupMembershipWithContext(context storage.TransactionContext, OrgID string, groupID string, userID string) (*model.GroupMembership, error)
-	FindGroupMembershipByID(OrgID string, id string) (*model.GroupMembership, error)
-	FindUserGroupMemberships(OrgID string, userID string) (model.MembershipCollection, error)
-	FindUserGroupMembershipsWithContext(ctx storage.TransactionContext, OrgID string, userID string) (model.MembershipCollection, error)
-	BulkUpdateGroupMembershipsByExternalID(OrgID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
-	SaveGroupMembershipByExternalID(OrgID string, groupID string, externalID string, userID *string, status *string,
+	FindGroupMembership(orgID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipWithContext(context storage.TransactionContext, orgID string, groupID string, userID string) (*model.GroupMembership, error)
+	FindGroupMembershipByID(orgID string, id string) (*model.GroupMembership, error)
+	FindUserGroupMemberships(orgID string, userID string) (model.MembershipCollection, error)
+	FindUserGroupMembershipsWithContext(ctx storage.TransactionContext, orgID string, userID string) (model.MembershipCollection, error)
+	BulkUpdateGroupMembershipsByExternalID(orgID string, groupID string, saveOperations []storage.SingleMembershipOperation, updateGroupStats bool) error
+	SaveGroupMembershipByExternalID(orgID string, groupID string, externalID string, userID *string, status *string,
 		email *string, name *string, memberAnswers []model.MemberAnswer, syncID *string, updateGroupStats bool) (*model.GroupMembership, error)
 
-	CreateMembership(OrgID string, current *model.User, group *model.Group, member *model.GroupMembership) error
-	CreateMemberships(context storage.TransactionContext, OrgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) error
-	CreatePendingMembership(OrgID string, current *model.User, group *model.Group, member *model.GroupMembership) error
-	ApplyMembershipApproval(OrgID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
-	UpdateMembership(OrgID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
-	UpdateMemberships(OrgID string, user *model.User, groupID string, operation model.MembershipMultiUpdate) error
-	DeleteMembership(OrgID string, groupID string, userID string) error
-	DeleteMembershipByID(OrgID string, current *model.User, membershipID string) error
-	DeleteUnsyncedGroupMemberships(OrgID string, groupID string, syncID string) (int64, error)
+	CreateMembership(orgID string, current *model.User, group *model.Group, member *model.GroupMembership) error
+	CreateMemberships(context storage.TransactionContext, orgID string, current *model.User, group *model.Group, memberships []model.GroupMembership) error
+	CreatePendingMembership(orgID string, current *model.User, group *model.Group, member *model.GroupMembership) error
+	ApplyMembershipApproval(orgID string, membershipID string, approve bool, rejectReason string) (*model.GroupMembership, error)
+	UpdateMembership(orgID string, _ *model.User, membershipID string, membership *model.GroupMembership) error
+	UpdateMemberships(orgID string, user *model.User, groupID string, operation model.MembershipMultiUpdate) error
+	DeleteMembership(orgID string, groupID string, userID string) error
+	DeleteMembershipByID(orgID string, current *model.User, membershipID string) error
+	DeleteUnsyncedGroupMemberships(orgID string, groupID string, syncID string) (int64, error)
 	DeleteGroupMembershipsByAccountsIDs(log *logs.Logger, context storage.TransactionContext, accountsIDs []string) error
 
-	GetGroupMembershipStats(context storage.TransactionContext, OrgID string, groupID string) (*model.GroupStats, error)
+	GetGroupMembershipStats(context storage.TransactionContext, orgID string, groupID string) (*model.GroupStats, error)
 
 	// Analytics
 	AnalyticsFindGroups(startDate *time.Time, endDate *time.Time) ([]model.Group, error)
@@ -238,25 +238,10 @@ type Rewards interface {
 
 // Calendar exposes Calendar BB APIs for the driver adapters
 type Calendar interface {
-	CreateCalendarEvent(adminIdentifier []model.AccountIdentifiers, currentAccountIdentifier model.AccountIdentifiers, event map[string]interface{}, orgID string, appID string, groupIDs []string) (map[string]interface{}, error)
-	UpdateCalendarEvent(currentAccountIdentifier model.AccountIdentifiers, eventID string, event map[string]interface{}, orgID string, appID string) (map[string]interface{}, error)
-	GetGroupCalendarEvents(currentAccountIdentifier model.AccountIdentifiers, eventIDs []string, appID string, orgID string, published *bool, filter model.GroupEventFilter) (map[string]interface{}, error)
-	AddPeopleToCalendarEvent(people []string, eventID string, orgID string, appID string) error
-	RemovePeopleFromCalendarEvent(people []string, eventID string, orgID string, appID string) error
-	DeleteGroupEvents(orgID, groupID string) error
 }
 
 // Social exposes Social BB APIs for the driver adapters
 type Social interface {
-	GetPosts(OrgID string, current *model.User, filter model.PostsFilter, filterPrivatePostsValue *bool, filterByToMembers bool) ([]model.Post, error)
-	GetPost(OrgID string, userID *string, groupID string, postID string, skipMembershipCheck bool, filterByToMembers bool) (*model.Post, error)
-	GetUserPostCount(OrgID string, userID string) (*int64, error)
-	CreatePost(OrgID string, current *model.User, post *model.Post, group *model.Group) (*model.Post, error)
-	UpdatePost(OrgID string, current *model.User, group *model.Group, post *model.Post) (*model.Post, error)
-	ReactToPost(OrgID string, current *model.User, groupID string, postID string, reaction string) error
-	ReportPostAsAbuse(OrgID string, current *model.User, group *model.Group, post *model.Post, comment string, sendToDean bool, sendToGroupAdmins bool) error
-	DeletePost(OrgID string, userID string, groupID string, postID string, force bool) error
-	DeleteGroupPosts(orgID, groupID string) error
 }
 
 // Polls exposes Polls BB APIs for the driver adapters
