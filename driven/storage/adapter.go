@@ -828,8 +828,12 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 			}
 		} else {
 			innerOrFilter = []bson.M{
-				{"_id": bson.M{"$in": memberGroupIDs}},
 				{"privacy": bson.M{"$ne": "private"}},
+				{"$and": []bson.M{
+					{"privacy": "private"},
+					{"hidden_for_search": false},
+					{"_id": bson.M{"$in": memberGroupIDs}},
+				}},
 				{"$and": []bson.M{
 					{"privacy": "private"},
 					{"hidden_for_search": true},
