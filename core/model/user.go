@@ -166,8 +166,6 @@ type DeletedMembership struct {
 
 // UserDataResponse defines the user data
 type UserDataResponse struct {
-	EventResponse            []Event           `json:"events"`
 	GroupMembershipsResponse []GroupMembership `json:"group_memberships"`
 	GroupResponse            []Group           `json:"groups"`
-	PostResponse             []Post            `json:"posts"`
 }

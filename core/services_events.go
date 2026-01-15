@@ -29,10 +29,8 @@ func (app *Application) findGroupMembershipsByGroupID(groupID string) ([]string,
 
 func (app *Application) getUserData(userID string) (*model.UserDataResponse, error) {
 	var wg sync.WaitGroup
-	var events []model.Event
 	var groupMemberships []model.GroupMembership
 	var groups []model.Group
-	var posts []model.Post
 	var eventsErr, membershipsErr, groupsErr, postsErr error
 
 	// Fetch group memberships asynchronously
@@ -74,10 +72,8 @@ func (app *Application) getUserData(userID string) (*model.UserDataResponse, err
 
 	// Prepare the response
 	userData := &model.UserDataResponse{
-		EventResponse:            events,
 		GroupMembershipsResponse: groupMemberships,
 		GroupResponse:            groups,
-		PostResponse:             posts,
 	}
 
 	return userData, nil

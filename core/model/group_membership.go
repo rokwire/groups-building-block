@@ -238,25 +238,6 @@ func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recip
 	}
 }
 
-// ToMember converts the GroupMembership model to the Member model
-func (m *GroupMembership) ToMember() Member {
-	return Member{
-		ID:            m.ID,
-		UserID:        m.UserID,
-		ExternalID:    m.ExternalID,
-		Name:          m.Name,
-		NetID:         m.NetID,
-		Email:         m.Email,
-		PhotoURL:      m.PhotoURL,
-		Status:        m.Status,
-		RejectReason:  m.RejectReason,
-		MemberAnswers: m.MemberAnswers,
-		DateCreated:   m.DateCreated,
-		DateUpdated:   m.DateUpdated,
-		DateAttended:  m.DateAttended,
-	}
-}
-
 // NotificationsPreferences overrides default notification preferences on group level
 type NotificationsPreferences struct {
 	OverridePreferences bool `json:"override_preferences" bson:"override_preferences"`
@@ -321,3 +302,26 @@ func (m MembershipStatuses) GetAllNetIDStatusMapping() map[string]string {
 
 	return mapping
 }
+
+// MemberAnswer represents member answer entity
+type MemberAnswer struct {
+	Question string `json:"question" bson:"question"`
+	Answer   string `json:"answer" bson:"answer"`
+} //@name MemberAnswer
+
+// ShortMemberRecord represents group short member entity only with important identifiers
+type ShortMemberRecord struct {
+	ID         string `json:"id" bson:"id"`
+	UserID     string `json:"user_id" bson:"user_id"`
+	ExternalID string `json:"external_id" bson:"external_id"`
+	Name       string `json:"name" bson:"name"`
+	NetID      string `json:"net_id" bson:"net_id"`
+	Email      string `json:"email" bson:"email"`
+	Status     string `json:"status" bson:"status"` //pending, member, admin, rejected
+} //@name ShortMemberRecord
+
+// DefaultMembershipConfig the initial members and their status while creatinng a new group
+type DefaultMembershipConfig struct {
+	NetIDs []string `json:"net_ids"`
+	Status string   `json:"status" validate:"required,oneof=admin member pending rejected"`
+} // @nane DefaultMembershipConfig

@@ -37,9 +37,9 @@ type Group struct {
 	Settings   *GroupSettings         `json:"settings" bson:"settings"` // TODO: Remove the pointer once the backward support is not needed any more!
 	Attributes map[string]interface{} `json:"attributes" bson:"attributes"`
 
-	CurrentMember *GroupMembership `json:"current_member"` // this is indicative and it's not required for update APIs
-	Members       []Member         `json:"members,omitempty" bson:"members,omitempty"`
-	Stats         GroupStats       `json:"stats" bson:"stats"`
+	CurrentMember *GroupMembership  `json:"current_member"` // this is indicative and it's not required for update APIs
+	Members       []GroupMembership `json:"members,omitempty" bson:"members,omitempty"`
+	Stats         GroupStats        `json:"stats" bson:"stats"`
 
 	DateCreated                  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated                  *time.Time `json:"date_updated" bson:"date_updated"`
@@ -77,10 +77,10 @@ type GetGroupMembershipsResponse struct {
 
 // ApplyLegacyMembership applies legacy membership to the group for backward compatibility
 func (gr *Group) ApplyLegacyMembership(membershipCollection MembershipCollection) {
-	var list []Member
+	var list []GroupMembership
 	for _, membership := range membershipCollection.Items {
 		if membership.GroupID == gr.ID && (gr.CurrentMember != nil && (gr.CurrentMember.IsAdminOrMember() || membership.UserID == gr.CurrentMember.UserID)) {
-			list = append(list, membership.ToMember())
+			list = append(list, membership)
 		}
 	}
 

@@ -294,12 +294,6 @@ func (h *InternalApisHandler) GroupStats(OrgID string, w http.ResponseWriter, r 
 	w.Write(data)
 }
 
-type intCreateGroupEventRequestBody struct {
-	EventID       string           `json:"event_id" bson:"event_id" validate:"required"`
-	Creator       *model.Creator   `json:"creator" bson:"creator"`
-	ToMembersList []model.ToMember `json:"to_members" bson:"to_members"` // nil or empty means everyone; non-empty means visible to those user ids and admins
-} // @name intCreateGroupEventRequestBody
-
 // UpdateGroupDateUpdated Updates the date updated field of the desired group
 // @Description Updates the date updated field of the desired group
 // @ID IntUpdateGroupDateUpdated
