@@ -100,11 +100,13 @@ func (app *Application) setupCronTimer() {
 
 	app.startCoreCleanupTask()
 
+	app.startOrgIDMigrationTask()
+
 	app.scheduler.Start()
 }
 
 func (app *Application) startOrgIDMigrationTask() {
-	app.storage.MigrateGroups(nil, app.config.OrgID)
+	app.migrateGroups(nil, app.config.OrgID)
 }
 
 func (app *Application) startCoreCleanupTask() {
