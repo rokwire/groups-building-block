@@ -103,6 +103,10 @@ func (app *Application) setupCronTimer() {
 	app.scheduler.Start()
 }
 
+func (app *Application) startOrgIDMigrationTask() {
+	app.storage.MigrateGroups(nil, app.config.OrgID)
+}
+
 func (app *Application) startCoreCleanupTask() {
 	// TBD: Implement CRUD APIs for config and load them from DB
 	_, err := app.scheduler.AddFunc("0 0 * * *", func() {
