@@ -31,6 +31,9 @@ const (
 
 	// ConfigTypeAuthmanSync managed group config key
 	ConfigTypeAuthmanSync = "sync"
+
+	// ConfigTypeOrgIDMigration org_id migration config key
+	ConfigTypeOrgIDMigration = "org_id_migration"
 )
 
 // SyncConfig defines system configs for managed group sync
@@ -60,3 +63,11 @@ type ManagedGroupConfig struct {
 	DateCreated  time.Time  `json:"date_created" bson:"date_created"`
 	DateUpdated  *time.Time `json:"date_updated" bson:"date_updated"`
 } //@name ManagedGroupConfig
+
+// MigrationConfig defines the config for data migrations
+type MigrationConfig struct {
+	Type        string     `json:"type" bson:"type"`
+	Migrated    bool       `json:"migrated" bson:"migrated"`
+	DateCreated time.Time  `json:"date_created" bson:"date_created"`
+	DateUpdated *time.Time `json:"date_updated" bson:"date_updated"`
+}

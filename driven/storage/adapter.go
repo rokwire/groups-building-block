@@ -155,6 +155,23 @@ func (sa *Adapter) LoadSyncConfigs(context TransactionContext) ([]model.SyncConf
 	return config, nil
 }
 
+func findConfigsByType[T any](sa *Adapter, context TransactionContext, configType string, result *T) error {
+	filter := bson.M{"type": configType}
+	err := sa.db.configs.FindOneWithContext(context, filter, result, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sa *Adapter) saveConfig(context TransactionContext, config interface{}) error {
+	_, err := sa.db.configs.InsertOneWithContext(context, config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // FindSyncConfig finds the sync config for the specified OrgID
 func (sa *Adapter) FindSyncConfig(context TransactionContext, OrgID string) (*model.SyncConfig, error) {
 	return sa.getCachedSyncConfig(OrgID)

@@ -37,21 +37,6 @@ const (
 	authmanUserBatchSize       = 5000
 )
 
-/*
-func (app *Application) applyDataProtection(current *model.User, group model.Group) model.Group {
-	//1 apply data protection for "anonymous"
-	if current == nil || current.IsAnonymous {
-		group.Members = []model.Member{}
-	} else {
-		member := group.GetMemberByUserID(current.ID)
-		if member != nil && (member.IsRejected() || member.IsPendingMember()) {
-			group.Members = []model.Member{}
-			group.Members = append(group.Members, *member)
-		}
-	}
-	return group
-}*/
-
 func (app *Application) getVersion() string {
 	return app.version
 }
@@ -743,8 +728,8 @@ func (app *Application) formatCoreAccountSearchParams(researchProfile map[string
 	return searchParams
 }
 
-func (app *Application) migrateGroups(ctx storage.TransactionContext, defaultOrgID string) error {
-	return app.storage.MigrateGroups(ctx, defaultOrgID)
+func (app *Application) migrateGroupsOrgID(ctx storage.TransactionContext, defaultOrgID string) error {
+	return app.storage.MigrateGroupsOrgID(ctx, defaultOrgID)
 }
 
 func (app *Application) onUpdatedGroupExternalEntity(groupID string, operation model.ExternalOperation) error {

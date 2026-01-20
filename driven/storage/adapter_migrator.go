@@ -15,16 +15,27 @@
 package storage
 
 import (
+	"groups/core/model"
 	"log"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// MigrateGroups migrates groups and related records to use org_id instead of client_id
-func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) error {
+// MigrateGroupsOrgID migrates groups and related records to use org_id instead of client_id
+func (sa *Adapter) MigrateGroupsOrgID(ctx TransactionContext, defaultOrgID string) error {
 
 	wrapper := (func(context TransactionContext) error {
+
+		var config model.MigrationConfig
+		if err := findConfigsByType(sa, context, model.ConfigTypeOrgIDMigration, &config); err == nil {
+			if config.Migrated {
+				log.Printf("MigrateGroupsOrgID: already migrated")
+				return nil
+			}
+		}
+
 		filter := bson.D{
 			{Key: "$or",
 				Value: bson.A{
@@ -70,6 +81,16 @@ func (sa *Adapter) MigrateGroups(ctx TransactionContext, defaultOrgID string) er
 			return err
 		}
 		log.Printf("groupMemberships: updated %d records to org_id %s", result.ModifiedCount, defaultOrgID)
+
+		err = sa.saveConfig(ctx, model.MigrationConfig{
+			Type:        model.ConfigTypeOrgIDMigration,
+			Migrated:    true,
+			DateCreated: time.Now(),
+		})
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 

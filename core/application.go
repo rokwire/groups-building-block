@@ -68,6 +68,10 @@ func (app *Application) Start() {
 	storageListener := storageListenerImpl{app: app}
 	app.storage.RegisterStorageListener(&storageListener)
 
+	app.startCoreCleanupTask()
+
+	app.startOrgIDMigrationTask()
+
 	app.setupCronTimer()
 }
 
@@ -98,15 +102,11 @@ func (app *Application) setupCronTimer() {
 		}
 	}
 
-	app.startCoreCleanupTask()
-
-	app.startOrgIDMigrationTask()
-
 	app.scheduler.Start()
 }
 
 func (app *Application) startOrgIDMigrationTask() {
-	app.migrateGroups(nil, app.config.OrgID)
+	app.migrateGroupsOrgID(nil, app.config.OrgID)
 }
 
 func (app *Application) startCoreCleanupTask() {
