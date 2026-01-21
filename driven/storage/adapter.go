@@ -827,45 +827,38 @@ func (sa *Adapter) buildMainQuery(context TransactionContext, userID *string, cl
 				{"privacy": bson.M{"$ne": "private"}},
 			}
 		} else {
-			innerOrFilter = []bson.M{
-				{"privacy": bson.M{"$ne": "private"}},
-				{"$and": []bson.M{
-					{"privacy": "private"},
-					{"hidden_for_search": false},
-					{"_id": bson.M{"$in": memberGroupIDs}},
-				}},
-				{"$and": []bson.M{
-					{"privacy": "private"},
-					{"hidden_for_search": true},
-					{"_id": bson.M{"$in": adminGroupIDs}},
-				}},
-				{"$and": []bson.M{
-					{"privacy": "private"},
-					{"hidden_for_search": false},
-					{"_id": bson.M{"$in": memberOrAdminGroupIDs}},
-				}},
-			}
-		}
-
-		if groupsFilter.Title != nil {
+			innerOrFilter = []bson.M{{"privacy": bson.M{"$ne": "private"}}}
 			if groupsFilter.IncludeHidden != nil && *groupsFilter.IncludeHidden {
-				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					{"title": *groupsFilter.Title},
-				}})
-			} else {
-				innerOrFilter = append(innerOrFilter, primitive.M{"$and": []primitive.M{
-					{"title": *groupsFilter.Title},
-					{"$or": []primitive.M{
-						{"hidden_for_search": false},
-						{"hidden_for_search": primitive.M{"$exists": false}},
+				innerOrFilter = append(innerOrFilter, []bson.M{
+					{"$and": []bson.M{
+						{"_id": bson.M{"$in": memberOrAdminGroupIDs}},
 					}},
-				}})
+				}...)
+			} else {
+				innerOrFilter = append(innerOrFilter, []bson.M{
+					{"$and": []bson.M{
+						{"privacy": "private"},
+						{"hidden_for_search": false},
+						{"_id": bson.M{"$in": memberGroupIDs}},
+					}},
+					{"$and": []bson.M{
+						{"privacy": "private"},
+						{"hidden_for_search": true},
+						{"_id": bson.M{"$in": adminGroupIDs}},
+					}},
+					{"$and": []bson.M{
+						{"privacy": "private"},
+						{"hidden_for_search": false},
+						{"_id": bson.M{"$in": memberOrAdminGroupIDs}},
+					}}}...)
+
 			}
 		}
+		if len(innerOrFilter) > 0 {
+			orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
 
-		orFilter := primitive.E{Key: "$or", Value: innerOrFilter}
-
-		filter = append(filter, orFilter)
+			filter = append(filter, orFilter)
+		}
 	}
 
 	if groupsFilter.Hidden != nil {
