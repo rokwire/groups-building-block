@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 
+## [1.73.11] - 2026-01-21
+### Fixed
+- Bus Pass not available in 7.3.46 [#628](https://github.com/rokwire/groups-building-block/issues/628)
+
 ## [1.73.10] - 2026-01-15
 - Additional build from the automation (no code changes)
 
