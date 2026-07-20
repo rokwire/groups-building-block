@@ -229,6 +229,24 @@ func (m *GroupMembership) ToShortMemberRecord() ShortMemberRecord {
 	}
 }
 
+// BBSGroupMembership is an enriched group membership representation for BBS (system-to-system) consumers
+type BBSGroupMembership struct {
+	AccountID  string    `json:"account_id"`
+	Name       string    `json:"name"`
+	Status     string    `json:"status"`
+	DateJoined time.Time `json:"date_joined"`
+} // @name BBSGroupMembership
+
+// ToBBSGroupMembership converts to BBSGroupMembership
+func (m *GroupMembership) ToBBSGroupMembership() BBSGroupMembership {
+	return BBSGroupMembership{
+		AccountID:  m.UserID,
+		Name:       m.Name,
+		Status:     m.Status,
+		DateJoined: m.DateCreated,
+	}
+}
+
 // ToNotificationRecipient construct notifications.Recipient based on the data
 func (m *GroupMembership) ToNotificationRecipient(mute bool) notifications.Recipient {
 	return notifications.Recipient{

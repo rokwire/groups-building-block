@@ -43,6 +43,9 @@ func (app *Application) findGroupMembershipsStatusAndGroupsTitle(userID string) 
 func (app *Application) findGroupMembershipsByGroupID(groupID string) ([]string, error) {
 	return app.storage.FindGroupMembershipByGroupID(nil, groupID)
 }
+func (app *Application) findGroupMembershipsByGroupIDV2(groupID string, statuses []string) ([]model.GroupMembership, error) {
+	return app.storage.FindGroupMembershipByGroupIDV2(nil, groupID, statuses)
+}
 func (app *Application) findGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
 	return app.storage.FindGroupsEvents(nil, eventIDs)
 }

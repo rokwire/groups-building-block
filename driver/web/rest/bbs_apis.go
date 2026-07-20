@@ -89,6 +89,7 @@ func (h *BBSApisHandler) GetGroupMemberships(log *logs.Log, req *http.Request, u
 // @Param group_id path string true "Group ID"
 // @Success 200 {array} []string
 // @Security AppUserAuth
+// @Deprecated
 // @Router /api/bbs/groups/{group_id}/group-memberships [get]
 func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
 	params := mux.Vars(req)
@@ -108,6 +109,45 @@ func (h *BBSApisHandler) GetGroupMembershipsByGroupID(log *logs.Log, req *http.R
 
 	return log.HTTPResponseSuccessJSON(data)
 
+}
+
+// GetGroupMembershipsByGroupIDV2 Gets enriched group members using groupID, optionally filtered by status
+// @Description  Gets enriched group members using groupID, optionally filtered by status
+// @ID GetGroupMembershipsByGroupIDV2
+// @Tags BBS
+// @Param group_id path string true "Group ID"
+// @Param status query string false "Filter members by status (admin, member, pending, rejected)"
+// @Success 200 {array} model.BBSGroupMembership
+// @Security AppUserAuth
+// @Router /api/bbs/v2/groups/{group_id}/group-memberships [get]
+func (h *BBSApisHandler) GetGroupMembershipsByGroupIDV2(log *logs.Log, req *http.Request, user *model.User) logs.HTTPResponse {
+	params := mux.Vars(req)
+	groupID := params["group_id"]
+	if len(groupID) <= 0 {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypePathParam, nil, errors.New("missing group_id"), http.StatusBadRequest, false)
+	}
+
+	var statuses []string
+	if status := req.URL.Query().Get("status"); status != "" {
+		statuses = []string{status}
+	}
+
+	groupMemberships, err := h.app.Services.GetGroupMembershipsByGroupIDV2(groupID, statuses)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	response := make([]model.BBSGroupMembership, 0, len(groupMemberships))
+	for _, gm := range groupMemberships {
+		response = append(response, gm.ToBBSGroupMembership())
+	}
+
+	data, err := json.Marshal(response)
+	if err != nil {
+		return log.HTTPResponseErrorAction(logutils.ActionGet, logutils.TypeError, nil, err, http.StatusBadRequest, false)
+	}
+
+	return log.HTTPResponseSuccessJSON(data)
 }
 
 // GetGroupsEvents Gets all related eventID and groupID using eventIDs

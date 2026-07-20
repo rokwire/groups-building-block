@@ -7,6 +7,17 @@ definitions:
       external_id:
         type: string
     type: object
+  BBSGroupMembership:
+    properties:
+      account_id:
+        type: string
+      date_joined:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+    type: object
   Creator:
     properties:
       email:
@@ -2622,6 +2633,7 @@ paths:
       - BBS
   /api/bbs/groups/{group_id}/group-memberships:
     get:
+      deprecated: true
       description: Gets all related group memberships status and group title using
         groupID
       operationId: GetGroupMembershipsByGroupID
@@ -2685,6 +2697,32 @@ paths:
               items:
                 $ref: '#/definitions/GetGroupsEvents'
               type: array
+            type: array
+      security:
+      - AppUserAuth: []
+      tags:
+      - BBS
+  /api/bbs/v2/groups/{group_id}/group-memberships:
+    get:
+      description: Gets enriched group members using groupID, optionally filtered
+        by status
+      operationId: GetGroupMembershipsByGroupIDV2
+      parameters:
+      - description: Group ID
+        in: path
+        name: group_id
+        required: true
+        type: string
+      - description: Filter members by status (admin, member, pending, rejected)
+        in: query
+        name: status
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/BBSGroupMembership'
             type: array
       security:
       - AppUserAuth: []
