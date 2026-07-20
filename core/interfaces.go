@@ -63,6 +63,7 @@ type Services interface {
 	GetEventUserIDs(eventID string) ([]string, error)
 	GetGroupMembershipsStatusAndGroupTitle(userID string) ([]model.GetGroupMembershipsResponse, error)
 	GetGroupMembershipsByGroupID(groupID string) ([]string, error)
+	GetGroupMembershipsByGroupIDV2(groupID string, statuses []string) ([]model.GroupMembership, error)
 
 	GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error)
 	GetUserData(userID string) (*model.UserDataResponse, error)
@@ -176,6 +177,7 @@ type Storage interface {
 	GetEventByUserID(userID string) ([]model.Event, error)
 	FindGroupMembershipStatusAndGroupTitle(context storage.TransactionContext, userID string) ([]model.GetGroupMembershipsResponse, error)
 	FindGroupMembershipByGroupID(context storage.TransactionContext, groupID string) ([]string, error)
+	FindGroupMembershipByGroupIDV2(context storage.TransactionContext, groupID string, statuses []string) ([]model.GroupMembership, error)
 	GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error)
 
 	FindGroupsEvents(context storage.TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error)

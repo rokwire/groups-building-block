@@ -289,6 +289,22 @@ func (sa *Adapter) FindGroupMembershipByGroupID(context TransactionContext, grou
 	return userIDs, nil
 }
 
+// FindGroupMembershipByGroupIDV2 Find full group membership records by groupID, optionally filtered by status
+func (sa *Adapter) FindGroupMembershipByGroupIDV2(context TransactionContext, groupID string, statuses []string) ([]model.GroupMembership, error) {
+	filter := bson.D{primitive.E{Key: "group_id", Value: groupID}}
+	if len(statuses) > 0 {
+		filter = append(filter, primitive.E{Key: "status", Value: bson.M{"$in": statuses}})
+	}
+
+	var groupMemberships []model.GroupMembership
+	err := sa.db.groupMemberships.FindWithContext(context, filter, &groupMemberships, nil)
+	if err != nil {
+		return nil, errors.WrapErrorAction(logutils.ActionFind, "group membership", nil, err)
+	}
+
+	return groupMemberships, nil
+}
+
 // FindGroupsEvents Find group ID and event ID
 func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []string) ([]model.GetGroupsEvents, error) {
 	filter := bson.D{}

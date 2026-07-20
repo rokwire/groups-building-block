@@ -2187,6 +2187,7 @@ const docTemplate = `{
                     "BBS"
                 ],
                 "operationId": "GetGroupMembershipsByGroupID",
+                "deprecated": true,
                 "parameters": [
                     {
                         "type": "string",
@@ -2243,6 +2244,46 @@ const docTemplate = `{
                                 "items": {
                                     "$ref": "#/definitions/GetGroupMembershipsResponse"
                                 }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/bbs/v2/groups/{group_id}/group-memberships": {
+            "get": {
+                "security": [
+                    {
+                        "AppUserAuth": []
+                    }
+                ],
+                "description": "Gets enriched group members using groupID, optionally filtered by status",
+                "tags": [
+                    "BBS"
+                ],
+                "operationId": "GetGroupMembershipsByGroupIDV2",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Group ID",
+                        "name": "group_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter members by status (admin, member, pending, rejected)",
+                        "name": "status",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/BBSGroupMembership"
                             }
                         }
                     }
@@ -5173,6 +5214,23 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "external_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "BBSGroupMembership": {
+            "type": "object",
+            "properties": {
+                "account_id": {
+                    "type": "string"
+                },
+                "date_joined": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
                     "type": "string"
                 }
             }

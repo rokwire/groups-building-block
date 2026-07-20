@@ -139,6 +139,9 @@ func (s *servicesImpl) GetGroupMembershipsStatusAndGroupTitle(userID string) ([]
 func (s *servicesImpl) GetGroupMembershipsByGroupID(groupID string) ([]string, error) {
 	return s.app.findGroupMembershipsByGroupID(groupID)
 }
+func (s *servicesImpl) GetGroupMembershipsByGroupIDV2(groupID string, statuses []string) ([]model.GroupMembership, error) {
+	return s.app.findGroupMembershipsByGroupIDV2(groupID, statuses)
+}
 
 func (s *servicesImpl) GetGroupsEvents(eventIDs []string) ([]model.GetGroupsEvents, error) {
 	return s.app.findGroupsEvents(eventIDs)
