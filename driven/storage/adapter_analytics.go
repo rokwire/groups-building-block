@@ -1,8 +1,8 @@
 package storage
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"groups/core/model"
 	"time"
 )
@@ -18,9 +18,7 @@ func (sa *Adapter) AnalyticsFindGroups(startDate *time.Time, endDate *time.Time)
 		filter = append(filter, bson.E{Key: "date_created", Value: bson.M{"$lte": *endDate}})
 	}
 
-	opts := &options.FindOptions{
-		Sort: bson.D{{Key: "date_created", Value: 1}},
-	}
+	opts := options.Find().SetSort(bson.D{{Key: "date_created", Value: 1}})
 
 	var list []model.Group
 	err := sa.db.groups.Find(filter, &list, opts)
@@ -45,9 +43,7 @@ func (sa *Adapter) AnalyticsFindPosts(groupID *string, startDate *time.Time, end
 		filter = append(filter, bson.E{Key: "date_created", Value: bson.M{"$lte": *endDate}})
 	}
 
-	opts := &options.FindOptions{
-		Sort: bson.D{{Key: "date_created", Value: 1}},
-	}
+	opts := options.Find().SetSort(bson.D{{Key: "date_created", Value: 1}})
 
 	var list []model.Post
 	err := sa.db.posts.Find(filter, &list, opts)
@@ -72,9 +68,7 @@ func (sa *Adapter) AnalyticsFindMembers(groupID *string, startDate *time.Time, e
 		filter = append(filter, bson.E{Key: "date_created", Value: bson.M{"$lte": *endDate}})
 	}
 
-	opts := &options.FindOptions{
-		Sort: bson.D{{Key: "date_created", Value: 1}},
-	}
+	opts := options.Find().SetSort(bson.D{{Key: "date_created", Value: 1}})
 
 	var list []model.GroupMembership
 	err := sa.db.groupMemberships.Find(filter, &list, opts)
