@@ -51,7 +51,10 @@ func (m *database) start() error {
 	log.Println("database -> start")
 
 	//connect to the database
-	clientOptions := options.Client().ApplyURI(m.mongoDBAuth)
+	// DefaultDocumentMap keeps the v1-driver decode behavior: untyped nested BSON documents
+	// (e.g. inside map[string]interface{} fields, change-stream events) decode as
+	// map[string]interface{} instead of the v2 default of bson.D.
+	clientOptions := options.Client().ApplyURI(m.mongoDBAuth).SetBSONOptions(&options.BSONOptions{DefaultDocumentMap: true})
 	client, err := mongo.Connect(clientOptions)
 	if err != nil {
 		return err
