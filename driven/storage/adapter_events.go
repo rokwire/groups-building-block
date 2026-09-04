@@ -6,8 +6,7 @@ import (
 
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/errors"
 	"github.com/rokwire/rokwire-building-block-sdk-go/utils/logging/logutils"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 // FindAdminGroupsForEvent Finds all groups for an event where the user is admin
@@ -32,7 +31,7 @@ func (sa *Adapter) FindAdminGroupsForEvent(context TransactionContext, clientID 
 		bson.D{
 			{Key: "$group",
 				Value: bson.D{
-					{Key: "_id", Value: primitive.Null{}},
+					{Key: "_id", Value: bson.Null{}},
 					{Key: "group_ids", Value: bson.D{{Key: "$push", Value: "$membership.group_id"}}},
 				},
 			},
@@ -70,7 +69,7 @@ func (sa *Adapter) FindAdminGroupsIDs(context TransactionContext, clientID strin
 		bson.D{
 			{Key: "$group",
 				Value: bson.D{
-					{Key: "_id", Value: primitive.Null{}},
+					{Key: "_id", Value: bson.Null{}},
 					{Key: "group_ids", Value: bson.D{{Key: "$push", Value: "$group_id"}}},
 				},
 			},
@@ -217,7 +216,7 @@ func (sa *Adapter) FindEventUserIDs(context TransactionContext, eventID string) 
 		}}},
 		bson.D{{Key: "$group",
 			Value: bson.D{
-				{Key: "_id", Value: primitive.Null{}},
+				{Key: "_id", Value: bson.Null{}},
 				{Key: "list", Value: bson.D{{Key: "$addToSet", Value: "$_id"}}},
 			},
 		}},
@@ -268,7 +267,7 @@ func (sa *Adapter) FindGroupMembershipStatusAndGroupTitle(context TransactionCon
 
 // FindGroupMembershipByGroupID Find group membership ids
 func (sa *Adapter) FindGroupMembershipByGroupID(context TransactionContext, groupID string) ([]string, error) {
-	filter := bson.D{primitive.E{Key: "group_id", Value: groupID}}
+	filter := bson.D{bson.E{Key: "group_id", Value: groupID}}
 
 	// Define the results slice
 	var results []model.GroupMembership
@@ -291,9 +290,9 @@ func (sa *Adapter) FindGroupMembershipByGroupID(context TransactionContext, grou
 
 // FindGroupMembershipByGroupIDV2 Find full group membership records by groupID, optionally filtered by status
 func (sa *Adapter) FindGroupMembershipByGroupIDV2(context TransactionContext, groupID string, statuses []string) ([]model.GroupMembership, error) {
-	filter := bson.D{primitive.E{Key: "group_id", Value: groupID}}
+	filter := bson.D{bson.E{Key: "group_id", Value: groupID}}
 	if len(statuses) > 0 {
-		filter = append(filter, primitive.E{Key: "status", Value: bson.M{"$in": statuses}})
+		filter = append(filter, bson.E{Key: "status", Value: bson.M{"$in": statuses}})
 	}
 
 	var groupMemberships []model.GroupMembership
@@ -324,7 +323,7 @@ func (sa *Adapter) FindGroupsEvents(context TransactionContext, eventIDs []strin
 
 // GetEventByUserID Find events by userID
 func (sa *Adapter) GetEventByUserID(userID string) ([]model.Event, error) {
-	filter := bson.D{primitive.E{Key: "to_members.user_id", Value: userID}}
+	filter := bson.D{bson.E{Key: "to_members.user_id", Value: userID}}
 
 	var events []model.Event
 	err := sa.db.events.Find(filter, &events, nil)
@@ -337,7 +336,7 @@ func (sa *Adapter) GetEventByUserID(userID string) ([]model.Event, error) {
 
 // GetGroupMembershipByUserID Find group membership by userID
 func (sa *Adapter) GetGroupMembershipByUserID(userID string) ([]model.GroupMembership, error) {
-	filter := bson.D{primitive.E{Key: "user_id", Value: userID}}
+	filter := bson.D{bson.E{Key: "user_id", Value: userID}}
 
 	var groupMemberships []model.GroupMembership
 	err := sa.db.groupMemberships.Find(filter, &groupMemberships, nil)
@@ -350,7 +349,7 @@ func (sa *Adapter) GetGroupMembershipByUserID(userID string) ([]model.GroupMembe
 
 // GetPostsByUserID Find posts by userID
 func (sa *Adapter) GetPostsByUserID(userID string) ([]model.Post, error) {
-	filter := bson.D{primitive.E{Key: "member.user_id", Value: userID}}
+	filter := bson.D{bson.E{Key: "member.user_id", Value: userID}}
 
 	var posts []model.Post
 	err := sa.db.posts.Find(filter, &posts, nil)
